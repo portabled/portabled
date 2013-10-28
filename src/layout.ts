@@ -1,5 +1,3 @@
-/// <reference path='styles.ts' />
-
 class Layout {
   private _editorHost = this._document.createElement('div');
   private _fileListHost = this._document.createElement('div');

@@ -88,7 +88,7 @@ function inline(htmlFile, htmlOutput) {
 
 function compileMain() {
   runTypeScriptCompiler(
-    'teapo.ts', '..',
+    'teapo.ts', null,
     function(txt) {
       console.log('teapo.js: '+txt+'...');
     },

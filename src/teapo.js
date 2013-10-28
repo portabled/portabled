@@ -1,20 +1,3 @@
-var styles;
-(function (styles) {
-    function clearContent(element) {
-        if ('innerHTML' in element)
-            element.innerHTML = '';
-        else if ('textContent' in element)
-            element.textContent = '';
-        else
-            slowClearContent(element);
-    }
-    styles.clearContent = clearContent;
-
-    function slowClearContent(element) {
-        // TODO: think something else...
-    }
-})(styles || (styles = {}));
-/// <reference path='styles.ts' />
 var Layout = (function () {
     function Layout(_host, _document) {
         if (typeof _document === "undefined") { _document = document; }
