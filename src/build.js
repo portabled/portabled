@@ -158,9 +158,9 @@ function checkAndImportLatestCodeMirrorTypings(callback) {
 
 function checkAndImportLatestCodeMirrorJS(callback) {
   checkAndImportExternal(
-    codemirrorRepository+'/lib/',
-    ['codemirror.js','codemirror.css'],
-    'imports/codemirror/',
+    codemirrorRepository,
+    ['lib/codemirror.js','lib/codemirror.css','mode/javascript/javascript.js'],
+    'imports/codemirror',
     function(detected) {
       if (detected)
         console.log('CodeMirror repository is found, copying JS and CSS');
@@ -220,6 +220,8 @@ function importFiles(repository, files, targetDir, callback) {
   });
 
   function continueCopyFile(f, onCopyComplete) {
+    if (repository.charAt(repository.length-1)!=='/')
+      repository+='/';
     onFileChanged(
       repository+f,
       function present() {
@@ -231,14 +233,20 @@ function importFiles(repository, files, targetDir, callback) {
         console.log('  '+f+' ('+targetDir+') disappeared');
       });
 
+    var shortName;
+    if (f.lastIndexOf('/')>0)
+      shortName = f.slice(f.lastIndexOf('/')+1);
+    else
+      shortName = f;
+
     copyFile(
       repository+f,
-      targetDir+'/'+f,
+      targetDir+'/'+shortName,
       function(error) {
         if (error)
-          console.log('  '+error.message+' '+f);
+          console.log('  '+error.message+' '+shortName);
         else
-          console.log('  copied '+f);
+          console.log('  copied '+shortName);
 
         onCopyComplete(error);
       });
