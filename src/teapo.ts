@@ -2,6 +2,7 @@
 /// <reference path='typings/typescriptServices.d.ts' />
 
 /// <reference path='layout.ts' />
+/// <reference path='TypeScriptService.ts' />
 
 class Application {
     private _toolbar = document.createElement('div');
