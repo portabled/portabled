@@ -23,7 +23,15 @@ class ApplicationState {
       '#lib.d.ts': lib
     });
 
-    this._editor = CodeMirror(this._layout.mainContentPanel);
+    this._editor = CodeMirror(this._layout.mainContentPanel, {
+      lineNumbers: true,
+      mode: 'text/typescript',
+      matchBrackets: true,
+      autoCloseBrackets: true,
+      showTrailingSpace: true,
+      styleActiveLine: true,
+      continueComments: true
+    });
   }
 
   private _loadStaticContent(id: string): string {

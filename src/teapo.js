@@ -831,7 +831,15 @@ var ApplicationState = (function () {
             '#lib.d.ts': lib
         });
 
-        this._editor = CodeMirror(this._layout.mainContentPanel);
+        this._editor = CodeMirror(this._layout.mainContentPanel, {
+            lineNumbers: true,
+            mode: 'text/typescript',
+            matchBrackets: true,
+            autoCloseBrackets: true,
+            showTrailingSpace: true,
+            styleActiveLine: true,
+            continueComments: true
+        });
     }
     ApplicationState.prototype._loadStaticContent = function (id) {
         var div = this._window.document.getElementById(id);
