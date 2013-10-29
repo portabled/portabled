@@ -729,6 +729,143 @@ var DocumentState = (function () {
     };
     return DocumentState;
 })();
+/// <reference path='typings/typescriptServices.d.ts' />
+/// <reference path='DocumentState.ts' />
+var TypeScriptService = (function () {
+    function TypeScriptService(staticScripts) {
+        this.logLevels = {
+            information: true,
+            debug: true,
+            warning: true,
+            error: true,
+            fatal: true
+        };
+        this.compilationSettings = new TypeScript.CompilationSettings();
+        this._scriptCache = {};
+        this._staticScripts = {};
+        if (staticScripts) {
+            for (var s in staticScripts)
+                if (staticScripts.hasOwnProperty(s)) {
+                    var script = TypeScript.ScriptSnapshot.fromString(staticScripts[s] + '');
+                    this._staticScripts[s] = script;
+                }
+        }
+
+        var factory = new Services.TypeScriptServicesFactory();
+        this.service = factory.createPullLanguageService(this._createLanguageServiceHost());
+    }
+    TypeScriptService.prototype.addDocument = function (fileName, doc) {
+        var script = new DocumentState(doc);
+        this._scriptCache[fileName] = script;
+    };
+
+    TypeScriptService.prototype.removeDocument = function (fileName) {
+        delete this._scriptCache[fileName];
+    };
+
+    TypeScriptService.prototype._createLanguageServiceHost = function () {
+        var _this = this;
+        return {
+            getCompilationSettings: function () {
+                return _this.compilationSettings;
+            },
+            getScriptFileNames: function () {
+                var result = Object.keys(_this._scriptCache);
+                for (var s in _this._staticScripts)
+                    if (_this._staticScripts.hasOwnProperty(s)) {
+                        if (!_this._scriptCache.hasOwnProperty(s))
+                            result.push(s);
+                    }
+                console.log('...getScriptFileNames():', result);
+                return result;
+            },
+            getScriptVersion: function (fileName) {
+                var script = _this._scriptCache[fileName];
+                if (script && script.version)
+                    return script.version;
+                return -1;
+            },
+            getScriptIsOpen: function (fileName) {
+                return true;
+            },
+            getScriptByteOrderMark: function (fileName) {
+                return 0 /* None */;
+            },
+            getScriptSnapshot: function (fileName) {
+                var script = _this._scriptCache[fileName] || _this._staticScripts[fileName];
+                return script;
+            },
+            getDiagnosticsObject: function () {
+                return { log: function (text) {
+                        return _this._log(text);
+                    } };
+            },
+            getLocalizedDiagnosticMessages: function () {
+                return null;
+            },
+            information: function () {
+                return _this.logLevels.information;
+            },
+            debug: function () {
+                return _this.logLevels.debug;
+            },
+            warning: function () {
+                return _this.logLevels.warning;
+            },
+            error: function () {
+                return _this.logLevels.error;
+            },
+            fatal: function () {
+                return _this.logLevels.fatal;
+            },
+            log: function (text) {
+                return _this._log(text);
+            },
+            resolveRelativePath: function (path) {
+                var result = path;
+                console.log('...resolveRelativePath(' + path + '):', result);
+                return result;
+            },
+            fileExists: function (path) {
+                // don't issue a full resolve,
+                // this might be a mere probe for a file
+                return _this._scriptCache[path] || _this._staticScripts[path] ? true : false;
+            },
+            directoryExists: function (path) {
+                return true;
+            },
+            getParentDirectory: function (path) {
+                path = TypeScript.switchToForwardSlashes(path);
+                var slashPos = path.lastIndexOf('/');
+                if (slashPos === path.length - 1)
+                    slashPos = path.lastIndexOf('/', path.length - 2);
+                if (slashPos > 0)
+                    return path.slice(0, slashPos);
+                else
+                    return '/';
+            }
+        };
+    };
+
+    TypeScriptService.prototype._log = function (text) {
+        console.log(text);
+    };
+    TypeScriptService._emptySnapshot = {
+        getText: function (start, end) {
+            return '';
+        },
+        getLength: function () {
+            return 0;
+        },
+        getLineStartPositions: function () {
+            return [];
+        },
+        getTextChangeRangeSinceVersion: function (scriptVersion) {
+            return TypeScript.TextChangeRange.unchanged;
+        }
+    };
+    return TypeScriptService;
+})();
 /// <reference path='typings/codemirror.d.ts' />
 /// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='layout.ts' />
