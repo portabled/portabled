@@ -6664,6 +6664,270 @@ CodeMirror.defineMIME("application/x-json", {name: "javascript", json: true});
 CodeMirror.defineMIME("text/typescript", { name: "javascript", typescript: true });
 CodeMirror.defineMIME("application/typescript", { name: "javascript", typescript: true });
 </script>
+  <style >/* BASICS */
+
+.CodeMirror {
+  /* Set height, width, borders, and global font properties here */
+  font-family: monospace;
+  height: 300px;
+}
+.CodeMirror-scroll {
+  /* Set scrolling behaviour here */
+  overflow: auto;
+}
+
+/* PADDING */
+
+.CodeMirror-lines {
+  padding: 4px 0; /* Vertical padding around content */
+}
+.CodeMirror pre {
+  padding: 0 4px; /* Horizontal padding of content */
+}
+
+.CodeMirror-scrollbar-filler, .CodeMirror-gutter-filler {
+  background-color: white; /* The little square between H and V scrollbars */
+}
+
+/* GUTTER */
+
+.CodeMirror-gutters {
+  border-right: 1px solid #ddd;
+  background-color: #f7f7f7;
+  white-space: nowrap;
+}
+.CodeMirror-linenumbers {}
+.CodeMirror-linenumber {
+  padding: 0 3px 0 5px;
+  min-width: 20px;
+  text-align: right;
+  color: #999;
+}
+
+/* CURSOR */
+
+.CodeMirror div.CodeMirror-cursor {
+  border-left: 1px solid black;
+  z-index: 3;
+}
+/* Shown when moving in bi-directional text */
+.CodeMirror div.CodeMirror-secondarycursor {
+  border-left: 1px solid silver;
+}
+.CodeMirror.cm-keymap-fat-cursor div.CodeMirror-cursor {
+  width: auto;
+  border: 0;
+  background: #7e7;
+  z-index: 1;
+}
+/* Can style cursor different in overwrite (non-insert) mode */
+.CodeMirror div.CodeMirror-cursor.CodeMirror-overwrite {}
+
+.cm-tab { display: inline-block; }
+
+/* DEFAULT THEME */
+
+.cm-s-default .cm-keyword {color: #708;}
+.cm-s-default .cm-atom {color: #219;}
+.cm-s-default .cm-number {color: #164;}
+.cm-s-default .cm-def {color: #00f;}
+.cm-s-default .cm-variable {color: black;}
+.cm-s-default .cm-variable-2 {color: #05a;}
+.cm-s-default .cm-variable-3 {color: #085;}
+.cm-s-default .cm-property {color: black;}
+.cm-s-default .cm-operator {color: black;}
+.cm-s-default .cm-comment {color: #a50;}
+.cm-s-default .cm-string {color: #a11;}
+.cm-s-default .cm-string-2 {color: #f50;}
+.cm-s-default .cm-meta {color: #555;}
+.cm-s-default .cm-qualifier {color: #555;}
+.cm-s-default .cm-builtin {color: #30a;}
+.cm-s-default .cm-bracket {color: #997;}
+.cm-s-default .cm-tag {color: #170;}
+.cm-s-default .cm-attribute {color: #00c;}
+.cm-s-default .cm-header {color: blue;}
+.cm-s-default .cm-quote {color: #090;}
+.cm-s-default .cm-hr {color: #999;}
+.cm-s-default .cm-link {color: #00c;}
+
+.cm-negative {color: #d44;}
+.cm-positive {color: #292;}
+.cm-header, .cm-strong {font-weight: bold;}
+.cm-em {font-style: italic;}
+.cm-link {text-decoration: underline;}
+
+.cm-s-default .cm-error {color: #f00;}
+.cm-invalidchar {color: #f00;}
+
+div.CodeMirror span.CodeMirror-matchingbracket {color: #0f0;}
+div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
+.CodeMirror-activeline-background {background: #e8f2ff;}
+
+/* STOP */
+
+/* The rest of this file contains styles related to the mechanics of
+   the editor. You probably shouldn't touch them. */
+
+.CodeMirror {
+  line-height: 1;
+  position: relative;
+  overflow: hidden;
+  background: white;
+  color: black;
+}
+
+.CodeMirror-scroll {
+  /* 30px is the magic margin used to hide the element's real scrollbars */
+  /* See overflow: hidden in .CodeMirror */
+  margin-bottom: -30px; margin-right: -30px;
+  padding-bottom: 30px; padding-right: 30px;
+  height: 100%;
+  outline: none; /* Prevent dragging from highlighting the element */
+  position: relative;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+}
+.CodeMirror-sizer {
+  position: relative;
+}
+
+/* The fake, visible scrollbars. Used to force redraw during scrolling
+   before actuall scrolling happens, thus preventing shaking and
+   flickering artifacts. */
+.CodeMirror-vscrollbar, .CodeMirror-hscrollbar, .CodeMirror-scrollbar-filler, .CodeMirror-gutter-filler {
+  position: absolute;
+  z-index: 6;
+  display: none;
+}
+.CodeMirror-vscrollbar {
+  right: 0; top: 0;
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+.CodeMirror-hscrollbar {
+  bottom: 0; left: 0;
+  overflow-y: hidden;
+  overflow-x: scroll;
+}
+.CodeMirror-scrollbar-filler {
+  right: 0; bottom: 0;
+}
+.CodeMirror-gutter-filler {
+  left: 0; bottom: 0;
+}
+
+.CodeMirror-gutters {
+  position: absolute; left: 0; top: 0;
+  padding-bottom: 30px;
+  z-index: 3;
+}
+.CodeMirror-gutter {
+  white-space: normal;
+  height: 100%;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+  padding-bottom: 30px;
+  margin-bottom: -32px;
+  display: inline-block;
+  /* Hack to make IE7 behave */
+  *zoom:1;
+  *display:inline;
+}
+.CodeMirror-gutter-elt {
+  position: absolute;
+  cursor: default;
+  z-index: 4;
+}
+
+.CodeMirror-lines {
+  cursor: text;
+}
+.CodeMirror pre {
+  /* Reset some styles that the rest of the page might have set */
+  -moz-border-radius: 0; -webkit-border-radius: 0; border-radius: 0;
+  border-width: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  margin: 0;
+  white-space: pre;
+  word-wrap: normal;
+  line-height: inherit;
+  color: inherit;
+  z-index: 2;
+  position: relative;
+  overflow: visible;
+}
+.CodeMirror-wrap pre {
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  word-break: normal;
+}
+.CodeMirror-code pre {
+  border-right: 30px solid transparent;
+  width: -webkit-fit-content;
+  width: -moz-fit-content;
+  width: fit-content;
+}
+.CodeMirror-wrap .CodeMirror-code pre {
+  border-right: none;
+  width: auto;
+}
+.CodeMirror-linebackground {
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+  z-index: 0;
+}
+
+.CodeMirror-linewidget {
+  position: relative;
+  z-index: 2;
+  overflow: auto;
+}
+
+.CodeMirror-widget {}
+
+.CodeMirror-wrap .CodeMirror-scroll {
+  overflow-x: hidden;
+}
+
+.CodeMirror-measure {
+  position: absolute;
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+.CodeMirror-measure pre { position: static; }
+
+.CodeMirror div.CodeMirror-cursor {
+  position: absolute;
+  visibility: hidden;
+  border-right: none;
+  width: 0;
+}
+.CodeMirror-focused div.CodeMirror-cursor {
+  visibility: visible;
+}
+
+.CodeMirror-selected { background: #d9d9d9; }
+.CodeMirror-focused .CodeMirror-selected { background: #d7d4f0; }
+
+.cm-searching {
+  background: #ffa;
+  background: rgba(255, 255, 0, .4);
+}
+
+/* IE7 hack to prevent it from returning funny offsetTops on the spans */
+.CodeMirror span { *vertical-align: text-bottom; }
+
+@media print {
+  /* Hide the cursor when printing */
+  .CodeMirror div.CodeMirror-cursor {
+    visibility: hidden;
+  }
+}
+</style>
   <script>var Split3 = (function () {
     function Split3(_host, options) {
         var _this = this;
@@ -6760,6 +7024,10 @@ CodeMirror.defineMIME("application/typescript", { name: "javascript", typescript
             this._addEventListener('resize', resizeHost, function () {
                 return _this._invalidateSplitterPositions();
             });
+
+        setTimeout(function () {
+            _this._validateSplitterPositions();
+        }, 1);
     }
     Split3.prototype._addEventListener = function (eventName, element, fun) {
         if ('on' + eventName in element) {
@@ -7183,40 +7451,190 @@ var Splitter = (function () {
     return Splitter;
 })();
 /// <reference path='Split3.ts' />
-var Layout = (function () {
-    function Layout(_host, _document) {
-        if (typeof _document === "undefined") { _document = document; }
+function createLayout(output) {
+    var toolbar = document.createElement('div');
+    var left = document.createElement('div');
+    var content = document.createElement('div');
+    var right = document.createElement('div');
+    var statusBar = document.createElement('div');
+
+    var navigator = document.createElement('div');
+    var detailsPanel = document.createElement('div');
+
+    setAllStyles(toolbar.style, left.style, content.style, right.style, statusBar.style, navigator.style, detailsPanel.style);
+
+    left.appendChild(navigator);
+    right.appendChild(detailsPanel);
+
+    output.navigator = navigator;
+    output.content = content;
+    output.detailsPanel = detailsPanel;
+
+    return [toolbar, left, content, right, statusBar];
+}
+
+function setAllStyles(tbs, ls, cs, rs, ss, ns, ds) {
+    var toolbarSize = 3;
+    var statusBarSize = 2;
+    var leftSize = 200;
+    var rightSize = 4;
+
+    applyBox(tbs);
+    applyStyle(tbs, {
+        position: 'absolute',
+        left: '0px',
+        top: '0px',
+        height: toolbarSize + 'px',
+        width: '100%',
+        "z-index": '3',
+        overflow: 'hidden'
+    });
+
+    applyBox(ls);
+    applyStyle(ls, {
+        position: 'absolute',
+        left: '0px',
+        top: '0px',
+        width: leftSize + 'px',
+        height: '100%',
+        "border-top": 'solid ' + toolbarSize + ' white',
+        "border-bottom": 'solid ' + statusBarSize + ' white',
+        "z-index": '2'
+    });
+
+    applyBox(cs);
+    applyStyle(cs, {
+        position: 'absolute',
+        left: "0px",
+        top: '0px',
+        width: '100%',
+        height: '100%',
+        "border-top": 'solid ' + toolbarSize + 'px white',
+        "border-left": 'solid ' + leftSize + 'px white',
+        "border-right": 'solid ' + rightSize + 'px white',
+        "border-bottom": 'solid ' + statusBarSize + 'px white',
+        "z-index": '1',
+        "overflow": 'none'
+    });
+
+    applyBox(rs);
+    applyStyle(rs, {
+        position: 'absolute',
+        right: '0px',
+        top: '0px',
+        width: rightSize + 'px',
+        height: '100%',
+        "border-top": 'solid ' + toolbarSize + ' white',
+        "border-bottom": 'solid ' + statusBarSize + ' white',
+        "z-index": '2'
+    });
+
+    applyBox(ss);
+    applyStyle(ss, {
+        position: 'absolute',
+        left: '0px',
+        bottom: '0px',
+        height: statusBarSize + 'px',
+        width: '100%',
+        "z-index": '3'
+    });
+
+    applyBox(ns);
+    applyStyle(ns, {
+        width: '100%',
+        height: '100%',
+        overflow: 'auto'
+    });
+
+    applyBox(ds);
+    applyStyle(ds, {
+        width: '100%',
+        height: '100%',
+        overflow: 'auto'
+    });
+}
+
+function applyBox(s) {
+    var bbx = 'border-box';
+    applyStyle(s, {
+        "-mozBoxSizing": bbx,
+        "-khtml-box-sizing": bbx,
+        "-webkit-box-sizing": bbx,
+        "box-sizing": bbx
+    });
+}
+
+function applyStyle(s, styles) {
+    for (var k in styles)
+        if (styles.hasOwnProperty(k)) {
+            s.setProperty(k, styles[k]);
+        }
+}
+/// <reference path='typings/codemirror.d.ts' />
+/// <reference path='typings/typescriptServices.d.ts' />
+/// <reference path='layout.ts' />
+var Application = (function () {
+    function Application(_host) {
         this._host = _host;
-        this._document = _document;
-        this._editorHost = this._document.createElement('div');
-        this._fileListHost = this._document.createElement('div');
-        this._fileListHost.textContent = 'OK';
-        this._editorHost.textContent = ' [edit] ';
-        var divHost = document.createElement('div');
-        divHost.appendChild(this._fileListHost);
-        divHost.appendChild(this._editorHost);
-        this._split = new Split3(divHost);
+        this._toolbar = document.createElement('div');
+        this._statusBar = document.createElement('div');
+        this._contentArea = document.createElement('div');
+        this._leftPanel = document.createElement('div');
+        this._mainContentPanel = document.createElement('div');
+        this._rightPanel = document.createElement('div');
+        this._cleanContent(this._host);
 
-        Layout.clearContent(this._host);
+        this._contentArea.appendChild(this._leftPanel);
+        this._contentArea.appendChild(this._mainContentPanel);
+        this._contentArea.appendChild(this._rightPanel);
 
-        this._host.appendChild(divHost);
+        this._splitter = new Split3(this._contentArea);
+
+        this._applyStyles(this._toolbar.style, this._contentArea.style, this._leftPanel.style, this._mainContentPanel.style, this._rightPanel.style, this._statusBar.style);
+
+        this._host.appendChild(this._toolbar);
+        this._host.appendChild(this._contentArea);
+        this._host.appendChild(this._statusBar);
     }
-    Layout.clearContent = function (element) {
+    Application.prototype._applyStyles = function (ts, cs, ls, ms, rs, sb) {
+        ts.position = 'fixed';
+        ts.height = '20px';
+        ts.left = '0px';
+        ts.right = '0px';
+        ts.background = 'silver';
+
+        cs.position = 'fixed';
+        cs.top = '20px';
+        cs.bottom = '16px';
+        cs.left = '0px';
+        cs.right = '0px';
+
+        ls.border = 'solid 1px gold';
+
+        rs.border = 'solid 1px tomato';
+
+        sb.position = 'fixed';
+        sb.height = '16px';
+        sb.bottom = '0px';
+        sb.left = '0px';
+        sb.right = '0px';
+        sb.background = 'silver';
+        sb.opacity = '0.5';
+    };
+
+    Application.prototype._cleanContent = function (element) {
         if ('innerHTML' in element)
             element.innerHTML = '';
         else if ('textContent' in element)
             element.textContent = '';
-        else {
-            // TODO: think of something else...
-        }
+        else if ('innerText' in element)
+            element.innerText = '';
     };
-    return Layout;
+    return Application;
 })();
-/// <reference path='typings/codemirror.d.ts' />
-/// <reference path='typings/typescriptServices.d.ts' />
-/// <reference path='layout.ts' />
+
 window.onload = function () {
-    var layout = new Layout(document.body);
+    var layout = new Application(document.body);
 };
 //# sourceMappingURL=teapo.js.map
 </script>

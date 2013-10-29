@@ -94,6 +94,10 @@ var Split3 = (function () {
             this._addEventListener('resize', resizeHost, function () {
                 return _this._invalidateSplitterPositions();
             });
+
+        setTimeout(function () {
+            _this._validateSplitterPositions();
+        }, 1);
     }
     Split3.prototype._addEventListener = function (eventName, element, fun) {
         if ('on' + eventName in element) {
@@ -517,39 +521,189 @@ var Splitter = (function () {
     return Splitter;
 })();
 /// <reference path='Split3.ts' />
-var Layout = (function () {
-    function Layout(_host, _document) {
-        if (typeof _document === "undefined") { _document = document; }
+function createLayout(output) {
+    var toolbar = document.createElement('div');
+    var left = document.createElement('div');
+    var content = document.createElement('div');
+    var right = document.createElement('div');
+    var statusBar = document.createElement('div');
+
+    var navigator = document.createElement('div');
+    var detailsPanel = document.createElement('div');
+
+    setAllStyles(toolbar.style, left.style, content.style, right.style, statusBar.style, navigator.style, detailsPanel.style);
+
+    left.appendChild(navigator);
+    right.appendChild(detailsPanel);
+
+    output.navigator = navigator;
+    output.content = content;
+    output.detailsPanel = detailsPanel;
+
+    return [toolbar, left, content, right, statusBar];
+}
+
+function setAllStyles(tbs, ls, cs, rs, ss, ns, ds) {
+    var toolbarSize = 3;
+    var statusBarSize = 2;
+    var leftSize = 200;
+    var rightSize = 4;
+
+    applyBox(tbs);
+    applyStyle(tbs, {
+        position: 'absolute',
+        left: '0px',
+        top: '0px',
+        height: toolbarSize + 'px',
+        width: '100%',
+        "z-index": '3',
+        overflow: 'hidden'
+    });
+
+    applyBox(ls);
+    applyStyle(ls, {
+        position: 'absolute',
+        left: '0px',
+        top: '0px',
+        width: leftSize + 'px',
+        height: '100%',
+        "border-top": 'solid ' + toolbarSize + ' white',
+        "border-bottom": 'solid ' + statusBarSize + ' white',
+        "z-index": '2'
+    });
+
+    applyBox(cs);
+    applyStyle(cs, {
+        position: 'absolute',
+        left: "0px",
+        top: '0px',
+        width: '100%',
+        height: '100%',
+        "border-top": 'solid ' + toolbarSize + 'px white',
+        "border-left": 'solid ' + leftSize + 'px white',
+        "border-right": 'solid ' + rightSize + 'px white',
+        "border-bottom": 'solid ' + statusBarSize + 'px white',
+        "z-index": '1',
+        "overflow": 'none'
+    });
+
+    applyBox(rs);
+    applyStyle(rs, {
+        position: 'absolute',
+        right: '0px',
+        top: '0px',
+        width: rightSize + 'px',
+        height: '100%',
+        "border-top": 'solid ' + toolbarSize + ' white',
+        "border-bottom": 'solid ' + statusBarSize + ' white',
+        "z-index": '2'
+    });
+
+    applyBox(ss);
+    applyStyle(ss, {
+        position: 'absolute',
+        left: '0px',
+        bottom: '0px',
+        height: statusBarSize + 'px',
+        width: '100%',
+        "z-index": '3'
+    });
+
+    applyBox(ns);
+    applyStyle(ns, {
+        width: '100%',
+        height: '100%',
+        overflow: 'auto'
+    });
+
+    applyBox(ds);
+    applyStyle(ds, {
+        width: '100%',
+        height: '100%',
+        overflow: 'auto'
+    });
+}
+
+function applyBox(s) {
+    var bbx = 'border-box';
+    applyStyle(s, {
+        "-mozBoxSizing": bbx,
+        "-khtml-box-sizing": bbx,
+        "-webkit-box-sizing": bbx,
+        "box-sizing": bbx
+    });
+}
+
+function applyStyle(s, styles) {
+    for (var k in styles)
+        if (styles.hasOwnProperty(k)) {
+            s.setProperty(k, styles[k]);
+        }
+}
+/// <reference path='typings/codemirror.d.ts' />
+/// <reference path='typings/typescriptServices.d.ts' />
+/// <reference path='layout.ts' />
+var Application = (function () {
+    function Application(_host) {
         this._host = _host;
-        this._document = _document;
-        this._editorHost = this._document.createElement('div');
-        this._fileListHost = this._document.createElement('div');
-        this._fileListHost.textContent = 'OK';
-        this._editorHost.textContent = ' [edit] ';
-        var divHost = document.createElement('div');
-        divHost.appendChild(this._fileListHost);
-        divHost.appendChild(this._editorHost);
-        this._split = new Split3(divHost);
+        this._toolbar = document.createElement('div');
+        this._statusBar = document.createElement('div');
+        this._contentArea = document.createElement('div');
+        this._leftPanel = document.createElement('div');
+        this._mainContentPanel = document.createElement('div');
+        this._rightPanel = document.createElement('div');
+        this._cleanContent(this._host);
 
-        Layout.clearContent(this._host);
+        this._contentArea.appendChild(this._leftPanel);
+        this._contentArea.appendChild(this._mainContentPanel);
+        this._contentArea.appendChild(this._rightPanel);
 
-        this._host.appendChild(divHost);
+        this._splitter = new Split3(this._contentArea);
+
+        this._applyStyles(this._toolbar.style, this._contentArea.style, this._leftPanel.style, this._mainContentPanel.style, this._rightPanel.style, this._statusBar.style);
+
+        this._host.appendChild(this._toolbar);
+        this._host.appendChild(this._contentArea);
+        this._host.appendChild(this._statusBar);
     }
-    Layout.clearContent = function (element) {
+    Application.prototype._applyStyles = function (ts, cs, ls, ms, rs, sb) {
+        ts.position = 'fixed';
+        ts.height = '20px';
+        ts.left = '0px';
+        ts.right = '0px';
+        ts.background = 'silver';
+
+        cs.position = 'fixed';
+        cs.top = '20px';
+        cs.bottom = '16px';
+        cs.left = '0px';
+        cs.right = '0px';
+
+        ls.border = 'solid 1px gold';
+
+        rs.border = 'solid 1px tomato';
+
+        sb.position = 'fixed';
+        sb.height = '16px';
+        sb.bottom = '0px';
+        sb.left = '0px';
+        sb.right = '0px';
+        sb.background = 'silver';
+        sb.opacity = '0.5';
+    };
+
+    Application.prototype._cleanContent = function (element) {
         if ('innerHTML' in element)
             element.innerHTML = '';
         else if ('textContent' in element)
             element.textContent = '';
-        else {
-            // TODO: think of something else...
-        }
+        else if ('innerText' in element)
+            element.innerText = '';
     };
-    return Layout;
+    return Application;
 })();
-/// <reference path='typings/codemirror.d.ts' />
-/// <reference path='typings/typescriptServices.d.ts' />
-/// <reference path='layout.ts' />
+
 window.onload = function () {
-    var layout = new Layout(document.body);
+    var layout = new Application(document.body);
 };
 //# sourceMappingURL=teapo.js.map

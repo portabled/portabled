@@ -1,0 +1,37 @@
+body {
+    margin: 0px;
+}
+
+.CodeMirror {
+    height: 100%;
+	font-family: auto;
+}
+
+.mieSplit3-splitter {
+    background: gray;
+    opacity: 0.5;
+}
+
+#toolbar {
+    position: fixed;
+    height: 20px;
+    left: 0px; right:0px;
+    background: silver;
+}
+
+#statusbar {
+    position: fixed;
+    height: 16px;
+    bottom: 0px;
+    left: 0px; right:0px;
+    background: silver;
+    opacity: 0.5;
+}
+
+#panelHost {
+    position: fixed;
+    top: 20px;
+    bottom: 16px;
+    left: 0px; right:0px;
+}
+
