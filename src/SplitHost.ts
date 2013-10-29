@@ -1,9 +1,9 @@
-class Split3 {
+class SplitHost {
   static defaultOptions = {
       splitterLayoutSizePx: 2,
       splitterTouchPaddingPx: 6,
-      panelClassName: 'mieSplit3-panel',
-      splitterClassName: 'mieSplit3-splitter',
+      panelClassName: 'teapoSplitHost-panel',
+      splitterClassName: 'teapoSplitHost-splitter',
       vertical: false,
       log: null
   };
@@ -47,8 +47,8 @@ class Split3 {
           log?: (text: string) => void;
       }) {
 
-      for (var k in Split3.defaultOptions) if (Split3.defaultOptions.hasOwnProperty(k)) {
-          this._options[k] = options && k in options ? options[k] : Split3.defaultOptions[k];
+      for (var k in SplitHost.defaultOptions) if (SplitHost.defaultOptions.hasOwnProperty(k)) {
+          this._options[k] = options && k in options ? options[k] : SplitHost.defaultOptions[k];
       }
 
       while (this._host.children.length) {
@@ -534,9 +534,18 @@ class ChildPanel {
   constructor(public element: Element, vertical: boolean) {
       var s = (<HTMLElement>element).style;
       if (s) {
-          this._applyLengthString(vertical ? s.height : s.width);
+          var lengthString: string;
+          if (vertical) {
+              lengthString = s.height;
+              s.height = null;
+          }
+          else {
+              lengthString = s.width;
+              s.width = null;
+          }
           s.position = 'absolute';
           s.left = s.right = s.top = s.bottom = '0px';
+          this._applyLengthString(lengthString);
       }
 
       this.container.appendChild(this.element);

@@ -1,5 +1,5 @@
-var Split3 = (function () {
-    function Split3(_host, options) {
+var SplitHost = (function () {
+    function SplitHost(_host, options) {
         var _this = this;
         this._host = _host;
         this._childPanels = [];
@@ -18,9 +18,9 @@ var Split3 = (function () {
         this._windowTouchMoveHandler = null;
         this._windowTouchEndHandler = null;
         this._options = {};
-        for (var k in Split3.defaultOptions)
-            if (Split3.defaultOptions.hasOwnProperty(k)) {
-                this._options[k] = options && k in options ? options[k] : Split3.defaultOptions[k];
+        for (var k in SplitHost.defaultOptions)
+            if (SplitHost.defaultOptions.hasOwnProperty(k)) {
+                this._options[k] = options && k in options ? options[k] : SplitHost.defaultOptions[k];
             }
 
         while (this._host.children.length) {
@@ -100,7 +100,7 @@ var Split3 = (function () {
             _this._validateSplitterPositions();
         }, 1);
     }
-    Split3.prototype._addEventListener = function (eventName, element, fun) {
+    SplitHost.prototype._addEventListener = function (eventName, element, fun) {
         if ('on' + eventName in element) {
             if (element.addEventListener) {
                 element.addEventListener(eventName, fun, true);
@@ -112,7 +112,7 @@ var Split3 = (function () {
         }
     };
 
-    Split3.prototype._removeEventListener = function (eventName, element, fun) {
+    SplitHost.prototype._removeEventListener = function (eventName, element, fun) {
         if ('on' + eventName in element) {
             if (element.removeEventListener) {
                 element.removeEventListener(eventName, fun, true);
@@ -124,7 +124,7 @@ var Split3 = (function () {
         }
     };
 
-    Split3.prototype._invalidateSplitterPositions = function () {
+    SplitHost.prototype._invalidateSplitterPositions = function () {
         var _this = this;
         if (this._splitterUpdateQueued)
             return;
@@ -136,7 +136,7 @@ var Split3 = (function () {
         });
     };
 
-    Split3.prototype._queueImmediately = function (fun) {
+    SplitHost.prototype._queueImmediately = function (fun) {
         if (window.requestAnimationFrame) {
             window.requestAnimationFrame(fun);
         } else if (window.webkitRequestAnimationFrame) {
@@ -148,7 +148,7 @@ var Split3 = (function () {
         }
     };
 
-    Split3.prototype._validateSplitterPositions = function () {
+    SplitHost.prototype._validateSplitterPositions = function () {
         this._splitterUpdateQueued = false;
 
         var actualLength = this._options.vertical ? this._host.offsetHeight : this._host.offsetWidth;
@@ -161,7 +161,7 @@ var Split3 = (function () {
         this._recalculateSplitterPositions();
     };
 
-    Split3.prototype._recalculateSplitterPositions = function () {
+    SplitHost.prototype._recalculateSplitterPositions = function () {
         var totalAbsolute = 0;
         var totalPercents = 0;
         for (var i = 0; i < this._childPanels.length; i++) {
@@ -224,12 +224,12 @@ var Split3 = (function () {
         this._cachedPercentPixelRatio = percentPixelRatio;
     };
 
-    Split3.prototype._applyPanelContainerStyle = function (s) {
+    SplitHost.prototype._applyPanelContainerStyle = function (s) {
         this._applyStretchStyle(s);
         s.overflow = 'auto';
     };
 
-    Split3.prototype._applySplitterStyle = function (ps, ls) {
+    SplitHost.prototype._applySplitterStyle = function (ps, ls) {
         this._applyStretchStyle(ps);
         this._applyStretchStyle(ls);
 
@@ -247,7 +247,7 @@ var Split3 = (function () {
         ps.cursor = this._options.vertical ? 's-resize' : 'ew-resize';
     };
 
-    Split3.prototype._applyStretchStyle = function (s) {
+    SplitHost.prototype._applyStretchStyle = function (s) {
         s.position = 'absolute';
         if (this._options.vertical) {
             s.left = s.right = '0px';
@@ -256,7 +256,7 @@ var Split3 = (function () {
         }
     };
 
-    Split3.prototype._stringify = function (e) {
+    SplitHost.prototype._stringify = function (e) {
         if (e === null) {
             return 'null';
         } else if (typeof e === 'string') {
@@ -280,7 +280,7 @@ var Split3 = (function () {
         }
     };
 
-    Split3.prototype._splitterMouseDown = function (splitter, index, e) {
+    SplitHost.prototype._splitterMouseDown = function (splitter, index, e) {
         if (this._options.log)
             this._options.log('_splitterMouseDown ' + this._getPosition(e) + ' ' + this._stringify(e));
 
@@ -305,18 +305,18 @@ var Split3 = (function () {
             e.preventDefault();
     };
 
-    Split3.prototype._getPosition = function (e) {
+    SplitHost.prototype._getPosition = function (e) {
         return e.touches ? (this._options.vertical ? e.touches[0].pageY : e.touches[0].pageX) : (this._options.vertical ? e.clientY : e.clientX);
     };
 
-    Split3.prototype._splitterTouchStart = function (splitter, index, e) {
+    SplitHost.prototype._splitterTouchStart = function (splitter, index, e) {
         if (this._options.log)
             this._options.log('_splitterTouchStart ' + this._getPosition(e) + ' ' + this._stringify(e));
 
         this._splitterMouseDown(splitter, index, e);
     };
 
-    Split3.prototype._highlightSplitter = function (splitter, highlight) {
+    SplitHost.prototype._highlightSplitter = function (splitter, highlight) {
         if (highlight) {
             splitter.paddingElement.style.background = 'cornflowerblue';
             splitter.paddingElement.style.opacity = '0.5';
@@ -326,7 +326,7 @@ var Split3 = (function () {
         }
     };
 
-    Split3.prototype._attachWindowMouseEvents = function (splitter, index) {
+    SplitHost.prototype._attachWindowMouseEvents = function (splitter, index) {
         var _this = this;
         this._windowMouseDownHandler = function (e) {
             return _this._splitterMouseDown(splitter, index, e || window.event);
@@ -355,7 +355,7 @@ var Split3 = (function () {
         this._addEventListener('touchend', window, this._windowTouchEndHandler);
     };
 
-    Split3.prototype._detachWindowMouseEvents = function () {
+    SplitHost.prototype._detachWindowMouseEvents = function () {
         if (this._windowMouseDownHandler)
             this._removeEventListener('mousedown', window, this._windowMouseDownHandler);
 
@@ -375,7 +375,7 @@ var Split3 = (function () {
             this._removeEventListener('touchend', window, this._windowTouchEndHandler);
     };
 
-    Split3.prototype._splitterMouseUp = function (splitter, index, e) {
+    SplitHost.prototype._splitterMouseUp = function (splitter, index, e) {
         if (this._options.log)
             this._options.log('_splitterMouseUp ' + this._getPosition(e) + ' ' + this._stringify(e));
 
@@ -388,14 +388,14 @@ var Split3 = (function () {
         }
     };
 
-    Split3.prototype._splitterTouchEnd = function (splitter, index, e) {
+    SplitHost.prototype._splitterTouchEnd = function (splitter, index, e) {
         if (this._options.log)
             this._options.log('_splitterTouchEnd ' + this._getPosition(e) + ' ' + this._stringify(e));
 
         this._splitterMouseUp(splitter, index, e);
     };
 
-    Split3.prototype._splitterMouseMove = function (splitter, index, e) {
+    SplitHost.prototype._splitterMouseMove = function (splitter, index, e) {
         if (this._options.log)
             this._options.log('_splitterMouseMove ' + this._getPosition(e) + ' ' + this._stringify(e));
 
@@ -408,24 +408,24 @@ var Split3 = (function () {
         this._queueDragSplitterResize(splitter, index, e);
     };
 
-    Split3.prototype._splitterTouchMove = function (splitter, index, e) {
+    SplitHost.prototype._splitterTouchMove = function (splitter, index, e) {
         if (this._options.log)
             this._options.log('_splitterTouchMove ' + this._getPosition(e) + ' ' + this._stringify(e));
 
         this._splitterMouseMove(splitter, index, e);
     };
 
-    Split3.prototype._splitterMouseOver = function (splitter, index, e) {
+    SplitHost.prototype._splitterMouseOver = function (splitter, index, e) {
         if (this._dragSplitterIndex < 0)
             this._highlightSplitter(splitter, true);
     };
 
-    Split3.prototype._splitterMouseOut = function (splitter, index, e) {
+    SplitHost.prototype._splitterMouseOut = function (splitter, index, e) {
         if (this._dragSplitterIndex < 0)
             this._highlightSplitter(splitter, false);
     };
 
-    Split3.prototype._queueDragSplitterResize = function (splitter, index, e) {
+    SplitHost.prototype._queueDragSplitterResize = function (splitter, index, e) {
         var _this = this;
         this._dragOffset = this._getPosition(e) - this._dragBase;
 
@@ -438,7 +438,7 @@ var Split3 = (function () {
         });
     };
 
-    Split3.prototype._resizeDraggedSplitter = function (splitter, index) {
+    SplitHost.prototype._resizeDraggedSplitter = function (splitter, index) {
         this._dragSplitterResizeQueued = false;
         var prevPanel = this._childPanels[index];
         var nextPanel = this._childPanels[index + 1];
@@ -468,15 +468,15 @@ var Split3 = (function () {
 
         this._recalculateSplitterPositions();
     };
-    Split3.defaultOptions = {
+    SplitHost.defaultOptions = {
         splitterLayoutSizePx: 2,
         splitterTouchPaddingPx: 6,
-        panelClassName: 'mieSplit3-panel',
-        splitterClassName: 'mieSplit3-splitter',
+        panelClassName: 'teapoSplitHost-panel',
+        splitterClassName: 'teapoSplitHost-splitter',
         vertical: false,
         log: null
     };
-    return Split3;
+    return SplitHost;
 })();
 
 var ChildPanel = (function () {
@@ -485,9 +485,17 @@ var ChildPanel = (function () {
         this.container = document.createElement('div');
         var s = element.style;
         if (s) {
-            this._applyLengthString(vertical ? s.height : s.width);
+            var lengthString;
+            if (vertical) {
+                lengthString = s.height;
+                s.height = null;
+            } else {
+                lengthString = s.width;
+                s.width = null;
+            }
             s.position = 'absolute';
             s.left = s.right = s.top = s.bottom = '0px';
+            this._applyLengthString(lengthString);
         }
 
         this.container.appendChild(this.element);
@@ -521,126 +529,6 @@ var Splitter = (function () {
     }
     return Splitter;
 })();
-/// <reference path='Split3.ts' />
-function createLayout(output) {
-    var toolbar = document.createElement('div');
-    var left = document.createElement('div');
-    var content = document.createElement('div');
-    var right = document.createElement('div');
-    var statusBar = document.createElement('div');
-
-    var navigator = document.createElement('div');
-    var detailsPanel = document.createElement('div');
-
-    setAllStyles(toolbar.style, left.style, content.style, right.style, statusBar.style, navigator.style, detailsPanel.style);
-
-    left.appendChild(navigator);
-    right.appendChild(detailsPanel);
-
-    output.navigator = navigator;
-    output.content = content;
-    output.detailsPanel = detailsPanel;
-
-    return [toolbar, left, content, right, statusBar];
-}
-
-function setAllStyles(tbs, ls, cs, rs, ss, ns, ds) {
-    var toolbarSize = 3;
-    var statusBarSize = 2;
-    var leftSize = 200;
-    var rightSize = 4;
-
-    applyBox(tbs);
-    applyStyle(tbs, {
-        position: 'absolute',
-        left: '0px',
-        top: '0px',
-        height: toolbarSize + 'px',
-        width: '100%',
-        "z-index": '3',
-        overflow: 'hidden'
-    });
-
-    applyBox(ls);
-    applyStyle(ls, {
-        position: 'absolute',
-        left: '0px',
-        top: '0px',
-        width: leftSize + 'px',
-        height: '100%',
-        "border-top": 'solid ' + toolbarSize + ' white',
-        "border-bottom": 'solid ' + statusBarSize + ' white',
-        "z-index": '2'
-    });
-
-    applyBox(cs);
-    applyStyle(cs, {
-        position: 'absolute',
-        left: "0px",
-        top: '0px',
-        width: '100%',
-        height: '100%',
-        "border-top": 'solid ' + toolbarSize + 'px white',
-        "border-left": 'solid ' + leftSize + 'px white',
-        "border-right": 'solid ' + rightSize + 'px white',
-        "border-bottom": 'solid ' + statusBarSize + 'px white',
-        "z-index": '1',
-        "overflow": 'none'
-    });
-
-    applyBox(rs);
-    applyStyle(rs, {
-        position: 'absolute',
-        right: '0px',
-        top: '0px',
-        width: rightSize + 'px',
-        height: '100%',
-        "border-top": 'solid ' + toolbarSize + ' white',
-        "border-bottom": 'solid ' + statusBarSize + ' white',
-        "z-index": '2'
-    });
-
-    applyBox(ss);
-    applyStyle(ss, {
-        position: 'absolute',
-        left: '0px',
-        bottom: '0px',
-        height: statusBarSize + 'px',
-        width: '100%',
-        "z-index": '3'
-    });
-
-    applyBox(ns);
-    applyStyle(ns, {
-        width: '100%',
-        height: '100%',
-        overflow: 'auto'
-    });
-
-    applyBox(ds);
-    applyStyle(ds, {
-        width: '100%',
-        height: '100%',
-        overflow: 'auto'
-    });
-}
-
-function applyBox(s) {
-    var bbx = 'border-box';
-    applyStyle(s, {
-        "-mozBoxSizing": bbx,
-        "-khtml-box-sizing": bbx,
-        "-webkit-box-sizing": bbx,
-        "box-sizing": bbx
-    });
-}
-
-function applyStyle(s, styles) {
-    for (var k in styles)
-        if (styles.hasOwnProperty(k)) {
-            s.setProperty(k, styles[k]);
-        }
-}
 /// <reference path='typings/typescriptServices.d.ts' />
 var DocumentState = (function () {
     function DocumentState(_doc) {
@@ -866,34 +754,32 @@ var TypeScriptService = (function () {
     };
     return TypeScriptService;
 })();
-/// <reference path='typings/codemirror.d.ts' />
-/// <reference path='typings/typescriptServices.d.ts' />
-/// <reference path='layout.ts' />
+/// <reference path='SplitHost.ts' />
 /// <reference path='TypeScriptService.ts' />
-var Application = (function () {
-    function Application(_host) {
+var ApplicationLayout = (function () {
+    function ApplicationLayout(_host) {
         this._host = _host;
-        this._toolbar = document.createElement('div');
-        this._statusBar = document.createElement('div');
+        this.toolbar = document.createElement('div');
+        this.statusBar = document.createElement('div');
         this._contentArea = document.createElement('div');
-        this._leftPanel = document.createElement('div');
-        this._mainContentPanel = document.createElement('div');
-        this._rightPanel = document.createElement('div');
+        this.leftPanel = document.createElement('div');
+        this.mainContentPanel = document.createElement('div');
+        this.rightPanel = document.createElement('div');
+        this._contentArea.appendChild(this.leftPanel);
+        this._contentArea.appendChild(this.mainContentPanel);
+        this._contentArea.appendChild(this.rightPanel);
+
+        this._applyStyles(this.toolbar.style, this._contentArea.style, this.leftPanel.style, this.mainContentPanel.style, this.rightPanel.style, this.statusBar.style);
+
+        this._splitter = new SplitHost(this._contentArea);
+
         this._cleanContent(this._host);
 
-        this._contentArea.appendChild(this._leftPanel);
-        this._contentArea.appendChild(this._mainContentPanel);
-        this._contentArea.appendChild(this._rightPanel);
-
-        this._splitter = new Split3(this._contentArea);
-
-        this._applyStyles(this._toolbar.style, this._contentArea.style, this._leftPanel.style, this._mainContentPanel.style, this._rightPanel.style, this._statusBar.style);
-
-        this._host.appendChild(this._toolbar);
+        this._host.appendChild(this.toolbar);
         this._host.appendChild(this._contentArea);
-        this._host.appendChild(this._statusBar);
+        this._host.appendChild(this.statusBar);
     }
-    Application.prototype._applyStyles = function (ts, cs, ls, ms, rs, sb) {
+    ApplicationLayout.prototype._applyStyles = function (ts, cs, ls, ms, rs, sb) {
         ts.position = 'fixed';
         ts.height = '20px';
         ts.left = '0px';
@@ -907,8 +793,10 @@ var Application = (function () {
         cs.right = '0px';
 
         ls.border = 'solid 1px gold';
+        ls.width = '10%';
 
         rs.border = 'solid 1px tomato';
+        rs.width = '15%';
 
         sb.position = 'fixed';
         sb.height = '16px';
@@ -919,7 +807,7 @@ var Application = (function () {
         sb.opacity = '0.5';
     };
 
-    Application.prototype._cleanContent = function (element) {
+    ApplicationLayout.prototype._cleanContent = function (element) {
         if ('innerHTML' in element)
             element.innerHTML = '';
         else if ('textContent' in element)
@@ -927,10 +815,39 @@ var Application = (function () {
         else if ('innerText' in element)
             element.innerText = '';
     };
-    return Application;
+    return ApplicationLayout;
 })();
+/// <reference path='typings/codemirror.d.ts' />
+/// <reference path='typings/typescriptServices.d.ts' />
+/// <reference path='TypeScriptService.ts' />
+/// <reference path='DocumentState.ts' />
+var ApplicationState = (function () {
+    function ApplicationState(_layout, _window) {
+        if (typeof _window === "undefined") { _window = window; }
+        this._layout = _layout;
+        this._window = _window;
+        var lib = this._loadStaticContent('lib.d.ts');
+        this._tsService = new TypeScriptService({
+            '#lib.d.ts': lib
+        });
 
+        this._editor = CodeMirror(this._layout.mainContentPanel);
+    }
+    ApplicationState.prototype._loadStaticContent = function (id) {
+        var div = this._window.document.getElementById(id);
+        if (div === null)
+            return null;
+        else
+            return div.innerHTML;
+    };
+    return ApplicationState;
+})();
+/// <reference path='typings/codemirror.d.ts' />
+/// <reference path='typings/typescriptServices.d.ts' />
+/// <reference path='ApplicationLayout.ts' />
+/// <reference path='ApplicationState.ts' />
 window.onload = function () {
-    var layout = new Application(document.body);
+    var layout = new ApplicationLayout(document.body);
+    var state = new ApplicationState(layout);
 };
 //# sourceMappingURL=teapo.js.map
