@@ -95,6 +95,7 @@ var Split3 = (function () {
                 return _this._invalidateSplitterPositions();
             });
 
+        // doesn't always work without it
         setTimeout(function () {
             _this._validateSplitterPositions();
         }, 1);

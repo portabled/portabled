@@ -136,6 +136,7 @@ class Split3 {
       if (resizeHost)
           this._addEventListener('resize', resizeHost, () => this._invalidateSplitterPositions());
 
+      // doesn't always work without it
       setTimeout(() => {
         this._validateSplitterPositions();
       }, 1);
