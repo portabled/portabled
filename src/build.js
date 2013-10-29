@@ -164,8 +164,8 @@ function checkAndImportLatestCodeMirrorJS(callback) {
       'mode/javascript/javascript.js',
       'addon/hint/show-hint.js','addon/hint/show-hint.css','addon/hint/javascript-hint.js',
       'addon/comment/comment.js','addon/comment/continuecomment.js',
-      'addon/edit/closebracket.js','addon/edit/matchbracket.js','addon/edit/trailingspace.js',
-      'selection/active-line.js'
+      'addon/edit/closebrackets.js','addon/edit/matchbrackets.js','addon/edit/trailingspace.js',
+      'addon/selection/active-line.js'
     ],
     'imports/codemirror',
     function(detected) {

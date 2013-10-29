@@ -6630,7 +6630,6 @@ declare module TypeScript {
         None = 0,
         SingleLine,
         OptionalName,
-        TypeReference,
     }
     enum DeclFlags {
         None = 0,
@@ -6666,9 +6665,6 @@ declare module TypeScript {
         Ambient,
         Static,
         Signature,
-        Method,
-        CallSignature,
-        ConstructMember,
     }
     function ToDeclFlags(functionFlags: FunctionFlags): DeclFlags;
     function ToDeclFlags(varFlags: VariableFlags): DeclFlags;
@@ -6712,6 +6708,11 @@ declare module TypeScript {
         TypeRef,
         TypeQuery,
         QualifiedName,
+        FunctionType,
+        ConstructorType,
+        CallSignature,
+        ConstructSignature,
+        MethodSignature,
         FunctionDeclaration,
         ConstructorDeclaration,
         ClassDeclaration,
@@ -6891,7 +6892,6 @@ declare module TypeScript {
         public astID(): number;
         public fileName(): string;
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public preComments(): Comment[];
         public postComments(): Comment[];
         public setPreComments(comments: Comment[]): void;
@@ -6899,8 +6899,6 @@ declare module TypeScript {
         public getFlags(): TypeScript.ASTFlags;
         public setFlags(flags: TypeScript.ASTFlags): void;
         public getLength(): number;
-        public _isDeclaration(): boolean;
-        public docComments(): Comment[];
         public structuralEquals(ast: AST, includingPosition: boolean): boolean;
     }
     class ASTList extends AST {
@@ -6932,7 +6930,6 @@ declare module TypeScript {
         private _varFlags;
         constructor(identifier: Identifier, moduleReference: AST);
         public nodeType(): TypeScript.NodeType;
-        public _isDeclaration(): boolean;
         public getVarFlags(): TypeScript.VariableFlags;
         public setVarFlags(flags: TypeScript.VariableFlags): void;
         public isExternalImportDeclaration(): boolean;
@@ -6953,7 +6950,6 @@ declare module TypeScript {
         public endingToken: ASTSpan;
         private _varFlags;
         constructor(identifier: Identifier, typeParameterList: ASTList, heritageClauses: ASTList, classElements: ASTList, endingToken: ASTSpan);
-        public _isDeclaration(): boolean;
         public getVarFlags(): TypeScript.VariableFlags;
         public setVarFlags(flags: TypeScript.VariableFlags): void;
         public nodeType(): TypeScript.NodeType;
@@ -6967,7 +6963,6 @@ declare module TypeScript {
         private _varFlags;
         constructor(identifier: Identifier, typeParameterList: ASTList, heritageClauses: ASTList, body: ObjectType);
         public nodeType(): TypeScript.NodeType;
-        public _isDeclaration(): boolean;
         public getVarFlags(): TypeScript.VariableFlags;
         public setVarFlags(flags: TypeScript.VariableFlags): void;
         public structuralEquals(ast: InterfaceDeclaration, includingPosition: boolean): boolean;
@@ -7114,7 +7109,6 @@ declare module TypeScript {
         private _varFlags;
         constructor(id: Identifier, typeExpr: TypeReference, equalsValueClause: EqualsValueClause);
         public nodeType(): TypeScript.NodeType;
-        public _isDeclaration(): boolean;
         public getVarFlags(): TypeScript.VariableFlags;
         public setVarFlags(flags: TypeScript.VariableFlags): void;
         public isProperty(): boolean;
@@ -7133,7 +7127,6 @@ declare module TypeScript {
         public isRest: boolean;
         private _varFlags;
         constructor(id: Identifier, typeExpr: TypeReference, equalsValueClause: EqualsValueClause, isOptional: boolean, isRest: boolean);
-        public _isDeclaration(): boolean;
         public getVarFlags(): TypeScript.VariableFlags;
         public setVarFlags(flags: TypeScript.VariableFlags): void;
         public nodeType(): TypeScript.NodeType;
@@ -7145,7 +7138,6 @@ declare module TypeScript {
         public block: Block;
         public hint: string;
         constructor(identifier: Identifier, block: Block);
-        public _isDeclaration(): boolean;
         public nodeType(): TypeScript.NodeType;
         public structuralEquals(ast: SimpleArrowFunctionExpression, includingPosition: boolean): boolean;
         public getNameText(): string;
@@ -7157,7 +7149,6 @@ declare module TypeScript {
         public block: Block;
         public hint: string;
         constructor(typeParameters: ASTList, parameterList: ASTList, returnTypeAnnotation: TypeReference, block: Block);
-        public _isDeclaration(): boolean;
         public nodeType(): TypeScript.NodeType;
         public structuralEquals(ast: ParenthesizedArrowFunctionExpression, includingPosition: boolean): boolean;
         public getNameText(): string;
@@ -7166,7 +7157,42 @@ declare module TypeScript {
         public parameterList: ASTList;
         public returnTypeAnnotation: TypeReference;
         constructor(parameterList: ASTList, returnTypeAnnotation: TypeReference);
-        public _isDeclaration(): boolean;
+        public nodeType(): TypeScript.NodeType;
+    }
+    class ConstructorType extends AST {
+        public typeParameters: ASTList;
+        public parameterList: ASTList;
+        public returnTypeAnnotation: TypeReference;
+        constructor(typeParameters: ASTList, parameterList: ASTList, returnTypeAnnotation: TypeReference);
+        public nodeType(): TypeScript.NodeType;
+    }
+    class CallSignature extends AST {
+        public typeParameters: ASTList;
+        public parameterList: ASTList;
+        public returnTypeAnnotation: TypeReference;
+        constructor(typeParameters: ASTList, parameterList: ASTList, returnTypeAnnotation: TypeReference);
+        public nodeType(): TypeScript.NodeType;
+    }
+    class ConstructSignature extends AST {
+        public typeParameters: ASTList;
+        public parameterList: ASTList;
+        public returnTypeAnnotation: TypeReference;
+        constructor(typeParameters: ASTList, parameterList: ASTList, returnTypeAnnotation: TypeReference);
+        public nodeType(): TypeScript.NodeType;
+    }
+    class MethodSignature extends AST {
+        public propertyName: Identifier;
+        public typeParameters: ASTList;
+        public parameterList: ASTList;
+        public returnTypeAnnotation: TypeReference;
+        constructor(propertyName: Identifier, typeParameters: ASTList, parameterList: ASTList, returnTypeAnnotation: TypeReference);
+        public nodeType(): TypeScript.NodeType;
+    }
+    class FunctionType extends AST {
+        public typeParameters: ASTList;
+        public parameterList: ASTList;
+        public returnTypeAnnotation: TypeReference;
+        constructor(typeParameters: ASTList, parameterList: ASTList, returnTypeAnnotation: TypeReference);
         public nodeType(): TypeScript.NodeType;
     }
     class FunctionDeclaration extends AST {
@@ -7178,7 +7204,6 @@ declare module TypeScript {
         public hint: string;
         private _functionFlags;
         constructor(name: Identifier, typeParameters: ASTList, parameterList: ASTList, returnTypeAnnotation: TypeReference, block: Block);
-        public _isDeclaration(): boolean;
         public nodeType(): TypeScript.NodeType;
         public getFunctionFlags(): TypeScript.FunctionFlags;
         public setFunctionFlags(flags: TypeScript.FunctionFlags): void;
@@ -7191,7 +7216,6 @@ declare module TypeScript {
         public endingToken: ASTSpan;
         private _moduleFlags;
         constructor(name: Identifier, members: ASTList, endingToken: ASTSpan);
-        public _isDeclaration(): boolean;
         public nodeType(): TypeScript.NodeType;
         public getModuleFlags(): TypeScript.ModuleFlags;
         public setModuleFlags(flags: TypeScript.ModuleFlags): void;
@@ -7201,14 +7225,12 @@ declare module TypeScript {
         public type: AST;
         constructor(type: AST);
         public nodeType(): TypeScript.NodeType;
-        public _isDeclaration(): boolean;
         public structuralEquals(ast: ArrayType, includingPosition: boolean): boolean;
     }
     class ObjectType extends AST {
         public typeMembers: ASTList;
         constructor(typeMembers: ASTList);
         public nodeType(): TypeScript.NodeType;
-        public _isDeclaration(): boolean;
         public structuralEquals(ast: ObjectType, includingPosition: boolean): boolean;
     }
     class VariableDeclaration extends AST {
@@ -7221,7 +7243,6 @@ declare module TypeScript {
         public declaration: VariableDeclaration;
         constructor(declaration: VariableDeclaration);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: VariableStatement, includingPosition: boolean): boolean;
     }
     class Block extends AST {
@@ -7230,7 +7251,6 @@ declare module TypeScript {
         public closeBraceLeadingComments: Comment[];
         constructor(statements: ASTList, closeBraceSpan: IASTSpan);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: Block, includingPosition: boolean): boolean;
     }
     class GenericType extends AST {
@@ -7271,7 +7291,6 @@ declare module TypeScript {
         public constraint: Constraint;
         constructor(name: Identifier, constraint: Constraint);
         public nodeType(): TypeScript.NodeType;
-        public _isDeclaration(): boolean;
         public structuralEquals(ast: TypeParameter, includingPosition: boolean): boolean;
     }
     class Constraint extends AST {
@@ -7291,14 +7310,12 @@ declare module TypeScript {
         public elseClause: ElseClause;
         constructor(condition: AST, statement: AST, elseClause: ElseClause);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: IfStatement, includingPosition: boolean): boolean;
     }
     class ExpressionStatement extends AST {
         public expression: AST;
         constructor(expression: AST);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: ExpressionStatement, includingPosition: boolean): boolean;
     }
     class ConstructorDeclaration extends AST {
@@ -7306,7 +7323,6 @@ declare module TypeScript {
         public block: Block;
         private _functionFlags;
         constructor(parameterList: ASTList, block: Block);
-        public _isDeclaration(): boolean;
         public getFunctionFlags(): TypeScript.FunctionFlags;
         public setFunctionFlags(flags: TypeScript.FunctionFlags): void;
         public nodeType(): TypeScript.NodeType;
@@ -7319,7 +7335,6 @@ declare module TypeScript {
         public block: Block;
         private _functionFlags;
         constructor(propertyName: Identifier, typeParameters: ASTList, parameterList: ASTList, returnTypeAnnotation: TypeReference, block: Block);
-        public _isDeclaration(): boolean;
         public nodeType(): TypeScript.NodeType;
         public getFunctionFlags(): TypeScript.FunctionFlags;
         public setFunctionFlags(flags: TypeScript.FunctionFlags): void;
@@ -7334,7 +7349,6 @@ declare module TypeScript {
         public nodeType(): TypeScript.NodeType;
         public setFunctionFlags(flags: TypeScript.FunctionFlags): void;
         public getFunctionFlags(): TypeScript.FunctionFlags;
-        public _isDeclaration(): boolean;
     }
     class SetAccessor extends AST {
         public propertyName: Identifier;
@@ -7345,14 +7359,12 @@ declare module TypeScript {
         public nodeType(): TypeScript.NodeType;
         public setFunctionFlags(flags: TypeScript.FunctionFlags): void;
         public getFunctionFlags(): TypeScript.FunctionFlags;
-        public _isDeclaration(): boolean;
     }
     class MemberVariableDeclaration extends AST {
         public variableDeclarator: VariableDeclarator;
         private _varFlags;
         constructor(variableDeclarator: VariableDeclarator);
         public nodeType(): TypeScript.NodeType;
-        public _isDeclaration(): boolean;
         public getVarFlags(): TypeScript.VariableFlags;
         public setVarFlags(flags: TypeScript.VariableFlags): void;
     }
@@ -7360,20 +7372,17 @@ declare module TypeScript {
         public indexSignature: IndexSignature;
         constructor(indexSignature: IndexSignature);
         public nodeType(): TypeScript.NodeType;
-        public isDeclaration(): boolean;
     }
     class ThrowStatement extends AST {
         public expression: AST;
         constructor(expression: AST);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: ThrowStatement, includingPosition: boolean): boolean;
     }
     class ReturnStatement extends AST {
         public expression: AST;
         constructor(expression: AST);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: ReturnStatement, includingPosition: boolean): boolean;
     }
     class ObjectCreationExpression extends AST implements ICallExpression {
@@ -7390,7 +7399,6 @@ declare module TypeScript {
         public statement: ASTSpan;
         constructor(expression: AST, switchClauses: ASTList, statement: ASTSpan);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: SwitchStatement, includingPosition: boolean): boolean;
     }
     class CaseSwitchClause extends AST {
@@ -7410,14 +7418,12 @@ declare module TypeScript {
         public identifier: Identifier;
         constructor(identifier: Identifier);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: BreakStatement, includingPosition: boolean): boolean;
     }
     class ContinueStatement extends AST {
         public identifier: Identifier;
         constructor(identifier: Identifier);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: ContinueStatement, includingPosition: boolean): boolean;
     }
     class ForStatement extends AST {
@@ -7428,7 +7434,6 @@ declare module TypeScript {
         public statement: AST;
         constructor(variableDeclaration: VariableDeclaration, initializer: AST, condition: AST, incrementor: AST, statement: AST);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: ForStatement, includingPosition: boolean): boolean;
     }
     class ForInStatement extends AST {
@@ -7438,7 +7443,6 @@ declare module TypeScript {
         public statement: AST;
         constructor(variableDeclaration: VariableDeclaration, left: AST, expression: AST, statement: AST);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: ForInStatement, includingPosition: boolean): boolean;
     }
     class WhileStatement extends AST {
@@ -7446,7 +7450,6 @@ declare module TypeScript {
         public statement: AST;
         constructor(condition: AST, statement: AST);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: WhileStatement, includingPosition: boolean): boolean;
     }
     class WithStatement extends AST {
@@ -7454,7 +7457,6 @@ declare module TypeScript {
         public statement: AST;
         constructor(condition: AST, statement: AST);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: WithStatement, includingPosition: boolean): boolean;
     }
     class EnumDeclaration extends AST {
@@ -7465,7 +7467,6 @@ declare module TypeScript {
         public nodeType(): TypeScript.NodeType;
         public getModuleFlags(): TypeScript.ModuleFlags;
         public setModuleFlags(flags: TypeScript.ModuleFlags): void;
-        public _isDeclaration(): boolean;
     }
     class EnumElement extends AST {
         public propertyName: Identifier;
@@ -7473,7 +7474,6 @@ declare module TypeScript {
         public constantValue: number;
         constructor(propertyName: Identifier, equalsValueClause: EqualsValueClause);
         public nodeType(): TypeScript.NodeType;
-        public _isDeclaration(): boolean;
     }
     class CastExpression extends AST {
         public type: TypeReference;
@@ -7493,7 +7493,6 @@ declare module TypeScript {
         public expression: AST;
         constructor(propertyName: Identifier, expression: AST);
         public nodeType(): TypeScript.NodeType;
-        public _isDeclaration(): boolean;
     }
     class FunctionPropertyAssignment extends AST {
         public propertyName: Identifier;
@@ -7503,7 +7502,6 @@ declare module TypeScript {
         public block: Block;
         constructor(propertyName: Identifier, typeParameters: ASTList, parameterList: ASTList, returnTypeAnnotation: TypeReference, block: Block);
         public nodeType(): TypeScript.NodeType;
-        public _isDeclaration(): boolean;
     }
     class FunctionExpression extends AST {
         public name: Identifier;
@@ -7513,13 +7511,11 @@ declare module TypeScript {
         public block: Block;
         public hint: string;
         constructor(name: Identifier, typeParameters: ASTList, parameterList: ASTList, returnTypeAnnotation: TypeReference, block: Block);
-        public _isDeclaration(): boolean;
         public nodeType(): TypeScript.NodeType;
         public getNameText(): string;
     }
     class EmptyStatement extends AST {
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: CatchClause, includingPosition: boolean): boolean;
     }
     class TryStatement extends AST {
@@ -7528,7 +7524,6 @@ declare module TypeScript {
         public finallyClause: FinallyClause;
         constructor(block: Block, catchClause: CatchClause, finallyClause: FinallyClause);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: TryStatement, includingPosition: boolean): boolean;
     }
     class CatchClause extends AST {
@@ -7550,7 +7545,6 @@ declare module TypeScript {
         public statement: AST;
         constructor(identifier: Identifier, statement: AST);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: LabeledStatement, includingPosition: boolean): boolean;
     }
     class DoStatement extends AST {
@@ -7559,7 +7553,6 @@ declare module TypeScript {
         public condition: AST;
         constructor(statement: AST, whileKeyword: ASTSpan, condition: AST);
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
         public structuralEquals(ast: DoStatement, includingPosition: boolean): boolean;
     }
     class TypeOfExpression extends AST {
@@ -7582,7 +7575,6 @@ declare module TypeScript {
     }
     class DebuggerStatement extends AST {
         public nodeType(): TypeScript.NodeType;
-        public isStatement(): boolean;
     }
     class Comment {
         private _trivia;
@@ -7636,6 +7628,8 @@ declare module TypeScript {
         function fromIdentifier(id: Identifier): IParameters;
         function fromParameterList(list: ASTList): IParameters;
     }
+    function isDeclarationAST(ast: AST): boolean;
+    function docComments(ast: AST): Comment[];
 }
 declare module TypeScript {
     function scriptIsElided(script: Script): boolean;
@@ -8090,6 +8084,9 @@ declare module TypeScript {
         private emitDeclarationsForConstructorDeclaration(funcDecl);
         private emitParameterList(flags, parameterList);
         private emitDeclarationsForMemberFunctionDeclaration(funcDecl);
+        private emitCallSignature(funcDecl);
+        private emitConstructSignature(funcDecl);
+        private emitMethodSignature(funcDecl);
         private emitDeclarationsForFunctionDeclaration(funcDecl);
         private emitIndexMemberDeclaration(funcDecl);
         private emitIndexSignature(funcDecl);
@@ -8882,7 +8879,7 @@ declare module TypeScript {
         private typeCheckImportDeclaration(importStatementAST, context);
         private postTypeCheckImportDeclaration(importStatementAST, context);
         private resolveExportAssignmentStatement(exportAssignmentAST, context);
-        private resolveFunctionTypeSignature(funcDeclAST, context);
+        private resolveAnyFunctionTypeSignature(funcDeclAST, typeParameters, parameterList, returnTypeAnnotation, context);
         private resolveFunctionTypeSignatureParameter(argDeclAST, signature, enclosingDecl, context);
         private resolveFunctionExpressionParameter(argDeclAST, id, typeExpr, equalsValueClause, contextParam, enclosingDecl, context);
         private checkNameForCompilerGeneratedDeclarationCollision(astWithName, isDeclaration, name, context, immediateThisCheck?);
@@ -8921,12 +8918,18 @@ declare module TypeScript {
         private typeCheckConstructorDeclaration(funcDeclAST, context);
         private constructorHasSuperCall(constructorDecl);
         private typeCheckFunctionExpression(funcDecl, context);
+        private typeCheckCallSignature(funcDecl, context);
+        private typeCheckConstructSignature(funcDecl, context);
+        private typeCheckMethodSignature(funcDecl, context);
         private typeCheckFunctionDeclaration(funcDeclAST, flags, name, typeParameters, parameters, returnTypeAnnotation, block, context);
         private typeCheckIndexSignature(funcDeclAST, context);
         private postTypeCheckFunctionDeclaration(funcDeclAST, context);
         private resolveReturnTypeAnnotationOfFunctionDeclaration(funcDeclAST, flags, returnTypeAnnotation, context);
         private resolveMemberFunctionDeclaration(funcDecl, context);
         private typeCheckMemberFunctionDeclaration(memberFuncDecl, context);
+        private resolveCallSignature(funcDecl, context);
+        private resolveConstructSignature(funcDecl, context);
+        private resolveMethodSignature(funcDecl, context);
         private resolveAnyFunctionDeclaration(funcDecl, context);
         private resolveFunctionExpression(funcDecl, isContextuallyTyped, context);
         private resolveSimpleArrowFunctionExpression(funcDecl, isContextuallyTyped, context);
@@ -9520,12 +9523,12 @@ declare module TypeScript {
         private getBinaryExpressionNodeType(node);
         public visitBinaryExpression(node: TypeScript.BinaryExpressionSyntax): TypeScript.BinaryExpression;
         public visitConditionalExpression(node: TypeScript.ConditionalExpressionSyntax): TypeScript.ConditionalExpression;
-        public visitConstructSignature(node: TypeScript.ConstructSignatureSyntax): TypeScript.FunctionDeclaration;
-        public visitMethodSignature(node: TypeScript.MethodSignatureSyntax): TypeScript.FunctionDeclaration;
+        public visitConstructSignature(node: TypeScript.ConstructSignatureSyntax): TypeScript.ConstructSignature;
+        public visitMethodSignature(node: TypeScript.MethodSignatureSyntax): TypeScript.MethodSignature;
         public visitIndexSignature(node: TypeScript.IndexSignatureSyntax): TypeScript.IndexSignature;
         public visitPropertySignature(node: TypeScript.PropertySignatureSyntax): TypeScript.VariableDeclarator;
         public visitParameterList(node: TypeScript.ParameterListSyntax): TypeScript.ASTList;
-        public visitCallSignature(node: TypeScript.CallSignatureSyntax): TypeScript.FunctionDeclaration;
+        public visitCallSignature(node: TypeScript.CallSignatureSyntax): TypeScript.CallSignature;
         public visitTypeParameterList(node: TypeScript.TypeParameterListSyntax): TypeScript.ASTList;
         public visitTypeParameter(node: TypeScript.TypeParameterSyntax): TypeScript.TypeParameter;
         public visitConstraint(node: TypeScript.ConstraintSyntax): TypeScript.Constraint;
