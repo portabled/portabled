@@ -21,7 +21,7 @@ module teapo {
     
     compilationSettings = new TypeScript.CompilationSettings();
   
-    service: Services.ILanguageService;
+    service: TypeScript.Services.ILanguageService;
   
     private _scriptCache: any = {};
     private _staticScripts: any = {};
