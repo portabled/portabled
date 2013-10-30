@@ -2,11 +2,12 @@
 /// <reference path='typings/typescriptServices.d.ts' />
 
 /// <reference path='TypeScriptService.ts' />
-/// <reference path='DocumentState.ts' />
+/// <reference path='FileListControl.ts' />
 
 class ApplicationState {
   private _tsService: TypeScriptService;
   private _editor: CodeMirror.Editor;
+  private _fs: any = {};
 
   constructor(
     private _layout: {

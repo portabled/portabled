@@ -1,3 +1,15 @@
+var Layout;
+(function (Layout) {
+    function cleanContent(element) {
+        if ('innerHTML' in element)
+            element.innerHTML = '';
+        else if ('textContent' in element)
+            element.textContent = '';
+        else if ('innerText' in element)
+            element.innerText = '';
+    }
+    Layout.cleanContent = cleanContent;
+})(Layout || (Layout = {}));
 var SplitHost = (function () {
     function SplitHost(_host, options) {
         var _this = this;
@@ -754,6 +766,7 @@ var TypeScriptService = (function () {
     };
     return TypeScriptService;
 })();
+/// <reference path='Layout.ts' />
 /// <reference path='SplitHost.ts' />
 /// <reference path='TypeScriptService.ts' />
 var ApplicationLayout = (function () {
@@ -773,7 +786,7 @@ var ApplicationLayout = (function () {
 
         this._splitter = new SplitHost(this._contentArea);
 
-        this._cleanContent(this._host);
+        Layout.cleanContent(this._host);
 
         this._host.appendChild(this.toolbar);
         this._host.appendChild(this._contentArea);
@@ -806,26 +819,95 @@ var ApplicationLayout = (function () {
         sb.background = 'silver';
         sb.opacity = '0.5';
     };
-
-    ApplicationLayout.prototype._cleanContent = function (element) {
-        if ('innerHTML' in element)
-            element.innerHTML = '';
-        else if ('textContent' in element)
-            element.textContent = '';
-        else if ('innerText' in element)
-            element.innerText = '';
-    };
     return ApplicationLayout;
 })();
+var files;
+(function (files) {
+    var FileListControl = (function () {
+        function FileListControl(_host) {
+            this._host = _host;
+            this._items = new FileList();
+            this.onclick = null;
+            Layout.cleanContent(this._host);
+            this._host.appendChild(this._items.div);
+
+            this._applyStyle(this._host.style);
+        }
+        FileListControl.prototype.addFile = function (file) {
+            var path = normalizePath(file);
+            this._items.addFile(path);
+        };
+
+        FileListControl.prototype.removeFile = function (file) {
+            var path = normalizePath(file);
+            this._items.removeFile(path);
+        };
+
+        FileListControl.prototype.editNewFileName = function (oncompleted) {
+        };
+
+        FileListControl.prototype._applyStyle = function (s) {
+        };
+        return FileListControl;
+    })();
+    files.FileListControl = FileListControl;
+
+    var FileList = (function () {
+        function FileList() {
+            this.div = document.createElement('div');
+            this._applyStyle(this.div.style);
+        }
+        FileList.prototype.addFile = function (file) {
+        };
+
+        FileList.prototype.removeFile = function (file) {
+        };
+
+        FileList.prototype._applyStyle = function (s) {
+        };
+        return FileList;
+    })();
+
+    var FolderItem = (function () {
+        function FolderItem(name) {
+            this.name = name;
+            this.items = new FileList();
+            this.div = document.createElement('div');
+            this._nameDiv = document.createElement('div');
+            this._applyStyle(this.div.style, this._nameDiv.style);
+            this.div.appendChild(this._nameDiv);
+            this.div.appendChild(this.items.div);
+        }
+        FolderItem.prototype._applyStyle = function (ds, ns) {
+        };
+        return FolderItem;
+    })();
+
+    var FileItem = (function () {
+        function FileItem(name) {
+            this.name = name;
+            this.div = document.createElement('div');
+            this._applyStyle(this.div.style);
+        }
+        FileItem.prototype._applyStyle = function (s) {
+        };
+        return FileItem;
+    })();
+
+    function normalizePath(path) {
+        return path;
+    }
+})(files || (files = {}));
 /// <reference path='typings/codemirror.d.ts' />
 /// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='TypeScriptService.ts' />
-/// <reference path='DocumentState.ts' />
+/// <reference path='FileListControl.ts' />
 var ApplicationState = (function () {
     function ApplicationState(_layout, _window) {
         if (typeof _window === "undefined") { _window = window; }
         this._layout = _layout;
         this._window = _window;
+        this._fs = {};
         var lib = this._loadStaticContent('lib.d.ts');
         this._tsService = new TypeScriptService({
             '#lib.d.ts': lib

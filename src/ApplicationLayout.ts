@@ -1,3 +1,4 @@
+/// <reference path='Layout.ts' />
 /// <reference path='SplitHost.ts' />
 /// <reference path='TypeScriptService.ts' />
 
@@ -29,7 +30,7 @@ class ApplicationLayout {
 
     this._splitter = new SplitHost(this._contentArea);
 
-    this._cleanContent(this._host);
+    Layout.cleanContent(this._host);
 
     this._host.appendChild(this.toolbar);
     this._host.appendChild(this._contentArea);
@@ -70,14 +71,5 @@ class ApplicationLayout {
       sb.background = 'silver';
       sb.opacity = '0.5';
 
-  }
-  
-  private _cleanContent(element: HTMLElement) {
-      if ('innerHTML' in element)
-          element.innerHTML = '';
-      else if ('textContent' in element)
-          element.textContent = '';
-      else if ('innerText' in element)
-          element.innerText = '';
   }
 }
