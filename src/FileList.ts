@@ -3,6 +3,13 @@
 module teapo {
 
   export class FileList {
-    
+    bindable = ko.observableArray<ListItem>();
+
+    constructor() {
+    }
+  }
+
+  export interface ListItem {
+    name: string;
   }
 }

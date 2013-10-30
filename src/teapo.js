@@ -839,6 +839,7 @@ var teapo;
 (function (teapo) {
     var FileList = (function () {
         function FileList() {
+            this.bindable = ko.observableArray();
         }
         return FileList;
     })();
