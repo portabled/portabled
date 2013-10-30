@@ -569,7 +569,7 @@ var teapo;
                     }
             }
 
-            var factory = new Services.TypeScriptServicesFactory();
+            var factory = new TypeScript.Services.TypeScriptServicesFactory();
             this.service = factory.createPullLanguageService(this._createLanguageServiceHost());
         }
         TypeScriptService.prototype.addDocument = function (fileName, doc) {

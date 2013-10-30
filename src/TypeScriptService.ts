@@ -35,7 +35,7 @@ module teapo {
         }
       }
   
-      var factory = new Services.TypeScriptServicesFactory();
+      var factory = new TypeScript.Services.TypeScriptServicesFactory();
       this.service = factory.createPullLanguageService(this._createLanguageServiceHost());
     }
   
@@ -69,7 +69,7 @@ module teapo {
         getScriptIsOpen: (fileName: string) => {
           return true;
         },
-        getScriptByteOrderMark: (fileName: string) => ByteOrderMark.None,
+        getScriptByteOrderMark: (fileName: string) => TypeScript.ByteOrderMark.None,
         getScriptSnapshot: (fileName: string) => {
           var script = this._scriptCache[fileName] || this._staticScripts[fileName];
           return script;
