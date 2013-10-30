@@ -10,7 +10,7 @@ var fs = require('fs');
 var child_process = require('child_process');
 
 var typescriptRepositoryExists;
-checkAndImportLatestCodeMirrorTypings(function() {
+checkAndImportLatestDefinitelyTypings(function() {
   checkAndImportLatestCodeMirrorJS(function() {
     checkAndImportLatestTypeScript(function() {
       compileMain();
@@ -142,14 +142,14 @@ function checkAndImportLatestTypeScript(callback) {
 }
 
 
-function checkAndImportLatestCodeMirrorTypings(callback) {
+function checkAndImportLatestDefinitelyTypings(callback) {
   checkAndImportExternal(
-    definitelyTypedRepository+'/codemirror/',
-    ['codemirror.d.ts'],
+    definitelyTypedRepository,
+    ['codemirror/codemirror.d.ts','knockout/knockout.d.ts'],
     'typings',
     function(detected) {
       if (detected)
-        console.log('DefiniteyTyped repository is found, copying CodeMirror typings');
+        console.log('DefiniteyTyped repository is found, refreshing CodeMirror and Knockout.js typings');
       else
         console.log('DefiniteyTyped repository is not detected, no refresh');
     },

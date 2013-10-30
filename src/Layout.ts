@@ -1,4 +1,5 @@
-module Layout {
+module teapo {
+
   export function cleanContent(element: HTMLElement) {
       if ('innerHTML' in element)
           element.innerHTML = '';

@@ -5,6 +5,6 @@
 /// <reference path='ApplicationState.ts' />
 
 window.onload = function() {
-  var layout = new ApplicationLayout(document.body);
-  var state = new ApplicationState(layout);
+  var layout = new teapo.ApplicationLayout(document.body);
+  var state = new teapo.ApplicationState(layout);
 }
