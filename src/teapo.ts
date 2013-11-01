@@ -4,7 +4,18 @@
 /// <reference path='ApplicationLayout.ts' />
 /// <reference path='ApplicationState.ts' />
 
+/// <reference path='ApplicationViewModel.ts' />
+/// <reference path='KnockoutBindings.ts' />
+
+//window.onload = function() {
+//  var layout = new teapo.ApplicationLayout(document.body);
+//  var state = new teapo.ApplicationState(layout);
+//}
+
 window.onload = function() {
-  var layout = new teapo.ApplicationLayout(document.body);
-  var state = new teapo.ApplicationState(layout);
+  teapo.registerKnockoutBindings(ko);
+
+  var viewModel = new teapo.ApplicationViewModel();
+
+  ko.renderTemplate('bodyTemplate', viewModel, null, document.body);
 }

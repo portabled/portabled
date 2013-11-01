@@ -26,7 +26,7 @@ module teapo {
     private _scriptCache: any = {};
     private _staticScripts: any = {};
   
-    constructor(staticScripts: any) {
+    constructor(staticScripts: any = {}) {
   
       if (staticScripts) {
         for (var s in staticScripts) if (staticScripts.hasOwnProperty(s)) {

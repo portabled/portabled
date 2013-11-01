@@ -1,4 +1,4 @@
-/// <reference path='Layout.ts' />
+/// <reference path='layout.ts' />
 /// <reference path='SplitHost.ts' />
 /// <reference path='TypeScriptService.ts' />
 

@@ -14,12 +14,44 @@
   <script inline='imports/codemirror/continuecomment.js'></script>
   <script inline='imports/codemirror/closebracket.js'></script>
   <script inline='imports/codemirror/trailingspace.js'></script>
+  <script inline='imports/knockout/knockout-3.0.0.js'></script>
   <script inline='teapo.js'></script>
   <script inline='imports/typescript/typescriptServices.js'></script>
+  <script id=bodyTemplate type='text/html'>
+    <div class=teapo-file-list data-bind='foreach: files()'>
+      <div data-bind='text:name'></div>
+    </div>
+    <textarea data-bind='codemirror: codemirror'>text</textarea>
+  </script>
+  
+<style>
+    body {
+      margin: 0px; padding: 0px;
+    }
+    html {
+      overflow: hidden;
+      margin: 0px; padding: 0px;
+    }
+    .teapo-file-list {
+      position: absolute;
+      width: 20%;
+      height: 100%;
+      background: tomato;
+    }
+    .CodeMirror, textarea.teapo-editor {
+      position: absolute;
+      left: 20%;
+      height: 100%;
+      right:0px;
+      overflow: hidden;
+      border: none;
+    }
+    textarea.teapo-editor {
+      overflow: auto;
+    }
+  </style>
 </head>
 <body>
-  Empty page.
-  
-  <div id=lib.d.ts style='display:none' inline='imports/typescript/lib.d.ts'></div>
-</body>
+  empty...
+<body>
 </html>

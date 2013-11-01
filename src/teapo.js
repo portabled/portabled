@@ -1,6 +1,11 @@
 var teapo;
 (function (teapo) {
     function cleanContent(element) {
+        if (element.tagName.toLowerCase() === 'body') {
+            cleanBodyContent(element);
+            return;
+        }
+
         if ('innerHTML' in element)
             element.innerHTML = '';
         else if ('textContent' in element)
@@ -9,6 +14,18 @@ var teapo;
             element.innerText = '';
     }
     teapo.cleanContent = cleanContent;
+
+    function cleanBodyContent(body) {
+        var children = [];
+        for (var i = 0; i < document.body.children.length; i++) {
+            children[i] = document.body.children[i];
+        }
+        for (var i = 0; i < children.length; i++) {
+            if (children[i].tagName.toLowerCase() === 'script')
+                continue;
+            document.body.removeChild(children[i]);
+        }
+    }
 })(teapo || (teapo = {}));
 var teapo;
 (function (teapo) {
@@ -551,6 +568,7 @@ var teapo;
 (function (teapo) {
     var TypeScriptService = (function () {
         function TypeScriptService(staticScripts) {
+            if (typeof staticScripts === "undefined") { staticScripts = {}; }
             this.logLevels = {
                 information: true,
                 debug: true,
@@ -774,7 +792,7 @@ var teapo;
         return DocumentState;
     })();
 })(teapo || (teapo = {}));
-/// <reference path='Layout.ts' />
+/// <reference path='layout.ts' />
 /// <reference path='SplitHost.ts' />
 /// <reference path='TypeScriptService.ts' />
 var teapo;
@@ -839,11 +857,118 @@ var teapo;
 (function (teapo) {
     var FileList = (function () {
         function FileList() {
-            this.bindable = ko.observableArray();
+            this.items = ko.observableArray();
         }
+        FileList.prototype.addFile = function (file) {
+            var normalizedPath = normalizePath(file);
+            if (normalizedPath.length === 0)
+                throw new Error('Cannot create a root directory "' + file + '".');
+            addFile(file, null, this.items, normalizedPath, 0);
+        };
+
+        FileList.prototype.removeFile = function (file) {
+            var normalizedPath = normalizePath(file);
+            if (normalizedPath.length === 0)
+                throw new Error('Cannot remove a root directory "' + file + '".');
+            removeFile(file, this.items, normalizedPath, 0);
+        };
         return FileList;
     })();
     teapo.FileList = FileList;
+
+    var Folder = (function () {
+        function Folder(parent, name) {
+            this.parent = parent;
+            this.name = name;
+            this.items = ko.observableArray();
+            this.path = this.parent ? '/' + this.name : this.parent.name + '/' + this.name;
+        }
+        return Folder;
+    })();
+
+    var File = (function () {
+        function File(parent, name) {
+            this.parent = parent;
+            this.name = name;
+            this.path = this.parent ? this.parent.name + '/' + this.name : '/' + this.name;
+        }
+        return File;
+    })();
+
+    function normalizePath(path) {
+        if (path === null)
+            return [];
+
+        var parts = path.split('/');
+        var result = [];
+        for (var i = 0; i < parts.length; i++) {
+            var p = parts[i];
+            if (p === '' || p === '.')
+                continue;
+
+            if (p === '..') {
+                if (result.length > 0)
+                    result.length--;
+                continue;
+            }
+
+            result.push(p);
+            return result;
+        }
+    }
+
+    function addFile(fullPath, parent, items, path, index) {
+        var name = path[index];
+        var insertPoint = 0;
+        for (insertPoint; insertPoint < items.length; insertPoint++) {
+            var entry = items[insertPoint];
+            if (entry.name > name)
+                continue;
+
+            if (entry.name === name) {
+                var entryFolder = entry;
+                if (!entryFolder.items)
+                    throw new Error('File "' + entry.fullName + '" exists instead of folder preventing adding "' + fullPath + '".');
+
+                addFile(fullPath, entryFolder, entryFolder.items, path, insertPoint + 1);
+            }
+        }
+
+        // add at insertPoint
+        if (index === path.length - 1) {
+            // file
+            var newFile = new File(parent, name);
+            items.splice(insertPoint, 0, newFile);
+        } else {
+            // folder
+            var newFolder = new Folder(parent, name);
+            items.splice(insertPoint, 0, newFolder);
+            addFile(fullPath, newFolder, newFolder.items, path, insertPoint + 1);
+        }
+    }
+
+    function removeFile(fullPath, items, path, index) {
+        var name = path[index];
+        for (var i; i < items.length; i++) {
+            var entry = items[i];
+            if (entry.name > name)
+                return;
+
+            if (entry.name === name) {
+                if (index === path.length - 1) {
+                    items.remove(entry);
+                    return;
+                }
+
+                var entryFolder = entry;
+                if (!entryFolder.items)
+                    throw new Error('File "' + entry.fullName + '" exists instead of folder preventing removing "' + fullPath + '".');
+
+                removeFile(fullPath, entryFolder.items, path, i + 1);
+            }
+        }
+        // it doesn't exist, ignore
+    }
 })(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
 /// <reference path='typings/typescriptServices.d.ts' />
@@ -884,12 +1009,78 @@ var teapo;
     })();
     teapo.ApplicationState = ApplicationState;
 })(teapo || (teapo = {}));
+/// <reference path='typings/knockout.d.ts' />
+/// <reference path='typings/codemirror.d.ts' />
+var teapo;
+(function (teapo) {
+    var ApplicationViewModel = (function () {
+        function ApplicationViewModel() {
+            this.codemirror = null;
+            this._typescript = new teapo.TypeScriptService();
+            this._files = new teapo.FileList();
+            this._files.addFile('lib.d.ts');
+            this._files.addFile('main.ts');
+        }
+        ApplicationViewModel.prototype.files = function () {
+            return this._files.items;
+        };
+        return ApplicationViewModel;
+    })();
+    teapo.ApplicationViewModel = ApplicationViewModel;
+})(teapo || (teapo = {}));
+/// <reference path='typings/knockout.d.ts' />
+/// <reference path='layout.ts' />
+var teapo;
+(function (teapo) {
+    function registerKnockoutBindings(ko) {
+        ko.bindingHandlers.child = {
+            update: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
+                teapo.cleanContent(element);
+                var value = valueAccessor();
+                if (value.childNodes) {
+                    element.appendChild(value);
+                } else if (element !== null && typeof element !== 'undefined') {
+                    if ('textContent' in element)
+                        element.textContent = value;
+                    else if ('innerText' in element)
+                        element.innerText = value;
+                }
+            }
+        };
+
+        ko.bindingHandlers.codemirror = {
+            init: function (element, valueAccessor) {
+                if (!element)
+                    return;
+
+                var codemirror;
+                if (element.tagName.toLowerCase() === 'textarea') {
+                    codemirror = CodeMirror.fromTextArea(element);
+                } else {
+                    codemirror = CodeMirror(element);
+                }
+
+                valueAccessor(codemirror);
+            }
+        };
+    }
+    teapo.registerKnockoutBindings = registerKnockoutBindings;
+})(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
 /// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='ApplicationLayout.ts' />
 /// <reference path='ApplicationState.ts' />
+/// <reference path='ApplicationViewModel.ts' />
+/// <reference path='KnockoutBindings.ts' />
+//window.onload = function() {
+//  var layout = new teapo.ApplicationLayout(document.body);
+//  var state = new teapo.ApplicationState(layout);
+//}
 window.onload = function () {
-    var layout = new teapo.ApplicationLayout(document.body);
-    var state = new teapo.ApplicationState(layout);
+    teapo.registerKnockoutBindings(ko);
+
+    var viewModel = new teapo.ApplicationViewModel();
+
+    ko.renderTemplate('bodyTemplate', viewModel, null, document.body);
 };
 //# sourceMappingURL=teapo.js.map
