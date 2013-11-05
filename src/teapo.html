@@ -18,37 +18,58 @@
   <script inline='teapo.js'></script>
   <script inline='imports/typescript/typescriptServices.js'></script>
   <script id=bodyTemplate type='text/html'>
-    <div class=teapo-file-list data-bind='foreach: files()'>
-      <div data-bind='text:name'></div>
+    <div class=teapo-file-list>
+      <div data-bind='template: { name: "folder-template", foreach: files().folders }'>
+      </div>
+      <div data-bind='template: { name: "folder-template", foreach: files().files }'>
+      </div>
     </div>
     <textarea data-bind='codemirror: codemirror'>text</textarea>
   </script>
+  <script id=folder-template type='text/html'>
+    <div class=teapo-file-item><b data-bind='text:name'></b></div>
+    <div style='margin-left: 1em; border: solid 1px gold;'>
+      <div data-bind='template: { name: "folder-template", foreach: folders }'>
+      </div>
+    </div>
+  </script>
+  <script id=file-template type='text/html'>
+    <div data-bind='text:name' class=teapo-file-item style='color:white'></div>
+  </script>
   
 <style>
-    body {
-      margin: 0px; padding: 0px;
-    }
-    html {
-      overflow: hidden;
-      margin: 0px; padding: 0px;
-    }
-    .teapo-file-list {
-      position: absolute;
-      width: 20%;
-      height: 100%;
-      background: tomato;
-    }
-    .CodeMirror, textarea.teapo-editor {
-      position: absolute;
-      left: 20%;
-      height: 100%;
-      right:0px;
-      overflow: hidden;
-      border: none;
-    }
-    textarea.teapo-editor {
-      overflow: auto;
-    }
+  body {
+    margin: 0px; padding: 0px;
+  }
+  html {
+    overflow: hidden;
+    margin: 0px; padding: 0px;
+  }
+  .teapo-file-list {
+    position: absolute;
+    width: 20%;
+    height: 100%;
+    background: silver;
+    padding: 5px;
+  }
+  .teapo-file-item {
+    padding:1px;
+  }
+  .teapo-file-item:hover {
+    background: gold;
+    cursor:pointer;
+  }
+  .CodeMirror, textarea.teapo-editor {
+    position: absolute;
+    left: 20%;
+    height: 100%;
+    right:0px;
+    overflow: hidden;
+    border: none;
+  }
+  textarea.teapo-editor {
+    overflow: auto;
+  }
   </style>
 </head>
 <body>

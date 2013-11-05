@@ -853,122 +853,106 @@ var teapo;
     teapo.ApplicationLayout = ApplicationLayout;
 })(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
 var teapo;
 (function (teapo) {
-    var FileList = (function () {
-        function FileList() {
-            this.items = ko.observableArray();
-        }
-        FileList.prototype.addFile = function (file) {
-            var normalizedPath = normalizePath(file);
-            if (normalizedPath.length === 0)
-                throw new Error('Cannot create a root directory "' + file + '".');
-            addFile(file, null, this.items, normalizedPath, 0);
-        };
-
-        FileList.prototype.removeFile = function (file) {
-            var normalizedPath = normalizePath(file);
-            if (normalizedPath.length === 0)
-                throw new Error('Cannot remove a root directory "' + file + '".');
-            removeFile(file, this.items, normalizedPath, 0);
-        };
-        return FileList;
-    })();
-    teapo.FileList = FileList;
-
-    var Folder = (function () {
-        function Folder(parent, name) {
-            this.parent = parent;
-            this.name = name;
-            this.items = ko.observableArray();
-            this.path = this.parent ? '/' + this.name : this.parent.name + '/' + this.name;
-        }
-        return Folder;
-    })();
-
     var File = (function () {
         function File(parent, name) {
             this.parent = parent;
             this.name = name;
-            this.path = this.parent ? this.parent.name + '/' + this.name : '/' + this.name;
+            var lead = this.parent ? this.parent.fullPath : null;
+            this.fullPath = (lead ? lead : '') + '/' + this.name;
         }
         return File;
     })();
+    teapo.File = File;
 
-    function normalizePath(path) {
-        if (path === null)
-            return [];
-
-        var parts = path.split('/');
-        var result = [];
-        for (var i = 0; i < parts.length; i++) {
-            var p = parts[i];
-            if (p === '' || p === '.')
-                continue;
-
-            if (p === '..') {
-                if (result.length > 0)
-                    result.length--;
-                continue;
-            }
-
-            result.push(p);
-            return result;
+    var Folder = (function (_super) {
+        __extends(Folder, _super);
+        function Folder(parent, name) {
+            _super.call(this, parent, name);
+            this.folders = ko.observableArray();
+            this.files = ko.observableArray();
+            if (!name)
+                this.fullPath = null;
         }
-    }
-
-    function addFile(fullPath, parent, items, path, index) {
-        var name = path[index];
-        var insertPoint = 0;
-        for (insertPoint; insertPoint < items.length; insertPoint++) {
-            var entry = items[insertPoint];
-            if (entry.name > name)
-                continue;
-
-            if (entry.name === name) {
-                var entryFolder = entry;
-                if (!entryFolder.items)
-                    throw new Error('File "' + entry.fullName + '" exists instead of folder preventing adding "' + fullPath + '".');
-
-                addFile(fullPath, entryFolder, entryFolder.items, path, insertPoint + 1);
-            }
-        }
-
-        // add at insertPoint
-        if (index === path.length - 1) {
-            // file
-            var newFile = new File(parent, name);
-            items.splice(insertPoint, 0, newFile);
-        } else {
-            // folder
-            var newFolder = new Folder(parent, name);
-            items.splice(insertPoint, 0, newFolder);
-            addFile(fullPath, newFolder, newFolder.items, path, insertPoint + 1);
-        }
-    }
-
-    function removeFile(fullPath, items, path, index) {
-        var name = path[index];
-        for (var i; i < items.length; i++) {
-            var entry = items[i];
-            if (entry.name > name)
+        Folder.prototype.addFile = function (path) {
+            if (!path)
                 return;
-
-            if (entry.name === name) {
-                if (index === path.length - 1) {
-                    items.remove(entry);
-                    return;
+            var norm = this._normalizePath(path);
+            if (norm.subfolder) {
+                var index = this._indexOfFile(this.folders, norm.subfolder);
+                var subfolder = this.folders[index];
+                if (!subfolder || subfolder.name !== norm.subfolder) {
+                    subfolder = new Folder(this, norm.subfolder);
+                    this.folders.splice(index, 0, subfolder);
                 }
-
-                var entryFolder = entry;
-                if (!entryFolder.items)
-                    throw new Error('File "' + entry.fullName + '" exists instead of folder preventing removing "' + fullPath + '".');
-
-                removeFile(fullPath, entryFolder.items, path, i + 1);
+                return subfolder.addFile(norm.path);
+            } else {
+                var index = this._indexOfFile(this.files, norm.path);
+                var file = this.files[index];
+                if (!file || file.name !== norm.path) {
+                    file = new File(this, norm.path);
+                    this.files.splice(index, 0, file);
+                }
+                return file;
             }
-        }
-        // it doesn't exist, ignore
-    }
+        };
+
+        Folder.prototype.removeFile = function (path) {
+            if (!path)
+                return;
+            var norm = this._normalizePath(path);
+            if (norm.subfolder) {
+                var index = this._indexOfFile(this.folders, norm.subfolder);
+                var subfolder = this.folders[index];
+                if (!subfolder || subfolder.name !== norm.subfolder)
+                    return null;
+                else
+                    return subfolder.removeFile(norm.path);
+            } else {
+                var index = this._indexOfFile(this.files, norm.path);
+                var file = this.files[index];
+                if (!file || file.name !== norm.path)
+                    return null;
+                this.files.splice(index, 1);
+                return file;
+            }
+        };
+
+        Folder.prototype._normalizePath = function (path) {
+            var result = this._normalizePathCore(path);
+            console.log('normalizePath(', path, ') = ', result);
+            return result;
+        };
+
+        Folder.prototype._normalizePathCore = function (path) {
+            while (path[0] === '/')
+                path = path.slice(1);
+            while (path[path.length - 1] === '/')
+                path = path.slice(0, path.length - 1);
+            var slashPos = path.indexOf('/');
+            if (slashPos < 0)
+                return { subfolder: null, path: path };
+            else
+                return { subfolder: path.slice(0, slashPos), path: path.slice(slashPos + 1) };
+        };
+
+        Folder.prototype._indexOfFile = function (list /*: File[]*/ , name) {
+            for (var i = 0; i < list.length; i++) {
+                if (list[i].name >= name)
+                    return i;
+            }
+            return list.length;
+        };
+        return Folder;
+    })(teapo.File);
+    teapo.Folder = Folder;
 })(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
 /// <reference path='typings/typescriptServices.d.ts' />
@@ -1011,18 +995,20 @@ var teapo;
 })(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
 /// <reference path='typings/codemirror.d.ts' />
+/// <reference path='FileList.ts' />
 var teapo;
 (function (teapo) {
     var ApplicationViewModel = (function () {
         function ApplicationViewModel() {
             this.codemirror = null;
             this._typescript = new teapo.TypeScriptService();
-            this._files = new teapo.FileList();
+            this._files = new teapo.Folder(null, null);
             this._files.addFile('lib.d.ts');
             this._files.addFile('main.ts');
+            this._files.addFile('/import/codemirror.d.ts');
         }
         ApplicationViewModel.prototype.files = function () {
-            return this._files.items;
+            return this._files;
         };
         return ApplicationViewModel;
     })();

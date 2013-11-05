@@ -2,134 +2,92 @@
 
 module teapo {
 
-  export class FileList {
-    items = ko.observableArray<ListItem>();
-
-    constructor() {
-    }
-
-    addFile(file: string) {
-      var normalizedPath = normalizePath(file);
-      if (normalizedPath.length===0)
-        throw new Error('Cannot create a root directory "'+file+'".');
-      addFile(file, null, this.items, normalizedPath, 0);
-    }
-
-    removeFile(file: string) {
-      var normalizedPath = normalizePath(file);
-      if (normalizedPath.length===0)
-        throw new Error('Cannot remove a root directory "'+file+'".');
-      removeFile(file, this.items, normalizedPath, 0);
-    }
-  }
-
-  export interface ListItem {
-    name: string;
-    path: string;
-  }
-
-  class Folder implements ListItem {
-    path: string;
-    items = ko.observableArray<ListItem>();
-
+  export class File {
+    fullPath: string;
     constructor(public parent: Folder, public name: string) {
-      this.path = this.parent ? '/'+this.name : this.parent.name+'/'+this.name;
+      var lead = this.parent ? this.parent.fullPath : null;
+      this.fullPath = (lead ? lead : '') +'/'+this.name;
     }
   }
 
-  class File implements ListItem {
-    path: string;
-    constructor(public parent: File, public name: string) {
-      this.path = this.parent ? this.parent.name+'/'+this.name : '/'+this.name;
+  export class Folder extends teapo.File {
+    folders = ko.observableArray<Folder>();
+    files = ko.observableArray<File>();
+
+    constructor(parent: Folder, name: string) {
+      super(parent, name);
+      if (!name)
+        this.fullPath = null;
     }
-  }
 
-  function normalizePath(path: string): string[] {
-    if (path===null)
-      return [];
-
-    var parts = path.split('/');
-    var result: string[] = [];
-    for (var i = 0; i < parts.length; i++) {
-      var p = parts[i];
-      if (p==='' || p==='.')
-        continue;
-
-      if (p==='..') {
-        if (result.length>0)
-          result.length--;
-        continue;
+    addFile(path: string) {
+      if (!path) return;
+      var norm = this._normalizePath(path);
+      if (norm.subfolder) {
+        var index = this._indexOfFile(this.folders, norm.subfolder);
+        var subfolder = this.folders[index];
+        if (!subfolder || subfolder.name!==norm.subfolder) {
+          subfolder = new Folder(this, norm.subfolder);
+          this.folders.splice(index, 0, subfolder);
+        }
+        return subfolder.addFile(norm.path);
       }
+      else {
+        var index = this._indexOfFile(this.files, norm.path);
+        var file = this.files[index];
+        if (!file || file.name!==norm.path) {
+          file = new File(this, norm.path);
+          this.files.splice(index, 0, file);
+        }
+        return file;
+      }
+    }
 
-      result.push(p);
+    removeFile(path: string) {
+      if (!path) return;
+      var norm = this._normalizePath(path);
+      if (norm.subfolder) {
+        var index = this._indexOfFile(this.folders, norm.subfolder);
+        var subfolder = this.folders[index];
+        if (!subfolder || subfolder.name!==norm.subfolder)
+          return null;
+        else
+          return subfolder.removeFile(norm.path);
+      }
+      else {
+        var index = this._indexOfFile(this.files, norm.path);
+        var file = this.files[index];
+        if (!file || file.name!==norm.path)
+          return null;
+        this.files.splice(index,1);
+        return file;
+      }
+    }
+
+    private _normalizePath(path: string): { subfolder: string; path: string; } {
+      var result = this._normalizePathCore(path);
+      console.log('normalizePath(',path,') = ',result);
       return result;
     }
-  }
 
-  function addFile(
-    fullPath: string,
-    parent: Folder,
-    items: KnockoutObservableArray<ListItem>,
-    path: string[],
-    index: number) {
+    private _normalizePathCore(path: string): { subfolder: string; path: string; } {
+      while (path[0]==='/')
+        path = path.slice(1);
+      while (path[path.length-1]==='/')
+        path = path.slice(0,path.length-1);
+      var slashPos = path.indexOf('/');
+      if (slashPos<0)
+        return {subfolder:null, path:path};
+      else
+        return {subfolder:path.slice(0,slashPos), path:path.slice(slashPos+1)};
+    }
 
-    var name = path[index];
-    var insertPoint = 0;
-    for (insertPoint; insertPoint < items.length; insertPoint++) {
-      var entry = items[insertPoint];
-      if (entry.name>name)
-        continue;
-
-      if (entry.name===name) {
-        var entryFolder = <Folder>entry;
-        if (!entryFolder.items) // this is a File
-          throw new Error('File "'+entry.fullName+'" exists instead of folder preventing adding "'+fullPath+'".');
-
-        addFile(fullPath, entryFolder, entryFolder.items, path, insertPoint+1);
+    private _indexOfFile(list/*: File[]*/, name: string) {
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].name>=name)
+          return i;
       }
-    }
-
-    // add at insertPoint
-    if (index === path.length-1) {
-      // file
-      var newFile = new File(parent, name);
-      items.splice(insertPoint, 0, newFile);
-    }
-    else {
-      // folder
-      var newFolder = new Folder(parent, name);
-      items.splice(insertPoint, 0, newFolder);
-      addFile(fullPath, newFolder, newFolder.items, path, insertPoint+1);
+      return list.length;
     }
   }
-
-  function removeFile(
-    fullPath: string,
-    items: KnockoutObservableArray<ListItem>,
-    path: string[],
-    index: number) {
-
-    var name = path[index];
-    for (var i; i < items.length; i++) {
-      var entry = items[i];
-      if (entry.name>name)
-        return; // it doesn't exist, ignore
-
-      if (entry.name===name) {
-        if (index===path.length-1) {
-          items.remove(entry);
-          return;
-        }
-
-        var entryFolder = <Folder>entry;
-        if (!entryFolder.items) // this is a File
-          throw new Error('File "'+entry.fullName+'" exists instead of folder preventing removing "'+fullPath+'".');
-
-        removeFile(fullPath, entryFolder.items, path, i+1);
-      }
-    }
-
-    // it doesn't exist, ignore
-  }
-
 }
