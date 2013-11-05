@@ -21,15 +21,17 @@
     <div class=teapo-file-list>
       <div data-bind='template: { name: "folder-template", foreach: files().folders }'>
       </div>
-      <div data-bind='template: { name: "folder-template", foreach: files().files }'>
+      <div data-bind='template: { name: "file-template", foreach: files().files }'>
       </div>
     </div>
     <textarea data-bind='codemirror: codemirror'>text</textarea>
   </script>
   <script id=folder-template type='text/html'>
     <div class=teapo-file-item><b data-bind='text:name'></b></div>
-    <div style='margin-left: 1em; border: solid 1px gold;'>
+    <div style='margin-left: 0.5em;'>
       <div data-bind='template: { name: "folder-template", foreach: folders }'>
+      </div>
+      <div data-bind='template: { name: "file-template", foreach: files }'>
       </div>
     </div>
   </script>

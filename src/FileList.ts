@@ -24,8 +24,8 @@ module teapo {
       if (!path) return;
       var norm = this._normalizePath(path);
       if (norm.subfolder) {
-        var index = this._indexOfFile(this.folders, norm.subfolder);
-        var subfolder = this.folders[index];
+        var index = this._indexOfFile(this.folders(), norm.subfolder);
+        var subfolder = this.folders()[index];
         if (!subfolder || subfolder.name!==norm.subfolder) {
           subfolder = new Folder(this, norm.subfolder);
           this.folders.splice(index, 0, subfolder);
@@ -33,8 +33,8 @@ module teapo {
         return subfolder.addFile(norm.path);
       }
       else {
-        var index = this._indexOfFile(this.files, norm.path);
-        var file = this.files[index];
+        var index = this._indexOfFile(this.files(), norm.path);
+        var file = this.files()[index];
         if (!file || file.name!==norm.path) {
           file = new File(this, norm.path);
           this.files.splice(index, 0, file);
@@ -47,16 +47,16 @@ module teapo {
       if (!path) return;
       var norm = this._normalizePath(path);
       if (norm.subfolder) {
-        var index = this._indexOfFile(this.folders, norm.subfolder);
-        var subfolder = this.folders[index];
+        var index = this._indexOfFile(this.folders(), norm.subfolder);
+        var subfolder = this.folders()[index];
         if (!subfolder || subfolder.name!==norm.subfolder)
           return null;
         else
           return subfolder.removeFile(norm.path);
       }
       else {
-        var index = this._indexOfFile(this.files, norm.path);
-        var file = this.files[index];
+        var index = this._indexOfFile(this.files(), norm.path);
+        var file = this.files()[index];
         if (!file || file.name!==norm.path)
           return null;
         this.files.splice(index,1);
@@ -82,7 +82,7 @@ module teapo {
         return {subfolder:path.slice(0,slashPos), path:path.slice(slashPos+1)};
     }
 
-    private _indexOfFile(list/*: File[]*/, name: string) {
+    private _indexOfFile(list: File[], name: string) {
       for (var i = 0; i < list.length; i++) {
         if (list[i].name>=name)
           return i;

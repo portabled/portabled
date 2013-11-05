@@ -886,16 +886,16 @@ var teapo;
                 return;
             var norm = this._normalizePath(path);
             if (norm.subfolder) {
-                var index = this._indexOfFile(this.folders, norm.subfolder);
-                var subfolder = this.folders[index];
+                var index = this._indexOfFile(this.folders(), norm.subfolder);
+                var subfolder = this.folders()[index];
                 if (!subfolder || subfolder.name !== norm.subfolder) {
                     subfolder = new Folder(this, norm.subfolder);
                     this.folders.splice(index, 0, subfolder);
                 }
                 return subfolder.addFile(norm.path);
             } else {
-                var index = this._indexOfFile(this.files, norm.path);
-                var file = this.files[index];
+                var index = this._indexOfFile(this.files(), norm.path);
+                var file = this.files()[index];
                 if (!file || file.name !== norm.path) {
                     file = new File(this, norm.path);
                     this.files.splice(index, 0, file);
@@ -909,15 +909,15 @@ var teapo;
                 return;
             var norm = this._normalizePath(path);
             if (norm.subfolder) {
-                var index = this._indexOfFile(this.folders, norm.subfolder);
-                var subfolder = this.folders[index];
+                var index = this._indexOfFile(this.folders(), norm.subfolder);
+                var subfolder = this.folders()[index];
                 if (!subfolder || subfolder.name !== norm.subfolder)
                     return null;
                 else
                     return subfolder.removeFile(norm.path);
             } else {
-                var index = this._indexOfFile(this.files, norm.path);
-                var file = this.files[index];
+                var index = this._indexOfFile(this.files(), norm.path);
+                var file = this.files()[index];
                 if (!file || file.name !== norm.path)
                     return null;
                 this.files.splice(index, 1);
@@ -943,7 +943,7 @@ var teapo;
                 return { subfolder: path.slice(0, slashPos), path: path.slice(slashPos + 1) };
         };
 
-        Folder.prototype._indexOfFile = function (list /*: File[]*/ , name) {
+        Folder.prototype._indexOfFile = function (list, name) {
             for (var i = 0; i < list.length; i++) {
                 if (list[i].name >= name)
                     return i;
@@ -1006,6 +1006,7 @@ var teapo;
             this._files.addFile('lib.d.ts');
             this._files.addFile('main.ts');
             this._files.addFile('/import/codemirror.d.ts');
+            this._files.addFile('/import/more/codemirror.d.ts');
         }
         ApplicationViewModel.prototype.files = function () {
             return this._files;

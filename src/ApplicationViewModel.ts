@@ -15,6 +15,7 @@ module teapo {
       this._files.addFile('lib.d.ts');
       this._files.addFile('main.ts');
       this._files.addFile('/import/codemirror.d.ts');
+      this._files.addFile('/import/more/codemirror.d.ts');
     }
 
     files() {
