@@ -13,13 +13,27 @@ module teapo {
     codemirror = ko.observable<CodeMirror.Editor>(<any>"ok");
     activeFile = ko.observable<File>();
 
-    private _typescript = new TypeScriptService();
+    private _typescript: TypeScriptService = null;
     private _files = new Folder(null,null);
+    private _isCodemirrorAttached = false;
 
-    constructor () {
-      this._mockDoc('lib.d.ts', '');
-      this._mockDoc('main.ts', '1+2');
-      this._mockDoc('/import/codemirror.d.ts', ' // ok');
+    constructor (private _document = document) {
+      var staticScripts = {};
+      for (var i = 0; i < document.scripts.length; i++) {
+        var s = <any>document.scripts[i];
+        if (s.id && s.id[0]==='/') {
+          var f = this._files.addFile(s.id);
+          var doc = new CodeMirror.Doc(s.innerHTML);
+          var docVM = new DocumentViewModel(f.fullPath, doc);
+          this._documents[f.fullPath] = docVM;
+          this._typescript.addDocument(f.fullPath, doc);
+        }
+        else if (s.id && s.id[0]==='#') {
+          staticScripts[s.id] = s.innerHTML;
+        }
+        this._typescript = new TypeScriptService(staticScripts);
+      }
+
       this._files.clickFile = (f) => this.clickFile(f);
       this._files.clickFolder = (f) => alert('['+f.fullPath+']');
     }
@@ -37,15 +51,11 @@ module teapo {
 
       var doc = <DocumentViewModel>this._documents[file.fullPath];
       this.codemirror().swapDoc(doc.doc);
-    }
 
-    private _mockDoc(fullPath: string, content: string) {
-      var f = this._files.addFile(fullPath);
-      fullPath = f.fullPath; // normalized
-
-      var doc = new CodeMirror.Doc(content);
-      var docVM = new DocumentViewModel(fullPath, doc);
-      this._documents[fullPath] = docVM;
+      if (!this._isCodemirrorAttached) {
+        this._isCodemirrorAttached = true;
+        // TODO: attach event handlers for ctrl+space etc.
+      }
     }
   }
 

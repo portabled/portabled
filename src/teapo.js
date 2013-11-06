@@ -146,7 +146,7 @@ var teapo;
             this._doc = _doc;
             this._version = 0;
             this._changes = [];
-            CodeMirror.on(this._doc, 'change', function (e, doc, change) {
+            CodeMirror.on(this._doc, 'change', function (e, change) {
                 return _this._onChange(change);
             });
         }
@@ -370,16 +370,31 @@ var teapo;
 var teapo;
 (function (teapo) {
     var ApplicationViewModel = (function () {
-        function ApplicationViewModel() {
+        function ApplicationViewModel(_document) {
+            if (typeof _document === "undefined") { _document = document; }
             var _this = this;
+            this._document = _document;
             this._documents = {};
             this.codemirror = ko.observable("ok");
             this.activeFile = ko.observable();
-            this._typescript = new teapo.TypeScriptService();
+            this._typescript = null;
             this._files = new teapo.Folder(null, null);
-            this._mockDoc('lib.d.ts', '');
-            this._mockDoc('main.ts', '1+2');
-            this._mockDoc('/import/codemirror.d.ts', ' // ok');
+            this._isCodemirrorAttached = false;
+            var staticScripts = {};
+            for (var i = 0; i < document.scripts.length; i++) {
+                var s = document.scripts[i];
+                if (s.id && s.id[0] === '/') {
+                    var f = this._files.addFile(s.id);
+                    var doc = new CodeMirror.Doc(s.innerHTML);
+                    var docVM = new teapo.DocumentViewModel(f.fullPath, doc);
+                    this._documents[f.fullPath] = docVM;
+                    this._typescript.addDocument(f.fullPath, doc);
+                } else if (s.id && s.id[0] === '#') {
+                    staticScripts[s.id] = s.innerHTML;
+                }
+                this._typescript = new teapo.TypeScriptService(staticScripts);
+            }
+
             this._files.clickFile = function (f) {
                 return _this.clickFile(f);
             };
@@ -400,15 +415,11 @@ var teapo;
 
             var doc = this._documents[file.fullPath];
             this.codemirror().swapDoc(doc.doc);
-        };
 
-        ApplicationViewModel.prototype._mockDoc = function (fullPath, content) {
-            var f = this._files.addFile(fullPath);
-            fullPath = f.fullPath; // normalized
-
-            var doc = new CodeMirror.Doc(content);
-            var docVM = new teapo.DocumentViewModel(fullPath, doc);
-            this._documents[fullPath] = docVM;
+            if (!this._isCodemirrorAttached) {
+                this._isCodemirrorAttached = true;
+                // TODO: attach event handlers for ctrl+space etc.
+            }
         };
         return ApplicationViewModel;
     })();

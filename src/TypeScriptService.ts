@@ -119,7 +119,7 @@ module teapo {
     private _changes: TypeScript.TextChangeRange[] = [];
   
     constructor(private _doc: CodeMirror.Doc) {
-      CodeMirror.on(this._doc, 'change', (e,doc,change) => this._onChange(change));
+      CodeMirror.on(this._doc, 'change', (e,change) => this._onChange(change));
     }
   
     /**
