@@ -1,9 +1,6 @@
 /// <reference path='typings/codemirror.d.ts' />
 /// <reference path='typings/typescriptServices.d.ts' />
 
-/// <reference path='ApplicationLayout.ts' />
-/// <reference path='ApplicationState.ts' />
-
 /// <reference path='ApplicationViewModel.ts' />
 /// <reference path='KnockoutBindings.ts' />
 

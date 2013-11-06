@@ -4,9 +4,16 @@ module teapo {
 
   export class File {
     fullPath: string;
+    active = ko.observable(false);
+    
     constructor(public parent: Folder, public name: string) {
       var lead = this.parent ? this.parent.fullPath : null;
       this.fullPath = (lead ? lead : '') +'/'+this.name;
+    }
+
+    click() {
+      if (this.parent)
+        this.parent.clickFile(this);
     }
   }
 
@@ -62,6 +69,20 @@ module teapo {
         this.files.splice(index,1);
         return file;
       }
+    }
+
+    clickFile(file: File) {
+      if (this.parent)
+        this.parent.clickFile(file);
+    }
+
+    clickFolder(folder: Folder) {
+      if (this.parent)
+        this.parent.clickFolder(folder);
+    }
+
+    click() {
+      this.clickFolder(this);
     }
 
     private _normalizePath(path: string): { subfolder: string; path: string; } {
