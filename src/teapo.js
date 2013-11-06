@@ -373,7 +373,7 @@ var teapo;
         function ApplicationViewModel() {
             var _this = this;
             this._documents = {};
-            this.codemirror = ko.observable(null);
+            this.codemirror = ko.observable("ok");
             this.activeFile = ko.observable();
             this._typescript = new teapo.TypeScriptService();
             this._files = new teapo.Folder(null, null);
@@ -475,7 +475,9 @@ var teapo;
                     codemirror = CodeMirror(element);
                 }
 
-                valueAccessor(codemirror);
+                var observable = valueAccessor();
+                if (observable)
+                    observable(codemirror);
             }
         };
     }

@@ -10,7 +10,7 @@ module teapo {
   export class ApplicationViewModel {
     private _documents: any = {};
 
-    codemirror = ko.observable<CodeMirror.Editor>(null);
+    codemirror = ko.observable<CodeMirror.Editor>(<any>"ok");
     activeFile = ko.observable<File>();
 
     private _typescript = new TypeScriptService();

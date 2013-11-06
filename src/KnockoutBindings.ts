@@ -33,7 +33,9 @@ module teapo {
           codemirror = CodeMirror(element);
         }
 
-        valueAccessor(codemirror);
+        var observable = valueAccessor();
+        if (observable)
+          observable(codemirror);
       }
     };
 
