@@ -375,11 +375,11 @@ var teapo;
             var _this = this;
             this._document = _document;
             this._documents = {};
-            this.codemirror = ko.observable("ok");
             this.activeFile = ko.observable();
             this._typescript = null;
             this._files = new teapo.Folder(null, null);
-            this._isCodemirrorAttached = false;
+            this._editor = null;
+            this._textarea = null;
             var staticScripts = {};
             for (var i = 0; i < document.scripts.length; i++) {
                 var s = document.scripts[i];
@@ -414,12 +414,13 @@ var teapo;
             file.active(true);
 
             var doc = this._documents[file.fullPath];
-            this.codemirror().swapDoc(doc.doc);
+            this._editor.swapDoc(doc.doc);
+            this._editor.focus();
+        };
 
-            if (!this._isCodemirrorAttached) {
-                this._isCodemirrorAttached = true;
-                // TODO: attach event handlers for ctrl+space etc.
-            }
+        ApplicationViewModel.prototype.attachTextarea = function (textarea) {
+            this._textarea = textarea;
+            this._editor = CodeMirror.fromTextArea(textarea);
         };
         return ApplicationViewModel;
     })();
@@ -489,6 +490,12 @@ var teapo;
                 var observable = valueAccessor();
                 if (observable)
                     observable(codemirror);
+            }
+        };
+
+        ko.bindingHandlers.attach = {
+            update: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
+                valueAccessor();
             }
         };
     }

@@ -10,12 +10,12 @@ module teapo {
   export class ApplicationViewModel {
     private _documents: any = {};
 
-    codemirror = ko.observable<CodeMirror.Editor>(<any>"ok");
     activeFile = ko.observable<File>();
 
     private _typescript: TypeScriptService = null;
     private _files = new Folder(null,null);
-    private _isCodemirrorAttached = false;
+    private _editor: CodeMirror.Editor = null;
+    private _textarea: HTMLTextAreaElement = null;
 
     constructor (private _document = document) {
       var staticScripts = {};
@@ -50,12 +50,13 @@ module teapo {
       file.active(true);
 
       var doc = <DocumentViewModel>this._documents[file.fullPath];
-      this.codemirror().swapDoc(doc.doc);
+      this._editor.swapDoc(doc.doc);
+      this._editor.focus();
+    }
 
-      if (!this._isCodemirrorAttached) {
-        this._isCodemirrorAttached = true;
-        // TODO: attach event handlers for ctrl+space etc.
-      }
+    attachTextarea(textarea: HTMLTextAreaElement) {
+      this._textarea = textarea;
+      this._editor = CodeMirror.fromTextArea(textarea);
     }
   }
 

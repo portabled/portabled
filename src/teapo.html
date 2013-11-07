@@ -24,7 +24,7 @@
       <div data-bind='template: { name: "file-template", foreach: files().files }'>
       </div>
     </div>
-    <textarea data-bind='codemirror: codemirror'>text</textarea>
+    <textarea data-bind='attach: attachTextarea($element)'>text</textarea>
   </script>
   <script id=folder-template type='text/html'>
     <div class=teapo-file-item data-bind='click: click' data-bind='attr: { title: fullPath }'><b data-bind='text:name'></b></div>

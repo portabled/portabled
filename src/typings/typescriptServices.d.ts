@@ -405,7 +405,6 @@ declare module TypeScript {
         NUMBER: string;
         Specify_the_codepage_to_use_when_opening_source_files: string;
         This_version_of_the_Javascript_runtime_does_not_support_the_0_function: string;
-        Looking_up_path_for_identifier_token_did_not_result_in_an_identifer: string;
         Unknown_rule: string;
         Invalid_line_number_0: string;
         Warn_on_expressions_and_declarations_with_an_implied_any_type: string;
@@ -2359,10 +2358,6 @@ declare module TypeScript {
             "category": DiagnosticCategory;
         };
         "This version of the Javascript runtime does not support the '{0}' function.": {
-            "code": number;
-            "category": DiagnosticCategory;
-        };
-        "Looking up path for identifier token did not result in an identifer.": {
             "code": number;
             "category": DiagnosticCategory;
         };
@@ -8678,11 +8673,18 @@ declare module TypeScript {
     class ArgumentInferenceContext {
         public inferenceCache: TypeScript.IBitMatrix;
         public candidateCache: CandidateInferenceInfo[];
+        public fixedParameterTypes: TypeScript.PullTypeSymbol[];
+        public resolver: TypeScript.PullTypeResolver;
+        public argumentASTs: TypeScript.ISeparatedSyntaxList2;
+        constructor(resolver: TypeScript.PullTypeResolver, argumentASTs: TypeScript.ISeparatedSyntaxList2);
+        constructor(resolver: TypeScript.PullTypeResolver, fixedParameterTypes: TypeScript.PullTypeSymbol[]);
         public alreadyRelatingTypes(objectType: TypeScript.PullTypeSymbol, parameterType: TypeScript.PullTypeSymbol): boolean;
         public resetRelationshipCache(): void;
         public addInferenceRoot(param: TypeScript.PullTypeParameterSymbol): void;
         public getInferenceInfo(param: TypeScript.PullTypeParameterSymbol): CandidateInferenceInfo;
         public addCandidateForInference(param: TypeScript.PullTypeParameterSymbol, candidate: TypeScript.PullTypeSymbol, fix: boolean): void;
+        public getInferenceArgumentCount(): number;
+        public getArgumentTypeSymbolAtIndex(i: number, context: PullTypeResolutionContext): TypeScript.PullTypeSymbol;
         public getInferenceCandidates(): TypeScript.PullTypeSymbol[][];
         public inferArgumentTypes(resolver: TypeScript.PullTypeResolver, context: PullTypeResolutionContext): {
             results: {
@@ -9074,7 +9076,7 @@ declare module TypeScript {
         private overloadIsApplicableForArrayLiteralArgument(paramType, arg, argIndex, context, comparisonInfo);
         private overloadIsApplicableForOtherArgument(paramType, arg, argIndex, context, comparisonInfo);
         private overloadIsApplicableForArgumentHelper(paramType, argSym, argumentIndex, comparisonInfo, context);
-        private inferArgumentTypesForSignature(signature, args, comparisonInfo, context);
+        private inferArgumentTypesForSignature(signature, argContext, comparisonInfo, context);
         private typeParametersAreInScopeAtArgumentList(typeParameters, args);
         private relateTypeToTypeParametersInEnclosingType(expressionType, parameterType, expressionTypeEnclosingType, parameterTypeEnclosingType, shouldFix, argContext, context);
         private relateTypeToTypeParameters(expressionType, parameterType, shouldFix, argContext, context);
