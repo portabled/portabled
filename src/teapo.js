@@ -407,8 +407,16 @@ var teapo;
             var newMark = activeSubfolder || activeDocument ? true : false;
             var currentMark = folder.containsActiveDocument();
 
+            folder.containsActiveDocument(newMark);
+
             if (!currentMark && !newMark)
                 return;
+
+            var files = folder.files();
+            for (var i = 0; i < files.length; i++) {
+                if (files[i] !== activeDocument)
+                    files[i].unselect();
+            }
 
             if (newMark) {
                 if (folder.onselectFile)
@@ -418,17 +426,12 @@ var teapo;
                     folder.onunselectFile();
             }
 
-            var files = folder.files();
-            for (var i = 0; i < files.length; i++) {
-                if (files[i] !== activeDocument)
-                    files[i].unselect();
-            }
-
             var folders = folder.folders();
             for (var i = 0; i < folders.length; i++) {
                 var f = folders[i];
                 if (f === activeSubfolder)
                     continue;
+
                 this._normalizeActiveDocumentMarks(folder, null, null);
             }
 
