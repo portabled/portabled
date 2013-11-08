@@ -26,7 +26,7 @@ module teapo {
 
     select() {
       this.active(true);
-      if (this.parent) this._normalizeActiveDocumentMarks(this.parent, null, this);
+      if (this.parent) this._setContainsActiveDocument(this.parent, null);
 
       if (this.onselect)
         this.onselect();
@@ -39,45 +39,50 @@ module teapo {
         this.onunselect();
     }
 
-    private _normalizeActiveDocumentMarks(
+    private _setContainsActiveDocument(
       folder: teapo.Folder,
-      activeSubfolder: teapo.Folder,
-      activeDocument: teapo.Document) {
-
-      var newMark = activeSubfolder || activeDocument ? true : false;
+      activeSubfolder: teapo.Folder)
+    {
       var currentMark = folder.containsActiveDocument();
-
-      folder.containsActiveDocument(newMark);
-
-      if (!currentMark && !newMark)
-        return; // silence makes no echo
+      folder.containsActiveDocument(true);
+      if (folder.onselectFile)
+        folder.onselectFile(this);
 
       var files = folder.files();
       for (var i = 0; i < files.length; i++) {
-        if (files[i]!==activeDocument)
+        if (files[i]!==this && files[i].active())
           files[i].unselect();
-      }
-
-      if (newMark) {
-        if (folder.onselectFile)
-          folder.onselectFile(this);
-      }
-      else {
-        if (folder.onunselectFile)
-          folder.onunselectFile();
       }
 
       var folders = folder.folders();
       for (var i = 0; i < folders.length; i++) {
-        var f = folders[i];
-        if (f===activeSubfolder)
-          continue; // already been processed
-
-        this._normalizeActiveDocumentMarks(folder, null, null);
+        if (folders[i]!==activeSubfolder && folders[i].containsActiveDocument()) {
+          this._resetContainsActiveDocument(folders[i]);
+        }
       }
 
-      if (folder.parent && newMark)
-        this._normalizeActiveDocumentMarks(folder.parent, folder, null);
+      if (folder.parent && !currentMark)
+        this._setContainsActiveDocument(folder.parent, folder);
+    }
+
+    private _resetContainsActiveDocument(
+      folder: teapo.Folder) {
+      folder.containsActiveDocument(false);
+      if (folder.onunselectFile)
+        folder.onunselectFile();
+
+      var files = folder.files();
+      for (var i = 0; i < files.length; i++) {
+        if (files[i].active())
+          files[i].unselect();
+      }
+
+      var folders = folder.folders();
+      for (var i = 0; i < folders.length; i++) {
+        if (folders[i].containsActiveDocument()) {
+          this._resetContainsActiveDocument(folders[i]);
+        }
+      }
     }
   }
 }

@@ -30,7 +30,7 @@
   <script id=folder-template type='text/html'>
     <div class=teapo-file-item data-bind='attr: { title: fullPath+"." }'>
       <div data-bind='style: { marginLeft: (nestLevel-1)/2+"em" }'>
-        <b data-bind='text:name'></b>
+        <b data-bind='text:fullPath'></b>
         <span data-bind='if: containsActiveDocument'>...</span>
       </div>
     </div>
