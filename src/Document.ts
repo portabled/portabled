@@ -7,8 +7,9 @@
 module teapo {
   export class Document {
 
-    fullPath: string;
-    doc: CodeMirror.Doc;
+    fullPath: string = null;
+    doc: CodeMirror.Doc = null;
+    mode: string = null;
 
     active = ko.observable(false);
 
@@ -19,7 +20,8 @@ module teapo {
       public name: string, public parent: teapo.Folder) {
       
       this.fullPath = (parent ? parent.fullPath : '/') + name;
-      this.doc = new CodeMirror.Doc('', detectDocumentMode(this.fullPath));
+      this.mode = detectDocumentMode(this.fullPath);
+      this.doc = new CodeMirror.Doc('', this.mode);
     }
 
     select() {

@@ -28,8 +28,12 @@
     <textarea data-bind='attach: attachTextarea($element)'>text</textarea>
   </script>
   <script id=folder-template type='text/html'>
-    <div class=teapo-file-item data-bind='attr: { title: fullPath }'><b data-bind='text:name'></b></div>
-    <div style='margin-left: 0.5em;'>
+    <div class=teapo-file-item data-bind='attr: { title: fullPath+"." }'>
+      <div data-bind='style: { marginLeft: (nestLevel-1)/2+"em" }'>
+        <b data-bind='text:name'></b>
+      </div>
+    </div>
+    <div>
       <div data-bind='template: { name: "folder-template", foreach: folders }'>
       </div>
       <div data-bind='template: { name: "file-template", foreach: files }'>
@@ -37,7 +41,12 @@
     </div>
   </script>
   <script id=file-template type='text/html'>
-    <div data-bind='click: select' data-bind='attr: { title: fullPath }'><span data-bind='text:name' class=teapo-file-item style='color:white'></span><span data-bind='if: active'>*</span></div>
+    <div data-bind='click: select' data-bind='attr: { title: fullPath }' class=teapo-file-item>
+      <div data-bind='style: { marginLeft: parent.nestLevel/2+"em" }'>
+        <span data-bind='text:name'></span>
+        <span data-bind='if: active'>*</span>
+      </div>
+    </div>
   </script>
   
 <style>
@@ -56,6 +65,7 @@
     padding: 5px;
   }
   .teapo-file-item {
+    color: white;
     padding:1px;
   }
   .teapo-file-item:hover {
@@ -77,6 +87,8 @@
   <script id='#lib.d.ts' inline='imports/typescript/lib.d.ts' type='text/html'></script>
   <script id='/src/main.ts' type='text/html'>/// <reference path='Apple.ts' /> </script>
   <script id='/src/Apple.ts' type='text/html'>class Apple { }</script>
+  <script id='/src/imports/codemirror.d.ts' type='text/html'>declare var CodeMirror;</script>
+  <script id='/index.html' type='text/html'><html></html></script>
 </head>
 <body>
   empty...

@@ -260,8 +260,9 @@ var teapo;
                 return subfolder.getDocument(parts.tail);
             } else {
                 var index = this._indexOfEntry(this.folders(), parts.tail);
-                if (this.folders()[index])
-                    throw new Error('Cannot retrieve file "' + path + '", "' + this.files()[index].name + '" in the way.');
+                var folderInTheWay = this.folders()[index];
+                if (folderInTheWay && folderInTheWay.name === parts.tail)
+                    throw new Error('Cannot retrieve file "' + path + '", "' + folderInTheWay.name + '" in the way.');
 
                 var index = this._indexOfEntry(this.files(), parts.tail);
                 var file = this.files()[index];
@@ -376,11 +377,15 @@ var teapo;
         function Document(name, parent) {
             this.name = name;
             this.parent = parent;
+            this.fullPath = null;
+            this.doc = null;
+            this.mode = null;
             this.active = ko.observable(false);
             this.onselect = null;
             this.onunselect = null;
             this.fullPath = (parent ? parent.fullPath : '/') + name;
-            this.doc = new CodeMirror.Doc('', teapo.detectDocumentMode(this.fullPath));
+            this.mode = teapo.detectDocumentMode(this.fullPath);
+            this.doc = new CodeMirror.Doc('', this.mode);
         }
         Document.prototype.select = function () {
             this.active(true);
