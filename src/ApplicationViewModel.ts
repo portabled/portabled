@@ -2,18 +2,17 @@
 /// <reference path='typings/codemirror.d.ts' />
 
 /// <reference path='TypeScriptService.ts' />
-/// <reference path='FileList.ts' />
-/// <reference path='DocumentViewModel.ts' />
+/// <reference path='Document.ts' />
+/// <reference path='Folder.ts' />
 
 module teapo {
 
   export class ApplicationViewModel {
-    private _documents: any = {};
 
-    activeFile = ko.observable<File>();
+    activeDocument = ko.observable<Document>();
+    root = new Folder(null,null);
 
     private _typescript: TypeScriptService = null;
-    private _files = new Folder(null,null);
     private _editor: CodeMirror.Editor = null;
     private _textarea: HTMLTextAreaElement = null;
 
@@ -22,11 +21,12 @@ module teapo {
       for (var i = 0; i < document.scripts.length; i++) {
         var s = <any>document.scripts[i];
         if (s.id && s.id[0]==='/') {
-          var f = this._files.addFile(s.id);
-          var doc = new CodeMirror.Doc(s.innerHTML);
-          var docVM = new DocumentViewModel(f.fullPath, doc);
-          this._documents[f.fullPath] = docVM;
-          this._typescript.addDocument(f.fullPath, doc);
+          var f = this.root.getDocument(s.id);
+          f.doc.setValue(s.innerHTML);
+          if (s.title) {
+            // TODO: restore history too
+          }
+          this._typescript.addDocument(f.fullPath, f.doc);
         }
         else if (s.id && s.id[0]==='#') {
           staticScripts[s.id] = s.innerHTML;
@@ -34,23 +34,13 @@ module teapo {
         this._typescript = new TypeScriptService(staticScripts);
       }
 
-      this._files.clickFile = (f) => this.clickFile(f);
-      this._files.clickFolder = (f) => alert('['+f.fullPath+']');
+      this.root.onselect = (f) => this.selectFile(f);
     }
 
-    files() {
-      return this._files;
-    }
+    selectFile(file: teapo.Document) {
+      this.activeDocument(file);
 
-    clickFile(file: File) {
-      var currentActiveFile = this.activeFile();
-      if (currentActiveFile)
-        currentActiveFile.active(false);
-      this.activeFile(file);
-      file.active(true);
-
-      var doc = <DocumentViewModel>this._documents[file.fullPath];
-      this._editor.swapDoc(doc.doc);
+      this._editor.swapDoc(file.doc);
       this._editor.focus();
     }
 

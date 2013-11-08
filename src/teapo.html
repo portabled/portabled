@@ -19,15 +19,15 @@
   <script inline='imports/typescript/typescriptServices.js'></script>
   <script id=bodyTemplate type='text/html'>
     <div class=teapo-file-list>
-      <div data-bind='template: { name: "folder-template", foreach: files().folders }'>
+      <div data-bind='template: { name: "folder-template", foreach: root.folders }'>
       </div>
-      <div data-bind='template: { name: "file-template", foreach: files().files }'>
+      <div data-bind='template: { name: "file-template", foreach: root.files }'>
       </div>
     </div>
     <textarea data-bind='attach: attachTextarea($element)'>text</textarea>
   </script>
   <script id=folder-template type='text/html'>
-    <div class=teapo-file-item data-bind='click: click' data-bind='attr: { title: fullPath }'><b data-bind='text:name'></b></div>
+    <div class=teapo-file-item data-bind='click: select' data-bind='attr: { title: fullPath }'><b data-bind='text:name'></b></div>
     <div style='margin-left: 0.5em;'>
       <div data-bind='template: { name: "folder-template", foreach: folders }'>
       </div>
@@ -36,7 +36,7 @@
     </div>
   </script>
   <script id=file-template type='text/html'>
-    <div data-bind='click: click' data-bind='attr: { title: fullPath }'><span data-bind='text:name' class=teapo-file-item style='color:white'></span><span data-bind='if: active'>*</span></div>
+    <div data-bind='click: select' data-bind='attr: { title: fullPath }'><span data-bind='text:name' class=teapo-file-item style='color:white'></span><span data-bind='if: active'>*</span></div>
   </script>
   
 <style>
@@ -74,7 +74,8 @@
   }
   </style>
   <script id='#lib.d.ts' inline='imports/typescript/lib.d.ts' type='text/html'></script>
-  <script id='/main.ts' type='text/html'>class Apple { }</script>
+  <script id='/main.ts' type='text/html'> /// <reference path='Apple.ts' /> </script>
+  <script id='/Apple.ts' type='text/html'>class Apple { }</script>
 </head>
 <body>
   empty...

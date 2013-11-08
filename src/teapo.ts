@@ -4,11 +4,6 @@
 /// <reference path='ApplicationViewModel.ts' />
 /// <reference path='KnockoutBindings.ts' />
 
-//window.onload = function() {
-//  var layout = new teapo.ApplicationLayout(document.body);
-//  var state = new teapo.ApplicationState(layout);
-//}
-
 window.onload = function() {
   teapo.registerKnockoutBindings(ko);
 

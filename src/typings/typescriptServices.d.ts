@@ -485,7 +485,7 @@ declare module TypeScript {
     class Debug {
         private static currentAssertionLevel;
         static shouldAssert(level: AssertionLevel): boolean;
-        static assert(expression: any, message?: string): void;
+        static assert(expression: any, message?: string, verboseDebugInfo?: () => string): void;
         static fail(message?: string): void;
     }
 }

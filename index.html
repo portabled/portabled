@@ -8054,116 +8054,126 @@ var teapo;
     })();
 })(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
-var __extends = this.__extends || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
-};
+/// <reference path='Document.ts' />
 var teapo;
 (function (teapo) {
-    var File = (function () {
-        function File(parent, name) {
-            this.parent = parent;
+    var Folder = (function () {
+        function Folder(name, parent) {
             this.name = name;
-            this.active = ko.observable(false);
-            var lead = this.parent ? this.parent.fullPath : null;
-            this.fullPath = (lead ? lead : '') + '/' + this.name;
-        }
-        File.prototype.click = function () {
-            if (this.parent)
-                this.parent.clickFile(this);
-        };
-        return File;
-    })();
-    teapo.File = File;
-
-    var Folder = (function (_super) {
-        __extends(Folder, _super);
-        function Folder(parent, name) {
-            _super.call(this, parent, name);
+            this.parent = parent;
             this.folders = ko.observableArray();
             this.files = ko.observableArray();
-            if (!name)
-                this.fullPath = null;
+            this.expanded = ko.observable(true);
+            this.containsActiveDocument = ko.observable(false);
+            this.onselect = null;
+            this.onunselect = null;
+            this.fullPath = (parent ? parent.fullPath : '/') + name + (name ? '/' : '');
+            this.nestLevel = parent ? parent.nestLevel + 1 : 0;
         }
-        Folder.prototype.addFile = function (path) {
+        Folder.prototype.getDocument = function (path) {
             if (!path)
-                return;
-            var norm = this._normalizePath(path);
-            if (norm.subfolder) {
-                var index = this._indexOfFile(this.folders(), norm.subfolder);
+                return null;
+
+            var parts = this._normalizePath(path);
+            if (parts.lead) {
+                var index = this._indexOfEntry(this.folders(), parts.lead);
                 var subfolder = this.folders()[index];
-                if (!subfolder || subfolder.name !== norm.subfolder) {
-                    subfolder = new Folder(this, norm.subfolder);
+                if (!subfolder || subfolder.name !== parts.lead) {
+                    subfolder = new teapo.Folder(parts.lead, this);
                     this.folders.splice(index, 0, subfolder);
                 }
-                return subfolder.addFile(norm.path);
+                return subfolder.getDocument(parts.tail);
             } else {
-                var index = this._indexOfFile(this.files(), norm.path);
+                var index = this._indexOfEntry(this.folders(), parts.tail);
+                if (this.folders()[index])
+                    throw new Error('Cannot retrieve file "' + path + '", "' + this.files()[index].name + '" in the way.');
+
+                var index = this._indexOfEntry(this.files(), parts.tail);
                 var file = this.files()[index];
-                if (!file || file.name !== norm.path) {
-                    file = new File(this, norm.path);
+                if (!file || file.name !== parts.tail) {
+                    file = new teapo.Document(parts.tail, this);
                     this.files.splice(index, 0, file);
                 }
                 return file;
             }
         };
 
-        Folder.prototype.removeFile = function (path) {
+        Folder.prototype.getFolder = function (path) {
             if (!path)
-                return;
-            var norm = this._normalizePath(path);
-            if (norm.subfolder) {
-                var index = this._indexOfFile(this.folders(), norm.subfolder);
+                return null;
+
+            var parts = this._normalizePath(path);
+
+            var subfolderName = parts.lead || parts.tail;
+            var index = this._indexOfEntry(this.folders(), subfolderName);
+            var subfolder = this.folders()[index];
+            if (!subfolder || subfolder.name !== subfolderName) {
+                subfolder = new teapo.Folder(subfolderName, this);
+                this.folders.splice(index, 0, subfolder);
+            }
+
+            if (parts.lead)
+                return subfolder.getFolder(parts.tail);
+            else
+                return subfolder;
+        };
+
+        Folder.prototype.removeDocument = function (path) {
+            if (!path)
+                return null;
+
+            var parts = this._normalizePath(path);
+            if (parts.lead) {
+                var index = this._indexOfEntry(this.folders(), parts.lead);
                 var subfolder = this.folders()[index];
-                if (!subfolder || subfolder.name !== norm.subfolder)
+                if (!subfolder || subfolder.name !== parts.lead)
                     return null;
-                else
-                    return subfolder.removeFile(norm.path);
             } else {
-                var index = this._indexOfFile(this.files(), norm.path);
+                var index = this._indexOfEntry(this.files(), parts.tail);
                 var file = this.files()[index];
-                if (!file || file.name !== norm.path)
+                if (!file || file.name !== parts.tail)
                     return null;
+
                 this.files.splice(index, 1);
+                file.parent = null;
+
                 return file;
             }
         };
 
-        Folder.prototype.clickFile = function (file) {
-            if (this.parent)
-                this.parent.clickFile(file);
-        };
+        Folder.prototype.removeFolder = function (path) {
+            if (!path)
+                return null;
 
-        Folder.prototype.clickFolder = function (folder) {
-            if (this.parent)
-                this.parent.clickFolder(folder);
-        };
+            var parts = this._normalizePath(path);
 
-        Folder.prototype.click = function () {
-            this.clickFolder(this);
+            var subfolderName = parts.lead || parts.tail;
+            var index = this._indexOfEntry(this.folders(), subfolderName);
+            var subfolder = this.folders()[index];
+            if (!subfolder || subfolder.name !== subfolderName)
+                return null;
+
+            if (parts.lead)
+                return subfolder.removeFolder(parts.tail);
+
+            this.folders.splice(index, 1);
+            subfolder.parent = null;
+            return subfolder;
         };
 
         Folder.prototype._normalizePath = function (path) {
-            var result = this._normalizePathCore(path);
-            console.log('normalizePath(', path, ') = ', result);
-            return result;
-        };
-
-        Folder.prototype._normalizePathCore = function (path) {
             while (path[0] === '/')
                 path = path.slice(1);
             while (path[path.length - 1] === '/')
                 path = path.slice(0, path.length - 1);
             var slashPos = path.indexOf('/');
             if (slashPos < 0)
-                return { subfolder: null, path: path };
+                return { lead: null, tail: path };
             else
-                return { subfolder: path.slice(0, slashPos), path: path.slice(slashPos + 1) };
+                return { lead: path.slice(0, slashPos), tail: path.slice(slashPos + 1) };
         };
 
-        Folder.prototype._indexOfFile = function (list, name) {
+        Folder.prototype._indexOfEntry = function (list, name) {
             for (var i = 0; i < list.length; i++) {
                 if (list[i].name >= name)
                     return i;
@@ -8171,27 +8181,89 @@ var teapo;
             return list.length;
         };
         return Folder;
-    })(teapo.File);
+    })();
     teapo.Folder = Folder;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    function detectDocumentMode(fullPath) {
+        return null;
+    }
+    teapo.detectDocumentMode = detectDocumentMode;
 })(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
 /// <reference path='typings/codemirror.d.ts' />
+/// <reference path='Folder.ts' />
+/// <reference path='modes.ts' />
 var teapo;
 (function (teapo) {
-    var DocumentViewModel = (function () {
-        function DocumentViewModel(fullPath, doc) {
-            this.fullPath = fullPath;
-            this.doc = doc;
+    var Document = (function () {
+        function Document(name, parent) {
+            this.name = name;
+            this.parent = parent;
+            this.active = ko.observable(false);
+            this.onselect = null;
+            this.onunselect = null;
+            this.fullPath = (parent ? parent.fullPath : '/') + name;
+            this.doc = new CodeMirror.Doc('', teapo.detectDocumentMode(this.fullPath));
         }
-        return DocumentViewModel;
+        Document.prototype.select = function () {
+            this.active(true);
+            if (this.parent)
+                this._normalizeActiveDocumentMarks(this.parent, null, this);
+
+            if (this.onselect)
+                this.onselect();
+        };
+
+        Document.prototype.unselect = function () {
+            this.active(false);
+
+            if (this.onunselect)
+                this.onunselect();
+        };
+
+        Document.prototype._normalizeActiveDocumentMarks = function (folder, activeSubfolder, activeDocument) {
+            var newMark = activeSubfolder || activeDocument ? true : false;
+            var currentMark = folder.containsActiveDocument();
+
+            if (!currentMark && !newMark)
+                return;
+
+            if (currentMark != newMark) {
+                folder.containsActiveDocument(newMark);
+                if (newMark && folder.onselect)
+                    folder.onselect(this);
+                else if (!newMark && folder.onunselect)
+                    folder.onunselect();
+            }
+
+            var files = folder.files();
+            for (var i = 0; i < files.length; i++) {
+                if (files[i] !== activeDocument)
+                    files[i].unselect();
+            }
+
+            var folders = folder.folders();
+            for (var i = 0; i < folders.length; i++) {
+                var f = folders[i];
+                if (f === activeSubfolder)
+                    continue;
+                this._normalizeActiveDocumentMarks(folder, null, null);
+            }
+
+            if (folder.parent && newMark)
+                this._normalizeActiveDocumentMarks(folder.parent, folder, null);
+        };
+        return Document;
     })();
-    teapo.DocumentViewModel = DocumentViewModel;
+    teapo.Document = Document;
 })(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
 /// <reference path='typings/codemirror.d.ts' />
 /// <reference path='TypeScriptService.ts' />
-/// <reference path='FileList.ts' />
-/// <reference path='DocumentViewModel.ts' />
+/// <reference path='Document.ts' />
+/// <reference path='Folder.ts' />
 var teapo;
 (function (teapo) {
     var ApplicationViewModel = (function () {
@@ -8199,47 +8271,35 @@ var teapo;
             if (typeof _document === "undefined") { _document = document; }
             var _this = this;
             this._document = _document;
-            this._documents = {};
-            this.activeFile = ko.observable();
+            this.activeDocument = ko.observable();
+            this.root = new teapo.Folder(null, null);
             this._typescript = null;
-            this._files = new teapo.Folder(null, null);
             this._editor = null;
             this._textarea = null;
             var staticScripts = {};
             for (var i = 0; i < document.scripts.length; i++) {
                 var s = document.scripts[i];
                 if (s.id && s.id[0] === '/') {
-                    var f = this._files.addFile(s.id);
-                    var doc = new CodeMirror.Doc(s.innerHTML);
-                    var docVM = new teapo.DocumentViewModel(f.fullPath, doc);
-                    this._documents[f.fullPath] = docVM;
-                    this._typescript.addDocument(f.fullPath, doc);
+                    var f = this.root.getDocument(s.id);
+                    f.doc.setValue(s.innerHTML);
+                    if (s.title) {
+                        // TODO: restore history too
+                    }
+                    this._typescript.addDocument(f.fullPath, f.doc);
                 } else if (s.id && s.id[0] === '#') {
                     staticScripts[s.id] = s.innerHTML;
                 }
                 this._typescript = new teapo.TypeScriptService(staticScripts);
             }
 
-            this._files.clickFile = function (f) {
-                return _this.clickFile(f);
-            };
-            this._files.clickFolder = function (f) {
-                return alert('[' + f.fullPath + ']');
+            this.root.onselect = function (f) {
+                return _this.selectFile(f);
             };
         }
-        ApplicationViewModel.prototype.files = function () {
-            return this._files;
-        };
+        ApplicationViewModel.prototype.selectFile = function (file) {
+            this.activeDocument(file);
 
-        ApplicationViewModel.prototype.clickFile = function (file) {
-            var currentActiveFile = this.activeFile();
-            if (currentActiveFile)
-                currentActiveFile.active(false);
-            this.activeFile(file);
-            file.active(true);
-
-            var doc = this._documents[file.fullPath];
-            this._editor.swapDoc(doc.doc);
+            this._editor.swapDoc(file.doc);
             this._editor.focus();
         };
 
@@ -8330,10 +8390,6 @@ var teapo;
 /// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='ApplicationViewModel.ts' />
 /// <reference path='KnockoutBindings.ts' />
-//window.onload = function() {
-//  var layout = new teapo.ApplicationLayout(document.body);
-//  var state = new teapo.ApplicationState(layout);
-//}
 window.onload = function () {
     teapo.registerKnockoutBindings(ko);
 
@@ -75418,15 +75474,15 @@ var TypeScript;
 </script>
   <script id=bodyTemplate type='text/html'>
     <div class=teapo-file-list>
-      <div data-bind='template: { name: "folder-template", foreach: files().folders }'>
+      <div data-bind='template: { name: "folder-template", foreach: root.folders }'>
       </div>
-      <div data-bind='template: { name: "file-template", foreach: files().files }'>
+      <div data-bind='template: { name: "file-template", foreach: root.files }'>
       </div>
     </div>
     <textarea data-bind='attach: attachTextarea($element)'>text</textarea>
   </script>
   <script id=folder-template type='text/html'>
-    <div class=teapo-file-item data-bind='click: click' data-bind='attr: { title: fullPath }'><b data-bind='text:name'></b></div>
+    <div class=teapo-file-item data-bind='click: select' data-bind='attr: { title: fullPath }'><b data-bind='text:name'></b></div>
     <div style='margin-left: 0.5em;'>
       <div data-bind='template: { name: "folder-template", foreach: folders }'>
       </div>
@@ -75435,7 +75491,7 @@ var TypeScript;
     </div>
   </script>
   <script id=file-template type='text/html'>
-    <div data-bind='click: click' data-bind='attr: { title: fullPath }'><span data-bind='text:name' class=teapo-file-item style='color:white'></span><span data-bind='if: active'>*</span></div>
+    <div data-bind='click: select' data-bind='attr: { title: fullPath }'><span data-bind='text:name' class=teapo-file-item style='color:white'></span><span data-bind='if: active'>*</span></div>
   </script>
   
 <style>
@@ -89674,7 +89730,8 @@ declare var WScript: {
     Quit(exitCode?: number): number;
 }
 </script>
-  <script id='/main.ts' type='text/html'>class Apple { }</script>
+  <script id='/main.ts' type='text/html'> /// <reference path='Apple.ts' /> </script>
+  <script id='/Apple.ts' type='text/html'>class Apple { }</script>
 </head>
 <body>
   empty...
