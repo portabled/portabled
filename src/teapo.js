@@ -240,8 +240,8 @@ var teapo;
             this.files = ko.observableArray();
             this.expanded = ko.observable(true);
             this.containsActiveDocument = ko.observable(false);
-            this.onselect = null;
-            this.onunselect = null;
+            this.onselectFile = null;
+            this.onunselectFile = null;
             this.fullPath = (parent ? parent.fullPath : '/') + name + (name ? '/' : '');
             this.nestLevel = parent ? parent.nestLevel + 1 : 0;
         }
@@ -405,12 +405,12 @@ var teapo;
             if (!currentMark && !newMark)
                 return;
 
-            if (currentMark != newMark) {
-                folder.containsActiveDocument(newMark);
-                if (newMark && folder.onselect)
-                    folder.onselect(this);
-                else if (!newMark && folder.onunselect)
-                    folder.onunselect();
+            if (newMark) {
+                if (folder.onselectFile)
+                    folder.onselectFile(this);
+            } else {
+                if (folder.onunselectFile)
+                    folder.onunselectFile();
             }
 
             var files = folder.files();
@@ -467,7 +467,7 @@ var teapo;
                 this._typescript = new teapo.TypeScriptService(staticScripts);
             }
 
-            this.root.onselect = function (f) {
+            this.root.onselectFile = function (f) {
                 return _this.selectFile(f);
             };
         }

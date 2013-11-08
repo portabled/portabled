@@ -48,12 +48,13 @@ module teapo {
       if (!currentMark && !newMark)
         return; // silence makes no echo
 
-      if (currentMark != newMark) {
-        folder.containsActiveDocument(newMark);
-        if (newMark && folder.onselect)
-          folder.onselect(this);
-        else if (!newMark && folder.onunselect)
-          folder.onunselect();
+      if (newMark) {
+        if (folder.onselectFile)
+          folder.onselectFile(this);
+      }
+      else {
+        if (folder.onunselectFile)
+          folder.onunselectFile();
       }
 
       var files = folder.files();

@@ -34,7 +34,7 @@ module teapo {
         this._typescript = new TypeScriptService(staticScripts);
       }
 
-      this.root.onselect = (f) => this.selectFile(f);
+      this.root.onselectFile = (f) => this.selectFile(f);
     }
 
     selectFile(file: teapo.Document) {

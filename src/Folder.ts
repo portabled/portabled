@@ -13,8 +13,8 @@ module teapo {
     expanded = ko.observable(true);
     containsActiveDocument = ko.observable(false);
 
-    onselect: (doc: teapo.Document) => void = null;
-    onunselect: () => void = null;
+    onselectFile: (doc: teapo.Document) => void = null;
+    onunselectFile: () => void = null;
 
     constructor(public name: string, public parent: teapo.Folder) {
       this.fullPath = (parent ? parent.fullPath : '/') + name + (name ? '/':'');
