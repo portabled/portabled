@@ -57,7 +57,7 @@ module teapo {
             if (!this._scriptCache.hasOwnProperty(s))
               result.push(s);
           }
-          console.log('...getScriptFileNames():',result);
+          //console.log('...getScriptFileNames():',result);
           return result;
         },
         getScriptVersion: (fileName: string) => {
@@ -86,7 +86,7 @@ module teapo {
         log: (text: string) => this._log(text),
         resolveRelativePath: (path: string) => {
           var result = path;
-          console.log('...resolveRelativePath('+path+'):', result);
+          //console.log('...resolveRelativePath('+path+'):', result);
           return result;
         },
         fileExists: (path: string) => {
@@ -109,7 +109,7 @@ module teapo {
     }
   
     private _log(text) {
-      console.log(text);
+      //console.log(text);
     }
   }
           

@@ -48,7 +48,8 @@ var teapo;
                             if (!_this._scriptCache.hasOwnProperty(s))
                                 result.push(s);
                         }
-                    console.log('...getScriptFileNames():', result);
+
+                    //console.log('...getScriptFileNames():',result);
                     return result;
                 },
                 getScriptVersion: function (fileName) {
@@ -95,7 +96,8 @@ var teapo;
                 },
                 resolveRelativePath: function (path) {
                     var result = path;
-                    console.log('...resolveRelativePath(' + path + '):', result);
+
+                    //console.log('...resolveRelativePath('+path+'):', result);
                     return result;
                 },
                 fileExists: function (path) {
@@ -120,7 +122,7 @@ var teapo;
         };
 
         TypeScriptService.prototype._log = function (text) {
-            console.log(text);
+            //console.log(text);
         };
         TypeScriptService._emptySnapshot = {
             getText: function (start, end) {
