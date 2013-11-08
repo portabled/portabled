@@ -17,7 +17,7 @@ module teapo {
     onunselectFile: () => void = null;
 
     constructor(public name: string, public parent: teapo.Folder) {
-      this.fullPath = (parent ? parent.fullPath : '/') + name + (name ? '/':'');
+      this.fullPath = (parent ? parent.fullPath : '/') + (name ? name+'/':'/');
       this.nestLevel = parent ? parent.nestLevel + 1 : 0;
     }
 

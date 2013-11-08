@@ -27,7 +27,7 @@
     <textarea data-bind='attach: attachTextarea($element)'>text</textarea>
   </script>
   <script id=folder-template type='text/html'>
-    <div class=teapo-file-item data-bind='click: select' data-bind='attr: { title: fullPath }'><b data-bind='text:name'></b></div>
+    <div class=teapo-file-item data-bind='attr: { title: fullPath }'><b data-bind='text:name'></b></div>
     <div style='margin-left: 0.5em;'>
       <div data-bind='template: { name: "folder-template", foreach: folders }'>
       </div>
@@ -74,8 +74,8 @@
   }
   </style>
   <script id='#lib.d.ts' inline='imports/typescript/lib.d.ts' type='text/html'></script>
-  <script id='/main.ts' type='text/html'> /// <reference path='Apple.ts' /> </script>
-  <script id='/Apple.ts' type='text/html'>class Apple { }</script>
+  <script id='/main.ts' type='text/html'>/// <reference path='Apple.ts' /> </script>
+  <script id='/src/Apple.ts' type='text/html'>class Apple { }</script>
 </head>
 <body>
   empty...

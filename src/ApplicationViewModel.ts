@@ -20,21 +20,25 @@ module teapo {
       var staticScripts = {};
       for (var i = 0; i < document.scripts.length; i++) {
         var s = <any>document.scripts[i];
+        var tsAdd: teapo.Document[] = [];
         if (s.id && s.id[0]==='/') {
           var f = this.root.getDocument(s.id);
           f.doc.setValue(s.innerHTML);
           if (s.title) {
             // TODO: restore history too
           }
-          this._typescript.addDocument(f.fullPath, f.doc);
+          tsAdd.push(f);
         }
         else if (s.id && s.id[0]==='#') {
           staticScripts[s.id] = s.innerHTML;
         }
-        this._typescript = new TypeScriptService(staticScripts);
       }
 
       this.root.onselectFile = (f) => this.selectFile(f);
+      this._typescript = new TypeScriptService(staticScripts);
+      for (var i = 0; i < tsAdd.length; i++) {
+        this._typescript.addDocument(tsAdd[i].fullPath, tsAdd[i].doc);
+      }
     }
 
     selectFile(file: teapo.Document) {
