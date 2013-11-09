@@ -461,7 +461,7 @@ var teapo;
                 }
             }
 
-            if (folder.parent && !currentMark)
+            if (folder.parent)
                 this._setContainsActiveDocument(folder.parent, folder);
         };
 
