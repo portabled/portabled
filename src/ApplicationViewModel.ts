@@ -62,7 +62,8 @@ module teapo {
         autoCloseBrackets: true,
         matchTags: true,
         showTrailingSpace: true,
-        autoCloseTags: true
+        autoCloseTags: true,
+        styleActiveLine: true
       });
     }
   }

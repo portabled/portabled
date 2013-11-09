@@ -168,6 +168,7 @@ function checkAndImportLatestCodeMirrorJS(callback) {
       'addon/hint/show-hint.js','addon/hint/show-hint.css','addon/hint/javascript-hint.js',
       'addon/comment/comment.js','addon/comment/continuecomment.js',
       'addon/edit/closebrackets.js','addon/edit/matchbrackets.js','addon/edit/trailingspace.js','addon/edit/closetag.js',
+      'addon/selection/active-line.js',
       'addon/selection/active-line.js'
     ],
     'imports/codemirror',
