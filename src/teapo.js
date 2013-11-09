@@ -362,12 +362,49 @@ var teapo;
     })();
     teapo.Folder = Folder;
 })(teapo || (teapo = {}));
+/// <reference path='typings/codemirror.d.ts' />
+/// <reference path='typings/typescriptServices.d.ts' />
 var teapo;
 (function (teapo) {
     function detectDocumentMode(fullPath) {
-        return null;
+        switch (getFileExtensionLowerCase(fullPath)) {
+            case '.ts':
+                return 'text/typescript';
+            case '.html':
+            case '.htm':
+                return 'text/html';
+            case '.css':
+                return 'text/css';
+            case '.xml':
+                return 'text/xml';
+            case '.js':
+                return 'text/javascript';
+            default:
+                return null;
+        }
     }
     teapo.detectDocumentMode = detectDocumentMode;
+
+    function getFileExtensionLowerCase(fullPath) {
+        if (!fullPath)
+            return '';
+        var dotPos = fullPath.lastIndexOf('.');
+        if (dotPos < 0)
+            return '';
+        var ext = fullPath.slice(dotPos);
+        return ext.toLowerCase();
+    }
+
+    var TypeScriptDocumentMode = (function () {
+        function TypeScriptDocumentMode(_typescript) {
+            this._typescript = _typescript;
+        }
+        TypeScriptDocumentMode.prototype.activateEditor = function (editor, fullPath) {
+            return null;
+        };
+        return TypeScriptDocumentMode;
+    })();
+    teapo.TypeScriptDocumentMode = TypeScriptDocumentMode;
 })(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
 /// <reference path='typings/codemirror.d.ts' />
@@ -455,6 +492,7 @@ var teapo;
 /// <reference path='TypeScriptService.ts' />
 /// <reference path='Document.ts' />
 /// <reference path='Folder.ts' />
+/// <reference path='modes.ts' />
 var teapo;
 (function (teapo) {
     var ApplicationViewModel = (function () {
@@ -467,6 +505,7 @@ var teapo;
             this._typescript = null;
             this._editor = null;
             this._textarea = null;
+            this._tsMode = null;
             var staticScripts = {};
             for (var i = 0; i < document.scripts.length; i++) {
                 var s = document.scripts[i];
@@ -490,12 +529,16 @@ var teapo;
             for (var i = 0; i < tsAdd.length; i++) {
                 this._typescript.addDocument(tsAdd[i].fullPath, tsAdd[i].doc);
             }
+
+            this._tsMode = new teapo.TypeScriptDocumentMode(this._typescript.service);
         }
         ApplicationViewModel.prototype.selectFile = function (file) {
             this.activeDocument(file);
 
             this._editor.swapDoc(file.doc);
             this._editor.focus();
+
+            this._tsMode.activateEditor(this._editor, file.fullPath);
         };
 
         ApplicationViewModel.prototype.attachTextarea = function (textarea) {

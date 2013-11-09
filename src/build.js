@@ -162,6 +162,9 @@ function checkAndImportLatestCodeMirrorJS(callback) {
     [
       'lib/codemirror.js','lib/codemirror.css',
       'mode/javascript/javascript.js',
+      'mode/htmlmixed/htmlmixed.js','mode/htmlembedded/htmlembedded.js',
+      'mode/css/css.js',
+      'mode/xml/xml.js',
       'addon/hint/show-hint.js','addon/hint/show-hint.css','addon/hint/javascript-hint.js',
       'addon/comment/comment.js','addon/comment/continuecomment.js',
       'addon/edit/closebrackets.js','addon/edit/matchbrackets.js','addon/edit/trailingspace.js',

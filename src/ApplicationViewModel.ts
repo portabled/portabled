@@ -4,6 +4,7 @@
 /// <reference path='TypeScriptService.ts' />
 /// <reference path='Document.ts' />
 /// <reference path='Folder.ts' />
+/// <reference path='modes.ts' />
 
 module teapo {
 
@@ -12,9 +13,10 @@ module teapo {
     activeDocument = ko.observable<Document>();
     root = new Folder(null,null);
 
-    private _typescript: TypeScriptService = null;
+    private _typescript: teapo.TypeScriptService = null;
     private _editor: CodeMirror.Editor = null;
     private _textarea: HTMLTextAreaElement = null;
+    private _tsMode: teapo.TypeScriptDocumentMode = null;
 
     constructor (private _document = document) {
       var staticScripts = {};
@@ -35,10 +37,12 @@ module teapo {
       }
 
       this.root.onselectFile = (f) => this.selectFile(f);
-      this._typescript = new TypeScriptService(staticScripts);
+      this._typescript = new teapo.TypeScriptService(staticScripts);
       for (var i = 0; i < tsAdd.length; i++) {
         this._typescript.addDocument(tsAdd[i].fullPath, tsAdd[i].doc);
       }
+
+      this._tsMode = new teapo.TypeScriptDocumentMode(this._typescript.service);
     }
 
     selectFile(file: teapo.Document) {
@@ -46,6 +50,8 @@ module teapo {
 
       this._editor.swapDoc(file.doc);
       this._editor.focus();
+
+      this._tsMode.activateEditor(this._editor, file.fullPath);
     }
 
     attachTextarea(textarea: HTMLTextAreaElement) {
