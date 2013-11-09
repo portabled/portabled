@@ -56,7 +56,13 @@ module teapo {
 
     attachTextarea(textarea: HTMLTextAreaElement) {
       this._textarea = textarea;
-      this._editor = CodeMirror.fromTextArea(textarea);
+      this._editor = CodeMirror.fromTextArea(textarea, {
+        lineNumbers: true,
+        matchBrackets: true,
+        autoCloseBrackets: true,
+        matchTags: true,
+        showTrailingSpace: true
+      });
     }
   }
 

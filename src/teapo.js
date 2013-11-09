@@ -543,7 +543,13 @@ var teapo;
 
         ApplicationViewModel.prototype.attachTextarea = function (textarea) {
             this._textarea = textarea;
-            this._editor = CodeMirror.fromTextArea(textarea);
+            this._editor = CodeMirror.fromTextArea(textarea, {
+                lineNumbers: true,
+                matchBrackets: true,
+                autoCloseBrackets: true,
+                matchTags: true,
+                showTrailingSpace: true
+            });
         };
         return ApplicationViewModel;
     })();
