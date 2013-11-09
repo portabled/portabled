@@ -42,10 +42,9 @@
     </div>
   </script>
   <script id=file-template type='text/html'>
-    <div data-bind='click: select' data-bind='attr: { title: fullPath }' class=teapo-file-item>
+    <div data-bind='click: select, attr: { title: fullPath }, css: { "teapo-file-item-selected": active }' class=teapo-file-item>
       <div data-bind='style: { marginLeft: parent.nestLevel/2+"em" }'>
         <span data-bind='text:name'></span>
-        <span data-bind='if: active'>*</span>
       </div>
     </div>
   </script>
@@ -67,11 +66,16 @@
   }
   .teapo-file-item {
     color: white;
-    padding:1px;
+    border: solid 2px transparent;
+    border-right: none;
+    cursor:pointer;
   }
   .teapo-file-item:hover {
     background: gold;
-    cursor:pointer;
+  }
+  .teapo-file-item-selected {
+    border: solid 2px white;
+    border-right: none;
   }
   .CodeMirror, textarea.teapo-editor {
     position: absolute;
