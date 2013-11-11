@@ -9722,6 +9722,7 @@ var teapo;
             this.active = ko.observable(false);
             this.onselect = null;
             this.onunselect = null;
+            this._persistElement = null;
             this.fullPath = (parent ? parent.fullPath : '/') + name;
             this.mode = teapo.detectDocumentMode(this.fullPath);
             this.doc = new CodeMirror.Doc('', this.mode);
@@ -9787,11 +9788,177 @@ var teapo;
     })();
     teapo.Document = Document;
 })(teapo || (teapo = {}));
+/// <reference path='typings/codemirror.d.ts' />
+var teapo;
+(function (teapo) {
+    function getDocumentStoreUniqueKey(w) {
+        if (typeof w === "undefined") { w = window; }
+        var url = w.location + '';
+        var posHash = url.indexOf('#');
+        if (posHash >= 0)
+            url = url.slice(0, posHash);
+        return url;
+    }
+    teapo.getDocumentStoreUniqueKey = getDocumentStoreUniqueKey;
+
+    function appendScriptElement(id, d) {
+        if (typeof d === "undefined") { d = document; }
+        var element = document.createElement('script');
+        element.id = id;
+        document.head.appendChild(element);
+        return element;
+    }
+    teapo.appendScriptElement = appendScriptElement;
+
+    var ScriptElementStore = (function () {
+        function ScriptElementStore(_document) {
+            if (typeof _document === "undefined") { _document = document; }
+            this._document = _document;
+            this._changeDate = null;
+            this._changeDateElement = null;
+            this._documentElements = {};
+            this._staticDocuments = {};
+            for (var i = 0; i < this._document.scripts.length; i++) {
+                var s = this._document.scripts[i];
+                if (!s.id)
+                    continue;
+
+                if (s.id.charAt(0) === '/') {
+                    this._documentElements[s.id] = s;
+                } else if (s.id === 'changeDate') {
+                    this._changeDateElement = s;
+                    try  {
+                        this._changeDate = new Date(s.innerHTML);
+                    } catch (e) {
+                    }
+                } else if (s.id.charAt(0) === '#') {
+                    this._staticDocuments[s.id] = s.innerHTML;
+                }
+            }
+        }
+        ScriptElementStore.prototype.changeDate = function () {
+            return this._changeDate;
+        };
+
+        ScriptElementStore.prototype.documentNames = function () {
+            return Object.keys(this._documentElements);
+        };
+
+        ScriptElementStore.prototype.loadDocument = function (name) {
+            var element = this._documentElements[name];
+            if (!element)
+                return null;
+            var result = {
+                history: element.getAttribute('history'),
+                content: element.innerHTML
+            };
+            return result;
+        };
+
+        ScriptElementStore.prototype.saveDocument = function (name, history, content) {
+            var element = this._documentElements[name];
+            if (!element) {
+                element = appendScriptElement(name);
+                this._documentElements[name] = element;
+            }
+
+            element.setAttribute('history', history);
+            element.innerHTML = content;
+
+            this._updateChangeDate();
+        };
+
+        ScriptElementStore.prototype.deleteDocument = function (name) {
+            var element = this._documentElements[name];
+            if (!element)
+                return;
+
+            document.head.removeChild(element);
+            delete this._documentElements[name];
+
+            this._updateChangeDate();
+        };
+
+        ScriptElementStore.prototype.staticDocumentNames = function () {
+            return Object.keys(this._staticDocuments);
+        };
+
+        ScriptElementStore.prototype.readStaticDocument = function (name) {
+            return this._staticDocuments[name];
+        };
+
+        ScriptElementStore.prototype._updateChangeDate = function () {
+            if (!this._changeDateElement) {
+                this._changeDateElement = appendScriptElement('changeDate');
+            }
+            this._changeDateElement.innerHTML = new Date().toUTCString();
+        };
+        return ScriptElementStore;
+    })();
+    teapo.ScriptElementStore = ScriptElementStore;
+
+    var LocalStorageStore = (function () {
+        function LocalStorageStore(_localStorage, _uniqueKey) {
+            if (typeof _localStorage === "undefined") { _localStorage = localStorage; }
+            if (typeof _uniqueKey === "undefined") { _uniqueKey = getDocumentStoreUniqueKey(); }
+            this._localStorage = _localStorage;
+            this._uniqueKey = _uniqueKey;
+        }
+        LocalStorageStore.prototype.changeDate = function () {
+            var str = this._localStorage[this._uniqueKey + 'changeDate'];
+            if (!str)
+                return null;
+            try  {
+                return new Date(str);
+            } catch (e) {
+                return null;
+            }
+        };
+
+        LocalStorageStore.prototype.documentNames = function () {
+            var result = [];
+            var expectedLead = this._uniqueKey + '/';
+            for (var k in this._localStorage)
+                if (this._localStorage.hasOwnProperty(k)) {
+                    var lead = k.slice(0, expectedLead.length);
+                    if (lead !== expectedLead)
+                        continue;
+                    result.push(k.slice(expectedLead.length - 1));
+                }
+            return result;
+        };
+
+        LocalStorageStore.prototype.loadDocument = function (name) {
+            var str = this._localStorage[this._uniqueKey + name];
+            if (!str)
+                return null;
+            return JSON.parse(str);
+        };
+
+        LocalStorageStore.prototype.saveDocument = function (name, history, content) {
+            var d = { history: history, content: content };
+            this._localStorage[this._uniqueKey + name] = JSON.stringify(d);
+            this._localStorage[this._uniqueKey + 'changeDate'] = new Date().toUTCString();
+        };
+
+        LocalStorageStore.prototype.deleteDocument = function (name) {
+            var mangled = this._uniqueKey + name;
+            if (!this._localStorage[mangled])
+                return;
+
+            delete this._localStorage[mangled];
+            this._localStorage[this._uniqueKey + 'changeDate'] = new Date().toUTCString();
+        };
+        return LocalStorageStore;
+    })();
+    teapo.LocalStorageStore = LocalStorageStore;
+})(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
 /// <reference path='typings/codemirror.d.ts' />
 /// <reference path='TypeScriptService.ts' />
 /// <reference path='Document.ts' />
 /// <reference path='Folder.ts' />
+/// <reference path='DocumentPersistence.ts' />
 /// <reference path='modes.ts' />
 var teapo;
 (function (teapo) {
@@ -9806,7 +9973,10 @@ var teapo;
             this._editor = null;
             this._textarea = null;
             this._tsMode = null;
+            this._htmlStore = new teapo.ScriptElementStore();
+            this._lsStore = new teapo.LocalStorageStore();
             var staticScripts = {};
+            var htmlChangeDate = this._htmlStore.changeDate();
             for (var i = 0; i < document.scripts.length; i++) {
                 var s = document.scripts[i];
                 var tsAdd = [];

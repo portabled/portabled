@@ -16,6 +16,8 @@ module teapo {
     onselect: () => void = null;
     onunselect: () => void = null;
 
+    private _persistElement: HTMLScriptElement = null;
+
     constructor(
       public name: string, public parent: teapo.Folder) {
       

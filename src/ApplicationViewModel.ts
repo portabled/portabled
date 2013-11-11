@@ -4,6 +4,7 @@
 /// <reference path='TypeScriptService.ts' />
 /// <reference path='Document.ts' />
 /// <reference path='Folder.ts' />
+/// <reference path='DocumentPersistence.ts' />
 /// <reference path='modes.ts' />
 
 module teapo {
@@ -18,8 +19,13 @@ module teapo {
     private _textarea: HTMLTextAreaElement = null;
     private _tsMode: teapo.TypeScriptDocumentMode = null;
 
+    private _htmlStore = new teapo.ScriptElementStore();
+    private _lsStore = new teapo.LocalStorageStore();
+
     constructor (private _document = document) {
+
       var staticScripts = {};
+      var htmlChangeDate = this._htmlStore.changeDate();
       for (var i = 0; i < document.scripts.length; i++) {
         var s = <any>document.scripts[i];
         var tsAdd: teapo.Document[] = [];
