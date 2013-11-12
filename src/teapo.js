@@ -752,7 +752,9 @@ var teapo;
                     var doc = this._changedFilesToSave[f];
                     var hi = doc.getHistory();
                     var hiStr = JSON.stringify(hi);
-                    this._htmlStore.saveDocument(f, doc.getValue(), hiStr);
+                    var contentStr = doc.getValue();
+                    this._htmlStore.saveDocument(f, contentStr, hiStr);
+                    this._lsStore.saveDocument(f, contentStr, hiStr);
                 }
             this._changedFilesToSave = {};
         };
