@@ -233,27 +233,25 @@ function importFiles(repository, files, targetDir, callback) {
   function continueCopyFile(f, onCopyComplete) {
     if (repository.charAt(repository.length-1)!=='/')
       repository+='/';
-    onFileChanged(
-      repository+f,
-      function present() {
-        copyFile(repository+f, targetDir+f, function(error) {
-          console.log('  '+f+' ('+targetDir+') '+(error?error.message:' copied'));
-        });
-      },
-      function absent() {
-        console.log('  '+f+' ('+targetDir+') disappeared');
-      });
-
+    
     var shortName;
     if (f.lastIndexOf('/')>0)
       shortName = f.slice(f.lastIndexOf('/')+1);
     else
       shortName = f;
 
-    copyFile(
+    onFileChanged(
       repository+f,
-      targetDir+'/'+shortName,
-      function(error) {
+      function present() {
+        copyFile(repository+f, targetDir+'/'+shortName, function(error) {
+          console.log('  '+f+' ('+targetDir+') '+(error?error.message:' - update copied'));
+        });
+      },
+      function absent() {
+        console.log('  '+f+' ('+targetDir+') disappeared');
+      });
+
+    copyFile(repository+f, targetDir+'/'+shortName, function(error) {
         if (error)
           console.log('  '+error.message+' '+shortName);
         else
