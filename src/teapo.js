@@ -681,6 +681,8 @@ var teapo;
             this._tsMode = null;
             this._htmlStore = new teapo.ScriptElementStore();
             this._lsStore = new teapo.LocalStorageStore();
+            this._changedFilesToSave = {};
+            this._fileChangeTimeout = null;
             var staticScripts = {};
             var htmlStaticScriptNames = this._htmlStore.staticDocumentNames();
             for (var i = 0; i < htmlStaticScriptNames.length; i++) {
@@ -717,6 +719,7 @@ var teapo;
             this._tsMode = new teapo.TypeScriptDocumentMode(this._typescript.service);
         }
         ApplicationViewModel.prototype._addDocument = function (file, history, content) {
+            var _this = this;
             var f = this.root.getDocument(file);
             f.doc.setValue(content);
             if (history) {
@@ -727,6 +730,22 @@ var teapo;
                 }
             }
             this._typescript.addDocument(file, f.doc);
+
+            CodeMirror.on(f.doc, 'change', function (instance, change) {
+                _this._fileChange(file, f.doc);
+            });
+        };
+
+        ApplicationViewModel.prototype._fileChange = function (file, doc) {
+            var _this = this;
+            if (this._fileChangeTimeout)
+                clearTimeout(this._fileChangeTimeout);
+            this._fileChangeTimeout = setTimeout(function () {
+                return _this._saveChangedFiles();
+            }, 600);
+        };
+
+        ApplicationViewModel.prototype._saveChangedFiles = function () {
         };
 
         ApplicationViewModel.prototype.selectFile = function (file) {

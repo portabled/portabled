@@ -21,6 +21,8 @@ module teapo {
 
     private _htmlStore = new teapo.ScriptElementStore();
     private _lsStore = new teapo.LocalStorageStore();
+		private _changedFilesToSave: any = {};
+		private _fileChangeTimeout: number = null;
 
     constructor (private _document = document) {
 
@@ -71,6 +73,20 @@ module teapo {
 				catch (e) { }
 			}
 			this._typescript.addDocument(file, f.doc);
+
+			CodeMirror.on(f.doc, 'change', (instance, change) => {
+				this._fileChange(file, f.doc);
+			});
+		}
+
+		private _fileChange(file: string, doc: CodeMirror.Doc) {
+			this._changedFilesToSave[file] = doc;
+			if (this._fileChangeTimeout)
+				clearTimeout(this._fileChangeTimeout);
+			this._fileChangeTimeout = setTimeout(() => this._saveChangedFiles(), 600);
+		}
+
+		private _saveChangedFiles() {
 		}
 
     selectFile(file: teapo.Document) {
