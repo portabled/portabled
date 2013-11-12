@@ -738,6 +738,7 @@ var teapo;
 
         ApplicationViewModel.prototype._fileChange = function (file, doc) {
             var _this = this;
+            this._changedFilesToSave[file] = doc;
             if (this._fileChangeTimeout)
                 clearTimeout(this._fileChangeTimeout);
             this._fileChangeTimeout = setTimeout(function () {
@@ -746,6 +747,14 @@ var teapo;
         };
 
         ApplicationViewModel.prototype._saveChangedFiles = function () {
+            for (var f in this._changedFilesToSave)
+                if (this._changedFilesToSave.hasOwnProperty(f)) {
+                    var doc = this._changedFilesToSave[f];
+                    var hi = doc.getHistory();
+                    var hiStr = JSON.stringify(hi);
+                    this._htmlStore.saveDocument(f, doc.getValue(), hiStr);
+                }
+            this._changedFilesToSave = {};
         };
 
         ApplicationViewModel.prototype.selectFile = function (file) {

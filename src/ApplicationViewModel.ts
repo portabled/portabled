@@ -87,6 +87,13 @@ module teapo {
 		}
 
 		private _saveChangedFiles() {
+			for (var f in this._changedFilesToSave) if (this._changedFilesToSave.hasOwnProperty(f)) {
+				var doc = <CodeMirror.Doc>this._changedFilesToSave[f];
+				var hi = doc.getHistory();
+				var hiStr = JSON.stringify(hi);
+				this._htmlStore.saveDocument(f, doc.getValue(), hiStr);
+			}
+			this._changedFilesToSave = {};
 		}
 
     selectFile(file: teapo.Document) {
