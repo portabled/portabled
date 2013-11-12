@@ -30,33 +30,48 @@ module teapo {
         staticScripts[htmlStaticScriptNames[i]] = this._htmlStore.readStaticDocument(htmlStaticScriptNames[i]);
       }
 
-      var htmlChangeDate = this._htmlStore.changeDate();
-      
+      this._typescript = new teapo.TypeScriptService(staticScripts);
 
-      for (var i = 0; i < document.scripts.length; i++) {
-        var s = <any>document.scripts[i];
-        var tsAdd: teapo.Document[] = [];
-        if (s.id && s.id[0]==='/') {
-          var f = this.root.getDocument(s.id);
-          f.doc.setValue(s.innerHTML);
-          if (s.title) {
-            // TODO: restore history too
-          }
-          tsAdd.push(f);
-        }
-        else if (s.id && s.id[0]==='#') {
-          staticScripts[s.id] = s.innerHTML;
+			var htmlChangeDate = this._htmlStore.changeDate();
+      var lsChangeDate = this._lsStore.changeDate();
+      if (lsChangeDate
+        && (!htmlChangeDate || (htmlChangeDate.getTime()<=lsChangeDate.getTime()))) {
+        // use localStorage for the list of files,
+        // and revert to htmlStorage in case lsStore fails to retrive the document
+        // (we only stick stuff into lsStore when it's modified)
+        var fileList = this._lsStore.documentNames();
+        for (var i = 0; i < fileList.length; i++) {
+        	var doc = this._lsStore.loadDocument(fileList[i]);
+					if (!doc)
+						doc = this._htmlStore.loadDocument(fileList[i]);
+					this._addDocument(fileList[i], doc.history, doc.content);
         }
       }
+			else {
+				var fileList = this._htmlStore.documentNames();
+				for (var i = 0; i < fileList.length; i++) {
+        	var doc = this._htmlStore.loadDocument(fileList[i]);
+					this._addDocument(fileList[i], doc.history, doc.content);
+        }
+			}
 
       this.root.onselectFile = (f) => this.selectFile(f);
-      this._typescript = new teapo.TypeScriptService(staticScripts);
-      for (var i = 0; i < tsAdd.length; i++) {
-        this._typescript.addDocument(tsAdd[i].fullPath, tsAdd[i].doc);
-      }
 
       this._tsMode = new teapo.TypeScriptDocumentMode(this._typescript.service);
     }
+
+		private _addDocument(file: string, history: string, content: string) {
+			var f = this.root.getDocument(file);
+			f.doc.setValue(content);
+			if (history) {
+				try {
+					var h = JSON.parse(content);
+					f.doc.setHistory(h);
+				}
+				catch (e) { }
+			}
+			this._typescript.addDocument(file, f.doc);
+		}
 
     selectFile(file: teapo.Document) {
       this.activeDocument(file);
