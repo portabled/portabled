@@ -9035,9 +9035,9 @@ declare module TypeScript {
         private typeCheckCastExpression(assertionExpression, context, typeAssertionType);
         private resolveAssignmentExpression(binaryExpression, context);
         private getInstanceTypeForAssignment(lhs, type, context);
-        private chooseCommonType(a, b, context, comparisonInfo?);
         public widenType(type: TypeScript.PullTypeSymbol, ast?: TypeScript.AST, context?: TypeScript.PullTypeResolutionContext): TypeScript.PullTypeSymbol;
         public findBestCommonType(collection: IPullTypeCollection, context: TypeScript.PullTypeResolutionContext, comparisonInfo?: TypeComparisonInfo): TypeScript.PullTypeSymbol;
+        private typeIsBestCommonTypeCandidate(candidateType, collection, context);
         private typesAreIdenticalInEnclosingTypes(t1, t2, t1EnclosingType, t2EnclosingType, val?);
         public typesAreIdentical(t1: TypeScript.PullTypeSymbol, t2: TypeScript.PullTypeSymbol, val?: TypeScript.AST): boolean;
         private signatureGroupsAreIdentical(sg1, sg2);
@@ -10447,7 +10447,8 @@ declare module TypeScript.Services {
         private synchronizeHostDataWorker();
         private tryUpdateFile(compiler, fileName);
         public getScriptSnapshot(fileName: string): TypeScript.IScriptSnapshot;
-        public getHostFileName(fileName: string): string;
+        public getCachedHostFileName(fileName: string): string;
+        public getCachedTopLevelDeclaration(fileName: string): TypeScript.PullDecl;
         public compilationSettings(): TypeScript.ImmutableCompilationSettings;
         public fileNames(): string[];
         public cleanupSemanticCache(): void;
