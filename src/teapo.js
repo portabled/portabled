@@ -682,7 +682,13 @@ var teapo;
             this._htmlStore = new teapo.ScriptElementStore();
             this._lsStore = new teapo.LocalStorageStore();
             var staticScripts = {};
+            var htmlStaticScriptNames = this._htmlStore.staticDocumentNames();
+            for (var i = 0; i < htmlStaticScriptNames.length; i++) {
+                staticScripts[htmlStaticScriptNames[i]] = this._htmlStore.readStaticDocument(htmlStaticScriptNames[i]);
+            }
+
             var htmlChangeDate = this._htmlStore.changeDate();
+
             for (var i = 0; i < document.scripts.length; i++) {
                 var s = document.scripts[i];
                 var tsAdd = [];

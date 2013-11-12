@@ -25,7 +25,14 @@ module teapo {
     constructor (private _document = document) {
 
       var staticScripts = {};
+      var htmlStaticScriptNames = this._htmlStore.staticDocumentNames();
+      for (var i = 0; i<htmlStaticScriptNames.length; i++) {
+        staticScripts[htmlStaticScriptNames[i]] = this._htmlStore.readStaticDocument(htmlStaticScriptNames[i]);
+      }
+
       var htmlChangeDate = this._htmlStore.changeDate();
+      
+
       for (var i = 0; i < document.scripts.length; i++) {
         var s = <any>document.scripts[i];
         var tsAdd: teapo.Document[] = [];
