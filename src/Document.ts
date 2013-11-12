@@ -26,7 +26,13 @@ module teapo {
       this.doc = new CodeMirror.Doc('', this.mode);
     }
 
-    select() {
+    select(self,e) {
+      if (e) {
+        e.handled = true;
+        if (e.preventDefault)
+          e.preventDefault();
+      }
+
       this.active(true);
       if (this.parent) this._setContainsActiveDocument(this.parent, null);
 

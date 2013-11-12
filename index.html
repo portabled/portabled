@@ -9727,7 +9727,13 @@ var teapo;
             this.mode = teapo.detectDocumentMode(this.fullPath);
             this.doc = new CodeMirror.Doc('', this.mode);
         }
-        Document.prototype.select = function () {
+        Document.prototype.select = function (self, e) {
+            if (e) {
+                e.handled = true;
+                if (e.preventDefault)
+                    e.preventDefault();
+            }
+
             this.active(true);
             if (this.parent)
                 this._setContainsActiveDocument(this.parent, null);
