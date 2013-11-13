@@ -398,6 +398,7 @@ var teapo;
     var TypeScriptDocumentMode = (function () {
         function TypeScriptDocumentMode(_typescript) {
             this._typescript = _typescript;
+            this.mode = 'text/typescript';
         }
         TypeScriptDocumentMode.prototype.activateEditor = function (editor, fullPath) {
             return null;
@@ -405,6 +406,50 @@ var teapo;
         return TypeScriptDocumentMode;
     })();
     teapo.TypeScriptDocumentMode = TypeScriptDocumentMode;
+
+    var JavaScriptDocumentMode = (function () {
+        function JavaScriptDocumentMode() {
+            this.mode = 'text/html';
+        }
+        JavaScriptDocumentMode.prototype.activateEditor = function (editor, fullPath) {
+            return null;
+        };
+        return JavaScriptDocumentMode;
+    })();
+    teapo.JavaScriptDocumentMode = JavaScriptDocumentMode;
+
+    var XmlDocumentMode = (function () {
+        function XmlDocumentMode() {
+            this.mode = 'text/html';
+        }
+        XmlDocumentMode.prototype.activateEditor = function (editor, fullPath) {
+            return null;
+        };
+        return XmlDocumentMode;
+    })();
+    teapo.XmlDocumentMode = XmlDocumentMode;
+
+    var HtmlDocumentMode = (function () {
+        function HtmlDocumentMode() {
+            this.mode = 'text/html';
+        }
+        HtmlDocumentMode.prototype.activateEditor = function (editor, fullPath) {
+            return null;
+        };
+        return HtmlDocumentMode;
+    })();
+    teapo.HtmlDocumentMode = HtmlDocumentMode;
+
+    var CssDocumentMode = (function () {
+        function CssDocumentMode() {
+            this.mode = 'text/html';
+        }
+        CssDocumentMode.prototype.activateEditor = function (editor, fullPath) {
+            return null;
+        };
+        return CssDocumentMode;
+    })();
+    teapo.CssDocumentMode = CssDocumentMode;
 })(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
 /// <reference path='typings/codemirror.d.ts' />
@@ -679,6 +724,7 @@ var teapo;
             this._editor = null;
             this._textarea = null;
             this._tsMode = null;
+            this._disposeMode = null;
             this._htmlStore = new teapo.ScriptElementStore();
             this._lsStore = new teapo.LocalStorageStore();
             this._changedFilesToSave = {};
@@ -765,7 +811,13 @@ var teapo;
             this._editor.swapDoc(file.doc);
             this._editor.focus();
 
-            this._tsMode.activateEditor(this._editor, file.fullPath);
+            if (this._disposeMode) {
+                this._disposeMode.dispose();
+                this._disposeMode = null;
+            }
+            if (teapo.detectDocumentMode(file.fullPath) === 'text/typescript') {
+                this._disposeMode = this._tsMode.activateEditor(this._editor, file.fullPath);
+            }
         };
 
         ApplicationViewModel.prototype.attachTextarea = function (textarea) {

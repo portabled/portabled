@@ -18,6 +18,7 @@ module teapo {
     private _editor: CodeMirror.Editor = null;
     private _textarea: HTMLTextAreaElement = null;
     private _tsMode: teapo.TypeScriptDocumentMode = null;
+		private _disposeMode: { dispose(): void; } = null;
 
     private _htmlStore = new teapo.ScriptElementStore();
     private _lsStore = new teapo.LocalStorageStore();
@@ -104,7 +105,13 @@ module teapo {
       this._editor.swapDoc(file.doc);
       this._editor.focus();
 
-      this._tsMode.activateEditor(this._editor, file.fullPath);
+			if (this._disposeMode) {
+				this._disposeMode.dispose();
+				this._disposeMode = null;
+			}
+			if (detectDocumentMode(file.fullPath)==='text/typescript') {
+      	this._disposeMode = this._tsMode.activateEditor(this._editor, file.fullPath);
+			}
     }
 
     attachTextarea(textarea: HTMLTextAreaElement) {
