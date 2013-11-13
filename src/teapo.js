@@ -724,7 +724,7 @@ var teapo;
             f.doc.setValue(content);
             if (history) {
                 try  {
-                    var h = JSON.parse(content);
+                    var h = JSON.parse(history);
                     f.doc.setHistory(h);
                 } catch (e) {
                 }
