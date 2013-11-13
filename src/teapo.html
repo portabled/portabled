@@ -27,12 +27,16 @@
   <script inline='imports/typescript/typescriptServices.js'></script>
   <script id=bodyTemplate type='text/html'>
     <div class=teapo-file-list>
+			<button data-bind='click: newFile' style='display: block;'> ...new </button>
       <div data-bind='template: { name: "folder-template", foreach: root.folders }'>
       </div>
       <div data-bind='template: { name: "file-template", foreach: root.files }'>
       </div>
     </div>
     <textarea data-bind='attach: attachTextarea($element)'>text</textarea>
+		<button style='position: absolute; right: 0px; top: 0px;' data-bind='if: activeDocument'>
+			delete <span data-bind='text: activeDocument() ? activeDocument().name : null, click: deleteActiveFile'></span>
+		</button>
   </script>
   <script id=folder-template type='text/html'>
     <div class=teapo-file-item data-bind='attr: { title: fullPath+"." }'>

@@ -40,6 +40,15 @@ module teapo {
         this.onselect();
     }
 
+    delete() {
+		  var p = this.parent;
+			while (p) {
+				if (p.ondeleteFile)
+					p.ondeleteFile(this);
+				p = p.parent;
+			}
+		}
+
     unselect() {
       this.active(false);
 

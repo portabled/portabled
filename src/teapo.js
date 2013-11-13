@@ -244,6 +244,7 @@ var teapo;
             this.containsActiveDocument = ko.observable(false);
             this.onselectFile = null;
             this.onunselectFile = null;
+            this.ondeleteFile = null;
             this.fullPath = (parent ? parent.fullPath : '/') + (name ? name + '/' : '');
             this.nestLevel = parent ? parent.nestLevel + 1 : 0;
         }
@@ -485,6 +486,15 @@ var teapo;
 
             if (this.onselect)
                 this.onselect();
+        };
+
+        Document.prototype.delete = function () {
+            var p = this.parent;
+            while (p) {
+                if (p.ondeleteFile)
+                    p.ondeleteFile(this);
+                p = p.parent;
+            }
         };
 
         Document.prototype.unselect = function () {
@@ -759,11 +769,32 @@ var teapo;
             }
 
             this.root.onselectFile = function (f) {
-                return _this.selectFile(f);
+                return _this._selectFile(f);
+            };
+            this.root.ondeleteFile = function (f) {
+                return _this._deleteFile(f);
             };
 
             this._tsMode = new teapo.TypeScriptDocumentMode(this._typescript.service);
         }
+        ApplicationViewModel.prototype.newFile = function () {
+            var newPath = prompt('Full path:');
+            if (!newPath)
+                return;
+            var f = this.root.getDocument(newPath);
+            this._fileChange(f.fullPath, f.doc);
+            this._selectFile(f);
+        };
+
+        ApplicationViewModel.prototype.deleteActiveFile = function () {
+            if (!confirm('Are you sure to delete ' + this.activeDocument().fullPath + ' ?'))
+                return;
+            this.root.removeDocument(this.activeDocument().fullPath);
+            this.activeDocument(null);
+            // TODO: propagate no-active-document state to all the folders down
+            // TODO: remove from TypeScript too
+        };
+
         ApplicationViewModel.prototype._addDocument = function (file, history, content) {
             var _this = this;
             var f = this.root.getDocument(file);
@@ -805,7 +836,7 @@ var teapo;
             this._changedFilesToSave = {};
         };
 
-        ApplicationViewModel.prototype.selectFile = function (file) {
+        ApplicationViewModel.prototype._selectFile = function (file) {
             this.activeDocument(file);
 
             this._editor.swapDoc(file.doc);
@@ -818,6 +849,9 @@ var teapo;
             if (teapo.detectDocumentMode(file.fullPath) === 'text/typescript') {
                 this._disposeMode = this._tsMode.activateEditor(this._editor, file.fullPath);
             }
+        };
+
+        ApplicationViewModel.prototype._deleteFile = function (file) {
         };
 
         ApplicationViewModel.prototype.attachTextarea = function (textarea) {

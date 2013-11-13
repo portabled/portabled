@@ -58,10 +58,29 @@ module teapo {
         }
 			}
 
-      this.root.onselectFile = (f) => this.selectFile(f);
+      this.root.onselectFile = (f) => this._selectFile(f);
+			this.root.ondeleteFile = (f) => this._deleteFile(f);
 
       this._tsMode = new teapo.TypeScriptDocumentMode(this._typescript.service);
     }
+
+		newFile() {
+			var newPath = prompt('Full path:');
+			if (!newPath)
+				return;
+			var f = this.root.getDocument(newPath);
+			this._fileChange(f.fullPath, f.doc);
+			this._selectFile(f);
+		}
+
+		deleteActiveFile() {
+			if (!confirm('Are you sure to delete '+this.activeDocument().fullPath+' ?'))
+				return;
+			this.root.removeDocument(this.activeDocument().fullPath);
+			this.activeDocument(null);
+			// TODO: propagate no-active-document state to all the folders down
+			// TODO: remove from TypeScript too
+		}
 
 		private _addDocument(file: string, history: string, content: string) {
 			var f = this.root.getDocument(file);
@@ -99,7 +118,7 @@ module teapo {
 			this._changedFilesToSave = {};
 		}
 
-    selectFile(file: teapo.Document) {
+    private _selectFile(file: teapo.Document) {
       this.activeDocument(file);
 
       this._editor.swapDoc(file.doc);
@@ -113,6 +132,9 @@ module teapo {
       	this._disposeMode = this._tsMode.activateEditor(this._editor, file.fullPath);
 			}
     }
+
+		private _deleteFile(file: teapo.Document) {
+		}
 
     attachTextarea(textarea: HTMLTextAreaElement) {
       this._textarea = textarea;

@@ -15,6 +15,7 @@ module teapo {
 
     onselectFile: (doc: teapo.Document) => void = null;
     onunselectFile: () => void = null;
+		ondeleteFile: (doc: teapo.Document) => void = null;
 
     constructor(public name: string, public parent: teapo.Folder) {
       this.fullPath = (parent ? parent.fullPath : '/') + (name ? name+'/':'');
