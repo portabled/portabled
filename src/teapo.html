@@ -34,7 +34,7 @@
       </div>
     </div>
     <textarea data-bind='attach: attachTextarea($element)'>text</textarea>
-		<button style='position: absolute; right: 0px; top: 0px;' data-bind='if: activeDocument'>
+		<button style='position: absolute; right: 0px; top: 0px;' data-bind='visible: activeDocument'>
 			delete <span data-bind='text: activeDocument() ? activeDocument().name : null, click: deleteActiveFile'></span>
 		</button>
   </script>
