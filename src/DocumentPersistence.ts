@@ -127,27 +127,32 @@ module teapo {
     }
 
     documentNames(): string[] {
-      var result: string[] = [];
-      var expectedLead = this._uniqueKey + '/';
-      for (var k in this._localStorage) if (this._localStorage.hasOwnProperty(k)) {
-        var lead = k.slice(0,expectedLead.length);
-        if (lead!==expectedLead)
-          continue;
-        result.push(k.slice(expectedLead.length-1));
+      var filesStr = this._localStorage[this._uniqueKey+'*files'];
+      if (!filesStr) return [];
+      try {
+        return JSON.parse(filesStr);
       }
-      return result;
+      catch (ignoreJsonErrors) {
+        return [];
+      }
     }
 
+    
+
     loadDocument(name: string): { history: string; content: string; } {
-      var str = this._localStorage[this._uniqueKey+name];
-      if (!str) return null;
-      return JSON.parse(str);
+      var strContent = this._localStorage[this._uniqueKey+name];
+      if (strContent !== '' && !strContent) return null;
+      var strHistory = this._localStorage[this._uniqueKey+name+'*history'];
+      return {
+        history: strHistory,
+        content: strContent
+      };
     }
 
     saveDocument(name: string, history: string, content: string): void {
-      var d = { history: history, content: content };
-      this._localStorage[this._uniqueKey+name] = JSON.stringify(d);
-      this._localStorage[this._uniqueKey+'changeDate'] = new Date().toUTCString();
+      this._localStorage[this._uniqueKey+name] = content;
+      this._localStorage[this._uniqueKey+name+'*history'] = content;
+      this._localStorage[this._uniqueKey+'*changeDate'] = new Date().toUTCString();
     }
 
     deleteDocument(name: string): void {
