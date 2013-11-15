@@ -1656,8 +1656,10 @@ window.CodeMirror = (function() {
     }
     if (!updated && op.selectionChanged) updateSelection(cm);
     if (op.updateScrollPos) {
-      display.scroller.scrollTop = display.scrollbarV.scrollTop = doc.scrollTop = newScrollPos.scrollTop;
-      display.scroller.scrollLeft = display.scrollbarH.scrollLeft = doc.scrollLeft = newScrollPos.scrollLeft;
+      var top = Math.max(0, Math.min(display.scroller.scrollHeight - display.scroller.clientHeight, newScrollPos.scrollTop));
+      var left = Math.max(0, Math.min(display.scroller.scrollWidth - display.scroller.clientWidth, newScrollPos.scrollLeft));
+      display.scroller.scrollTop = display.scrollbarV.scrollTop = doc.scrollTop = top;
+      display.scroller.scrollLeft = display.scrollbarH.scrollLeft = doc.scrollLeft = left;
       alignHorizontally(cm);
       if (op.scrollToPos)
         scrollPosIntoView(cm, clipPos(cm.doc, op.scrollToPos.from),
@@ -2176,7 +2178,6 @@ window.CodeMirror = (function() {
           if (cm.state.draggingText) replaceRange(cm.doc, "", curFrom, curTo, "paste");
           cm.replaceSelection(text, null, "paste");
           focusInput(cm);
-          onFocus(cm);
         }
       }
       catch(e){}
@@ -3136,7 +3137,7 @@ window.CodeMirror = (function() {
 
   CodeMirror.prototype = {
     constructor: CodeMirror,
-    focus: function(){window.focus(); focusInput(this); onFocus(this); fastPoll(this);},
+    focus: function(){window.focus(); focusInput(this); fastPoll(this);},
 
     setOption: function(option, value) {
       var options = this.options, old = options[option];
@@ -5758,7 +5759,7 @@ window.CodeMirror = (function() {
     return true;
   }
 
-  var isExtendingChar = /[\u0300-\u036F\u0483-\u0487\u0488-\u0489\u0591-\u05BD\u05BF\u05C1-\u05C2\u05C4-\u05C5\u05C7\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7-\u06E8\u06EA-\u06ED\uA66F\uA670-\uA672\uA674-\uA67D\uA69F\udc00-\udfff]/;
+  var isExtendingChar = /[\u0300-\u036F\u0483-\u0487\u0488-\u0489\u0591-\u05BD\u05BF\u05C1-\u05C2\u05C4-\u05C5\u05C7\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7-\u06E8\u06EA-\u06ED\uA66F\u1DC0–\u1DFF\u20D0–\u20FF\uA670-\uA672\uA674-\uA67D\uA69F\udc00-\udfff\uFE20–\uFE2F]/;
 
   // DOM UTILITIES
 
@@ -6213,7 +6214,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
       "var": kw("var"), "const": kw("var"), "let": kw("var"),
       "function": kw("function"), "catch": kw("catch"),
       "for": kw("for"), "switch": kw("switch"), "case": kw("case"), "default": kw("default"),
-      "in": operator, "typeof": operator, "instanceof": operator,
+      "in": operator, "of": operator, "typeof": operator, "instanceof": operator,
       "true": atom, "false": atom, "null": atom, "undefined": atom, "NaN": atom, "Infinity": atom,
       "this": kw("this")
     };
@@ -6579,16 +6580,16 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
   function forspec1(type) {
     if (type == "var") return cont(vardef1, expect(";"), forspec2);
     if (type == ";") return cont(forspec2);
-    if (type == "variable") return cont(formaybein);
+    if (type == "variable") return cont(formaybeinof);
     return pass(expression, expect(";"), forspec2);
   }
-  function formaybein(_type, value) {
-    if (value == "in") return cont(expression);
+  function formaybeinof(_type, value) {
+    if (value == "in" || value == "of") return cont(expression);
     return cont(maybeoperatorComma, forspec2);
   }
   function forspec2(type, value) {
     if (type == ";") return cont(forspec3);
-    if (value == "in") return cont(expression);
+    if (value == "in" || value == "of") return cont(expression);
     return pass(expression, expect(";"), forspec3);
   }
   function forspec3(type) {
@@ -6941,7 +6942,7 @@ CodeMirror.defineMIME("application/typescript", { name: "javascript", typescript
         // Pop off end of array until { is reached
         while(state.stack.length){
           var removed = state.stack.pop();
-          if(removed.indexOf("{") > -1){
+          if(removed.indexOf("{") > -1 || removed == "block" || removed == "rule"){
             break;
           }
         }
@@ -7288,8 +7289,8 @@ CodeMirror.defineMIME("application/typescript", { name: "javascript", typescript
         }
         return ["variable", "variable"];
       },
-      ",": function(_stream, state) {
-        if (state.stack[state.stack.length - 1] == "propertyValue") {
+      ",": function(stream, state) {
+        if (state.stack[state.stack.length - 1] == "propertyValue" && stream.match(/^ *\$/, false)) {
           return ["operator", ";"];
         }
       },
@@ -7709,7 +7710,7 @@ if (!CodeMirror.mimeModes.hasOwnProperty("text/html"))
     if (close > -1) stream.backUp(cur.length - close);
     else if (m = cur.match(/<\/?$/)) {
       stream.backUp(cur.length);
-      if (!stream.match(pat, false)) stream.match(cur[0]);
+      if (!stream.match(pat, false)) stream.match(cur);
     }
     return style;
   }
@@ -8109,6 +8110,9 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
   <script>(function() {
   "use strict";
 
+  var HINT_ELEMENT_CLASS        = "CodeMirror-hint";
+  var ACTIVE_HINT_ELEMENT_CLASS = "CodeMirror-hint-active";
+
   CodeMirror.showHint = function(cm, getHints, options) {
     // We want a single cursor position.
     if (cm.somethingSelected()) return;
@@ -8248,6 +8252,13 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
     return ourMap;
   }
 
+  function getHintElement(stopAt, el) {
+    while (el && el != stopAt) {
+      if (el.nodeName.toUpperCase() === "LI") return el;
+      el = el.parentNode;
+    }
+  }
+
   function Widget(completion, data) {
     this.completion = completion;
     this.data = data;
@@ -8255,12 +8266,12 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
 
     var hints = this.hints = document.createElement("ul");
     hints.className = "CodeMirror-hints";
-    this.selectedHint = 0;
+    this.selectedHint = options.getDefaultSelection ? options.getDefaultSelection(cm,options,data) : 0;
 
     var completions = data.list;
     for (var i = 0; i < completions.length; ++i) {
       var elt = hints.appendChild(document.createElement("li")), cur = completions[i];
-      var className = "CodeMirror-hint" + (i ? "" : " CodeMirror-hint-active");
+      var className = HINT_ELEMENT_CLASS + (i != this.selectedHint ? "" : " " + ACTIVE_HINT_ELEMENT_CLASS);
       if (cur.className != null) className = cur.className + " " + className;
       elt.className = className;
       if (cur.render) cur.render(elt, data, cur);
@@ -8324,13 +8335,15 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
     });
 
     CodeMirror.on(hints, "dblclick", function(e) {
-      var t = e.target || e.srcElement;
-      if (t.hintId != null) {widget.changeActive(t.hintId); widget.pick();}
+      var t = getHintElement(hints, e.target || e.srcElement);
+      if (t && t.hintId != null) {widget.changeActive(t.hintId); widget.pick();}
     });
+
     CodeMirror.on(hints, "click", function(e) {
-      var t = e.target || e.srcElement;
-      if (t.hintId != null) widget.changeActive(t.hintId);
+      var t = getHintElement(hints, e.target || e.srcElement);
+      if (t && t.hintId != null) widget.changeActive(t.hintId);
     });
+
     CodeMirror.on(hints, "mousedown", function() {
       setTimeout(function(){cm.focus();}, 20);
     });
@@ -8365,9 +8378,9 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
         i = avoidWrap ? 0  : this.data.list.length - 1;
       if (this.selectedHint == i) return;
       var node = this.hints.childNodes[this.selectedHint];
-      node.className = node.className.replace(" CodeMirror-hint-active", "");
+      node.className = node.className.replace(" " + ACTIVE_HINT_ELEMENT_CLASS, "");
       node = this.hints.childNodes[this.selectedHint = i];
-      node.className += " CodeMirror-hint-active";
+      node.className += " " + ACTIVE_HINT_ELEMENT_CLASS;
       if (node.offsetTop < this.hints.scrollTop)
         this.hints.scrollTop = node.offsetTop - 3;
       else if (node.offsetTop + node.offsetHeight > this.hints.scrollTop + this.hints.clientHeight)
@@ -9098,16 +9111,15 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
 
 (function() {
   CodeMirror.defineOption("autoCloseTags", false, function(cm, val, old) {
-    if (val && (old == CodeMirror.Init || !old)) {
-      var map = {name: "autoCloseTags"};
-      if (typeof val != "object" || val.whenClosing)
-        map["'/'"] = function(cm) { return autoCloseSlash(cm); };
-      if (typeof val != "object" || val.whenOpening)
-        map["'>'"] = function(cm) { return autoCloseGT(cm); };
-      cm.addKeyMap(map);
-    } else if (!val && (old != CodeMirror.Init && old)) {
+    if (old != CodeMirror.Init && old)
       cm.removeKeyMap("autoCloseTags");
-    }
+    if (!val) return;
+    var map = {name: "autoCloseTags"};
+    if (typeof val != "object" || val.whenClosing)
+      map["'/'"] = function(cm) { return autoCloseSlash(cm); };
+    if (typeof val != "object" || val.whenOpening)
+      map["'>'"] = function(cm) { return autoCloseGT(cm); };
+    cm.addKeyMap(map);
   });
 
   var htmlDontClose = ["area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link", "meta", "param",
@@ -9977,29 +9989,31 @@ var teapo;
         };
 
         LocalStorageStore.prototype.documentNames = function () {
-            var result = [];
-            var expectedLead = this._uniqueKey + '/';
-            for (var k in this._localStorage)
-                if (this._localStorage.hasOwnProperty(k)) {
-                    var lead = k.slice(0, expectedLead.length);
-                    if (lead !== expectedLead)
-                        continue;
-                    result.push(k.slice(expectedLead.length - 1));
-                }
-            return result;
+            var filesStr = this._localStorage[this._uniqueKey + '*files'];
+            if (!filesStr)
+                return [];
+            try  {
+                return JSON.parse(filesStr);
+            } catch (ignoreJsonErrors) {
+                return [];
+            }
         };
 
         LocalStorageStore.prototype.loadDocument = function (name) {
-            var str = this._localStorage[this._uniqueKey + name];
-            if (!str)
+            var strContent = this._localStorage[this._uniqueKey + name];
+            if (strContent !== '' && !strContent)
                 return null;
-            return JSON.parse(str);
+            var strHistory = this._localStorage[this._uniqueKey + name + '*history'];
+            return {
+                history: strHistory,
+                content: strContent
+            };
         };
 
         LocalStorageStore.prototype.saveDocument = function (name, history, content) {
-            var d = { history: history, content: content };
-            this._localStorage[this._uniqueKey + name] = JSON.stringify(d);
-            this._localStorage[this._uniqueKey + 'changeDate'] = new Date().toUTCString();
+            this._localStorage[this._uniqueKey + name] = content;
+            this._localStorage[this._uniqueKey + name + '*history'] = content;
+            this._localStorage[this._uniqueKey + '*changeDate'] = new Date().toUTCString();
         };
 
         LocalStorageStore.prototype.deleteDocument = function (name) {
