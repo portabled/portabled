@@ -8339,16 +8339,18 @@ declare module TypeScript {
         public isAlias(): boolean;
         public isContainer(): boolean;
         constructor(name: string, declKind: TypeScript.PullElementKind);
-        private findAliasedType(externalModule, aliasSymbols?, lookIntoOnlyExportedAlias?, visitedExternalModuleDeclarations?);
-        public getAliasedSymbol(scopeSymbol: PullSymbol): PullTypeAliasSymbol[];
+        private findAliasedType(scopeSymbol, skipScopeSymbolAliasesLookIn?, lookIntoOnlyExportedAlias?, aliasSymbols?, visitedScopeDeclarations?);
+        public getExternalAliasedSymbols(scopeSymbol: PullSymbol): PullTypeAliasSymbol[];
         private isExternalModuleReferenceAlias(aliasSymbol);
-        public getScopedDynamicModuleAlias(scopeSymbol: PullSymbol): PullTypeAliasSymbol[];
+        private getExportedInternalAliasSymbol(scopeSymbol);
+        public getAliasSymbolName(scopeSymbol: PullSymbol, aliasNameGetter: (symbol: PullTypeAliasSymbol) => string, aliasPartsNameGetter: (symbol: PullTypeAliasSymbol) => string, skipInternalAlias?: boolean): string;
         public _getResolver(): TypeScript.PullTypeResolver;
+        public _resolveDeclaredSymbol(): PullSymbol;
         /** Use getName for type checking purposes, and getDisplayName to report an error or display info to the user.
         * They will differ when the identifier is an escaped unicode character or the identifier "__proto__".
         */
         public getName(scopeSymbol?: PullSymbol, useConstraintInName?: boolean): string;
-        public getDisplayName(scopeSymbol?: PullSymbol, useConstraintInName?: boolean): string;
+        public getDisplayName(scopeSymbol?: PullSymbol, useConstraintInName?: boolean, skipInternalAliasName?: boolean): string;
         public getIsSpecialized(): boolean;
         public getRootSymbol(): PullSymbol;
         public setRootSymbol(symbol: PullSymbol): void;
@@ -8358,6 +8360,7 @@ declare module TypeScript {
         public getEnclosingSignature(): PullSignatureSymbol;
         public addDeclaration(decl: TypeScript.PullDecl): void;
         public getDeclarations(): TypeScript.PullDecl[];
+        public hasDeclaration(decl: TypeScript.PullDecl): boolean;
         public setContainer(containerSymbol: PullTypeSymbol): void;
         public getContainer(): PullTypeSymbol;
         public setResolved(): void;
@@ -8370,8 +8373,8 @@ declare module TypeScript {
         public toString(scopeSymbol?: PullSymbol, useConstraintInName?: boolean): string;
         public getNamePartForFullName(): string;
         public fullName(scopeSymbol?: PullSymbol): string;
-        public getScopedName(scopeSymbol?: PullSymbol, useConstraintInName?: boolean): string;
-        public getScopedNameEx(scopeSymbol?: PullSymbol, useConstraintInName?: boolean, getPrettyTypeName?: boolean, getTypeParamMarkerInfo?: boolean): TypeScript.MemberName;
+        public getScopedName(scopeSymbol?: PullSymbol, skipTypeParametersInName?: boolean, useConstraintInName?: boolean, skipInternalAliasName?: boolean): string;
+        public getScopedNameEx(scopeSymbol?: PullSymbol, skipTypeParametersInName?: boolean, useConstraintInName?: boolean, getPrettyTypeName?: boolean, getTypeParamMarkerInfo?: boolean, skipInternalAliasName?: boolean): TypeScript.MemberName;
         public getTypeName(scopeSymbol?: PullSymbol, getPrettyTypeName?: boolean): string;
         public getTypeNameEx(scopeSymbol?: PullSymbol, getPrettyTypeName?: boolean): TypeScript.MemberName;
         private getTypeNameForFunctionSignature(prefix, scopeSymbol?, getPrettyTypeName?);
@@ -8541,11 +8544,12 @@ declare module TypeScript {
         public findTypeParameter(name: string): PullTypeParameterSymbol;
         public setResolved(): void;
         public getNamePartForFullName(): string;
-        public getScopedName(scopeSymbol?: PullSymbol, useConstraintInName?: boolean): string;
+        public getScopedName(scopeSymbol?: PullSymbol, skipTypeParametersInName?: boolean, useConstraintInName?: boolean, skipInternalAliasName?: boolean): string;
         public isNamedTypeSymbol(): boolean;
         public toString(scopeSymbol?: PullSymbol, useConstraintInName?: boolean): string;
-        public getScopedNameEx(scopeSymbol?: PullSymbol, useConstraintInName?: boolean, getPrettyTypeName?: boolean, getTypeParamMarkerInfo?: boolean): TypeScript.MemberName;
+        public getScopedNameEx(scopeSymbol?: PullSymbol, skipTypeParametersInName?: boolean, useConstraintInName?: boolean, getPrettyTypeName?: boolean, getTypeParamMarkerInfo?: boolean, skipInternalAliasName?: boolean): TypeScript.MemberName;
         public hasOnlyOverloadCallSignatures(): boolean;
+        public getTypeOfSymbol(): PullSymbol;
         private getMemberTypeNameEx(topLevel, scopeSymbol?, getPrettyTypeName?);
         public getGenerativeTypeClassification(enclosingType: PullTypeSymbol): TypeScript.GenerativeTypeClassification;
         public wrapsSomeTypeParameter(typeParameterArgumentMap: TypeScript.CandidateInferenceInfo[]): boolean;
@@ -8572,7 +8576,7 @@ declare module TypeScript {
         constructor(anyType: PullTypeSymbol, name: string);
         public isError(): boolean;
         public getName(scopeSymbol?: PullSymbol, useConstraintInName?: boolean): string;
-        public getDisplayName(scopeSymbol?: PullSymbol, useConstraintInName?: boolean): string;
+        public getDisplayName(scopeSymbol?: PullSymbol, useConstraintInName?: boolean, skipInternalAliasName?: boolean): string;
         public toString(scopeSymbol?: PullSymbol, useConstraintInName?: boolean): string;
     }
     class PullContainerSymbol extends PullTypeSymbol {
@@ -8643,7 +8647,7 @@ declare module TypeScript {
         public isGeneric(): boolean;
         public fullName(scopeSymbol?: PullSymbol): string;
         public getName(scopeSymbol?: PullSymbol, useConstraintInName?: boolean): string;
-        public getDisplayName(scopeSymbol?: PullSymbol, useConstraintInName?: boolean): string;
+        public getDisplayName(scopeSymbol?: PullSymbol, useConstraintInName?: boolean, skipInternalAliasName?: boolean): string;
         public isExternallyVisible(inIsExternallyVisibleSymbols?: PullSymbol[]): boolean;
     }
     class PullAccessorSymbol extends PullSymbol {
@@ -8969,7 +8973,8 @@ declare module TypeScript {
         private postTypeCheckNameExpression(nameAST, context);
         private typeCheckNameExpression(nameAST, context);
         private resolveNameExpression(nameAST, context);
-        private isSomeFunctionScope(declPath);
+        private getSomeInnermostFunctionScopeDecl(declPath);
+        private isFromFunctionScope(nameSymbol, functionScopeDecl);
         private computeNameExpression(nameAST, context, reportDiagnostics);
         private getCurrentParameterIndexForFunction(parameter, funcDecl);
         private resolveMemberAccessExpression(dottedNameAST, context);
@@ -9045,27 +9050,28 @@ declare module TypeScript {
         private substituteUpperBoundForType(type);
         private symbolsShareDeclaration(symbol1, symbol2);
         private sourceExtendsTarget(source, target, context);
-        private sourceIsSubtypeOfTarget(source, target, context, comparisonInfo?, isComparingInstantiatedSignatures?);
-        private sourceMembersAreSubtypeOfTargetMembers(source, target, context, comparisonInfo, isComparingInstantiatedSignatures?);
-        private sourcePropertyIsSubtypeOfTargetProperty(source, target, sourceProp, targetProp, context, comparisonInfo, isComparingInstantiatedSignatures?);
-        private sourceCallSignaturesAreSubtypeOfTargetCallSignatures(source, target, context, comparisonInfo, isComparingInstantiatedSignatures?);
-        private sourceConstructSignaturesAreSubtypeOfTargetConstructSignatures(source, target, context, comparisonInfo, isComparingInstantiatedSignatures?);
-        private sourceIndexSignaturesAreSubtypeOfTargetIndexSignatures(source, target, context, comparisonInfo, isComparingInstantiatedSignatures?);
-        private typeIsSubtypeOfFunction(source, context);
-        private signatureIsSubtypeOfTarget(s1, s2, context, comparisonInfo?, isComparingInstantiatedSignatures?);
-        private sourceIsAssignableToTarget(source, target, context, comparisonInfo?, isComparingInstantiatedSignatures?);
-        private signatureIsAssignableToTarget(s1, s2, context, comparisonInfo, isComparingInstantiatedSignatures?);
-        private sourceIsRelatableToTargetInEnclosingTypes(source, target, sourceEnclosingType, targetEnclosingType, assignableTo, comparisonCache, context, comparisonInfo, isComparingInstantiatedSignatures);
-        private sourceIsRelatableToTarget(source, target, assignableTo, comparisonCache, context, comparisonInfo, isComparingInstantiatedSignatures);
-        private sourceMembersAreRelatableToTargetMembers(source, target, assignableTo, comparisonCache, context, comparisonInfo, isComparingInstantiatedSignatures);
-        private infinitelyExpandingSourceTypeIsRelatableToTargetType(sourceType, targetType, assignableTo, comparisonCache, context, comparisonInfo, isComparingInstantiatedSignatures);
+        private sourceIsSubtypeOfTarget(source, target, ast, context, comparisonInfo?, isComparingInstantiatedSignatures?);
+        private sourceMembersAreSubtypeOfTargetMembers(source, target, ast, context, comparisonInfo, isComparingInstantiatedSignatures?);
+        private sourcePropertyIsSubtypeOfTargetProperty(source, target, sourceProp, targetProp, ast, context, comparisonInfo, isComparingInstantiatedSignatures?);
+        private sourceCallSignaturesAreSubtypeOfTargetCallSignatures(source, target, ast, context, comparisonInfo, isComparingInstantiatedSignatures?);
+        private sourceConstructSignaturesAreSubtypeOfTargetConstructSignatures(source, target, ast, context, comparisonInfo, isComparingInstantiatedSignatures?);
+        private sourceIndexSignaturesAreSubtypeOfTargetIndexSignatures(source, target, ast, context, comparisonInfo, isComparingInstantiatedSignatures?);
+        private typeIsSubtypeOfFunction(source, ast, context);
+        private signatureIsSubtypeOfTarget(s1, s2, ast, context, comparisonInfo?, isComparingInstantiatedSignatures?);
+        private sourceIsAssignableToTarget(source, target, ast, context, comparisonInfo?, isComparingInstantiatedSignatures?);
+        private signatureIsAssignableToTarget(s1, s2, ast, context, comparisonInfo, isComparingInstantiatedSignatures?);
+        private getSymbolForRelationshipCheck(symbol);
+        private sourceIsRelatableToTargetInEnclosingTypes(source, target, sourceEnclosingType, targetEnclosingType, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
+        private sourceIsRelatableToTarget(source, target, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
+        private sourceMembersAreRelatableToTargetMembers(source, target, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
+        private infinitelyExpandingSourceTypeIsRelatableToTargetType(sourceType, targetType, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
         private infinitelyExpandingTypesAreIdentical(sourceType, targetType);
-        private sourcePropertyIsRelatableToTargetProperty(source, target, sourceProp, targetProp, assignableTo, comparisonCache, context, comparisonInfo, isComparingInstantiatedSignatures);
-        private sourceCallSignaturesAreRelatableToTargetCallSignatures(source, target, assignableTo, comparisonCache, context, comparisonInfo, isComparingInstantiatedSignatures);
-        private sourceConstructSignaturesAreRelatableToTargetConstructSignatures(source, target, assignableTo, comparisonCache, context, comparisonInfo, isComparingInstantiatedSignatures);
-        private sourceIndexSignaturesAreRelatableToTargetIndexSignatures(source, target, assignableTo, comparisonCache, context, comparisonInfo, isComparingInstantiatedSignatures);
-        private signatureGroupIsRelatableToTarget(sourceSG, targetSG, assignableTo, comparisonCache, context, comparisonInfo, isComparingInstantiatedSignatures);
-        private signatureIsRelatableToTarget(sourceSig, targetSig, assignableTo, comparisonCache, context, comparisonInfo, isComparingInstantiatedSignatures);
+        private sourcePropertyIsRelatableToTargetProperty(source, target, sourceProp, targetProp, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
+        private sourceCallSignaturesAreRelatableToTargetCallSignatures(source, target, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
+        private sourceConstructSignaturesAreRelatableToTargetConstructSignatures(source, target, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
+        private sourceIndexSignaturesAreRelatableToTargetIndexSignatures(source, target, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
+        private signatureGroupIsRelatableToTarget(sourceSG, targetSG, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
+        private signatureIsRelatableToTarget(sourceSig, targetSig, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
         private resolveOverloads(application, group, haveTypeArgumentsAtCallSite, context, diagnostics);
         private getCallTargetErrorSpanAST(callEx);
         private overloadHasCorrectArity(signature, args);
@@ -9075,7 +9081,7 @@ declare module TypeScript {
         private overloadIsApplicableForObjectLiteralArgument(paramType, arg, argIndex, context, comparisonInfo);
         private overloadIsApplicableForArrayLiteralArgument(paramType, arg, argIndex, context, comparisonInfo);
         private overloadIsApplicableForOtherArgument(paramType, arg, argIndex, context, comparisonInfo);
-        private overloadIsApplicableForArgumentHelper(paramType, argSym, argumentIndex, comparisonInfo, context);
+        private overloadIsApplicableForArgumentHelper(paramType, argSym, argumentIndex, comparisonInfo, arg, context);
         private inferArgumentTypesForSignature(signature, argContext, comparisonInfo, context);
         private typeParametersAreInScopeAtArgumentList(typeParameters, args);
         private relateTypeToTypeParametersInEnclosingType(expressionType, parameterType, expressionTypeEnclosingType, parameterTypeEnclosingType, shouldFix, argContext, context);
@@ -9123,6 +9129,7 @@ declare module TypeScript {
         private isReference(ast, astSymbol);
         private checkForSuperMemberAccess(expression, name, resolvedName, context);
         private getEnclosingDeclForAST(ast);
+        private getEnclosingSymbolForAST(ast);
         private checkForPrivateMemberAccess(name, expressionType, resolvedName, context);
         public instantiateType(type: TypeScript.PullTypeSymbol, typeParameterArgumentMap: TypeScript.PullTypeSymbol[], instantiateFunctionTypeParameters?: boolean): TypeScript.PullTypeSymbol;
         public instantiateSignature(signature: TypeScript.PullSignatureSymbol, typeParameterArgumentMap: TypeScript.PullTypeSymbol[], instantiateFunctionTypeParameters?: boolean): TypeScript.PullSignatureSymbol;
@@ -9291,6 +9298,7 @@ declare module TypeScript {
         function isNameNumeric(name: string): boolean;
         function typeSymbolsAreIdentical(a: TypeScript.PullTypeSymbol, b: TypeScript.PullTypeSymbol): boolean;
         function getRootType(type: TypeScript.PullTypeSymbol): TypeScript.PullTypeSymbol;
+        function isSymbolLocal(symbol: TypeScript.PullSymbol): boolean;
     }
 }
 declare module TypeScript {
@@ -10588,7 +10596,6 @@ declare module TypeScript.Services {
         private getCompletionEntriesForKeywords(keywords, result);
         public getCompletionEntryDetails(fileName: string, position: number, entryName: string): Services.CompletionEntryDetails;
         private tryFindDeclFromPreviousCompilerVersion(invalidatedDecl);
-        private isLocal(symbol);
         private getModuleOrEnumKind(symbol);
         private mapPullElementKind(kind, symbol?, useConstructorAsClass?, varIsFunction?, functionIsConstructor?);
         private getScriptElementKindModifiers(symbol);
