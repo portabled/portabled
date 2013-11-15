@@ -1387,8 +1387,10 @@ window.CodeMirror = (function() {
     }
     if (!updated && op.selectionChanged) updateSelection(cm);
     if (op.updateScrollPos) {
-      display.scroller.scrollTop = display.scrollbarV.scrollTop = doc.scrollTop = newScrollPos.scrollTop;
-      display.scroller.scrollLeft = display.scrollbarH.scrollLeft = doc.scrollLeft = newScrollPos.scrollLeft;
+      var top = Math.max(0, Math.min(display.scroller.scrollHeight - display.scroller.clientHeight, newScrollPos.scrollTop));
+      var left = Math.max(0, Math.min(display.scroller.scrollWidth - display.scroller.clientWidth, newScrollPos.scrollLeft));
+      display.scroller.scrollTop = display.scrollbarV.scrollTop = doc.scrollTop = top;
+      display.scroller.scrollLeft = display.scrollbarH.scrollLeft = doc.scrollLeft = left;
       alignHorizontally(cm);
       if (op.scrollToPos)
         scrollPosIntoView(cm, clipPos(cm.doc, op.scrollToPos.from),
@@ -1907,7 +1909,6 @@ window.CodeMirror = (function() {
           if (cm.state.draggingText) replaceRange(cm.doc, "", curFrom, curTo, "paste");
           cm.replaceSelection(text, null, "paste");
           focusInput(cm);
-          onFocus(cm);
         }
       }
       catch(e){}
@@ -2867,7 +2868,7 @@ window.CodeMirror = (function() {
 
   CodeMirror.prototype = {
     constructor: CodeMirror,
-    focus: function(){window.focus(); focusInput(this); onFocus(this); fastPoll(this);},
+    focus: function(){window.focus(); focusInput(this); fastPoll(this);},
 
     setOption: function(option, value) {
       var options = this.options, old = options[option];
@@ -5489,7 +5490,7 @@ window.CodeMirror = (function() {
     return true;
   }
 
-  var isExtendingChar = /[\u0300-\u036F\u0483-\u0487\u0488-\u0489\u0591-\u05BD\u05BF\u05C1-\u05C2\u05C4-\u05C5\u05C7\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7-\u06E8\u06EA-\u06ED\uA66F\uA670-\uA672\uA674-\uA67D\uA69F\udc00-\udfff]/;
+  var isExtendingChar = /[\u0300-\u036F\u0483-\u0487\u0488-\u0489\u0591-\u05BD\u05BF\u05C1-\u05C2\u05C4-\u05C5\u05C7\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7-\u06E8\u06EA-\u06ED\uA66F\u1DC0–\u1DFF\u20D0–\u20FF\uA670-\uA672\uA674-\uA67D\uA69F\udc00-\udfff\uFE20–\uFE2F]/;
 
   // DOM UTILITIES
 
