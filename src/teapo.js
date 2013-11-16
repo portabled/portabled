@@ -54,8 +54,8 @@ var teapo;
                 },
                 getScriptVersion: function (fileName) {
                     var script = _this._scriptCache[fileName];
-                    if (script && script.version)
-                        return script.version;
+                    if (script)
+                        return script.getVersion();
                     return -1;
                 },
                 getScriptIsOpen: function (fileName) {
@@ -157,10 +157,20 @@ var teapo;
         * Need to find out who's calling into this (and kill them, naturally).
         */
         DocumentState.prototype.getVersion = function () {
+            console.log('DocumentState.getVersion() // ', this._version);
             return this._version;
         };
 
         DocumentState.prototype.getText = function (start, end) {
+            var text = this._getTextCore(start, end);
+            var lead = start ? this._getTextCore(0, start) : '';
+            var length = this._getLengthCore();
+            var trail = length > end ? this._getTextCore(end, length) : '';
+            console.log('DocumentState.getText(', start, ',', end, ') // "' + lead + '[' + text + ']' + trail + '"');
+            return text;
+        };
+
+        DocumentState.prototype._getTextCore = function (start, end) {
             var startPos = this._doc.posFromIndex(start);
             var endPos = this._doc.posFromIndex(end);
             var text = this._doc.getRange(startPos, endPos);
@@ -168,13 +178,19 @@ var teapo;
         };
 
         DocumentState.prototype.getLength = function () {
+            var length = this._getLengthCore();
+            console.log('DocumentState.getLength() // ', length);
+            return length;
+        };
+        DocumentState.prototype._getLengthCore = function () {
             var lineCount = this._doc.lineCount();
             if (lineCount === 0)
                 return 0;
 
             var lastLineStart = this._doc.indexFromPos({ line: lineCount - 1, ch: 0 });
             var lastLine = this._doc.getLine(lineCount - 1);
-            return lastLineStart + lastLine.length;
+            var length = lastLineStart + lastLine.length;
+            return length;
         };
 
         DocumentState.prototype.getLineStartPositions = function () {
@@ -184,6 +200,7 @@ var teapo;
                 result.push(current);
                 current += lineHandle.text.length + 1; // plus EOL character
             });
+            console.log('DocumentState.getLineStartPositions() // ', result);
             return result;
         };
 
@@ -201,8 +218,11 @@ var teapo;
                 chunk = this._changes;
             else
                 chunk = this._changes.slice(scriptVersion - startVersion);
-            this._changes.length = 0;
-            return TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(this._changes);
+
+            //this._changes.length = 0;
+            var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(this._changes);
+            console.log('DocumentState.getTextChangeRangeSinceVersion(', scriptVersion, ') // ', result);
+            return result;
         };
 
         DocumentState.prototype._onChange = function (change) {
@@ -748,9 +768,15 @@ var teapo;
         };
 
         LocalStorageStore.prototype.saveDocument = function (name, history, content) {
+            var previousContent = this._localStorage[this._uniqueKey + name];
             this._localStorage[this._uniqueKey + name] = content;
-            this._localStorage[this._uniqueKey + name + '*history'] = content;
+            this._localStorage[this._uniqueKey + name + '*history'] = history;
             this._localStorage[this._uniqueKey + '*changeDate'] = new Date().toUTCString();
+            if (typeof previousContent !== 'string') {
+                var files = this.documentNames();
+                files.push(name);
+                this._localStorage[this._uniqueKey + '*files'] = files;
+            }
         };
 
         LocalStorageStore.prototype.deleteDocument = function (name) {
@@ -803,9 +829,7 @@ var teapo;
             var fileList = this._lsStore.documentNames();
             for (var i = 0; i < fileList.length; i++) {
                 var doc = this._lsStore.loadDocument(fileList[i]);
-                if (!doc)
-                    doc = this._htmlStore.loadDocument(fileList[i]);
-                this._addDocument(fileList[i], doc.history, doc.content);
+                this._addDocument(fileList[i], doc);
             }
 
             this.root.onselectFile = function (f) {
@@ -835,13 +859,13 @@ var teapo;
             // TODO: remove from TypeScript too
         };
 
-        ApplicationViewModel.prototype._addDocument = function (file, history, content) {
+        ApplicationViewModel.prototype._addDocument = function (file, doc) {
             var _this = this;
             var f = this.root.getDocument(file);
-            f.doc.setValue(content);
-            if (history) {
+            f.doc.setValue(doc.content);
+            if (doc.history) {
                 try  {
-                    var h = JSON.parse(history);
+                    var h = JSON.parse(doc.history);
                     f.doc.setHistory(h);
                 } catch (e) {
                 }

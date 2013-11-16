@@ -159,9 +159,15 @@ module teapo {
     }
 
     saveDocument(name: string, history: string, content: string): void {
+      var previousContent = this._localStorage[this._uniqueKey+name];
       this._localStorage[this._uniqueKey+name] = content;
-      this._localStorage[this._uniqueKey+name+'*history'] = content;
+      this._localStorage[this._uniqueKey+name+'*history'] = history;
       this._localStorage[this._uniqueKey+'*changeDate'] = new Date().toUTCString();
+      if (typeof previousContent!=='string') {
+        var files = this.documentNames();
+        files.push(name);
+        this._localStorage[this._uniqueKey+'*files'] = files;
+      }
     }
 
     deleteDocument(name: string): void {

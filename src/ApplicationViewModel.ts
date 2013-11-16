@@ -39,70 +39,68 @@ module teapo {
       var fileList = this._lsStore.documentNames();
       for (var i = 0; i < fileList.length; i++) {
           var doc = this._lsStore.loadDocument(fileList[i]);
-          if (!doc)
-            doc = this._htmlStore.loadDocument(fileList[i]);
-          this._addDocument(fileList[i], doc.history, doc.content);
+          this._addDocument(fileList[i], doc);
       }
 
       this.root.onselectFile = (f) => this._selectFile(f);
-			this.root.ondeleteFile = (f) => this._deleteFile(f);
+      this.root.ondeleteFile = (f) => this._deleteFile(f);
 
       this._tsMode = new teapo.TypeScriptDocumentMode(this._typescript.service);
     }
 
-		newFile() {
-			var newPath = prompt('Full path:');
-			if (!newPath)
-				return;
-			var f = this.root.getDocument(newPath);
-			this._fileChange(f.fullPath, f.doc);
-			this._selectFile(f);
-		}
+    newFile() {
+      var newPath = prompt('Full path:');
+      if (!newPath)
+          return;
+      var f = this.root.getDocument(newPath);
+      this._fileChange(f.fullPath, f.doc);
+      this._selectFile(f);
+    }
 
-		deleteActiveFile() {
-			if (!confirm('Are you sure to delete '+this.activeDocument().fullPath+' ?'))
-				return;
-			this.root.removeDocument(this.activeDocument().fullPath);
-			this.activeDocument(null);
-			// TODO: propagate no-active-document state to all the folders down
-			// TODO: remove from TypeScript too
-		}
+    deleteActiveFile() {
+      if (!confirm('Are you sure to delete '+this.activeDocument().fullPath+' ?'))
+        return;
+      this.root.removeDocument(this.activeDocument().fullPath);
+      this.activeDocument(null);
+      // TODO: propagate no-active-document state to all the folders down
+      // TODO: remove from TypeScript too
+    }
 
-		private _addDocument(file: string, history: string, content: string) {
-			var f = this.root.getDocument(file);
-			f.doc.setValue(content);
-			if (history) {
-				try {
-					var h = JSON.parse(history);
-					f.doc.setHistory(h);
-				}
-				catch (e) { }
-			}
-			this._typescript.addDocument(file, f.doc);
+    private _addDocument(file: string, doc: { history: string; content: string; }) {
+        var f = this.root.getDocument(file);
+        f.doc.setValue(doc.content);
+        if (doc.history) {
+            try {
+                var h = JSON.parse(doc.history);
+                f.doc.setHistory(h);
+            }
+            catch (e) { }
+        }
+        this._typescript.addDocument(file, f.doc);
 
-			CodeMirror.on(f.doc, 'change', (instance, change) => {
-				this._fileChange(file, f.doc);
-			});
-		}
+        CodeMirror.on(f.doc, 'change', (instance, change) => {
+          this._fileChange(file, f.doc);
+        });
+    }
 
-		private _fileChange(file: string, doc: CodeMirror.Doc) {
-			this._changedFilesToSave[file] = doc;
-			if (this._fileChangeTimeout)
-				clearTimeout(this._fileChangeTimeout);
-			this._fileChangeTimeout = setTimeout(() => this._saveChangedFiles(), 600);
-		}
+    private _fileChange(file: string, doc: CodeMirror.Doc) {
+        this._changedFilesToSave[file] = doc;
+        if (this._fileChangeTimeout)
+            clearTimeout(this._fileChangeTimeout);
+        this._fileChangeTimeout = setTimeout(() => this._saveChangedFiles(), 600);
+    }
 
-		private _saveChangedFiles() {
-			for (var f in this._changedFilesToSave) if (this._changedFilesToSave.hasOwnProperty(f)) {
-				var doc = <CodeMirror.Doc>this._changedFilesToSave[f];
-				var hi = doc.getHistory();
-				var hiStr = JSON.stringify(hi);
-				var contentStr = doc.getValue();
-				this._htmlStore.saveDocument(f, hiStr, contentStr);
-				this._lsStore.saveDocument(f, hiStr, contentStr);
-			}
-			this._changedFilesToSave = {};
-		}
+    private _saveChangedFiles() {
+        for (var f in this._changedFilesToSave) if (this._changedFilesToSave.hasOwnProperty(f)) {
+            var doc = <CodeMirror.Doc>this._changedFilesToSave[f];
+            var hi = doc.getHistory();
+            var hiStr = JSON.stringify(hi);
+            var contentStr = doc.getValue();
+            this._htmlStore.saveDocument(f, hiStr, contentStr);
+            this._lsStore.saveDocument(f, hiStr, contentStr);
+        }
+        this._changedFilesToSave = {};
+    }
 
     private _selectFile(file: teapo.Document) {
       this.activeDocument(file);

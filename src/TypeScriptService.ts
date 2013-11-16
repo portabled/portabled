@@ -61,9 +61,9 @@ module teapo {
           return result;
         },
         getScriptVersion: (fileName: string) => {
-          var script = this._scriptCache[fileName];
-          if (script && script.version)
-            return script.version;
+          var script: DocumentState = this._scriptCache[fileName];
+          if (script)
+            return script.getVersion();
           return -1;
         },
         getScriptIsOpen: (fileName: string) => {
@@ -71,7 +71,7 @@ module teapo {
         },
         getScriptByteOrderMark: (fileName: string) => TypeScript.ByteOrderMark.None,
         getScriptSnapshot: (fileName: string) => {
-          var script = this._scriptCache[fileName] || this._staticScripts[fileName];
+          var script: DocumentState = this._scriptCache[fileName] || this._staticScripts[fileName];
           return script;
         },
         getDiagnosticsObject: () => {
@@ -127,10 +127,20 @@ module teapo {
      * Need to find out who's calling into this (and kill them, naturally).
      */
     getVersion(): number {
+      console.log('DocumentState.getVersion() // ',this._version);
       return this._version;
     }
   
     getText(start: number, end: number): string {
+      var text = this._getTextCore(start, end);
+      var lead = start ? this._getTextCore(0,start) : '';
+      var length = this._getLengthCore();
+      var trail = length > end ? this._getTextCore(end, length) : '';
+      console.log('DocumentState.getText(',start,',',end,') // "'+lead+'['+text+']'+trail+'"');
+      return text;
+    }
+
+    private _getTextCore(start: number, end: number): string {
       var startPos = this._doc.posFromIndex(start);
       var endPos = this._doc.posFromIndex(end);
       var text = this._doc.getRange(startPos, endPos);
@@ -138,13 +148,19 @@ module teapo {
     }
   
     getLength(): number {
+      var length = this._getLengthCore();
+      console.log('DocumentState.getLength() // ',length);
+      return length;
+    }
+    private _getLengthCore(): number {
       var lineCount = this._doc.lineCount();
       if (lineCount===0)
         return 0;
   
       var lastLineStart = this._doc.indexFromPos({line:lineCount-1,ch:0});
       var lastLine = this._doc.getLine(lineCount-1);
-      return lastLineStart + lastLine.length;
+      var length = lastLineStart + lastLine.length;
+      return length;
     }
   
     getLineStartPositions(): number[] {
@@ -154,6 +170,7 @@ module teapo {
         result.push(current);
         current += lineHandle.text.length+1; // plus EOL character
       });
+      console.log('DocumentState.getLineStartPositions() // ',result);
       return result;
     }
   
@@ -173,8 +190,10 @@ module teapo {
         chunk = this._changes;
       else
         chunk = this._changes.slice(scriptVersion - startVersion);
-      this._changes.length = 0;
-      return TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(this._changes);
+      //this._changes.length = 0;
+      var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(this._changes);
+      console.log('DocumentState.getTextChangeRangeSinceVersion(',scriptVersion,') // ',result);
+      return result;
     }
   
   
