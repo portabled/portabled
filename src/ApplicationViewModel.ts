@@ -22,8 +22,8 @@ module teapo {
 
     private _htmlStore = new teapo.ScriptElementStore();
     private _lsStore = new teapo.LocalStorageStore();
-		private _changedFilesToSave: any = {};
-		private _fileChangeTimeout: number = null;
+    private _changedFilesToSave: any = {};
+    private _fileChangeTimeout: number = null;
 
     constructor (private _document = document) {
 
