@@ -8973,6 +8973,7 @@ declare module TypeScript {
         private postTypeCheckNameExpression(nameAST, context);
         private typeCheckNameExpression(nameAST, context);
         private resolveNameExpression(nameAST, context);
+        private isInEnumDecl(decl);
         private getSomeInnermostFunctionScopeDecl(declPath);
         private isFromFunctionScope(nameSymbol, functionScopeDecl);
         private computeNameExpression(nameAST, context, reportDiagnostics);
@@ -9045,8 +9046,15 @@ declare module TypeScript {
         private typeIsBestCommonTypeCandidate(candidateType, collection, context);
         private typesAreIdenticalInEnclosingTypes(t1, t2, t1EnclosingType, t2EnclosingType, val?);
         public typesAreIdentical(t1: TypeScript.PullTypeSymbol, t2: TypeScript.PullTypeSymbol, val?: TypeScript.AST): boolean;
+        private typesAreIdenticalWorker(t1, t2);
         private signatureGroupsAreIdentical(sg1, sg2);
+        private typeParametersAreIdentical(tp1, tp2);
+        private typeParametersAreIdenticalWorker(tp1, tp2);
+        private setTypeParameterIdentity(tp1, tp2, val);
         public signaturesAreIdentical(s1: TypeScript.PullSignatureSymbol, s2: TypeScript.PullSignatureSymbol, includingReturnType?: boolean): boolean;
+        public signaturesAreIdenticalWorker(s1: TypeScript.PullSignatureSymbol, s2: TypeScript.PullSignatureSymbol, includingReturnType?: boolean): boolean;
+        private signatureTypeParametersParametersAndReturnTypesAreIdentical(s1, s2, includingReturnType?);
+        public signatureReturnTypesAreIdentical(s1: TypeScript.PullSignatureSymbol, s2: TypeScript.PullSignatureSymbol): boolean;
         private substituteUpperBoundForType(type);
         private symbolsShareDeclaration(symbol1, symbol2);
         private sourceExtendsTarget(source, target, context);
@@ -9063,6 +9071,7 @@ declare module TypeScript {
         private getSymbolForRelationshipCheck(symbol);
         private sourceIsRelatableToTargetInEnclosingTypes(source, target, sourceEnclosingType, targetEnclosingType, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
         private sourceIsRelatableToTarget(source, target, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
+        private sourceIsRelatableToTargetWorker(source, target, sourceSubstitution, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
         private sourceMembersAreRelatableToTargetMembers(source, target, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
         private infinitelyExpandingSourceTypeIsRelatableToTargetType(sourceType, targetType, assignableTo, comparisonCache, ast, context, comparisonInfo, isComparingInstantiatedSignatures);
         private infinitelyExpandingTypesAreIdentical(sourceType, targetType);
