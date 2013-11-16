@@ -122,7 +122,7 @@ var teapo;
         };
 
         TypeScriptService.prototype._log = function (text) {
-            //console.log(text);
+            console.log(text);
         };
         TypeScriptService._emptySnapshot = {
             getText: function (start, end) {

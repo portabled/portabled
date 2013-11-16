@@ -109,7 +109,7 @@ module teapo {
     }
   
     private _log(text) {
-      //console.log(text);
+      console.log(text);
     }
   }
           
