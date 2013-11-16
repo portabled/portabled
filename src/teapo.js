@@ -402,6 +402,7 @@ var teapo;
         function TypeScriptDocumentMode(_typescript) {
             this._typescript = _typescript;
             this._cookie = 0;
+            this._completionTimeout = 0;
             this.mode = 'text/typescript';
         }
         TypeScriptDocumentMode.prototype.activateEditor = function (editor, fullPath) {
@@ -423,7 +424,10 @@ var teapo;
 
             this._cookie++;
             var triggerCookie = this._cookie;
-            setTimeout(function () {
+            if (this._completionTimeout)
+                clearTimeout(this._completionTimeout);
+            this._completionTimeout = setTimeout(function () {
+                clearTimeout(_this._completionTimeout);
                 if (triggerCookie !== _this._cookie)
                     return;
                 _this._executeCompletion(editor, fullPath, force);
@@ -431,6 +435,12 @@ var teapo;
         };
 
         TypeScriptDocumentMode.prototype._executeCompletion = function (editor, fullPath, force) {
+            var doc = editor.getDoc();
+            var pos = doc.getCursor();
+            var offset = doc.indexFromPos(pos);
+            console.log('_executeCompletion(', fullPath, force, ') ', pos, '=>', offset);
+            var completions = this._typescript.getCompletionsAtPosition(fullPath, offset, false);
+            console.log('_executeCompletion(', fullPath, force, ') ', pos, '=>', offset, '::', completions);
         };
         return TypeScriptDocumentMode;
     })();

@@ -34,6 +34,7 @@ module teapo {
   export class TypeScriptDocumentMode implements DocumentMode {
 
     private _cookie: number = 0;
+    private _completionTimeout = 0;
 
     constructor(private _typescript: TypeScript.Services.ILanguageService) {
     }
@@ -53,13 +54,22 @@ module teapo {
 
       this._cookie++;
       var triggerCookie = this._cookie;
-      setTimeout(() => {
+      if (this._completionTimeout)
+        clearTimeout(this._completionTimeout);
+      this._completionTimeout = setTimeout(() => {
+        clearTimeout(this._completionTimeout);
         if (triggerCookie !== this._cookie) return;
         this._executeCompletion(editor, fullPath, force);
       }, delay);
     }
 
     private _executeCompletion(editor: CodeMirror.Editor, fullPath: string, force: boolean) {
+      var doc = editor.getDoc();
+      var pos = doc.getCursor();
+      var offset = doc.indexFromPos(pos);
+      console.log('_executeCompletion(', fullPath, force,') ',pos,'=>',offset);
+      var completions = this._typescript.getCompletionsAtPosition(fullPath, offset, false);
+      console.log('_executeCompletion(', fullPath, force,') ',pos,'=>',offset,'::', completions);
     }
   }
 
