@@ -18,14 +18,15 @@ module teapo {
     private _editor: CodeMirror.Editor = null;
     private _textarea: HTMLTextAreaElement = null;
     private _tsMode: teapo.TypeScriptDocumentMode = null;
-		private _disposeMode: { dispose(): void; } = null;
+    private _disposeMode: { dispose(): void; } = null;
 
     private _htmlStore = new teapo.ScriptElementStore();
-    private _lsStore = new teapo.LocalStorageStore();
+    private _lsStore: teapo.LocalStorageStore = null;
     private _changedFilesToSave: any = {};
     private _fileChangeTimeout: number = null;
 
     constructor (private _document = document) {
+      this._lsStore = new teapo.LocalStorageStore(this._htmlStore);
 
       var staticScripts = {};
       var htmlStaticScriptNames = this._htmlStore.staticDocumentNames();
@@ -35,28 +36,13 @@ module teapo {
 
       this._typescript = new teapo.TypeScriptService(staticScripts);
 
-			var htmlChangeDate = this._htmlStore.changeDate();
-      var lsChangeDate = this._lsStore.changeDate();
-      if (lsChangeDate
-        && (!htmlChangeDate || (htmlChangeDate.getTime()<=lsChangeDate.getTime()))) {
-        // use localStorage for the list of files,
-        // and revert to htmlStorage in case lsStore fails to retrive the document
-        // (we only stick stuff into lsStore when it's modified)
-        var fileList = this._lsStore.documentNames();
-        for (var i = 0; i < fileList.length; i++) {
-        	var doc = this._lsStore.loadDocument(fileList[i]);
-					if (!doc)
-						doc = this._htmlStore.loadDocument(fileList[i]);
-					this._addDocument(fileList[i], doc.history, doc.content);
-        }
+      var fileList = this._lsStore.documentNames();
+      for (var i = 0; i < fileList.length; i++) {
+          var doc = this._lsStore.loadDocument(fileList[i]);
+          if (!doc)
+            doc = this._htmlStore.loadDocument(fileList[i]);
+          this._addDocument(fileList[i], doc.history, doc.content);
       }
-			else {
-				var fileList = this._htmlStore.documentNames();
-				for (var i = 0; i < fileList.length; i++) {
-        	var doc = this._htmlStore.loadDocument(fileList[i]);
-					this._addDocument(fileList[i], doc.history, doc.content);
-        }
-			}
 
       this.root.onselectFile = (f) => this._selectFile(f);
 			this.root.ondeleteFile = (f) => this._deleteFile(f);

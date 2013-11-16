@@ -12,6 +12,7 @@ module teapo {
 
   export function appendScriptElement(id: string, d = document): HTMLScriptElement {
     var element = document.createElement('script');
+    element.setAttribute('type', 'text/data');
     element.id = id;
     document.head.appendChild(element);
     return element;
@@ -114,39 +115,47 @@ module teapo {
 
   export class LocalStorageStore implements DocumentStore {
     constructor(
-      private _localStorage = localStorage,
-      private _uniqueKey = getDocumentStoreUniqueKey()) {
+      private _baseStore: DocumentStore,
+      private _uniqueKey = getDocumentStoreUniqueKey(),
+      private _localStorage = localStorage) {
     }
 
-    changeDate(): Date {
+    changeDate() {
       var str = this._localStorage[this._uniqueKey+'changeDate'];
       if (!str)
-        return null;
+        return this._baseStore.changeDate();
       try { return new Date(str); }
-      catch (e) { return null; }
+      catch (e) { return this._baseStore.changeDate(); }
     }
 
     documentNames(): string[] {
       var filesStr = this._localStorage[this._uniqueKey+'*files'];
-      if (!filesStr) return [];
+      if (!filesStr) return this._baseStore.documentNames();
       try {
         return JSON.parse(filesStr);
       }
       catch (ignoreJsonErrors) {
-        return [];
+        return this._baseStore.documentNames();
       }
     }
 
-    
-
     loadDocument(name: string): { history: string; content: string; } {
       var strContent = this._localStorage[this._uniqueKey+name];
-      if (strContent !== '' && !strContent) return null;
+      if (strContent !== '' && !strContent) return this._fallbackLoadDocument(name);
       var strHistory = this._localStorage[this._uniqueKey+name+'*history'];
       return {
         history: strHistory,
         content: strContent
       };
+    }
+
+    private _fallbackLoadDocument(name: string) {
+      var files = this.documentNames();
+      for (var i = 0; i < files.length; i++) {
+        if (files[i]===name)
+          return this._baseStore.loadDocument(name);
+      }
+      return null;
     }
 
     saveDocument(name: string, history: string, content: string): void {

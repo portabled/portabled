@@ -10010,6 +10010,7 @@ var teapo;
     function appendScriptElement(id, d) {
         if (typeof d === "undefined") { d = document; }
         var element = document.createElement('script');
+        element.setAttribute('type', 'text/data');
         element.id = id;
         document.head.appendChild(element);
         return element;
@@ -10104,43 +10105,53 @@ var teapo;
     teapo.ScriptElementStore = ScriptElementStore;
 
     var LocalStorageStore = (function () {
-        function LocalStorageStore(_localStorage, _uniqueKey) {
-            if (typeof _localStorage === "undefined") { _localStorage = localStorage; }
+        function LocalStorageStore(_baseStore, _uniqueKey, _localStorage) {
             if (typeof _uniqueKey === "undefined") { _uniqueKey = getDocumentStoreUniqueKey(); }
-            this._localStorage = _localStorage;
+            if (typeof _localStorage === "undefined") { _localStorage = localStorage; }
+            this._baseStore = _baseStore;
             this._uniqueKey = _uniqueKey;
+            this._localStorage = _localStorage;
         }
         LocalStorageStore.prototype.changeDate = function () {
             var str = this._localStorage[this._uniqueKey + 'changeDate'];
             if (!str)
-                return null;
+                return this._baseStore.changeDate();
             try  {
                 return new Date(str);
             } catch (e) {
-                return null;
+                return this._baseStore.changeDate();
             }
         };
 
         LocalStorageStore.prototype.documentNames = function () {
             var filesStr = this._localStorage[this._uniqueKey + '*files'];
             if (!filesStr)
-                return [];
+                return this._baseStore.documentNames();
             try  {
                 return JSON.parse(filesStr);
             } catch (ignoreJsonErrors) {
-                return [];
+                return this._baseStore.documentNames();
             }
         };
 
         LocalStorageStore.prototype.loadDocument = function (name) {
             var strContent = this._localStorage[this._uniqueKey + name];
             if (strContent !== '' && !strContent)
-                return null;
+                return this._fallbackLoadDocument(name);
             var strHistory = this._localStorage[this._uniqueKey + name + '*history'];
             return {
                 history: strHistory,
                 content: strContent
             };
+        };
+
+        LocalStorageStore.prototype._fallbackLoadDocument = function (name) {
+            var files = this.documentNames();
+            for (var i = 0; i < files.length; i++) {
+                if (files[i] === name)
+                    return this._baseStore.loadDocument(name);
+            }
+            return null;
         };
 
         LocalStorageStore.prototype.saveDocument = function (name, history, content) {
@@ -10183,9 +10194,11 @@ var teapo;
             this._tsMode = null;
             this._disposeMode = null;
             this._htmlStore = new teapo.ScriptElementStore();
-            this._lsStore = new teapo.LocalStorageStore();
+            this._lsStore = null;
             this._changedFilesToSave = {};
             this._fileChangeTimeout = null;
+            this._lsStore = new teapo.LocalStorageStore(this._htmlStore);
+
             var staticScripts = {};
             var htmlStaticScriptNames = this._htmlStore.staticDocumentNames();
             for (var i = 0; i < htmlStaticScriptNames.length; i++) {
@@ -10194,25 +10207,12 @@ var teapo;
 
             this._typescript = new teapo.TypeScriptService(staticScripts);
 
-            var htmlChangeDate = this._htmlStore.changeDate();
-            var lsChangeDate = this._lsStore.changeDate();
-            if (lsChangeDate && (!htmlChangeDate || (htmlChangeDate.getTime() <= lsChangeDate.getTime()))) {
-                // use localStorage for the list of files,
-                // and revert to htmlStorage in case lsStore fails to retrive the document
-                // (we only stick stuff into lsStore when it's modified)
-                var fileList = this._lsStore.documentNames();
-                for (var i = 0; i < fileList.length; i++) {
-                    var doc = this._lsStore.loadDocument(fileList[i]);
-                    if (!doc)
-                        doc = this._htmlStore.loadDocument(fileList[i]);
-                    this._addDocument(fileList[i], doc.history, doc.content);
-                }
-            } else {
-                var fileList = this._htmlStore.documentNames();
-                for (var i = 0; i < fileList.length; i++) {
-                    var doc = this._htmlStore.loadDocument(fileList[i]);
-                    this._addDocument(fileList[i], doc.history, doc.content);
-                }
+            var fileList = this._lsStore.documentNames();
+            for (var i = 0; i < fileList.length; i++) {
+                var doc = this._lsStore.loadDocument(fileList[i]);
+                if (!doc)
+                    doc = this._htmlStore.loadDocument(fileList[i]);
+                this._addDocument(fileList[i], doc.history, doc.content);
             }
 
             this.root.onselectFile = function (f) {
