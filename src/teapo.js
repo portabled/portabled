@@ -367,6 +367,8 @@ var teapo;
 /// <reference path='typings/typescriptServices.d.ts' />
 var teapo;
 (function (teapo) {
+    teapo.completionDelayMsec = 200;
+
     function detectDocumentMode(fullPath) {
         switch (getFileExtensionLowerCase(fullPath)) {
             case '.ts':
@@ -399,10 +401,36 @@ var teapo;
     var TypeScriptDocumentMode = (function () {
         function TypeScriptDocumentMode(_typescript) {
             this._typescript = _typescript;
+            this._cookie = 0;
             this.mode = 'text/typescript';
         }
         TypeScriptDocumentMode.prototype.activateEditor = function (editor, fullPath) {
-            return null;
+            var _this = this;
+            var onchange = function (instance, change) {
+                return _this._triggerCompletion(editor, fullPath, false);
+            };
+            editor.on('change', onchange);
+            return {
+                dispose: function () {
+                    return editor.off('change', onchange);
+                }
+            };
+        };
+
+        TypeScriptDocumentMode.prototype._triggerCompletion = function (editor, fullPath, force) {
+            var _this = this;
+            var delay = force ? 1 : teapo.completionDelayMsec;
+
+            this._cookie++;
+            var triggerCookie = this._cookie;
+            setTimeout(function () {
+                if (triggerCookie !== _this._cookie)
+                    return;
+                _this._executeCompletion(editor, fullPath, force);
+            }, delay);
+        };
+
+        TypeScriptDocumentMode.prototype._executeCompletion = function (editor, fullPath, force) {
         };
         return TypeScriptDocumentMode;
     })();
