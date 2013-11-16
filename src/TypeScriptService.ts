@@ -109,7 +109,7 @@ module teapo {
     }
   
     private _log(text) {
-      console.log(text);
+      // console.log(text);
     }
   }
           
@@ -127,7 +127,7 @@ module teapo {
      * Need to find out who's calling into this (and kill them, naturally).
      */
     getVersion(): number {
-      console.log('DocumentState.getVersion() // ',this._version);
+      // console.log('DocumentState.getVersion() // ',this._version);
       return this._version;
     }
   
@@ -136,7 +136,7 @@ module teapo {
       var lead = start ? this._getTextCore(0,start) : '';
       var length = this._getLengthCore();
       var trail = length > end ? this._getTextCore(end, length) : '';
-      console.log('DocumentState.getText(',start,',',end,') // "'+lead+'['+text+']'+trail+'"');
+      // console.log('DocumentState.getText(',start,',',end,') // "'+lead+'['+text+']'+trail+'"');
       return text;
     }
 
@@ -149,7 +149,7 @@ module teapo {
   
     getLength(): number {
       var length = this._getLengthCore();
-      console.log('DocumentState.getLength() // ',length);
+      // console.log('DocumentState.getLength() // ',length);
       return length;
     }
     private _getLengthCore(): number {
@@ -170,7 +170,6 @@ module teapo {
         result.push(current);
         current += lineHandle.text.length+1; // plus EOL character
       });
-      console.log('DocumentState.getLineStartPositions() // ',result);
       return result;
     }
   
@@ -192,7 +191,6 @@ module teapo {
         chunk = this._changes.slice(scriptVersion - startVersion);
       //this._changes.length = 0;
       var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(this._changes);
-      console.log('DocumentState.getTextChangeRangeSinceVersion(',scriptVersion,') // ',result);
       return result;
     }
   

@@ -122,7 +122,7 @@ var teapo;
         };
 
         TypeScriptService.prototype._log = function (text) {
-            console.log(text);
+            // console.log(text);
         };
         TypeScriptService._emptySnapshot = {
             getText: function (start, end) {
@@ -157,7 +157,7 @@ var teapo;
         * Need to find out who's calling into this (and kill them, naturally).
         */
         DocumentState.prototype.getVersion = function () {
-            console.log('DocumentState.getVersion() // ', this._version);
+            // console.log('DocumentState.getVersion() // ',this._version);
             return this._version;
         };
 
@@ -166,7 +166,8 @@ var teapo;
             var lead = start ? this._getTextCore(0, start) : '';
             var length = this._getLengthCore();
             var trail = length > end ? this._getTextCore(end, length) : '';
-            console.log('DocumentState.getText(', start, ',', end, ') // "' + lead + '[' + text + ']' + trail + '"');
+
+            // console.log('DocumentState.getText(',start,',',end,') // "'+lead+'['+text+']'+trail+'"');
             return text;
         };
 
@@ -179,7 +180,8 @@ var teapo;
 
         DocumentState.prototype.getLength = function () {
             var length = this._getLengthCore();
-            console.log('DocumentState.getLength() // ', length);
+
+            // console.log('DocumentState.getLength() // ',length);
             return length;
         };
         DocumentState.prototype._getLengthCore = function () {
@@ -200,7 +202,6 @@ var teapo;
                 result.push(current);
                 current += lineHandle.text.length + 1; // plus EOL character
             });
-            console.log('DocumentState.getLineStartPositions() // ', result);
             return result;
         };
 
@@ -221,7 +222,6 @@ var teapo;
 
             //this._changes.length = 0;
             var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(this._changes);
-            console.log('DocumentState.getTextChangeRangeSinceVersion(', scriptVersion, ') // ', result);
             return result;
         };
 
