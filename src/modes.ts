@@ -4,6 +4,7 @@
 module teapo {
 
   export var completionDelayMsec = 200;
+  export var maxCompletions = 24;
 
   export function detectDocumentMode(fullPath: string): string {
     switch (getFileExtensionLowerCase(fullPath)) {
@@ -35,6 +36,7 @@ module teapo {
 
     private _cookie: number = 0;
     private _completionTimeout = 0;
+    private _completionActive = false;
 
     constructor(private _typescript: TypeScript.Services.ILanguageService) {
     }
@@ -42,35 +44,157 @@ module teapo {
     mode = 'text/typescript';
 
     activateEditor(editor: CodeMirror.Editor, fullPath: string): { dispose(): void; } {
+      this._completionActive = false;
       var onchange = (instance, change) => this._triggerCompletion(editor, fullPath, false);
       editor.on('change', onchange);
       return {
-        dispose: () => editor.off('change', onchange)
+        dispose: () => {
+          editor.off('change', onchange);
+          this._completionActive = false;
+        }
       }
     }
 
     private _triggerCompletion(editor: CodeMirror.Editor, fullPath: string, force: boolean) {
+      if (this._completionActive)
+          return;
+
       var delay = force ? 1 : completionDelayMsec;
 
       this._cookie++;
       var triggerCookie = this._cookie;
       if (this._completionTimeout)
         clearTimeout(this._completionTimeout);
+
       this._completionTimeout = setTimeout(() => {
         clearTimeout(this._completionTimeout);
-        if (triggerCookie !== this._cookie) return;
-        this._executeCompletion(editor, fullPath, force);
+        if (this._completionActive || triggerCookie !== this._cookie) return;
+        this._startCompletion(editor, fullPath, force);
       }, delay);
     }
 
-    private _executeCompletion(editor: CodeMirror.Editor, fullPath: string, force: boolean) {
+    private _startCompletion(editor: CodeMirror.Editor, fullPath: string, force: boolean) {
+      if (!force) {
+        var nh = this._getNeighborhood(editor);
+        if (nh.leadLength===0 && nh.trailLength===0
+          && nh.prefixChar!=='.')
+          return;
+      }
+
+      (<any>CodeMirror).showHint(
+        editor,
+        () => this._continueCompletion(editor, fullPath, force),
+        { completeSingle: false });
+    }
+
+    private _continueCompletion(editor: CodeMirror.Editor, fullPath: string, force: boolean): { list: any[]; from: CodeMirror.Position; to: CodeMirror.Position; } {
+      
+      var nh = this._getNeighborhood(editor);
+
+      var completions = this._typescript.getCompletionsAtPosition(fullPath, nh.offset, false);
+
+      var from = {
+        line: nh.pos.line,
+        ch: nh.pos.ch - nh.leadLength
+      };
+      var to = {
+        line: nh.pos.line,
+        ch: nh.pos.ch + nh.trailLength
+      };
+      var leadLower = nh.line.slice(from.ch, nh.pos.ch).toLowerCase();
+      var leadFirstChar = leadLower[0];
+      var filteredList = (completions ? completions.entries : []).filter((e) => {
+        if (leadLower.length===0) return true;
+        if (!e.name) return false;
+        if (e.name.length<leadLower.length) return false;
+        if (e.name[0].toLowerCase() !== leadFirstChar) return false;
+        if (e.name.slice(0,leadLower.length).toLowerCase()!==leadLower) return false;
+        return true;      
+      });
+      if (filteredList.length>maxCompletions)
+        filteredList.length = maxCompletions;
+      var list = filteredList.map((e) => e.name);
+      if (list.length) {
+        if (!this._completionActive) {
+          // only set active when we have a completion
+          var onendcompletion = () => {
+            CodeMirror.off(editor,'endCompletion', onendcompletion);
+            setTimeout(() => this._completionActive = false, 1);
+          };
+          CodeMirror.on(editor,'endCompletion', onendcompletion);
+          this._completionActive = true;
+        }
+      }
+
+      return {
+        list: list,
+        from: from,
+        to: to
+      };
+    }
+
+    private _isWordChar(ch: string): boolean {
+      if (ch.toLowerCase()!==ch.toUpperCase())
+        return true;
+      else if (ch==='_' || ch==='$')
+        return true;
+      else if (ch>='0' && ch<='9')
+        return true;
+      else
+        return false;
+    }
+
+    private _getNeighborhood(editor: CodeMirror.Editor) {
       var doc = editor.getDoc();
       var pos = doc.getCursor();
       var offset = doc.indexFromPos(pos);
-      console.log('_executeCompletion(', fullPath, force,') ',pos,'=>',offset);
-      var completions = this._typescript.getCompletionsAtPosition(fullPath, offset, false);
-      console.log('_executeCompletion(', fullPath, force,') ',pos,'=>',offset,'::', completions);
+      var line = doc.getLine(pos.line);
+
+      var leadLength = 0;
+      var prefixChar = '';
+      var whitespace = false;
+      for (var i = pos.ch-1; i >=0; i--) {
+        var ch = line[i];
+        if (!whitespace && this._isWordChar(ch)) {
+          leadLength++;
+          continue;
+        }
+
+        whitespace = /\s/.test(ch);
+        if (!whitespace) {
+          prefixChar = ch;
+          break;
+        }
+      }
+
+      var trailLength = 0;
+      var suffixChar = '';
+      whitespace = false;
+      for (var i = pos.ch; i <line.length; i++) {
+        var ch = line[i];
+        if (!whitespace && this._isWordChar(ch)) {
+          leadLength++;
+          continue;
+        }
+
+        whitespace = /\s/.test(ch);
+        if (!whitespace) {
+          suffixChar = ch;
+          break;
+        }
+      }
+
+      return {
+        pos: pos,
+        offset: offset,
+        line: line,
+        leadLength: leadLength,
+        prefixChar: prefixChar,
+        trailLength: trailLength,
+        suffixChar: suffixChar
+      };
     }
+    
   }
 
 	export class JavaScriptDocumentMode implements DocumentMode {

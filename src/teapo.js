@@ -388,6 +388,7 @@ var teapo;
 var teapo;
 (function (teapo) {
     teapo.completionDelayMsec = 200;
+    teapo.maxCompletions = 24;
 
     function detectDocumentMode(fullPath) {
         switch (getFileExtensionLowerCase(fullPath)) {
@@ -423,44 +424,172 @@ var teapo;
             this._typescript = _typescript;
             this._cookie = 0;
             this._completionTimeout = 0;
+            this._completionActive = false;
             this.mode = 'text/typescript';
         }
         TypeScriptDocumentMode.prototype.activateEditor = function (editor, fullPath) {
             var _this = this;
+            this._completionActive = false;
             var onchange = function (instance, change) {
                 return _this._triggerCompletion(editor, fullPath, false);
             };
             editor.on('change', onchange);
             return {
                 dispose: function () {
-                    return editor.off('change', onchange);
+                    editor.off('change', onchange);
+                    _this._completionActive = false;
                 }
             };
         };
 
         TypeScriptDocumentMode.prototype._triggerCompletion = function (editor, fullPath, force) {
             var _this = this;
+            if (this._completionActive)
+                return;
+
             var delay = force ? 1 : teapo.completionDelayMsec;
 
             this._cookie++;
             var triggerCookie = this._cookie;
             if (this._completionTimeout)
                 clearTimeout(this._completionTimeout);
+
             this._completionTimeout = setTimeout(function () {
                 clearTimeout(_this._completionTimeout);
-                if (triggerCookie !== _this._cookie)
+                if (_this._completionActive || triggerCookie !== _this._cookie)
                     return;
-                _this._executeCompletion(editor, fullPath, force);
+                _this._startCompletion(editor, fullPath, force);
             }, delay);
         };
 
-        TypeScriptDocumentMode.prototype._executeCompletion = function (editor, fullPath, force) {
+        TypeScriptDocumentMode.prototype._startCompletion = function (editor, fullPath, force) {
+            var _this = this;
+            if (!force) {
+                var nh = this._getNeighborhood(editor);
+                if (nh.leadLength === 0 && nh.trailLength === 0 && nh.prefixChar !== '.')
+                    return;
+            }
+
+            CodeMirror.showHint(editor, function () {
+                return _this._continueCompletion(editor, fullPath, force);
+            }, { completeSingle: false });
+        };
+
+        TypeScriptDocumentMode.prototype._continueCompletion = function (editor, fullPath, force) {
+            var _this = this;
+            var nh = this._getNeighborhood(editor);
+
+            var completions = this._typescript.getCompletionsAtPosition(fullPath, nh.offset, false);
+
+            var from = {
+                line: nh.pos.line,
+                ch: nh.pos.ch - nh.leadLength
+            };
+            var to = {
+                line: nh.pos.line,
+                ch: nh.pos.ch + nh.trailLength
+            };
+            var leadLower = nh.line.slice(from.ch, nh.pos.ch).toLowerCase();
+            var leadFirstChar = leadLower[0];
+            var filteredList = (completions ? completions.entries : []).filter(function (e) {
+                if (leadLower.length === 0)
+                    return true;
+                if (!e.name)
+                    return false;
+                if (e.name.length < leadLower.length)
+                    return false;
+                if (e.name[0].toLowerCase() !== leadFirstChar)
+                    return false;
+                if (e.name.slice(0, leadLower.length).toLowerCase() !== leadLower)
+                    return false;
+                return true;
+            });
+            if (filteredList.length > teapo.maxCompletions)
+                filteredList.length = teapo.maxCompletions;
+            var list = filteredList.map(function (e) {
+                return e.name;
+            });
+            if (list.length) {
+                if (!this._completionActive) {
+                    // only set active when we have a completion
+                    var onendcompletion = function () {
+                        CodeMirror.off(editor, 'endCompletion', onendcompletion);
+                        setTimeout(function () {
+                            return _this._completionActive = false;
+                        }, 1);
+                    };
+                    CodeMirror.on(editor, 'endCompletion', onendcompletion);
+                    this._completionActive = true;
+                }
+            }
+
+            return {
+                list: list,
+                from: from,
+                to: to
+            };
+        };
+
+        TypeScriptDocumentMode.prototype._isWordChar = function (ch) {
+            if (ch.toLowerCase() !== ch.toUpperCase())
+                return true;
+            else if (ch === '_' || ch === '$')
+                return true;
+            else if (ch >= '0' && ch <= '9')
+                return true;
+            else
+                return false;
+        };
+
+        TypeScriptDocumentMode.prototype._getNeighborhood = function (editor) {
             var doc = editor.getDoc();
             var pos = doc.getCursor();
             var offset = doc.indexFromPos(pos);
-            console.log('_executeCompletion(', fullPath, force, ') ', pos, '=>', offset);
-            var completions = this._typescript.getCompletionsAtPosition(fullPath, offset, false);
-            console.log('_executeCompletion(', fullPath, force, ') ', pos, '=>', offset, '::', completions);
+            var line = doc.getLine(pos.line);
+
+            var leadLength = 0;
+            var prefixChar = '';
+            var whitespace = false;
+            for (var i = pos.ch - 1; i >= 0; i--) {
+                var ch = line[i];
+                if (!whitespace && this._isWordChar(ch)) {
+                    leadLength++;
+                    continue;
+                }
+
+                whitespace = /\s/.test(ch);
+                if (!whitespace) {
+                    prefixChar = ch;
+                    break;
+                }
+            }
+
+            var trailLength = 0;
+            var suffixChar = '';
+            whitespace = false;
+            for (var i = pos.ch; i < line.length; i++) {
+                var ch = line[i];
+                if (!whitespace && this._isWordChar(ch)) {
+                    leadLength++;
+                    continue;
+                }
+
+                whitespace = /\s/.test(ch);
+                if (!whitespace) {
+                    suffixChar = ch;
+                    break;
+                }
+            }
+
+            return {
+                pos: pos,
+                offset: offset,
+                line: line,
+                leadLength: leadLength,
+                prefixChar: prefixChar,
+                trailLength: trailLength,
+                suffixChar: suffixChar
+            };
         };
         return TypeScriptDocumentMode;
     })();
