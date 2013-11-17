@@ -421,25 +421,44 @@ var teapo;
 
     var TypeScriptDocumentMode = (function () {
         function TypeScriptDocumentMode(_typescript) {
+            var _this = this;
             this._typescript = _typescript;
             this._cookie = 0;
             this._completionTimeout = 0;
             this._completionActive = false;
+            this._keymap = null;
+            this._activeFullPath = null;
             this.mode = 'text/typescript';
+            this._keymap = {
+                'Ctrl-Space': function (cm) {
+                    return _this._ctrlSpace(cm);
+                },
+                'Cmd-Space': function (cm) {
+                    return _this._ctrlSpace(cm);
+                }
+            };
         }
         TypeScriptDocumentMode.prototype.activateEditor = function (editor, fullPath) {
             var _this = this;
+            this._activeFullPath = fullPath;
             this._completionActive = false;
             var onchange = function (instance, change) {
                 return _this._triggerCompletion(editor, fullPath, false);
             };
             editor.on('change', onchange);
+            editor.addKeyMap(this._keymap);
             return {
                 dispose: function () {
                     editor.off('change', onchange);
                     _this._completionActive = false;
+                    _this._activeFullPath = null;
+                    editor.removeKeyMap(_this._keymap);
                 }
             };
+        };
+
+        TypeScriptDocumentMode.prototype._ctrlSpace = function (editor) {
+            this._triggerCompletion(editor, this._activeFullPath, true);
         };
 
         TypeScriptDocumentMode.prototype._triggerCompletion = function (editor, fullPath, force) {

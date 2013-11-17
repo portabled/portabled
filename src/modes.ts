@@ -37,22 +37,36 @@ module teapo {
     private _cookie: number = 0;
     private _completionTimeout = 0;
     private _completionActive = false;
+    private _keymap = null;
+    private _activeFullPath: string = null;
 
     constructor(private _typescript: TypeScript.Services.ILanguageService) {
+      this._keymap = {
+        'Ctrl-Space': (cm: CodeMirror.Editor) => this._ctrlSpace(cm),
+        'Cmd-Space': (cm: CodeMirror.Editor) => this._ctrlSpace(cm)
+      };
     }
 
     mode = 'text/typescript';
 
     activateEditor(editor: CodeMirror.Editor, fullPath: string): { dispose(): void; } {
+      this._activeFullPath = fullPath;
       this._completionActive = false;
       var onchange = (instance, change) => this._triggerCompletion(editor, fullPath, false);
       editor.on('change', onchange);
+      editor.addKeyMap(this._keymap);
       return {
         dispose: () => {
           editor.off('change', onchange);
           this._completionActive = false;
+          this._activeFullPath = null;
+          editor.removeKeyMap(this._keymap);
         }
       }
+    }
+
+    private _ctrlSpace(editor: CodeMirror.Editor) {
+      this._triggerCompletion(editor, this._activeFullPath, true);
     }
 
     private _triggerCompletion(editor: CodeMirror.Editor, fullPath: string, force: boolean) {
