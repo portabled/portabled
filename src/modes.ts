@@ -56,6 +56,7 @@ module teapo {
     }
 
     private _triggerCompletion(editor: CodeMirror.Editor, fullPath: string, force: boolean) {
+
       if (this._completionActive)
           return;
 
