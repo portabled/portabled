@@ -67,7 +67,7 @@ module teapo {
       // TODO: remove from TypeScript too
     }
 
-    private _addDocument(file: string, doc: { history: string; content: string; }) {
+    private _addDocument(file: string, doc: DocumentStoreEntry) {
         var f = this.root.getDocument(file);
         f.doc.setValue(doc.content);
         if (doc.history) {

@@ -27,15 +27,13 @@ module teapo {
   }
 
   export interface DocumentStoreEntry {
-    content: string;
-    history: string;
+    content?: string;
+    history?: string;
 
-    /*
-      cursor: number;
-      selectionStart: number;
-      selectionEnd: number;
-      scrollTop: number;
-    */
+    cursor?: number;
+    selectionStart?: number;
+    selectionEnd?: number;
+    scrollTop?: number;
   }
   
   export class ScriptElementStore implements DocumentStore {
@@ -77,9 +75,21 @@ module teapo {
       var element = this._documentElements[name];
       if (!element)
         return null;
+
+      var history = element.getAttribute('history');
+      var content = element.innerHTML;
+      try { var cursor = parseInt(element.getAttribute('cursor')); } catch (e) { }
+      try { var selectionStart = parseInt(element.getAttribute('selectionStart')); } catch (e) { }
+      try { var selectionEnd = parseInt(element.getAttribute('selectionEnd')); } catch (e) { }
+      try { var scrollTop = parseInt(element.getAttribute('scrollTop')); } catch (e) { }
+
       var result = {
-        history: element.getAttribute('history'),
-        content: element.innerHTML
+        history: history,
+        content: content,
+        cursor: cursor,
+        selectionStart: selectionStart,
+        selectionEnd: selectionEnd,
+        scrollTop: scrollTop
       };
       return result;
     }
@@ -91,8 +101,18 @@ module teapo {
         this._documentElements[name] = element;
       }
       
-      element.setAttribute('history', doc.history);
-      element.innerHTML = doc.content;
+      if ('content' in doc)
+        element.innerHTML = doc.content;
+      if ('history' in doc)
+        element.setAttribute('history', doc.history);
+      if ('cursor' in doc)
+        element.setAttribute('cursor', doc.cursor);
+      if ('selectionStart' in doc)
+        element.setAttribute('selectionStart', doc.selectionStart);
+      if ('selectionEnd' in doc)
+        element.setAttribute('selectionEnd', doc.selectionEnd);
+      if ('scrollTop' in doc)
+        element.setAttribute('scrollTop', doc.scrollTop);
       
       this._updateChangeDate();
     }
@@ -153,13 +173,20 @@ module teapo {
     }
     
     loadDocument(name: string): DocumentStoreEntry {
-      var strContent = this._localStorage[this._uniqueKey+name];
-      if (strContent !== '' && !strContent) return this._fallbackLoadDocument(name);
-  
-      var strHistory = this._localStorage[this._uniqueKey+name+'*history'];
+      var content = this._localStorage[this._uniqueKey+name];
+      if (content !== '' && !content) return this._fallbackLoadDocument(name);
+      var history = this._localStorage[this._uniqueKey+name+'*history'];
+      try { var cursor = parseInt(this._localStorage[this._uniqueKey+name+'*cursor']); } catch (e) { }
+      try { var selectionStart = parseInt(this._localStorage[this._uniqueKey+name+'*selectionStart']); } catch (e) { }
+      try { var selectionEnd = parseInt(this._localStorage[this._uniqueKey+name+'*selectionEnd']); } catch (e) { }
+      try { var scrollTop = parseInt(this._localStorage[this._uniqueKey+name+'*scrollTop']); } catch (e) { }
       return {
-        history: strHistory,
-        content: strContent
+        history: history,
+        content: content,
+        cursor: cursor,
+        selectionStart: selectionStart,
+        selectionEnd: selectionEnd,
+        scrollTop: scrollTop
       };
     }
     
@@ -173,11 +200,24 @@ module teapo {
     }
     
     saveDocument(name: string, doc: DocumentStoreEntry): void {
-      var previousContent = this._localStorage[this._uniqueKey+name];
-      this._localStorage[this._uniqueKey+name] = doc.content;
-      this._localStorage[this._uniqueKey+name+'*history'] = doc.history;
+      var wasPreviousContent = this._uniqueKey+name in this._localStorage;
+
+      if ('content' in doc)
+        this._localStorage[this._uniqueKey+name] = doc.content;
+      if ('history' in doc)
+        this._localStorage[this._uniqueKey+name+'*history'] = doc.history;
+      if ('cursor' in doc)
+        this._localStorage[this._uniqueKey+name+'*cursor'] = doc.cursor;
+      if ('selectionStart' in doc)
+        this._localStorage[this._uniqueKey+name+'*selectionStart'] = doc.selectionStart;
+      if ('selectionEnd' in doc)
+        this._localStorage[this._uniqueKey+name+'*selecionEnd'] = doc.selectionEnd;
+      if ('scrollTop' in doc)
+        this._localStorage[this._uniqueKey+name+'*scrollTop'] = doc.scrollTop;
+
       this._localStorage[this._uniqueKey+'*changeDate'] = new Date().toUTCString();
-      if (typeof previousContent!=='string') {
+
+      if (!wasPreviousContent) {
         var files = this.documentNames();
         files.push(name);
         this._localStorage[this._uniqueKey+'*files'] = files;
