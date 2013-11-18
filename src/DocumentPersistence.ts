@@ -21,6 +21,8 @@ module teapo {
   export interface DocumentStore {
     changeDate(): Date;
     documentNames(): string[];
+    getActiveDocument(): string;
+    setActiveDocument(name: string): void;
     loadDocument(name: string): DocumentStoreEntry;
     saveDocument(name: string, doc: DocumentStoreEntry): void;
     deleteDocument(name: string): void;
@@ -39,6 +41,7 @@ module teapo {
   export class ScriptElementStore implements DocumentStore {
     private _changeDate: Date = null;
     private _changeDateElement: HTMLScriptElement= null;
+    private _activeDocumentElement: HTMLScriptElement = null;
     private _documentElements: any = {};
     private _staticDocuments: any = {};
   
@@ -57,6 +60,9 @@ module teapo {
           }
           catch (e) { }
         }
+        else if (s.id==='activeDocument') {
+          this._activeDocumentElement = s;
+        }
         else if(s.id.charAt(0)==='#') {
           this._staticDocuments[s.id] = s.innerHTML;
         }
@@ -66,6 +72,17 @@ module teapo {
     changeDate() {
       return this._changeDate;
     }
+
+    getActiveDocument(): string {
+      return this._activeDocumentElement ?this._activeDocumentElement.innerHTML : null;
+    }
+
+    setActiveDocument(name: string): void {
+      if (!this._activeDocumentElement)
+        this._activeDocumentElement = appendScriptElement('activeDocument');
+      this._activeDocumentElement.innerHTML = name;
+    }
+
     
     documentNames(): string[] {
       return Object.keys(this._documentElements);
@@ -188,6 +205,15 @@ module teapo {
         selectionEnd: selectionEnd,
         scrollTop: scrollTop
       };
+    }
+
+    getActiveDocument(): string {
+      return this._localStorage[this._uniqueKey+'*activeDocument'] || this._baseStore.getActiveDocument();
+    }
+
+    setActiveDocument(name: string): void {
+      this._localStorage[this._uniqueKey+'*activeDocument'] = name;
+      this._baseStore.setActiveDocument(name);
     }
     
     private _fallbackLoadDocument(name: string) {

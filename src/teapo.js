@@ -784,6 +784,7 @@ var teapo;
             this._document = _document;
             this._changeDate = null;
             this._changeDateElement = null;
+            this._activeDocumentElement = null;
             this._documentElements = {};
             this._staticDocuments = {};
             for (var i = 0; i < this._document.scripts.length; i++) {
@@ -799,6 +800,8 @@ var teapo;
                         this._changeDate = new Date(s.innerHTML);
                     } catch (e) {
                     }
+                } else if (s.id === 'activeDocument') {
+                    this._activeDocumentElement = s;
                 } else if (s.id.charAt(0) === '#') {
                     this._staticDocuments[s.id] = s.innerHTML;
                 }
@@ -806,6 +809,16 @@ var teapo;
         }
         ScriptElementStore.prototype.changeDate = function () {
             return this._changeDate;
+        };
+
+        ScriptElementStore.prototype.getActiveDocument = function () {
+            return this._activeDocumentElement ? this._activeDocumentElement.innerHTML : null;
+        };
+
+        ScriptElementStore.prototype.setActiveDocument = function (name) {
+            if (!this._activeDocumentElement)
+                this._activeDocumentElement = appendScriptElement('activeDocument');
+            this._activeDocumentElement.innerHTML = name;
         };
 
         ScriptElementStore.prototype.documentNames = function () {
@@ -961,6 +974,15 @@ var teapo;
             };
         };
 
+        LocalStorageStore.prototype.getActiveDocument = function () {
+            return this._localStorage[this._uniqueKey + '*activeDocument'] || this._baseStore.getActiveDocument();
+        };
+
+        LocalStorageStore.prototype.setActiveDocument = function (name) {
+            this._localStorage[this._uniqueKey + '*activeDocument'] = name;
+            this._baseStore.setActiveDocument(name);
+        };
+
         LocalStorageStore.prototype._fallbackLoadDocument = function (name) {
             var files = this.documentNames();
             for (var i = 0; i < files.length; i++) {
@@ -1057,6 +1079,11 @@ var teapo;
             };
 
             this._tsMode = new teapo.TypeScriptDocumentMode(this._typescript.service);
+            var activeFilePath = this._store.getActiveDocument();
+            if (activeFilePath) {
+                var activeDoc = this.root.getDocument(activeFilePath);
+                this.activeDocument(activeDoc);
+            }
         }
         ApplicationViewModel.prototype.newFile = function () {
             var newPath = prompt('Full path:');
@@ -1087,6 +1114,13 @@ var teapo;
                 } catch (e) {
                 }
             }
+            if (doc.cursor) {
+                try  {
+                    var pos = f.doc.posFromIndex(doc.cursor);
+                    f.doc.setCursor(pos);
+                } catch (e) {
+                }
+            }
             this._typescript.addDocument(file, f.doc);
 
             CodeMirror.on(f.doc, 'change', function (instance, change) {
@@ -1108,6 +1142,9 @@ var teapo;
         };
 
         ApplicationViewModel.prototype._cursorChange = function (file, doc) {
+            var cursorPos = doc.getCursor();
+            var cursorOffset = doc.indexFromPos(cursorPos);
+            this._store.saveDocument(file, { cursor: cursorOffset });
         };
 
         ApplicationViewModel.prototype._saveChangedFiles = function () {
@@ -1124,7 +1161,11 @@ var teapo;
 
         ApplicationViewModel.prototype._selectFile = function (file) {
             this.activeDocument(file);
+            this._store.setActiveDocument(file.fullPath);
+            this._selectFileCore(file);
+        };
 
+        ApplicationViewModel.prototype._selectFileCore = function (file) {
             this._editor.swapDoc(file.doc);
             this._editor.focus();
 
@@ -1151,6 +1192,10 @@ var teapo;
                 autoCloseTags: true,
                 styleActiveLine: true
             });
+            var activeDoc = this.activeDocument();
+            if (activeDoc) {
+                activeDoc.select(null, null);
+            }
         };
         return ApplicationViewModel;
     })();
@@ -1224,7 +1269,7 @@ var teapo;
         };
 
         ko.bindingHandlers.attach = {
-            update: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
+            init: function (element, valueAccessor) {
                 valueAccessor();
             }
         };

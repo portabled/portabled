@@ -40,7 +40,7 @@ module teapo {
     };
 
     (<any>ko.bindingHandlers).attach = {
-      update: function(element, valueAccessor, allBindings, viewModel, bindingContext) {
+      init: function(element, valueAccessor) {
           valueAccessor();
       }
     };

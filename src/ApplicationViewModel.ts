@@ -47,6 +47,11 @@ module teapo {
       this.root.ondeleteFile = (f) => this._deleteFile(f);
 
       this._tsMode = new teapo.TypeScriptDocumentMode(this._typescript.service);
+      var activeFilePath = this._store.getActiveDocument();
+      if (activeFilePath) {
+        var activeDoc = this.root.getDocument(activeFilePath);
+        this.activeDocument(activeDoc);
+      }
     }
 
     newFile() {
@@ -77,6 +82,13 @@ module teapo {
             }
             catch (e) { }
         }
+        if (doc.cursor) {
+          try {
+            var pos = f.doc.posFromIndex(doc.cursor);
+            f.doc.setCursor(pos);
+          }
+          catch (e) { }
+        }
         this._typescript.addDocument(file, f.doc);
 
         CodeMirror.on(f.doc, 'change', (instance, change) => {
@@ -95,6 +107,9 @@ module teapo {
     }
 
     private _cursorChange(file: string, doc: CodeMirror.Doc) {
+      var cursorPos = doc.getCursor();
+      var cursorOffset = doc.indexFromPos(cursorPos);
+      this._store.saveDocument(file, { cursor: cursorOffset });
     }
 
     private _saveChangedFiles() {
@@ -110,21 +125,25 @@ module teapo {
 
     private _selectFile(file: teapo.Document) {
       this.activeDocument(file);
+      this._store.setActiveDocument(file.fullPath);
+      this._selectFileCore(file);
+    }
 
+    private _selectFileCore(file: teapo.Document) {
       this._editor.swapDoc(file.doc);
       this._editor.focus();
 
-			if (this._disposeMode) {
-				this._disposeMode.dispose();
-				this._disposeMode = null;
-			}
-			if (detectDocumentMode(file.fullPath)==='text/typescript') {
-      	this._disposeMode = this._tsMode.activateEditor(this._editor, file.fullPath);
-			}
+      if (this._disposeMode) {
+          this._disposeMode.dispose();
+          this._disposeMode = null;
+      }
+      if (detectDocumentMode(file.fullPath)==='text/typescript') {
+        this._disposeMode = this._tsMode.activateEditor(this._editor, file.fullPath);
+      }
     }
 
-		private _deleteFile(file: teapo.Document) {
-		}
+    private _deleteFile(file: teapo.Document) {
+    }
 
     attachTextarea(textarea: HTMLTextAreaElement) {
       this._textarea = textarea;
@@ -137,6 +156,10 @@ module teapo {
         autoCloseTags: true,
         styleActiveLine: true
       });
+      var activeDoc = this.activeDocument();
+      if (activeDoc) {
+        activeDoc.select(null,null);
+      }
     }
   }
 
