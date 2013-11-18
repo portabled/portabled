@@ -246,8 +246,10 @@ module teapo {
       if (!wasPreviousContent) {
         var files = this.documentNames();
         files.push(name);
-        this._localStorage[this._uniqueKey+'*files'] = files;
+        this._localStorage[this._uniqueKey+'*files'] = JSON.stringify(files);
       }
+
+      this._baseStore.saveDocument(name, doc);
     }
     
     deleteDocument(name: string): void {

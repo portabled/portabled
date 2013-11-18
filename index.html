@@ -10458,8 +10458,10 @@ var teapo;
             if (!wasPreviousContent) {
                 var files = this.documentNames();
                 files.push(name);
-                this._localStorage[this._uniqueKey + '*files'] = files;
+                this._localStorage[this._uniqueKey + '*files'] = JSON.stringify(files);
             }
+
+            this._baseStore.saveDocument(name, doc);
         };
 
         LocalStorageStore.prototype.deleteDocument = function (name) {
@@ -10536,34 +10538,39 @@ var teapo;
                 return;
             var f = this.root.getDocument(newPath);
             this._fileChange(f.fullPath, f.doc);
-            this._selectFile(f);
+            f.select(null, null);
         };
 
         ApplicationViewModel.prototype.deleteActiveFile = function () {
+            var path = this.activeDocument().fullPath;
             if (!confirm('Are you sure to delete ' + this.activeDocument().fullPath + ' ?'))
                 return;
-            this.root.removeDocument(this.activeDocument().fullPath);
+
+            this.root.removeDocument(path);
+            this._store.deleteDocument(path);
             this.activeDocument(null);
+            this._typescript.removeDocument(path);
             // TODO: propagate no-active-document state to all the folders down
-            // TODO: remove from TypeScript too
         };
 
         ApplicationViewModel.prototype._addDocument = function (file, doc) {
             var _this = this;
             var f = this.root.getDocument(file);
-            f.doc.setValue(doc.content);
-            if (doc.history) {
-                try  {
-                    var h = JSON.parse(doc.history);
-                    f.doc.setHistory(h);
-                } catch (e) {
+            if (doc) {
+                f.doc.setValue(doc.content);
+                if (doc.history) {
+                    try  {
+                        var h = JSON.parse(doc.history);
+                        f.doc.setHistory(h);
+                    } catch (e) {
+                    }
                 }
-            }
-            if (doc.cursor) {
-                try  {
-                    var pos = f.doc.posFromIndex(doc.cursor);
-                    f.doc.setCursor(pos);
-                } catch (e) {
+                if (doc.cursor) {
+                    try  {
+                        var pos = f.doc.posFromIndex(doc.cursor);
+                        f.doc.setCursor(pos);
+                    } catch (e) {
+                    }
                 }
             }
             this._typescript.addDocument(file, f.doc);

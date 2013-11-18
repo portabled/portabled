@@ -60,20 +60,24 @@ module teapo {
           return;
       var f = this.root.getDocument(newPath);
       this._fileChange(f.fullPath, f.doc);
-      this._selectFile(f);
+      f.select(null,null);
     }
 
     deleteActiveFile() {
+      var path = this.activeDocument().fullPath;
       if (!confirm('Are you sure to delete '+this.activeDocument().fullPath+' ?'))
         return;
-      this.root.removeDocument(this.activeDocument().fullPath);
+
+      this.root.removeDocument(path);
+      this._store.deleteDocument(path);
       this.activeDocument(null);
+      this._typescript.removeDocument(path);
       // TODO: propagate no-active-document state to all the folders down
-      // TODO: remove from TypeScript too
     }
 
     private _addDocument(file: string, doc: DocumentStoreEntry) {
-        var f = this.root.getDocument(file);
+      var f = this.root.getDocument(file);
+      if (doc) {
         f.doc.setValue(doc.content);
         if (doc.history) {
             try {
@@ -89,14 +93,15 @@ module teapo {
           }
           catch (e) { }
         }
-        this._typescript.addDocument(file, f.doc);
+      }
+      this._typescript.addDocument(file, f.doc);
 
-        CodeMirror.on(f.doc, 'change', (instance, change) => {
-          this._fileChange(file, f.doc);
-        });
-        CodeMirror.on(f.doc, 'cursorActivity', (instance) => {
-          this._cursorChange(file, f.doc);
-        });
+      CodeMirror.on(f.doc, 'change', (instance, change) => {
+        this._fileChange(file, f.doc);
+      });
+      CodeMirror.on(f.doc, 'cursorActivity', (instance) => {
+        this._cursorChange(file, f.doc);
+      });
     }
 
     private _fileChange(file: string, doc: CodeMirror.Doc) {
