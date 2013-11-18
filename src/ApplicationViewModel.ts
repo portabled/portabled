@@ -20,25 +20,26 @@ module teapo {
     private _tsMode: teapo.TypeScriptDocumentMode = null;
     private _disposeMode: { dispose(): void; } = null;
 
-    private _htmlStore = new teapo.ScriptElementStore();
-    private _lsStore: teapo.LocalStorageStore = null;
+    private _store: teapo.LocalStorageStore = null;
     private _changedFilesToSave: any = {};
     private _fileChangeTimeout: number = null;
 
     constructor (private _document = document) {
-      this._lsStore = new teapo.LocalStorageStore(this._htmlStore);
+      var htmlStore = new teapo.ScriptElementStore();
+
+      this._store = new teapo.LocalStorageStore(htmlStore);
 
       var staticScripts = {};
-      var htmlStaticScriptNames = this._htmlStore.staticDocumentNames();
+      var htmlStaticScriptNames = htmlStore.staticDocumentNames();
       for (var i = 0; i<htmlStaticScriptNames.length; i++) {
-        staticScripts[htmlStaticScriptNames[i]] = this._htmlStore.readStaticDocument(htmlStaticScriptNames[i]);
+        staticScripts[htmlStaticScriptNames[i]] = htmlStore.readStaticDocument(htmlStaticScriptNames[i]);
       }
 
       this._typescript = new teapo.TypeScriptService(staticScripts);
 
-      var fileList = this._lsStore.documentNames();
+      var fileList = this._store.documentNames();
       for (var i = 0; i < fileList.length; i++) {
-          var doc = this._lsStore.loadDocument(fileList[i]);
+          var doc = this._store.loadDocument(fileList[i]);
           this._addDocument(fileList[i], doc);
       }
 
@@ -96,8 +97,7 @@ module teapo {
             var hi = doc.getHistory();
             var hiStr = JSON.stringify(hi);
             var contentStr = doc.getValue();
-            this._htmlStore.saveDocument(f, hiStr, contentStr);
-            this._lsStore.saveDocument(f, hiStr, contentStr);
+            this._store.saveDocument(f, { history: hiStr, content: contentStr });
         }
         this._changedFilesToSave = {};
     }

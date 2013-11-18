@@ -10268,15 +10268,15 @@ var teapo;
             return result;
         };
 
-        ScriptElementStore.prototype.saveDocument = function (name, history, content) {
+        ScriptElementStore.prototype.saveDocument = function (name, doc) {
             var element = this._documentElements[name];
             if (!element) {
                 element = appendScriptElement(name);
                 this._documentElements[name] = element;
             }
 
-            element.setAttribute('history', history);
-            element.innerHTML = content;
+            element.setAttribute('history', doc.history);
+            element.innerHTML = doc.content;
 
             this._updateChangeDate();
         };
@@ -10301,9 +10301,9 @@ var teapo;
         };
 
         ScriptElementStore.prototype._updateChangeDate = function () {
-            if (!this._changeDateElement) {
+            if (!this._changeDateElement)
                 this._changeDateElement = appendScriptElement('changeDate');
-            }
+
             this._changeDateElement.innerHTML = new Date().toUTCString();
         };
         return ScriptElementStore;
@@ -10322,6 +10322,7 @@ var teapo;
             var str = this._localStorage[this._uniqueKey + 'changeDate'];
             if (!str)
                 return this._baseStore.changeDate();
+
             try  {
                 return new Date(str);
             } catch (e) {
@@ -10344,6 +10345,7 @@ var teapo;
             var strContent = this._localStorage[this._uniqueKey + name];
             if (strContent !== '' && !strContent)
                 return this._fallbackLoadDocument(name);
+
             var strHistory = this._localStorage[this._uniqueKey + name + '*history'];
             return {
                 history: strHistory,
@@ -10360,10 +10362,10 @@ var teapo;
             return null;
         };
 
-        LocalStorageStore.prototype.saveDocument = function (name, history, content) {
+        LocalStorageStore.prototype.saveDocument = function (name, doc) {
             var previousContent = this._localStorage[this._uniqueKey + name];
-            this._localStorage[this._uniqueKey + name] = content;
-            this._localStorage[this._uniqueKey + name + '*history'] = history;
+            this._localStorage[this._uniqueKey + name] = doc.content;
+            this._localStorage[this._uniqueKey + name + '*history'] = doc.history;
             this._localStorage[this._uniqueKey + '*changeDate'] = new Date().toUTCString();
             if (typeof previousContent !== 'string') {
                 var files = this.documentNames();
@@ -10405,23 +10407,24 @@ var teapo;
             this._textarea = null;
             this._tsMode = null;
             this._disposeMode = null;
-            this._htmlStore = new teapo.ScriptElementStore();
-            this._lsStore = null;
+            this._store = null;
             this._changedFilesToSave = {};
             this._fileChangeTimeout = null;
-            this._lsStore = new teapo.LocalStorageStore(this._htmlStore);
+            var htmlStore = new teapo.ScriptElementStore();
+
+            this._store = new teapo.LocalStorageStore(htmlStore);
 
             var staticScripts = {};
-            var htmlStaticScriptNames = this._htmlStore.staticDocumentNames();
+            var htmlStaticScriptNames = htmlStore.staticDocumentNames();
             for (var i = 0; i < htmlStaticScriptNames.length; i++) {
-                staticScripts[htmlStaticScriptNames[i]] = this._htmlStore.readStaticDocument(htmlStaticScriptNames[i]);
+                staticScripts[htmlStaticScriptNames[i]] = htmlStore.readStaticDocument(htmlStaticScriptNames[i]);
             }
 
             this._typescript = new teapo.TypeScriptService(staticScripts);
 
-            var fileList = this._lsStore.documentNames();
+            var fileList = this._store.documentNames();
             for (var i = 0; i < fileList.length; i++) {
-                var doc = this._lsStore.loadDocument(fileList[i]);
+                var doc = this._store.loadDocument(fileList[i]);
                 this._addDocument(fileList[i], doc);
             }
 
@@ -10487,8 +10490,7 @@ var teapo;
                     var hi = doc.getHistory();
                     var hiStr = JSON.stringify(hi);
                     var contentStr = doc.getValue();
-                    this._htmlStore.saveDocument(f, hiStr, contentStr);
-                    this._lsStore.saveDocument(f, hiStr, contentStr);
+                    this._store.saveDocument(f, { history: hiStr, content: contentStr });
                 }
             this._changedFilesToSave = {};
         };
