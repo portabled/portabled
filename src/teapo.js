@@ -498,7 +498,7 @@ var teapo;
             var _this = this;
             if (!force) {
                 var nh = this._getNeighborhood(editor);
-                if (nh.leadLength === 0 && nh.trailLength === 0 && nh.prefixChar !== '.')
+                if (nh.leadLength === 0 && nh.tailLength === 0 && nh.prefixChar !== '.')
                     return;
             }
 
@@ -519,9 +519,11 @@ var teapo;
             };
             var to = {
                 line: nh.pos.line,
-                ch: nh.pos.ch + nh.trailLength
+                ch: nh.pos.ch + nh.tailLength
             };
-            var leadLower = nh.line.slice(from.ch, nh.pos.ch).toLowerCase();
+            var lead = nh.line.slice(from.ch, nh.pos.ch);
+            var tail = nh.line.slice(nh.pos.ch, to.ch);
+            var leadLower = lead.toLowerCase();
             var leadFirstChar = leadLower[0];
             var filteredList = (completions ? completions.entries : []).filter(function (e) {
                 if (leadLower.length === 0)
@@ -538,8 +540,8 @@ var teapo;
             });
             if (filteredList.length > teapo.maxCompletions)
                 filteredList.length = teapo.maxCompletions;
-            var list = filteredList.map(function (e) {
-                return e.name;
+            var list = filteredList.map(function (e, index) {
+                return new CompletionItem(e, index, lead, tail);
             });
             if (list.length) {
                 if (!this._completionActive) {
@@ -596,7 +598,7 @@ var teapo;
                 }
             }
 
-            var trailLength = 0;
+            var tailLength = 0;
             var suffixChar = '';
             whitespace = false;
             for (var i = pos.ch; i < line.length; i++) {
@@ -619,7 +621,7 @@ var teapo;
                 line: line,
                 leadLength: leadLength,
                 prefixChar: prefixChar,
-                trailLength: trailLength,
+                tailLength: tailLength,
                 suffixChar: suffixChar
             };
         };
@@ -671,6 +673,19 @@ var teapo;
     })();
     teapo.CssDocumentMode = CssDocumentMode;
 })(teapo || (teapo = {}));
+
+var CompletionItem = (function () {
+    function CompletionItem(_completionEntry, _index, _lead, _tail) {
+        this._completionEntry = _completionEntry;
+        this._index = _index;
+        this._lead = _lead;
+        this._tail = _tail;
+        this.text = this._completionEntry.name;
+    }
+    CompletionItem.prototype.render_dummy = function (element, self, data) {
+    };
+    return CompletionItem;
+})();
 /// <reference path='typings/knockout.d.ts' />
 /// <reference path='typings/codemirror.d.ts' />
 /// <reference path='Folder.ts' />

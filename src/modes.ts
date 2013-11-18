@@ -91,7 +91,7 @@ module teapo {
     private _startCompletion(editor: CodeMirror.Editor, fullPath: string, force: boolean) {
       if (!force) {
         var nh = this._getNeighborhood(editor);
-        if (nh.leadLength===0 && nh.trailLength===0
+        if (nh.leadLength===0 && nh.tailLength===0
           && nh.prefixChar!=='.')
           return;
       }
@@ -114,9 +114,11 @@ module teapo {
       };
       var to = {
         line: nh.pos.line,
-        ch: nh.pos.ch + nh.trailLength
+        ch: nh.pos.ch + nh.tailLength
       };
-      var leadLower = nh.line.slice(from.ch, nh.pos.ch).toLowerCase();
+      var lead = nh.line.slice(from.ch, nh.pos.ch);
+      var tail = nh.line.slice(nh.pos.ch, to.ch);
+      var leadLower = lead.toLowerCase();
       var leadFirstChar = leadLower[0];
       var filteredList = (completions ? completions.entries : []).filter((e) => {
         if (leadLower.length===0) return true;
@@ -128,7 +130,7 @@ module teapo {
       });
       if (filteredList.length>maxCompletions)
         filteredList.length = maxCompletions;
-      var list = filteredList.map((e) => e.name);
+      var list = filteredList.map((e, index) => new CompletionItem(e, index, lead, tail));
       if (list.length) {
         if (!this._completionActive) {
           // only set active when we have a completion
@@ -182,7 +184,7 @@ module teapo {
         }
       }
 
-      var trailLength = 0;
+      var tailLength = 0;
       var suffixChar = '';
       whitespace = false;
       for (var i = pos.ch; i <line.length; i++) {
@@ -205,7 +207,7 @@ module teapo {
         line: line,
         leadLength: leadLength,
         prefixChar: prefixChar,
-        trailLength: trailLength,
+        tailLength: tailLength,
         suffixChar: suffixChar
       };
     }
@@ -231,4 +233,19 @@ module teapo {
       mode = 'text/html';
       activateEditor(editor: CodeMirror.Editor, fullPath: string): { dispose(): void; } { return null; }
 	}
+}
+
+class CompletionItem {
+  text: string;
+
+  constructor(
+    private _completionEntry: TypeScript.Services.CompletionEntry,
+    private _index: number,
+    private _lead: string, private _tail: string) {
+    this.text = this._completionEntry.name;
+  }
+
+  render_dummy(element: HTMLElement, self, data) {
+    
+  }
 }
