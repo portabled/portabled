@@ -29,6 +29,13 @@ module teapo {
   export interface DocumentStoreEntry {
     content: string;
     history: string;
+
+    /*
+      cursor: number;
+      selectionStart: number;
+      selectionEnd: number;
+      scrollTop: number;
+    */
   }
   
   export class ScriptElementStore implements DocumentStore {
