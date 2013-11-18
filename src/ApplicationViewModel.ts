@@ -82,6 +82,9 @@ module teapo {
         CodeMirror.on(f.doc, 'change', (instance, change) => {
           this._fileChange(file, f.doc);
         });
+        CodeMirror.on(f.doc, 'cursorActivity', (instance) => {
+          this._cursorChange(file, f.doc);
+        });
     }
 
     private _fileChange(file: string, doc: CodeMirror.Doc) {
@@ -89,6 +92,9 @@ module teapo {
         if (this._fileChangeTimeout)
             clearTimeout(this._fileChangeTimeout);
         this._fileChangeTimeout = setTimeout(() => this._saveChangedFiles(), 600);
+    }
+
+    private _cursorChange(file: string, doc: CodeMirror.Doc) {
     }
 
     private _saveChangedFiles() {

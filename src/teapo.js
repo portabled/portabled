@@ -1092,6 +1092,9 @@ var teapo;
             CodeMirror.on(f.doc, 'change', function (instance, change) {
                 _this._fileChange(file, f.doc);
             });
+            CodeMirror.on(f.doc, 'cursorActivity', function (instance) {
+                _this._cursorChange(file, f.doc);
+            });
         };
 
         ApplicationViewModel.prototype._fileChange = function (file, doc) {
@@ -1102,6 +1105,9 @@ var teapo;
             this._fileChangeTimeout = setTimeout(function () {
                 return _this._saveChangedFiles();
             }, 600);
+        };
+
+        ApplicationViewModel.prototype._cursorChange = function (file, doc) {
         };
 
         ApplicationViewModel.prototype._saveChangedFiles = function () {
