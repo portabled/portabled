@@ -148,6 +148,7 @@ var teapo;
             this._doc = _doc;
             this._version = 0;
             this._changes = [];
+            this._simpleText = null;
             CodeMirror.on(this._doc, 'change', function (e, change) {
                 return _this._onChange(change);
             });
@@ -172,10 +173,20 @@ var teapo;
         };
 
         DocumentState.prototype._getTextCore = function (start, end) {
+            if (this._version === 0)
+                return this._getTextWhenNoChanges(start, end);
+
             var startPos = this._doc.posFromIndex(start);
             var endPos = this._doc.posFromIndex(end);
             var text = this._doc.getRange(startPos, endPos);
             return text;
+        };
+
+        DocumentState.prototype._getTextWhenNoChanges = function (start, end) {
+            if (this._simpleText === null) {
+                this._simpleText = this._doc.getValue();
+            }
+            return this._simpleText.slice(start, end);
         };
 
         DocumentState.prototype.getLength = function () {
@@ -184,6 +195,7 @@ var teapo;
             // console.log('DocumentState.getLength() // ',length);
             return length;
         };
+
         DocumentState.prototype._getLengthCore = function () {
             var lineCount = this._doc.lineCount();
             if (lineCount === 0)
@@ -235,6 +247,7 @@ var teapo;
             this._changes.push(ch);
 
             this._version++;
+            this._simpleText = null;
         };
 
         DocumentState.prototype._totalLengthOfLines = function (lines) {

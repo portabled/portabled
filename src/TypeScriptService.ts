@@ -117,6 +117,7 @@ module teapo {
   
     private _version = 0;
     private _changes: TypeScript.TextChangeRange[] = [];
+    private _simpleText: string = null;
   
     constructor(private _doc: CodeMirror.Doc) {
       CodeMirror.on(this._doc, 'change', (e,change) => this._onChange(change));
@@ -141,10 +142,19 @@ module teapo {
     }
 
     private _getTextCore(start: number, end: number): string {
+      if (this._version===0) return this._getTextWhenNoChanges(start, end);
+
       var startPos = this._doc.posFromIndex(start);
       var endPos = this._doc.posFromIndex(end);
       var text = this._doc.getRange(startPos, endPos);
       return text;
+    }
+
+    private _getTextWhenNoChanges(start: number, end: number): string {
+      if (this._simpleText===null) {
+        this._simpleText = this._doc.getValue();
+      }
+      return this._simpleText.slice(start,end);
     }
   
     getLength(): number {
@@ -152,6 +162,7 @@ module teapo {
       // console.log('DocumentState.getLength() // ',length);
       return length;
     }
+
     private _getLengthCore(): number {
       var lineCount = this._doc.lineCount();
       if (lineCount===0)
@@ -207,6 +218,7 @@ module teapo {
       this._changes.push(ch) ;
   
       this._version++;
+      this._simpleText = null;
     }
                           
     private _totalLengthOfLines(lines: string[]): number {
