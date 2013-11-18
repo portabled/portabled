@@ -21,9 +21,14 @@ module teapo {
   export interface DocumentStore {
     changeDate(): Date;
     documentNames(): string[];
-    loadDocument(name: string): { history: string; content: string; };
-    saveDocument(name: string, doc: { history: string; content: string; }): void;
+    loadDocument(name: string): DocumentStoreEntry;
+    saveDocument(name: string, doc: DocumentStoreEntry): void;
     deleteDocument(name: string): void;
+  }
+
+  export interface DocumentStoreEntry {
+    content: string;
+    history: string;
   }
   
   export class ScriptElementStore implements DocumentStore {
@@ -61,7 +66,7 @@ module teapo {
       return Object.keys(this._documentElements);
     }
     
-    loadDocument(name: string): { history: string; content: string; } {
+    loadDocument(name: string): DocumentStoreEntry {
       var element = this._documentElements[name];
       if (!element)
         return null;
@@ -72,7 +77,7 @@ module teapo {
       return result;
     }
     
-    saveDocument(name: string, doc: { history: string; content: string; }) {
+    saveDocument(name: string, doc: DocumentStoreEntry) {
       var element = this._documentElements[name];
       if (!element) {
         element = appendScriptElement(name);
@@ -140,7 +145,7 @@ module teapo {
       }
     }
     
-    loadDocument(name: string): { history: string; content: string; } {
+    loadDocument(name: string): DocumentStoreEntry {
       var strContent = this._localStorage[this._uniqueKey+name];
       if (strContent !== '' && !strContent) return this._fallbackLoadDocument(name);
   
@@ -160,7 +165,7 @@ module teapo {
       return null;
     }
     
-    saveDocument(name: string, doc: { history: string; content: string; }): void {
+    saveDocument(name: string, doc: DocumentStoreEntry): void {
       var previousContent = this._localStorage[this._uniqueKey+name];
       this._localStorage[this._uniqueKey+name] = doc.content;
       this._localStorage[this._uniqueKey+name+'*history'] = doc.history;
