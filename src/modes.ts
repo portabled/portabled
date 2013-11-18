@@ -130,7 +130,10 @@ module teapo {
       });
       if (filteredList.length>maxCompletions)
         filteredList.length = maxCompletions;
-      var list = filteredList.map((e, index) => new CompletionItem(e, index, lead, tail));
+      var list = filteredList.map((e, index) => {
+        var details = this._typescript.getCompletionEntryDetails(fullPath, nh.offset, e.name);
+        return new CompletionItem(e, details, index, lead, tail);
+      });
       if (list.length) {
         if (!this._completionActive) {
           // only set active when we have a completion
@@ -240,12 +243,35 @@ class CompletionItem {
 
   constructor(
     private _completionEntry: TypeScript.Services.CompletionEntry,
+    private _completionEntryDetails: TypeScript.Services.CompletionEntryDetails,
     private _index: number,
     private _lead: string, private _tail: string) {
     this.text = this._completionEntry.name;
   }
 
-  render_dummy(element: HTMLElement, self, data) {
-    
+  render(element: HTMLElement) {
+    var kindSpan = document.createElement('span');
+    kindSpan.textContent = this._completionEntry.kind+' ';
+    kindSpan.style.opacity = '0.6';
+    element.appendChild(kindSpan);
+
+    var nameSpan = document.createElement('span');
+    nameSpan.textContent = this.text;
+    element.appendChild(nameSpan);
+
+    if (this._completionEntryDetails.type) {
+      var typeSpan = document.createElement('span');
+      typeSpan.textContent = ' : '+this._completionEntryDetails.type;
+      typeSpan.style.opacity = '0.7';
+      element.appendChild(typeSpan);
+    }
+
+    if (this._completionEntryDetails.docComment) {
+      var commentDiv = document.createElement('div');
+      commentDiv.textContent = this._completionEntryDetails.docComment;
+      commentDiv.style.opacity = '0.7';
+      commentDiv.style.color = 'forestgreen';
+      element.appendChild(commentDiv);
+    }
   }
 }

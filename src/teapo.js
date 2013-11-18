@@ -541,7 +541,8 @@ var teapo;
             if (filteredList.length > teapo.maxCompletions)
                 filteredList.length = teapo.maxCompletions;
             var list = filteredList.map(function (e, index) {
-                return new CompletionItem(e, index, lead, tail);
+                var details = _this._typescript.getCompletionEntryDetails(fullPath, nh.offset, e.name);
+                return new CompletionItem(e, details, index, lead, tail);
             });
             if (list.length) {
                 if (!this._completionActive) {
@@ -675,14 +676,38 @@ var teapo;
 })(teapo || (teapo = {}));
 
 var CompletionItem = (function () {
-    function CompletionItem(_completionEntry, _index, _lead, _tail) {
+    function CompletionItem(_completionEntry, _completionEntryDetails, _index, _lead, _tail) {
         this._completionEntry = _completionEntry;
+        this._completionEntryDetails = _completionEntryDetails;
         this._index = _index;
         this._lead = _lead;
         this._tail = _tail;
         this.text = this._completionEntry.name;
     }
-    CompletionItem.prototype.render_dummy = function (element, self, data) {
+    CompletionItem.prototype.render = function (element) {
+        var kindSpan = document.createElement('span');
+        kindSpan.textContent = this._completionEntry.kind + ' ';
+        kindSpan.style.opacity = '0.6';
+        element.appendChild(kindSpan);
+
+        var nameSpan = document.createElement('span');
+        nameSpan.textContent = this.text;
+        element.appendChild(nameSpan);
+
+        if (this._completionEntryDetails.type) {
+            var typeSpan = document.createElement('span');
+            typeSpan.textContent = ' : ' + this._completionEntryDetails.type;
+            typeSpan.style.opacity = '0.7';
+            element.appendChild(typeSpan);
+        }
+
+        if (this._completionEntryDetails.docComment) {
+            var commentDiv = document.createElement('div');
+            commentDiv.textContent = this._completionEntryDetails.docComment;
+            commentDiv.style.opacity = '0.7';
+            commentDiv.style.color = 'forestgreen';
+            element.appendChild(commentDiv);
+        }
     };
     return CompletionItem;
 })();
