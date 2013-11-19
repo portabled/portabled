@@ -910,7 +910,7 @@ window.CodeMirror = (function() {
     doc.iter(doc.frontier, Math.min(doc.first + doc.size, cm.display.showingTo + 500), function(line) {
       if (doc.frontier >= cm.display.showingFrom) { // Visible
         var oldStyles = line.styles;
-        line.styles = highlightLine(cm, line, state);
+        line.styles = highlightLine(cm, line, state, true);
         var ischange = !oldStyles || oldStyles.length != line.styles.length;
         for (var i = 0; !ischange && i < oldStyles.length; ++i) ischange = oldStyles[i] != line.styles[i];
         if (ischange) {
@@ -919,7 +919,7 @@ window.CodeMirror = (function() {
         }
         line.stateAfter = copyState(doc.mode, state);
       } else {
-        processLine(cm, line, state);
+        processLine(cm, line.text, state);
         line.stateAfter = doc.frontier % 5 == 0 ? copyState(doc.mode, state) : null;
       }
       ++doc.frontier;
@@ -963,7 +963,7 @@ window.CodeMirror = (function() {
     if (!state) state = startState(doc.mode);
     else state = copyState(doc.mode, state);
     doc.iter(pos, n, function(line) {
-      processLine(cm, line, state);
+      processLine(cm, line.text, state);
       var save = pos == n - 1 || pos % 5 == 0 || pos >= display.showingFrom && pos < display.showingTo;
       line.stateAfter = save ? copyState(doc.mode, state) : null;
       ++pos;
@@ -3281,6 +3281,11 @@ window.CodeMirror = (function() {
     clearCaches(cm);
     regChange(cm);
   }, true);
+  option("specialChars", /[\t\u0000-\u0019\u00ad\u200b\u2028\u2029\ufeff]/g, function(cm, val) {
+    cm.options.specialChars = new RegExp(val.source + (val.test("\t") ? "" : "|\t"), "g");
+    cm.refresh();
+  }, true);
+  option("specialCharPlaceholder", defaultSpecialCharPlaceholder, function(cm) {cm.refresh();}, true);
   option("electricChars", true);
   option("rtlMoveVisually", !windows);
 
@@ -4276,7 +4281,7 @@ window.CodeMirror = (function() {
   // Run the given mode's parser over a line, update the styles
   // array, which contains alternating fragments of text and CSS
   // classes.
-  function runMode(cm, text, mode, state, f) {
+  function runMode(cm, text, mode, state, f, forceToEnd) {
     var flattenSpans = mode.flattenSpans;
     if (flattenSpans == null) flattenSpans = cm.options.flattenSpans;
     var curStart = 0, curStyle = null;
@@ -4285,6 +4290,7 @@ window.CodeMirror = (function() {
     while (!stream.eol()) {
       if (stream.pos > cm.options.maxHighlightLength) {
         flattenSpans = false;
+        if (forceToEnd) processLine(cm, text, state, stream.pos);
         stream.pos = text.length;
         style = null;
       } else {
@@ -4304,12 +4310,14 @@ window.CodeMirror = (function() {
     }
   }
 
-  function highlightLine(cm, line, state) {
+  function highlightLine(cm, line, state, forceToEnd) {
     // A styles array always starts with a number identifying the
     // mode/overlays that it is based on (for easy invalidation).
     var st = [cm.state.modeGen];
     // Compute the base array of styles
-    runMode(cm, line.text, cm.doc.mode, state, function(end, style) {st.push(end, style);});
+    runMode(cm, line.text, cm.doc.mode, state, function(end, style) {
+      st.push(end, style);
+    }, forceToEnd);
 
     // Run overlays, adjust style array.
     for (var o = 0; o < cm.state.overlays.length; ++o) {
@@ -4348,10 +4356,11 @@ window.CodeMirror = (function() {
 
   // Lightweight form of highlight -- proceed over this line and
   // update state, but don't save a style array.
-  function processLine(cm, line, state) {
+  function processLine(cm, text, state, startAt) {
     var mode = cm.doc.mode;
-    var stream = new StringStream(line.text, cm.options.tabSize);
-    if (line.text == "" && mode.blankLine) mode.blankLine(state);
+    var stream = new StringStream(text, cm.options.tabSize);
+    stream.start = stream.pos = startAt || 0;
+    if (text == "" && mode.blankLine) mode.blankLine(state);
     while (!stream.eol() && stream.pos <= cm.options.maxHighlightLength) {
       mode.token(stream, state);
       stream.start = stream.pos;
@@ -4426,17 +4435,23 @@ window.CodeMirror = (function() {
     return builder;
   }
 
-  var tokenSpecialChars = /[\t\u0000-\u0019\u00ad\u200b\u2028\u2029\uFEFF]/g;
+  function defaultSpecialCharPlaceholder(ch) {
+    var token = elt("span", "\u2022", "cm-invalidchar");
+    token.title = "\\u" + ch.charCodeAt(0).toString(16);
+    return token;
+  }
+
   function buildToken(builder, text, style, startStyle, endStyle, title) {
     if (!text) return;
-    if (!tokenSpecialChars.test(text)) {
+    var special = builder.cm.options.specialChars;
+    if (!special.test(text)) {
       builder.col += text.length;
       var content = document.createTextNode(text);
     } else {
       var content = document.createDocumentFragment(), pos = 0;
       while (true) {
-        tokenSpecialChars.lastIndex = pos;
-        var m = tokenSpecialChars.exec(text);
+        special.lastIndex = pos;
+        var m = special.exec(text);
         var skipped = m ? m.index - pos : text.length - pos;
         if (skipped) {
           content.appendChild(document.createTextNode(text.slice(pos, pos + skipped)));
@@ -4449,8 +4464,7 @@ window.CodeMirror = (function() {
           content.appendChild(elt("span", spaceStr(tabWidth), "cm-tab"));
           builder.col += tabWidth;
         } else {
-          var token = elt("span", "\u2022", "cm-invalidchar");
-          token.title = "\\u" + m[0].charCodeAt(0).toString(16);
+          var token = builder.cm.options.specialCharPlaceholder(m[0]);
           content.appendChild(token);
           builder.col += 1;
         }
