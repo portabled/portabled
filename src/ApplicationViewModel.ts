@@ -21,7 +21,7 @@ module teapo {
     private _disposeMode: { dispose(): void; } = null;
 
     private _store: teapo.LocalStorageStore = null;
-    private _changedFilesToSave: any = {};
+    private _changedFilesToSave: { [name: string]: teapo.Document; } = {};
     private _fileChangeTimeout: number = null;
 
     constructor (private _document = document) {
@@ -59,7 +59,7 @@ module teapo {
       if (!newPath)
           return;
       var f = this.root.getDocument(newPath);
-      this._fileChange(f.fullPath, f.doc);
+      this._fileChange(f);
       f.select(null,null);
     }
 
@@ -80,32 +80,34 @@ module teapo {
       if (doc)
         f.populate(doc);
 
-      this._typescript.addDocument(file, f.doc);
+      this._typescript.addDocument(f);
 
-      CodeMirror.on(f.doc, 'change', (instance, change) => {
-        this._fileChange(file, f.doc);
+      CodeMirror.on(f.getDoc(), 'change', (instance, change) => {
+        this._fileChange(f);
       });
-      CodeMirror.on(f.doc, 'cursorActivity', (instance) => {
-        this._cursorChange(file, f.doc);
+      CodeMirror.on(f.getDoc(), 'cursorActivity', (instance) => {
+        this._cursorChange(f);
       });
     }
 
-    private _fileChange(file: string, doc: CodeMirror.Doc) {
-        this._changedFilesToSave[file] = doc;
+    private _fileChange(d: teapo.Document) {
+        this._changedFilesToSave[d.fullPath] = d;
         if (this._fileChangeTimeout)
             clearTimeout(this._fileChangeTimeout);
         this._fileChangeTimeout = setTimeout(() => this._saveChangedFiles(), 600);
     }
 
-    private _cursorChange(file: string, doc: CodeMirror.Doc) {
+    private _cursorChange(d: teapo.Document) {
+      var doc = d.getDoc();
       var cursorPos = doc.getCursor();
       var cursorOffset = doc.indexFromPos(cursorPos);
-      this._store.saveDocument(file, { cursor: cursorOffset });
+      this._store.saveDocument(d.fullPath, { cursor: cursorOffset });
     }
 
     private _saveChangedFiles() {
         for (var f in this._changedFilesToSave) if (this._changedFilesToSave.hasOwnProperty(f)) {
-            var doc = <CodeMirror.Doc>this._changedFilesToSave[f];
+            var d = this._changedFilesToSave[f];
+            var doc = d.getDoc(); 
             var hi = doc.getHistory();
             var hiStr = JSON.stringify(hi);
             var contentStr = doc.getValue();
@@ -121,7 +123,7 @@ module teapo {
     }
 
     private _selectFileCore(file: teapo.Document) {
-      this._editor.swapDoc(file.doc);
+      this._editor.swapDoc(file.getDoc());
       this._editor.focus();
 
       if (this._disposeMode) {

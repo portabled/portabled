@@ -8,7 +8,6 @@ module teapo {
   export class Document {
 
     fullPath: string = null;
-    doc: CodeMirror.Doc = null;
     mode: string = null;
 
     active = ko.observable(false);
@@ -16,32 +15,37 @@ module teapo {
     onselect: () => void = null;
     onunselect: () => void = null;
 
-    private _persistElement: HTMLScriptElement = null;
+    private _doc: CodeMirror.Doc = null;
+    private _persistElement: HTMLScriptElement = null; // TODO: remove?
 
     constructor(
       public name: string, public parent: teapo.Folder) {
       
       this.fullPath = (parent ? parent.fullPath : '/') + name;
       this.mode = detectDocumentMode(this.fullPath);
-      this.doc = new CodeMirror.Doc('', this.mode);
+      this._doc = new CodeMirror.Doc('', this.mode);
     }
 
     populate(doc: DocumentStoreEntry) {
-      this.doc.setValue(doc.content);
+      this._doc.setValue(doc.content);
       if (doc.history) {
           try {
               var h = JSON.parse(doc.history);
-              this.doc.setHistory(h);
+              this._doc.setHistory(h);
           }
           catch (e) { }
       }
       if (doc.cursor) {
         try {
-          var pos = this.doc.posFromIndex(doc.cursor);
-          this.doc.setCursor(pos);
+          var pos = this._doc.posFromIndex(doc.cursor);
+          this._doc.setCursor(pos);
         }
         catch (e) { }
       }
+    }
+
+    getDoc(): CodeMirror.Doc {
+      return this._doc;
     }
 
     select(self,e) {

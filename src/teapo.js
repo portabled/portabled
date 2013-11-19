@@ -26,9 +26,9 @@ var teapo;
             var factory = new TypeScript.Services.TypeScriptServicesFactory();
             this.service = factory.createPullLanguageService(this._createLanguageServiceHost());
         }
-        TypeScriptService.prototype.addDocument = function (fileName, doc) {
-            var script = new DocumentState(doc);
-            this._scriptCache[fileName] = script;
+        TypeScriptService.prototype.addDocument = function (d) {
+            var script = new DocumentState(d);
+            this._scriptCache[d.fullPath] = script;
         };
 
         TypeScriptService.prototype.removeDocument = function (fileName) {
@@ -143,13 +143,13 @@ var teapo;
     teapo.TypeScriptService = TypeScriptService;
 
     var DocumentState = (function () {
-        function DocumentState(_doc) {
+        function DocumentState(_d) {
             var _this = this;
-            this._doc = _doc;
+            this._d = _d;
             this._version = 0;
             this._changes = [];
             this._simpleText = null;
-            CodeMirror.on(this._doc, 'change', function (e, change) {
+            CodeMirror.on(this._d.getDoc(), 'change', function (e, change) {
                 return _this._onChange(change);
             });
         }
@@ -176,15 +176,16 @@ var teapo;
             if (this._version === 0)
                 return this._getTextWhenNoChanges(start, end);
 
-            var startPos = this._doc.posFromIndex(start);
-            var endPos = this._doc.posFromIndex(end);
-            var text = this._doc.getRange(startPos, endPos);
+            var doc = this._d.getDoc();
+            var startPos = doc.posFromIndex(start);
+            var endPos = doc.posFromIndex(end);
+            var text = doc.getRange(startPos, endPos);
             return text;
         };
 
         DocumentState.prototype._getTextWhenNoChanges = function (start, end) {
             if (this._simpleText === null) {
-                this._simpleText = this._doc.getValue();
+                this._simpleText = this._d.getDoc().getValue();
             }
             return this._simpleText.slice(start, end);
         };
@@ -197,12 +198,13 @@ var teapo;
         };
 
         DocumentState.prototype._getLengthCore = function () {
-            var lineCount = this._doc.lineCount();
+            var doc = this._d.getDoc();
+            var lineCount = doc.lineCount();
             if (lineCount === 0)
                 return 0;
 
-            var lastLineStart = this._doc.indexFromPos({ line: lineCount - 1, ch: 0 });
-            var lastLine = this._doc.getLine(lineCount - 1);
+            var lastLineStart = doc.indexFromPos({ line: lineCount - 1, ch: 0 });
+            var lastLine = doc.getLine(lineCount - 1);
             var length = lastLineStart + lastLine.length;
             return length;
         };
@@ -210,7 +212,8 @@ var teapo;
         DocumentState.prototype.getLineStartPositions = function () {
             var result = [];
             var current = 0;
-            this._doc.eachLine(function (lineHandle) {
+            var doc = this._d.getDoc();
+            doc.eachLine(function (lineHandle) {
                 result.push(current);
                 current += lineHandle.text.length + 1; // plus EOL character
             });
@@ -220,8 +223,10 @@ var teapo;
         DocumentState.prototype.getTextChangeRangeSinceVersion = function (scriptVersion) {
             var startVersion = this._version - this._changes.length;
 
+            var doc = this._d.getDoc();
+
             if (scriptVersion < startVersion) {
-                var wholeText = this._doc.getValue();
+                var wholeText = doc.getValue();
                 return new TypeScript.TextChangeRange(TypeScript.TextSpan.fromBounds(0, 0), wholeText.length);
             }
 
@@ -238,7 +243,8 @@ var teapo;
         };
 
         DocumentState.prototype._onChange = function (change) {
-            var offset = this._doc.indexFromPos(change.from);
+            var doc = this._d.getDoc();
+            var offset = doc.indexFromPos(change.from);
             var oldLength = this._totalLengthOfLines(change.removed);
             var newLength = this._totalLengthOfLines(change.text);
 
@@ -723,32 +729,36 @@ var teapo;
             this.name = name;
             this.parent = parent;
             this.fullPath = null;
-            this.doc = null;
             this.mode = null;
             this.active = ko.observable(false);
             this.onselect = null;
             this.onunselect = null;
+            this._doc = null;
             this._persistElement = null;
             this.fullPath = (parent ? parent.fullPath : '/') + name;
             this.mode = teapo.detectDocumentMode(this.fullPath);
-            this.doc = new CodeMirror.Doc('', this.mode);
+            this._doc = new CodeMirror.Doc('', this.mode);
         }
         Document.prototype.populate = function (doc) {
-            this.doc.setValue(doc.content);
+            this._doc.setValue(doc.content);
             if (doc.history) {
                 try  {
                     var h = JSON.parse(doc.history);
-                    this.doc.setHistory(h);
+                    this._doc.setHistory(h);
                 } catch (e) {
                 }
             }
             if (doc.cursor) {
                 try  {
-                    var pos = this.doc.posFromIndex(doc.cursor);
-                    this.doc.setCursor(pos);
+                    var pos = this._doc.posFromIndex(doc.cursor);
+                    this._doc.setCursor(pos);
                 } catch (e) {
                 }
             }
+        };
+
+        Document.prototype.getDoc = function () {
+            return this._doc;
         };
 
         Document.prototype.select = function (self, e) {
@@ -1164,7 +1174,7 @@ var teapo;
             if (!newPath)
                 return;
             var f = this.root.getDocument(newPath);
-            this._fileChange(f.fullPath, f.doc);
+            this._fileChange(f);
             f.select(null, null);
         };
 
@@ -1186,19 +1196,19 @@ var teapo;
             if (doc)
                 f.populate(doc);
 
-            this._typescript.addDocument(file, f.doc);
+            this._typescript.addDocument(f);
 
-            CodeMirror.on(f.doc, 'change', function (instance, change) {
-                _this._fileChange(file, f.doc);
+            CodeMirror.on(f.getDoc(), 'change', function (instance, change) {
+                _this._fileChange(f);
             });
-            CodeMirror.on(f.doc, 'cursorActivity', function (instance) {
-                _this._cursorChange(file, f.doc);
+            CodeMirror.on(f.getDoc(), 'cursorActivity', function (instance) {
+                _this._cursorChange(f);
             });
         };
 
-        ApplicationViewModel.prototype._fileChange = function (file, doc) {
+        ApplicationViewModel.prototype._fileChange = function (d) {
             var _this = this;
-            this._changedFilesToSave[file] = doc;
+            this._changedFilesToSave[d.fullPath] = d;
             if (this._fileChangeTimeout)
                 clearTimeout(this._fileChangeTimeout);
             this._fileChangeTimeout = setTimeout(function () {
@@ -1206,16 +1216,18 @@ var teapo;
             }, 600);
         };
 
-        ApplicationViewModel.prototype._cursorChange = function (file, doc) {
+        ApplicationViewModel.prototype._cursorChange = function (d) {
+            var doc = d.getDoc();
             var cursorPos = doc.getCursor();
             var cursorOffset = doc.indexFromPos(cursorPos);
-            this._store.saveDocument(file, { cursor: cursorOffset });
+            this._store.saveDocument(d.fullPath, { cursor: cursorOffset });
         };
 
         ApplicationViewModel.prototype._saveChangedFiles = function () {
             for (var f in this._changedFilesToSave)
                 if (this._changedFilesToSave.hasOwnProperty(f)) {
-                    var doc = this._changedFilesToSave[f];
+                    var d = this._changedFilesToSave[f];
+                    var doc = d.getDoc();
                     var hi = doc.getHistory();
                     var hiStr = JSON.stringify(hi);
                     var contentStr = doc.getValue();
@@ -1231,7 +1243,7 @@ var teapo;
         };
 
         ApplicationViewModel.prototype._selectFileCore = function (file) {
-            this._editor.swapDoc(file.doc);
+            this._editor.swapDoc(file.getDoc());
             this._editor.focus();
 
             if (this._disposeMode) {

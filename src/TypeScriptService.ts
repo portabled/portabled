@@ -39,9 +39,9 @@ module teapo {
       this.service = factory.createPullLanguageService(this._createLanguageServiceHost());
     }
   
-    addDocument(fileName: string, doc: CodeMirror.Doc) {
-      var script = new DocumentState(doc);
-      this._scriptCache[fileName] = script;
+    addDocument(d: { fullPath: string; getDoc(): CodeMirror.Doc; }) {
+      var script = new DocumentState(d);
+      this._scriptCache[d.fullPath] = script;
     }
   
     removeDocument(fileName) {
@@ -119,8 +119,8 @@ module teapo {
     private _changes: TypeScript.TextChangeRange[] = [];
     private _simpleText: string = null;
   
-    constructor(private _doc: CodeMirror.Doc) {
-      CodeMirror.on(this._doc, 'change', (e,change) => this._onChange(change));
+    constructor(private _d: { fullPath: string; getDoc(): CodeMirror.Doc; }) {
+      CodeMirror.on(this._d.getDoc(), 'change', (e,change) => this._onChange(change));
     }
   
     /**
@@ -144,15 +144,16 @@ module teapo {
     private _getTextCore(start: number, end: number): string {
       if (this._version===0) return this._getTextWhenNoChanges(start, end);
 
-      var startPos = this._doc.posFromIndex(start);
-      var endPos = this._doc.posFromIndex(end);
-      var text = this._doc.getRange(startPos, endPos);
+      var doc = this._d.getDoc();
+      var startPos = doc.posFromIndex(start);
+      var endPos = doc.posFromIndex(end);
+      var text = doc.getRange(startPos, endPos);
       return text;
     }
 
     private _getTextWhenNoChanges(start: number, end: number): string {
       if (this._simpleText===null) {
-        this._simpleText = this._doc.getValue();
+        this._simpleText = this._d.getDoc().getValue();
       }
       return this._simpleText.slice(start,end);
     }
@@ -164,12 +165,13 @@ module teapo {
     }
 
     private _getLengthCore(): number {
-      var lineCount = this._doc.lineCount();
+      var doc = this._d.getDoc();
+      var lineCount = doc.lineCount();
       if (lineCount===0)
         return 0;
   
-      var lastLineStart = this._doc.indexFromPos({line:lineCount-1,ch:0});
-      var lastLine = this._doc.getLine(lineCount-1);
+      var lastLineStart = doc.indexFromPos({line:lineCount-1,ch:0});
+      var lastLine = doc.getLine(lineCount-1);
       var length = lastLineStart + lastLine.length;
       return length;
     }
@@ -177,7 +179,8 @@ module teapo {
     getLineStartPositions(): number[] {
       var result: number[] = [];
       var current = 0;
-      this._doc.eachLine((lineHandle) => {
+      var doc = this._d.getDoc();
+      doc.eachLine((lineHandle) => {
         result.push(current);
         current += lineHandle.text.length+1; // plus EOL character
       });
@@ -186,9 +189,11 @@ module teapo {
   
     getTextChangeRangeSinceVersion(scriptVersion: number): TypeScript.TextChangeRange {
       var startVersion = this._version - this._changes.length;
+
+      var doc = this._d.getDoc();
   
       if (scriptVersion < startVersion) {
-        var wholeText = this._doc.getValue();
+        var wholeText = doc.getValue();
         return new TypeScript.TextChangeRange(
           TypeScript.TextSpan.fromBounds(0,0),
           wholeText.length);
@@ -207,7 +212,8 @@ module teapo {
   
   
     private _onChange(change): void {
-      var offset = this._doc.indexFromPos(change.from);
+      var doc = this._d.getDoc();
+      var offset = doc.indexFromPos(change.from);
       var oldLength = this._totalLengthOfLines(change.removed);
       var newLength = this._totalLengthOfLines(change.text);
   
