@@ -1274,7 +1274,8 @@ var teapo;
                 autoCloseTags: true,
                 styleActiveLine: true,
                 readOnly: 'nocursor',
-                tabSize: 2
+                tabSize: 2,
+                extraKeys: { "Tab": "indentMore", "Shift-Tab": "indentLess" }
             });
             var activeDoc = this.activeDocument();
             if (activeDoc) {
