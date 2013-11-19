@@ -841,7 +841,242 @@ var teapo;
     })();
     teapo.Document = Document;
 })(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    /*export class PersistentDocumentStorage implements PersistentDocumentStorage.PersistentDocumentStorageSource {
+    
+    }*/
+    var PersistentDocumentStorage;
+    (function (PersistentDocumentStorage) {
+        /**
+        * Creating and appending a script element to the document.
+        * Additionally, setting type to a non-JavaScript value, making sure browser doesn't try to parse it.
+        */
+        function appendScriptElement(d) {
+            if (typeof d === "undefined") { d = document; }
+            var element = d.createElement('script');
+            element.setAttribute('type', 'text/data');
+            document.head.appendChild(element);
+            return element;
+        }
+
+        
+
+        
+
+        /**
+        * Impementing PersistentDocumentStateSource using HTML script elements.
+        * This is the basic implementation supported on all browsers and platforms.
+        */
+        var ScriptElementStorage = (function () {
+            function ScriptElementStorage(_document) {
+                if (typeof _document === "undefined") { _document = document; }
+                var _this = this;
+                this._document = _document;
+                this._documents = {};
+                /** Static documents are useful for special 'invisible' data streams like lib.d.ts used by TypeScript. */
+                this._staticDocuments = {};
+                for (var i = 0; i < this._document.scripts.length; i++) {
+                    var s = this._document.scripts[i];
+                    var path = s.getAttribute('path') || '';
+
+                    if (path.charAt(0) === '/') {
+                        var d;
+                        d = new ScriptElementDocument(s, function () {
+                            return _this._documentRemoved(d);
+                        }, this._document);
+                        this._documents[path] = d;
+                    }
+
+                    var staticPath = s.getAttribute('staticPath') || '';
+                    if (staticPath.charAt(0) === '#') {
+                        this._staticDocuments[staticPath] = s.innerHTML;
+                    }
+
+                    if (s.id === 'metadata') {
+                        this._metadataElement = s;
+                    }
+                }
+            }
+            ScriptElementStorage.prototype.documents = function () {
+                var result = [];
+                for (var k in this._documents)
+                    if (this._documents.hasOwnProperty(k)) {
+                        result.push(this._documents[k]);
+                    }
+                return result;
+            };
+
+            ScriptElementStorage.prototype.addDocument = function (fullPath) {
+                var _this = this;
+                var s = appendScriptElement(this._document);
+                s.setAttribute('path', fullPath);
+                var d;
+                d = new ScriptElementDocument(s, function () {
+                    return _this._documentRemoved(d);
+                }, this._document);
+                this._document.body.appendChild(s);
+                this._documents[fullPath] = d;
+                return d;
+            };
+
+            ScriptElementStorage.prototype.getActiveDocument = function () {
+                if (this._metadataElement)
+                    return this._metadataElement.getAttribute('activeDocument');
+                else
+                    return null;
+            };
+
+            ScriptElementStorage.prototype.setActiveDocument = function (fullPath) {
+                if (!this._metadataElement) {
+                    this._metadataElement = appendScriptElement(this._document);
+                    this._metadataElement.id = 'metadata';
+                }
+                this._metadataElement.setAttribute('activeDocument', fullPath);
+            };
+
+            ScriptElementStorage.prototype._documentRemoved = function (d) {
+                delete this._documents[d.fullPath()];
+            };
+            return ScriptElementStorage;
+        })();
+        PersistentDocumentStorage.ScriptElementStorage = ScriptElementStorage;
+
+        /**
+        * Persisting document state into DOM element.
+        */
+        var ScriptElementDocument = (function () {
+            function ScriptElementDocument(_element, _onremove, _document) {
+                this._element = _element;
+                this._onremove = _onremove;
+                this._document = _document;
+            }
+            ScriptElementDocument.prototype.fullPath = function () {
+                return this._element.getAttribute('path');
+            };
+
+            ScriptElementDocument.prototype.getContent = function () {
+                return this._element.innerHTML;
+            };
+
+            ScriptElementDocument.prototype.getHistory = function () {
+                var historyStr = this._element.getAttribute('history');
+                if (!historyStr)
+                    return null;
+
+                try  {
+                    return JSON.parse(historyStr);
+                } catch (e) {
+                    return null;
+                }
+            };
+
+            ScriptElementDocument.prototype.getCursor = function () {
+                return this._getPosProperty('cursor');
+            };
+
+            ScriptElementDocument.prototype.getSelectionStart = function () {
+                return this._getPosProperty('selectionStart');
+            };
+
+            ScriptElementDocument.prototype.getSelectionEnd = function () {
+                return this._getPosProperty('selectionEnd');
+            };
+
+            ScriptElementDocument.prototype.getScrollTop = function () {
+                return this._getNumberProperty('scrollTop');
+            };
+
+            ScriptElementDocument.prototype.setContent = function (content) {
+                this._element.innerHTML = content;
+            };
+
+            ScriptElementDocument.prototype.setHistory = function (history) {
+                var historyStr;
+                try  {
+                    historyStr = history === null || typeof history === 'undefined' ? null : JSON.stringify(history);
+                } catch (e) {
+                    historyStr = null;
+                }
+                this._element.setAttribute('history', historyStr);
+            };
+
+            ScriptElementDocument.prototype.setCursorOffset = function (cursorPos) {
+                this._setPosProperty('cursor', cursorPos);
+            };
+
+            ScriptElementDocument.prototype.setSelectionStart = function (startPos) {
+                this._setPosProperty('selectionStart', startPos);
+            };
+
+            ScriptElementDocument.prototype.setSelectionEnd = function (endPos) {
+                this._setPosProperty('selectionEnd', endPos);
+            };
+
+            ScriptElementDocument.prototype.setScrollTop = function (lineNumber) {
+                this._setProperty('scrollTop', lineNumber);
+            };
+
+            ScriptElementDocument.prototype.remove = function () {
+                this._document.body.removeChild(this._element);
+                if (this._onremove)
+                    this._onremove();
+            };
+
+            ScriptElementDocument.prototype._getNumberProperty = function (name) {
+                var str = this._element.getAttribute(name);
+                if (!str)
+                    return null;
+                try  {
+                    return parseInt(str);
+                } catch (e) {
+                    return null;
+                }
+            };
+
+            ScriptElementDocument.prototype._getPosProperty = function (name) {
+                var line = this._getNumberProperty(name + '.line');
+                var ch = this._getNumberProperty(name + '.ch');
+                if (line !== null || ch !== null)
+                    return { line: line || 0, ch: ch || 0 };
+                else
+                    return null;
+            };
+
+            ScriptElementDocument.prototype._getJsonProperty = function (name) {
+                var str = this._element.getAttribute(name);
+                if (!str)
+                    return null;
+                try  {
+                    return JSON.parse(str);
+                } catch (e) {
+                    return null;
+                }
+            };
+
+            ScriptElementDocument.prototype._setProperty = function (name, value) {
+                this._element.setAttribute(name, value);
+            };
+
+            ScriptElementDocument.prototype._setPosProperty = function (name, pos) {
+                this._setProperty(name + '.line', pos ? pos.line : null);
+                this._setProperty(name + '.ch', pos ? pos.ch : null);
+            };
+            return ScriptElementDocument;
+        })();
+
+        var LocalStorageDocumentStorageSource = (function () {
+            function LocalStorageDocumentStorageSource(_baseSource, _localStorage) {
+                this._baseSource = _baseSource;
+                this._localStorage = _localStorage;
+            }
+            return LocalStorageDocumentStorageSource;
+        })();
+        PersistentDocumentStorage.LocalStorageDocumentStorageSource = LocalStorageDocumentStorageSource;
+    })(PersistentDocumentStorage || (PersistentDocumentStorage = {}));
+})(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
+/// <reference path='DocumentPersistence2.ts' />
 var teapo;
 (function (teapo) {
     function getDocumentStoreUniqueKey(w) {
