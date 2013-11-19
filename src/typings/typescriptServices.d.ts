@@ -8670,9 +8670,11 @@ declare module TypeScript {
 declare module TypeScript {
     class CandidateInferenceInfo {
         public typeParameter: TypeScript.PullTypeParameterSymbol;
-        public isFixed: boolean;
+        public _inferredTypeAfterFixing: TypeScript.PullTypeSymbol;
         public inferenceCandidates: TypeScript.PullTypeSymbol[];
         public addCandidate(candidate: TypeScript.PullTypeSymbol): void;
+        public isFixed(): boolean;
+        public tryToFix(resolver: TypeScript.PullTypeResolver, context: PullTypeResolutionContext): void;
     }
     class ArgumentInferenceContext {
         public inferenceCache: TypeScript.IBitMatrix;
@@ -8686,26 +8688,25 @@ declare module TypeScript {
         public resetRelationshipCache(): void;
         public addInferenceRoot(param: TypeScript.PullTypeParameterSymbol): void;
         public getInferenceInfo(param: TypeScript.PullTypeParameterSymbol): CandidateInferenceInfo;
-        public addCandidateForInference(param: TypeScript.PullTypeParameterSymbol, candidate: TypeScript.PullTypeSymbol, fix: boolean): void;
+        public addCandidateForInference(param: TypeScript.PullTypeParameterSymbol, candidate: TypeScript.PullTypeSymbol): void;
         public getInferenceArgumentCount(): number;
         public getArgumentTypeSymbolAtIndex(i: number, context: PullTypeResolutionContext): TypeScript.PullTypeSymbol;
-        public getInferenceCandidates(): TypeScript.PullTypeSymbol[][];
+        public tryToFixTypeParameter(typeParameter: TypeScript.PullTypeParameterSymbol, resolver: TypeScript.PullTypeResolver, context: PullTypeResolutionContext): void;
+        public getFixedTypeParameterSubstitutions(): TypeScript.PullTypeSymbol[];
         public inferArgumentTypes(resolver: TypeScript.PullTypeResolver, context: PullTypeResolutionContext): {
-            results: {
-                param: TypeScript.PullTypeParameterSymbol;
-                type: TypeScript.PullTypeSymbol;
-            }[];
-            unfit: boolean;
-        };
+            param: TypeScript.PullTypeParameterSymbol;
+            type: TypeScript.PullTypeSymbol;
+        }[];
     }
     class PullContextualTypeContext {
         public contextualType: TypeScript.PullTypeSymbol;
         public provisional: boolean;
+        public isInferentiallyTyping: boolean;
         public substitutions: TypeScript.PullTypeSymbol[];
         public provisionallyTypedSymbols: TypeScript.PullSymbol[];
         public hasProvisionalErrors: boolean;
         private astSymbolMap;
-        constructor(contextualType: TypeScript.PullTypeSymbol, provisional: boolean, substitutions: TypeScript.PullTypeSymbol[]);
+        constructor(contextualType: TypeScript.PullTypeSymbol, provisional: boolean, isInferentiallyTyping: boolean, substitutions: TypeScript.PullTypeSymbol[]);
         public recordProvisionallyTypedSymbol(symbol: TypeScript.PullSymbol): void;
         public invalidateProvisionallyTypedSymbols(): void;
         public setSymbolForAST(ast: TypeScript.AST, symbol: TypeScript.PullSymbol): void;
@@ -8720,11 +8721,16 @@ declare module TypeScript {
         constructor(resolver: TypeScript.PullTypeResolver, inTypeCheck?: boolean, fileName?: string);
         public setTypeChecked(ast: TypeScript.AST): void;
         public canTypeCheckAST(ast: TypeScript.AST): boolean;
-        public pushContextualType(type: TypeScript.PullTypeSymbol, provisional: boolean, substitutions: TypeScript.PullTypeSymbol[]): void;
-        public popContextualType(): PullContextualTypeContext;
+        private _pushAnyContextualType(type, provisional, isInferentiallyTyping, substitutions);
+        public pushNewContextualType(type: TypeScript.PullTypeSymbol): void;
+        public propagateContextualType(type: TypeScript.PullTypeSymbol): void;
+        public pushInferentialType(type: TypeScript.PullTypeSymbol, substitutions: TypeScript.PullTypeSymbol[]): void;
+        public pushProvisionalType(type: TypeScript.PullTypeSymbol): void;
+        public popAnyContextualType(): PullContextualTypeContext;
         public hasProvisionalErrors(): boolean;
         public findSubstitution(type: TypeScript.PullTypeSymbol): TypeScript.PullTypeSymbol;
         public getContextualType(): TypeScript.PullTypeSymbol;
+        public isInferentiallyTyping(): boolean;
         public inProvisionalResolution(): boolean;
         private inBaseTypeResolution;
         public isInBaseTypeResolution(): boolean;
