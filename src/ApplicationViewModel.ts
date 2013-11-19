@@ -123,6 +123,7 @@ module teapo {
     }
 
     private _selectFileCore(file: teapo.Document) {
+      this._editor.setOption('readOnly', false);
       this._editor.swapDoc(file.getDoc());
       this._editor.focus();
 
@@ -147,7 +148,8 @@ module teapo {
         matchTags: true,
         showTrailingSpace: true,
         autoCloseTags: true,
-        styleActiveLine: true
+        styleActiveLine: true,
+        readOnly: 'nocursor'
       });
       var activeDoc = this.activeDocument();
       if (activeDoc) {

@@ -1243,6 +1243,7 @@ var teapo;
         };
 
         ApplicationViewModel.prototype._selectFileCore = function (file) {
+            this._editor.setOption('readOnly', false);
             this._editor.swapDoc(file.getDoc());
             this._editor.focus();
 
@@ -1267,7 +1268,8 @@ var teapo;
                 matchTags: true,
                 showTrailingSpace: true,
                 autoCloseTags: true,
-                styleActiveLine: true
+                styleActiveLine: true,
+                readOnly: 'nocursor'
             });
             var activeDoc = this.activeDocument();
             if (activeDoc) {

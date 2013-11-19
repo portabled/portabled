@@ -10688,6 +10688,7 @@ var teapo;
         };
 
         ApplicationViewModel.prototype._selectFileCore = function (file) {
+            this._editor.setOption('readOnly', false);
             this._editor.swapDoc(file.getDoc());
             this._editor.focus();
 
@@ -10712,7 +10713,8 @@ var teapo;
                 matchTags: true,
                 showTrailingSpace: true,
                 autoCloseTags: true,
-                styleActiveLine: true
+                styleActiveLine: true,
+                readOnly: 'nocursor'
             });
             var activeDoc = this.activeDocument();
             if (activeDoc) {
@@ -77892,7 +77894,7 @@ var TypeScript;
       <div data-bind='template: { name: "file-template", foreach: root.files }'>
       </div>
     </div>
-    <textarea data-bind='attach: attachTextarea($element)'>text</textarea>
+    <textarea data-bind='attach: attachTextarea($element)'>Teapo - text editor confined to a small place. Select a file on the left to start.</textarea>
 		<button style='position: absolute; right: 0px; top: 0px;' data-bind='visible: activeDocument'>
 			delete <span data-bind='text: activeDocument() ? activeDocument().name : null, click: deleteActiveFile'></span>
 		</button>
