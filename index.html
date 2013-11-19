@@ -10178,6 +10178,24 @@ var teapo;
             this.mode = teapo.detectDocumentMode(this.fullPath);
             this.doc = new CodeMirror.Doc('', this.mode);
         }
+        Document.prototype.populate = function (doc) {
+            this.doc.setValue(doc.content);
+            if (doc.history) {
+                try  {
+                    var h = JSON.parse(doc.history);
+                    this.doc.setHistory(h);
+                } catch (e) {
+                }
+            }
+            if (doc.cursor) {
+                try  {
+                    var pos = this.doc.posFromIndex(doc.cursor);
+                    this.doc.setCursor(pos);
+                } catch (e) {
+                }
+            }
+        };
+
         Document.prototype.select = function (self, e) {
             if (e) {
                 e.handled = true;
@@ -10610,23 +10628,9 @@ var teapo;
         ApplicationViewModel.prototype._addDocument = function (file, doc) {
             var _this = this;
             var f = this.root.getDocument(file);
-            if (doc) {
-                f.doc.setValue(doc.content);
-                if (doc.history) {
-                    try  {
-                        var h = JSON.parse(doc.history);
-                        f.doc.setHistory(h);
-                    } catch (e) {
-                    }
-                }
-                if (doc.cursor) {
-                    try  {
-                        var pos = f.doc.posFromIndex(doc.cursor);
-                        f.doc.setCursor(pos);
-                    } catch (e) {
-                    }
-                }
-            }
+            if (doc)
+                f.populate(doc);
+
             this._typescript.addDocument(file, f.doc);
 
             CodeMirror.on(f.doc, 'change', function (instance, change) {

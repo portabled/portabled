@@ -77,23 +77,9 @@ module teapo {
 
     private _addDocument(file: string, doc: DocumentStoreEntry) {
       var f = this.root.getDocument(file);
-      if (doc) {
-        f.doc.setValue(doc.content);
-        if (doc.history) {
-            try {
-                var h = JSON.parse(doc.history);
-                f.doc.setHistory(h);
-            }
-            catch (e) { }
-        }
-        if (doc.cursor) {
-          try {
-            var pos = f.doc.posFromIndex(doc.cursor);
-            f.doc.setCursor(pos);
-          }
-          catch (e) { }
-        }
-      }
+      if (doc)
+        f.populate(doc);
+
       this._typescript.addDocument(file, f.doc);
 
       CodeMirror.on(f.doc, 'change', (instance, change) => {

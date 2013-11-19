@@ -26,6 +26,24 @@ module teapo {
       this.doc = new CodeMirror.Doc('', this.mode);
     }
 
+    populate(doc: DocumentStoreEntry) {
+      this.doc.setValue(doc.content);
+      if (doc.history) {
+          try {
+              var h = JSON.parse(doc.history);
+              this.doc.setHistory(h);
+          }
+          catch (e) { }
+      }
+      if (doc.cursor) {
+        try {
+          var pos = this.doc.posFromIndex(doc.cursor);
+          this.doc.setCursor(pos);
+        }
+        catch (e) { }
+      }
+    }
+
     select(self,e) {
       if (e) {
         e.handled = true;
