@@ -270,7 +270,7 @@ class CompletionItem {
       var commentDiv = document.createElement('div');
       commentDiv.textContent = this._completionEntryDetails.docComment;
       commentDiv.style.opacity = '0.7';
-      commentDiv.style.color = 'forestgreen';
+      commentDiv.style.fontStyle = 'italic';
       commentDiv.style.marginLeft = '2em';
       element.appendChild(commentDiv);
     }
