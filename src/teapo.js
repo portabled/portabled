@@ -706,6 +706,7 @@ var CompletionItem = (function () {
             commentDiv.textContent = this._completionEntryDetails.docComment;
             commentDiv.style.opacity = '0.7';
             commentDiv.style.color = 'forestgreen';
+            commentDiv.style.marginLeft = '2em';
             element.appendChild(commentDiv);
         }
     };
