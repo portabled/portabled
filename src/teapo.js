@@ -734,6 +734,7 @@ var teapo;
             this.onselect = null;
             this.onunselect = null;
             this._doc = null;
+            this._onchangeHandlers = [];
             this.fullPath = (parent ? parent.fullPath : '/') + name;
             this.mode = teapo.detectDocumentMode(this.fullPath);
             this._doc = new CodeMirror.Doc('', this.mode);
@@ -758,6 +759,10 @@ var teapo;
 
         Document.prototype.getDoc = function () {
             return this._doc;
+        };
+
+        Document.prototype.onchange = function (f) {
+            this._onchangeHandlers.push(f);
         };
 
         Document.prototype.select = function (self, e) {
@@ -1268,7 +1273,8 @@ var teapo;
                 showTrailingSpace: true,
                 autoCloseTags: true,
                 styleActiveLine: true,
-                readOnly: 'nocursor'
+                readOnly: 'nocursor',
+                tabSize: 2
             });
             var activeDoc = this.activeDocument();
             if (activeDoc) {

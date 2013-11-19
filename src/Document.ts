@@ -16,7 +16,7 @@ module teapo {
     onunselect: () => void = null;
 
     private _doc: CodeMirror.Doc = null;
-
+    private _onchangeHandlers: Function[] = [];
 
     constructor(
       public name: string, public parent: teapo.Folder) {
@@ -46,6 +46,10 @@ module teapo {
 
     getDoc(): CodeMirror.Doc {
       return this._doc;
+    }
+
+    onchange(f: Function) {
+      this._onchangeHandlers.push(f);
     }
 
     select(self,e) {
