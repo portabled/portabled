@@ -1,5 +1,4 @@
 /// <reference path='typings/codemirror.d.ts' />
-/// <reference path='DocumentPersistence2.ts' />
 
 module teapo {
   
