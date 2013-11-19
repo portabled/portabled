@@ -16,7 +16,7 @@ module teapo {
     onunselect: () => void = null;
 
     private _doc: CodeMirror.Doc = null;
-    private _persistElement: HTMLScriptElement = null; // TODO: remove?
+
 
     constructor(
       public name: string, public parent: teapo.Folder) {

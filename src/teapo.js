@@ -734,7 +734,6 @@ var teapo;
             this.onselect = null;
             this.onunselect = null;
             this._doc = null;
-            this._persistElement = null;
             this.fullPath = (parent ? parent.fullPath : '/') + name;
             this.mode = teapo.detectDocumentMode(this.fullPath);
             this._doc = new CodeMirror.Doc('', this.mode);
