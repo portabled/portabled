@@ -149,7 +149,8 @@ module teapo {
         showTrailingSpace: true,
         autoCloseTags: true,
         styleActiveLine: true,
-        readOnly: 'nocursor'
+        readOnly: 'nocursor',
+        tabSize: 2
       });
       var activeDoc = this.activeDocument();
       if (activeDoc) {
