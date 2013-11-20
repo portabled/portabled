@@ -130,10 +130,24 @@
   }
   </style>
   <script id='#lib.d.ts' inline='imports/typescript/lib.d.ts' type='text/html'></script>
-  <script id='/src/main.ts' type='text/html'>/// <reference path='Apple.ts' /> </script>
-  <script id='/src/Apple.ts' type='text/html'>class Apple { }</script>
-  <script id='/src/imports/codemirror.d.ts' type='text/html'>declare var CodeMirror;</script>
-  <script id='/index.html' type='text/html'><html></html></script>
+  <script id='/src/main.ts' type='text/html'>/// <reference path='Apple.ts' />
+var appleDefaultColor = new Apple();
+var greenApple = new Apple('green')</script>
+  <script id='/src/Apple.ts' type='text/html'>class Apple {
+  constructor(publicc color: string = 'red') {
+  }
+
+  /** This accessor method is not really needed, color member is public anyway. */
+  getColor() { return this.color; }
+}</script>
+  <script id='/index.html' type='text/html'><!DOCTYPE html>
+<html>
+<head><title>Dummy HTML page</title>
+</head>
+<body>
+<h2> Dummy HTML page </h2>
+</body>
+</html></script>
 </head>
 <body>
   empty...
