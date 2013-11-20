@@ -126,7 +126,10 @@ module teapo {
           existingMarks[i].clear();
         }
       }
-      var diag = this._typescript.getSyntacticDiagnostics(fullPath);
+      try {
+        var diag = this._typescript.getSyntacticDiagnostics(fullPath);
+      }
+      catch (e) { }
       if (diag) {
         for (var i = 0; i < diag.length; i++) {
           var d = diag[i];
@@ -139,7 +142,10 @@ module teapo {
           });
         }
       }
-      diag = this._typescript.getSemanticDiagnostics(fullPath);
+      try {
+        diag = this._typescript.getSemanticDiagnostics(fullPath);
+      }
+      catch (e) { }
       if (diag) {
         for (var i = 0; i < diag.length; i++) {
           var d = diag[i];
