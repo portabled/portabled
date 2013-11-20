@@ -10447,11 +10447,12 @@ var teapo;
     }
     teapo.getDocumentStoreUniqueKey = getDocumentStoreUniqueKey;
 
-    function appendScriptElement(id, d) {
+    function appendScriptElement(path, d) {
         if (typeof d === "undefined") { d = document; }
         var element = document.createElement('script');
         element.setAttribute('type', 'text/data');
-        element.id = id;
+        if (path)
+            element.setAttribute('data-path', path);
         document.head.appendChild(element);
         return element;
     }
@@ -10468,11 +10469,10 @@ var teapo;
             this._staticDocuments = {};
             for (var i = 0; i < this._document.scripts.length; i++) {
                 var s = this._document.scripts[i];
-                if (!s.id)
-                    continue;
+                var path = s.getAttribute('data-path') || '';
 
-                if (s.id.charAt(0) === '/') {
-                    this._documentElements[s.id] = s;
+                if (path.charAt(0) === '/') {
+                    this._documentElements[path] = s;
                 } else if (s.id === 'changeDate') {
                     this._changeDateElement = s;
                     try  {
@@ -10481,8 +10481,8 @@ var teapo;
                     }
                 } else if (s.id === 'activeDocument') {
                     this._activeDocumentElement = s;
-                } else if (s.id.charAt(0) === '#') {
-                    this._staticDocuments[s.id] = s.innerHTML;
+                } else if (path.charAt(0) === '#') {
+                    this._staticDocuments[path] = s.innerHTML;
                 }
             }
         }
@@ -10582,8 +10582,10 @@ var teapo;
         };
 
         ScriptElementStore.prototype._updateChangeDate = function () {
-            if (!this._changeDateElement)
-                this._changeDateElement = appendScriptElement('changeDate');
+            if (!this._changeDateElement) {
+                this._changeDateElement = appendScriptElement(null);
+                this._changeDateElement.id = 'changeDate';
+            }
 
             this._changeDateElement.innerHTML = new Date().toUTCString();
         };
@@ -78150,7 +78152,7 @@ var TypeScript;
     overflow: auto;
   }
   </style>
-  <script id='#lib.d.ts' type='text/html'>/* *****************************************************************************
+  <script data-path='#lib.d.ts' type='text/html'>/* *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved. 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use
 this file except in compliance with the License. You may obtain a copy of the
@@ -92352,17 +92354,17 @@ declare var WScript: {
     Quit(exitCode?: number): number;
 }
 </script>
-  <script id='/src/main.ts' type='text/html'>/// <reference path='Apple.ts' />
+  <script data-path='/src/main.ts' type='text/html'>/// <reference path='Apple.ts' />
 var appleDefaultColor = new Apple();
 var greenApple = new Apple('green')</script>
-  <script id='/src/Apple.ts' type='text/html'>class Apple {
+  <script data-path='/src/Apple.ts' type='text/html'>class Apple {
   constructor(publicc color: string = 'red') {
   }
 
   /** This accessor method is not really needed, color member is public anyway. */
   getColor() { return this.color; }
 }</script>
-  <script id='/index.html' type='text/html'><!DOCTYPE html>
+  <script data-path='/index.html' type='text/html'><!DOCTYPE html>
 <html>
 <head><title>Dummy HTML page</title>
 </head>

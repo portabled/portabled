@@ -11,10 +11,11 @@ module teapo {
     return key;
   }
   
-  export function appendScriptElement(id: string, d = document): HTMLScriptElement {
+  export function appendScriptElement(path: string, d = document): HTMLScriptElement {
     var element = document.createElement('script');
     element.setAttribute('type', 'text/data');
-    element.id = id;
+    if (path)
+      element.setAttribute('data-path', path);
     document.head.appendChild(element);
     return element;
   }
@@ -49,10 +50,10 @@ module teapo {
     constructor(private _document = document) {
       for (var i = 0; i < this._document.scripts.length; i++) {
         var s = <HTMLScriptElement>this._document.scripts[i];
-        if (!s.id) continue;
+        var path = s.getAttribute('data-path') || '';
         
-        if (s.id.charAt(0)==='/') {
-          this._documentElements[s.id] = s;
+        if (path.charAt(0)==='/') {
+          this._documentElements[path] = s;
         }
         else if (s.id==='changeDate') {
           this._changeDateElement = s;
@@ -64,8 +65,8 @@ module teapo {
         else if (s.id==='activeDocument') {
           this._activeDocumentElement = s;
         }
-        else if(s.id.charAt(0)==='#') {
-          this._staticDocuments[s.id] = s.innerHTML;
+        else if(path.charAt(0)==='#') {
+          this._staticDocuments[path] = s.innerHTML;
         }
       }
     }
@@ -156,8 +157,10 @@ module teapo {
     
     
     private _updateChangeDate() {
-      if (!this._changeDateElement)
-        this._changeDateElement = appendScriptElement('changeDate');
+      if (!this._changeDateElement) {
+        this._changeDateElement = appendScriptElement(null);
+        this._changeDateElement.id = 'changeDate';
+      }
 
       this._changeDateElement.innerHTML = new Date().toUTCString();
     }

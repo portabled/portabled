@@ -133,18 +133,18 @@
     overflow: auto;
   }
   </style>
-  <script id='#lib.d.ts' inline='imports/typescript/lib.d.ts' type='text/html'></script>
-  <script id='/src/main.ts' type='text/html'>/// <reference path='Apple.ts' />
+  <script data-path='#lib.d.ts' inline='imports/typescript/lib.d.ts' type='text/html'></script>
+  <script data-path='/src/main.ts' type='text/html'>/// <reference path='Apple.ts' />
 var appleDefaultColor = new Apple();
 var greenApple = new Apple('green')</script>
-  <script id='/src/Apple.ts' type='text/html'>class Apple {
+  <script data-path='/src/Apple.ts' type='text/html'>class Apple {
   constructor(publicc color: string = 'red') {
   }
 
   /** This accessor method is not really needed, color member is public anyway. */
   getColor() { return this.color; }
 }</script>
-  <script id='/index.html' type='text/html'><!DOCTYPE html>
+  <script data-path='/index.html' type='text/html'><!DOCTYPE html>
 <html>
 <head><title>Dummy HTML page</title>
 </head>

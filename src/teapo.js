@@ -988,11 +988,12 @@ var teapo;
     }
     teapo.getDocumentStoreUniqueKey = getDocumentStoreUniqueKey;
 
-    function appendScriptElement(id, d) {
+    function appendScriptElement(path, d) {
         if (typeof d === "undefined") { d = document; }
         var element = document.createElement('script');
         element.setAttribute('type', 'text/data');
-        element.id = id;
+        if (path)
+            element.setAttribute('data-path', path);
         document.head.appendChild(element);
         return element;
     }
@@ -1009,11 +1010,10 @@ var teapo;
             this._staticDocuments = {};
             for (var i = 0; i < this._document.scripts.length; i++) {
                 var s = this._document.scripts[i];
-                if (!s.id)
-                    continue;
+                var path = s.getAttribute('data-path') || '';
 
-                if (s.id.charAt(0) === '/') {
-                    this._documentElements[s.id] = s;
+                if (path.charAt(0) === '/') {
+                    this._documentElements[path] = s;
                 } else if (s.id === 'changeDate') {
                     this._changeDateElement = s;
                     try  {
@@ -1022,8 +1022,8 @@ var teapo;
                     }
                 } else if (s.id === 'activeDocument') {
                     this._activeDocumentElement = s;
-                } else if (s.id.charAt(0) === '#') {
-                    this._staticDocuments[s.id] = s.innerHTML;
+                } else if (path.charAt(0) === '#') {
+                    this._staticDocuments[path] = s.innerHTML;
                 }
             }
         }
@@ -1123,8 +1123,10 @@ var teapo;
         };
 
         ScriptElementStore.prototype._updateChangeDate = function () {
-            if (!this._changeDateElement)
-                this._changeDateElement = appendScriptElement('changeDate');
+            if (!this._changeDateElement) {
+                this._changeDateElement = appendScriptElement(null);
+                this._changeDateElement.id = 'changeDate';
+            }
 
             this._changeDateElement.innerHTML = new Date().toUTCString();
         };
