@@ -44,7 +44,6 @@ module teapo {
     private _statusText: KnockoutObservable<string> = null;
     private _cursorTimeout = 0;
     private _diagnosticsTimeout = 0;
-    private _gutterMarkers: string[] = [];
 
     constructor(private _typescript: TypeScript.Services.ILanguageService) {
       this._keymap = {
@@ -82,9 +81,7 @@ module teapo {
     }
 
     private _clearGutterMarkers(editor: CodeMirror.Editor) {
-      for (var i = 0; i < this._gutterMarkers.length; i++) {
-        editor.clearGutter(this._gutterMarkers[i]);
-      }
+      editor.clearGutter('teapo-errors');
     }
 
     private _cursorActivity(editor: CodeMirror.Editor, fullPath: string) {
@@ -135,6 +132,7 @@ module teapo {
         }
       }
       this._clearGutterMarkers(editor);
+      var any = false;
       try {
         var diag = this._typescript.getSyntacticDiagnostics(fullPath);
       }
@@ -142,6 +140,7 @@ module teapo {
       if (diag) {
         for (var i = 0; i < diag.length; i++) {
           this._addErrorMark(i, diag[i], editor, doc, fullPath, 'teapo-syntax-error');
+          any = true;
         }
       }
       var key = i;
@@ -152,7 +151,12 @@ module teapo {
       if (diag) {
         for (var i = 0; i < diag.length; i++) {
           this._addErrorMark(key+i, diag[i], editor, doc, fullPath, 'teapo-semantic-error');
+          any = true;
         }
+      }
+      if (any) {
+        console.log(editor.getGutterElement);
+        console.log(editor.getGutterElement());
       }
     }
 

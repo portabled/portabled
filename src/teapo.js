@@ -452,7 +452,6 @@ var teapo;
             this._statusText = null;
             this._cursorTimeout = 0;
             this._diagnosticsTimeout = 0;
-            this._gutterMarkers = [];
             this.mode = 'text/typescript';
             this._keymap = {
                 'Ctrl-Space': function (cm) {
@@ -498,9 +497,7 @@ var teapo;
         };
 
         TypeScriptDocumentMode.prototype._clearGutterMarkers = function (editor) {
-            for (var i = 0; i < this._gutterMarkers.length; i++) {
-                editor.clearGutter(this._gutterMarkers[i]);
-            }
+            editor.clearGutter('teapo-errors');
         };
 
         TypeScriptDocumentMode.prototype._cursorActivity = function (editor, fullPath) {
@@ -558,6 +555,7 @@ var teapo;
                 }
             }
             this._clearGutterMarkers(editor);
+            var any = false;
             try  {
                 var diag = this._typescript.getSyntacticDiagnostics(fullPath);
             } catch (e) {
@@ -565,6 +563,7 @@ var teapo;
             if (diag) {
                 for (var i = 0; i < diag.length; i++) {
                     this._addErrorMark(i, diag[i], editor, doc, fullPath, 'teapo-syntax-error');
+                    any = true;
                 }
             }
             var key = i;
@@ -575,7 +574,12 @@ var teapo;
             if (diag) {
                 for (var i = 0; i < diag.length; i++) {
                     this._addErrorMark(key + i, diag[i], editor, doc, fullPath, 'teapo-semantic-error');
+                    any = true;
                 }
+            }
+            if (any) {
+                console.log(editor.getGutterElement);
+                console.log(editor.getGutterElement());
             }
         };
 
@@ -900,7 +904,7 @@ var teapo;
                 this.onselect();
         };
 
-        Document.prototype.delete = function () {
+        Document.prototype.remove = function () {
             var p = this.parent;
             while (p) {
                 if (p.ondeleteFile)
