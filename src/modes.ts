@@ -169,7 +169,7 @@ module teapo {
       b.style.height = '10px';
       b.style.background = 'black';
       b.title = d.text();
-      editor.setGutterMarker(d.line(), index+'', b); 
+      editor.setGutterMarker(d.line(), 'teapo-errors', b); 
     }
 
     private _triggerCompletion(editor: CodeMirror.Editor, fullPath: string, force: boolean) {
