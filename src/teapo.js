@@ -577,9 +577,18 @@ var teapo;
                     any = true;
                 }
             }
-            if (any) {
-                console.log(editor.getGutterElement);
-                console.log(editor.getGutterElement());
+
+            var teapoErrorGutter = null;
+            var gutterContainer = editor.getGutterElement();
+            for (var i = 0; i < gutterContainer.childNodes.length; i++) {
+                var e = gutterContainer.childNodes.item(i);
+                if (e.className && e.className.indexOf('teapo-errors') >= 0) {
+                    teapoErrorGutter = e;
+                    break;
+                }
+            }
+            if (teapoErrorGutter) {
+                teapoErrorGutter.style.background = any ? 'tomato' : null;
             }
         };
 
