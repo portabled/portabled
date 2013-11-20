@@ -13,6 +13,7 @@ module teapo {
 
     activeDocument = ko.observable<Document>();
     root = new Folder(null,null);
+    statusText = ko.observable<string>('ready.');
 
     private _typescript: teapo.TypeScriptService = null;
     private _editor: CodeMirror.Editor = null;
@@ -132,7 +133,7 @@ module teapo {
           this._disposeMode = null;
       }
       if (detectDocumentMode(file.fullPath)==='text/typescript') {
-        this._disposeMode = this._tsMode.activateEditor(this._editor, file.fullPath);
+        this._disposeMode = this._tsMode.activateEditor(this._editor, file.fullPath, this.statusText);
       }
     }
 

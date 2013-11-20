@@ -33,10 +33,11 @@
       <div data-bind='template: { name: "file-template", foreach: root.files }'>
       </div>
     </div>
-    <textarea data-bind='attach: attachTextarea($element)'>Teapo - text editor confined to a small place. Select a file on the left to start.</textarea>
+    <textarea data-bind='attach: attachTextarea($element)'>Teapo &mdash; text editor confined to a small place. Select a file on the left to start.</textarea>
 		<button style='position: absolute; right: 0px; top: 0px;' data-bind='visible: activeDocument'>
 			delete <span data-bind='text: activeDocument() ? activeDocument().name : null, click: deleteActiveFile'></span>
 		</button>
+      <div class=teapo-status data-bind='text: statusText'></div>
   </script>
   <script id=folder-template type='text/html'>
     <div class=teapo-file-item data-bind='attr: { title: fullPath+"." }'>
@@ -89,10 +90,29 @@
     border: solid 2px white;
     border-right: none;
   }
+  .teapo-status {
+    position: absolute;
+    bottom: 0px;
+    left: 20%; right: 0px;
+    height: 1.5em;
+    background: white;
+    border-top: solid 1px silver;
+    border-left: solid 0.5em white;
+    font-size: 95%;
+  }
+  .teapo-syntax-error {
+    text-decoration: underline;
+    background: #ffeaa2;
+  }
+  .teapo-semantic-error {
+    text-decoration: underline;
+  }
   .CodeMirror, textarea.teapo-editor {
     position: absolute;
     left: 20%;
-    height: 100%;
+    top: 0px;
+    bottom: 1.5em;
+    height: auto;
     right:0px;
     overflow: hidden;
     border: none;

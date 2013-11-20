@@ -5,6 +5,8 @@ module teapo {
 
   export var completionDelayMsec = 200;
   export var maxCompletions = 24;
+  export var cursorTimeout = 700;
+  export var diagnosticsTimeout = 1000;
 
   export function detectDocumentMode(fullPath: string): string {
     switch (getFileExtensionLowerCase(fullPath)) {
@@ -29,7 +31,7 @@ module teapo {
 
   export interface DocumentMode {
     mode: string;
-    activateEditor(editor: CodeMirror.Editor, fullPath: string): { dispose(): void; };
+    activateEditor(editor: CodeMirror.Editor, fullPath: string, statusText: KnockoutObservable<string>): { dispose(): void; };
   }
 
   export class TypeScriptDocumentMode implements DocumentMode {
@@ -39,6 +41,9 @@ module teapo {
     private _completionActive = false;
     private _keymap = null;
     private _activeFullPath: string = null;
+    private _statusText: KnockoutObservable<string> = null;
+    private _cursorTimeout = 0;
+    private _diagnosticsTimeout = 0;
 
     constructor(private _typescript: TypeScript.Services.ILanguageService) {
       this._keymap = {
@@ -49,24 +54,104 @@ module teapo {
 
     mode = 'text/typescript';
 
-    activateEditor(editor: CodeMirror.Editor, fullPath: string): { dispose(): void; } {
+    activateEditor(editor: CodeMirror.Editor, fullPath: string, statusText: KnockoutObservable<string>): { dispose(): void; } {
+      this._statusText = statusText;
       this._activeFullPath = fullPath;
       this._completionActive = false;
-      var onchange = (instance, change) => this._triggerCompletion(editor, fullPath, false);
+      var onchange = (instance, change) => this._onchange(editor, fullPath);
       editor.on('change', onchange);
+      var oncursoractivity = (instance) => this._cursorActivity(editor, fullPath);
+      editor.on('cursorActivity', oncursoractivity);
       editor.addKeyMap(this._keymap);
+      this._triggerDiagnostics(editor, fullPath);
+      this._cursorActivity(editor, fullPath);
       return {
         dispose: () => {
           editor.off('change', onchange);
+          editor.off('cursorActivity', oncursoractivity);
           this._completionActive = false;
+          if (this._completionTimeout) clearTimeout(this._completionTimeout);
+          if (this._cursorTimeout) clearTimeout(this._cursorTimeout);
+          if (this._diagnosticsTimeout) clearTimeout(this._diagnosticsTimeout);
           this._activeFullPath = null;
           editor.removeKeyMap(this._keymap);
         }
       }
     }
 
+    private _cursorActivity(editor: CodeMirror.Editor, fullPath: string) {
+      if (this._cursorTimeout) clearTimeout(this._cursorTimeout);
+      this._cursorTimeout = setTimeout(() => this._updateCursor(editor, fullPath), cursorTimeout);
+    }
+
+    private _updateCursor(editor: CodeMirror.Editor, fullPath: string) {
+      var doc = editor.getDoc();
+      var pos = doc.getCursor();
+      var offset = doc.indexFromPos(pos);
+      var str = pos.line+':'+pos.ch;
+      try {
+        var definitions = this._typescript.getDefinitionAtPosition(fullPath, offset);
+      }
+      catch (e) {
+        str += ' '+e.message;
+      }
+      if (definitions && definitions.length>0) {
+        var def = definitions[0];
+        str += ' ' + (def.containerName ? def.containerName+'.' : '')+def.name + ' defined in '+def.fileName;
+      }
+      this._statusText(str);
+    }
+
     private _ctrlSpace(editor: CodeMirror.Editor) {
       this._triggerCompletion(editor, this._activeFullPath, true);
+    }
+
+    private _onchange(editor: CodeMirror.Editor, fullPath: string) {
+      this._triggerCompletion(editor, fullPath, false);
+      this._triggerDiagnostics(editor, fullPath);
+    }
+
+    private _triggerDiagnostics(editor: CodeMirror.Editor, fullPath: string) {
+      if (this._diagnosticsTimeout) clearTimeout(this._diagnosticsTimeout);
+      this._diagnosticsTimeout = setTimeout(() => this._requestDiagnostics(editor, fullPath), diagnosticsTimeout);
+    }
+
+    private _requestDiagnostics(editor: CodeMirror.Editor, fullPath: string) {
+      var doc = editor.getDoc();
+      var pos = doc.getCursor();
+      var offset = doc.indexFromPos(pos);
+      var existingMarks = doc.getAllMarks();
+      if (existingMarks) {
+        for (var i = 0; i < existingMarks.length; i++) {
+          existingMarks[i].clear();
+        }
+      }
+      var diag = this._typescript.getSyntacticDiagnostics(fullPath);
+      if (diag) {
+        for (var i = 0; i < diag.length; i++) {
+          var d = diag[i];
+          if (d.fileName()!==fullPath) continue;
+          var start = { line: d.line(), ch: d.character() };
+          var end = { line: start.line, ch: start.ch + d.length() };
+          var m = doc.markText(start, end, {
+            className: 'teapo-syntax-error',
+            title: d.text()
+          });
+        }
+      }
+      diag = this._typescript.getSemanticDiagnostics(fullPath);
+      if (diag) {
+        for (var i = 0; i < diag.length; i++) {
+          var d = diag[i];
+          if (d.fileName()!==fullPath) continue;
+          var start = { line: d.line(), ch: d.character() };
+          var end = { line: start.line, ch: start.ch + d.length() };
+          var m = doc.markText(start, end, {
+            className: 'teapo-semantic-error',
+            title: d.text()
+          });
+        }
+      }
     }
 
     private _triggerCompletion(editor: CodeMirror.Editor, fullPath: string, force: boolean) {
@@ -106,7 +191,12 @@ module teapo {
       
       var nh = this._getNeighborhood(editor);
 
-      var completions = this._typescript.getCompletionsAtPosition(fullPath, nh.offset, false);
+      try {
+        var completions = this._typescript.getCompletionsAtPosition(fullPath, nh.offset, false);
+      }
+      catch (e) {
+        console.log(e);
+      }
 
       var from = {
         line: nh.pos.line,

@@ -408,6 +408,8 @@ var teapo;
 (function (teapo) {
     teapo.completionDelayMsec = 200;
     teapo.maxCompletions = 24;
+    teapo.cursorTimeout = 700;
+    teapo.diagnosticsTimeout = 1000;
 
     function detectDocumentMode(fullPath) {
         switch (getFileExtensionLowerCase(fullPath)) {
@@ -447,6 +449,9 @@ var teapo;
             this._completionActive = false;
             this._keymap = null;
             this._activeFullPath = null;
+            this._statusText = null;
+            this._cursorTimeout = 0;
+            this._diagnosticsTimeout = 0;
             this.mode = 'text/typescript';
             this._keymap = {
                 'Ctrl-Space': function (cm) {
@@ -457,27 +462,121 @@ var teapo;
                 }
             };
         }
-        TypeScriptDocumentMode.prototype.activateEditor = function (editor, fullPath) {
+        TypeScriptDocumentMode.prototype.activateEditor = function (editor, fullPath, statusText) {
             var _this = this;
+            this._statusText = statusText;
             this._activeFullPath = fullPath;
             this._completionActive = false;
             var onchange = function (instance, change) {
-                return _this._triggerCompletion(editor, fullPath, false);
+                return _this._onchange(editor, fullPath);
             };
             editor.on('change', onchange);
+            var oncursoractivity = function (instance) {
+                return _this._cursorActivity(editor, fullPath);
+            };
+            editor.on('cursorActivity', oncursoractivity);
             editor.addKeyMap(this._keymap);
+            this._triggerDiagnostics(editor, fullPath);
+            this._cursorActivity(editor, fullPath);
             return {
                 dispose: function () {
                     editor.off('change', onchange);
+                    editor.off('cursorActivity', oncursoractivity);
                     _this._completionActive = false;
+                    if (_this._completionTimeout)
+                        clearTimeout(_this._completionTimeout);
+                    if (_this._cursorTimeout)
+                        clearTimeout(_this._cursorTimeout);
+                    if (_this._diagnosticsTimeout)
+                        clearTimeout(_this._diagnosticsTimeout);
                     _this._activeFullPath = null;
                     editor.removeKeyMap(_this._keymap);
                 }
             };
         };
 
+        TypeScriptDocumentMode.prototype._cursorActivity = function (editor, fullPath) {
+            var _this = this;
+            if (this._cursorTimeout)
+                clearTimeout(this._cursorTimeout);
+            this._cursorTimeout = setTimeout(function () {
+                return _this._updateCursor(editor, fullPath);
+            }, teapo.cursorTimeout);
+        };
+
+        TypeScriptDocumentMode.prototype._updateCursor = function (editor, fullPath) {
+            var doc = editor.getDoc();
+            var pos = doc.getCursor();
+            var offset = doc.indexFromPos(pos);
+            var str = pos.line + ':' + pos.ch;
+            try  {
+                var definitions = this._typescript.getDefinitionAtPosition(fullPath, offset);
+            } catch (e) {
+                str += ' ' + e.message;
+            }
+            if (definitions && definitions.length > 0) {
+                var def = definitions[0];
+                str += ' ' + (def.containerName ? def.containerName + '.' : '') + def.name + ' defined in ' + def.fileName;
+            }
+            this._statusText(str);
+        };
+
         TypeScriptDocumentMode.prototype._ctrlSpace = function (editor) {
             this._triggerCompletion(editor, this._activeFullPath, true);
+        };
+
+        TypeScriptDocumentMode.prototype._onchange = function (editor, fullPath) {
+            this._triggerCompletion(editor, fullPath, false);
+            this._triggerDiagnostics(editor, fullPath);
+        };
+
+        TypeScriptDocumentMode.prototype._triggerDiagnostics = function (editor, fullPath) {
+            var _this = this;
+            if (this._diagnosticsTimeout)
+                clearTimeout(this._diagnosticsTimeout);
+            this._diagnosticsTimeout = setTimeout(function () {
+                return _this._requestDiagnostics(editor, fullPath);
+            }, teapo.diagnosticsTimeout);
+        };
+
+        TypeScriptDocumentMode.prototype._requestDiagnostics = function (editor, fullPath) {
+            var doc = editor.getDoc();
+            var pos = doc.getCursor();
+            var offset = doc.indexFromPos(pos);
+            var existingMarks = doc.getAllMarks();
+            if (existingMarks) {
+                for (var i = 0; i < existingMarks.length; i++) {
+                    existingMarks[i].clear();
+                }
+            }
+            var diag = this._typescript.getSyntacticDiagnostics(fullPath);
+            if (diag) {
+                for (var i = 0; i < diag.length; i++) {
+                    var d = diag[i];
+                    if (d.fileName() !== fullPath)
+                        continue;
+                    var start = { line: d.line(), ch: d.character() };
+                    var end = { line: start.line, ch: start.ch + d.length() };
+                    var m = doc.markText(start, end, {
+                        className: 'teapo-syntax-error',
+                        title: d.text()
+                    });
+                }
+            }
+            diag = this._typescript.getSemanticDiagnostics(fullPath);
+            if (diag) {
+                for (var i = 0; i < diag.length; i++) {
+                    var d = diag[i];
+                    if (d.fileName() !== fullPath)
+                        continue;
+                    var start = { line: d.line(), ch: d.character() };
+                    var end = { line: start.line, ch: start.ch + d.length() };
+                    var m = doc.markText(start, end, {
+                        className: 'teapo-semantic-error',
+                        title: d.text()
+                    });
+                }
+            }
         };
 
         TypeScriptDocumentMode.prototype._triggerCompletion = function (editor, fullPath, force) {
@@ -517,7 +616,11 @@ var teapo;
             var _this = this;
             var nh = this._getNeighborhood(editor);
 
-            var completions = this._typescript.getCompletionsAtPosition(fullPath, nh.offset, false);
+            try  {
+                var completions = this._typescript.getCompletionsAtPosition(fullPath, nh.offset, false);
+            } catch (e) {
+                console.log(e);
+            }
 
             var from = {
                 line: nh.pos.line,
@@ -1133,6 +1236,7 @@ var teapo;
             this._document = _document;
             this.activeDocument = ko.observable();
             this.root = new teapo.Folder(null, null);
+            this.statusText = ko.observable('ready.');
             this._typescript = null;
             this._editor = null;
             this._textarea = null;
@@ -1256,7 +1360,7 @@ var teapo;
                 this._disposeMode = null;
             }
             if (teapo.detectDocumentMode(file.fullPath) === 'text/typescript') {
-                this._disposeMode = this._tsMode.activateEditor(this._editor, file.fullPath);
+                this._disposeMode = this._tsMode.activateEditor(this._editor, file.fullPath, this.statusText);
             }
         };
 
