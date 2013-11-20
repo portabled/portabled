@@ -44,6 +44,7 @@ module teapo {
     private _statusText: KnockoutObservable<string> = null;
     private _cursorTimeout = 0;
     private _diagnosticsTimeout = 0;
+    private _gutterMarkers: string[] = [];
 
     constructor(private _typescript: TypeScript.Services.ILanguageService) {
       this._keymap = {
@@ -75,7 +76,14 @@ module teapo {
           if (this._diagnosticsTimeout) clearTimeout(this._diagnosticsTimeout);
           this._activeFullPath = null;
           editor.removeKeyMap(this._keymap);
+          this._clearGutterMarkers(editor);
         }
+      }
+    }
+
+    private _clearGutterMarkers(editor: CodeMirror.Editor) {
+      for (var i = 0; i < this._gutterMarkers.length; i++) {
+        editor.clearGutter(this._gutterMarkers[i]);
       }
     }
 
@@ -126,38 +134,42 @@ module teapo {
           existingMarks[i].clear();
         }
       }
+      this._clearGutterMarkers(editor);
       try {
         var diag = this._typescript.getSyntacticDiagnostics(fullPath);
       }
       catch (e) { }
       if (diag) {
         for (var i = 0; i < diag.length; i++) {
-          var d = diag[i];
-          if (d.fileName()!==fullPath) continue;
-          var start = { line: d.line(), ch: d.character() };
-          var end = { line: start.line, ch: start.ch + d.length() };
-          var m = doc.markText(start, end, {
-            className: 'teapo-syntax-error',
-            title: d.text()
-          });
+          this._addErrorMark(i, diag[i], editor, doc, fullPath, 'teapo-syntax-error');
         }
       }
+      var key = i;
       try {
         diag = this._typescript.getSemanticDiagnostics(fullPath);
       }
       catch (e) { }
       if (diag) {
         for (var i = 0; i < diag.length; i++) {
-          var d = diag[i];
-          if (d.fileName()!==fullPath) continue;
-          var start = { line: d.line(), ch: d.character() };
-          var end = { line: start.line, ch: start.ch + d.length() };
-          var m = doc.markText(start, end, {
-            className: 'teapo-semantic-error',
-            title: d.text()
-          });
+          this._addErrorMark(key+i, diag[i], editor, doc, fullPath, 'teapo-semantic-error');
         }
       }
+    }
+
+    private _addErrorMark(index: number, d: TypeScript.Diagnostic, editor: CodeMirror.Editor, doc: CodeMirror.Doc, fullPath: string, className: string) {
+      if (d.fileName()!==fullPath) return;
+      var start = { line: d.line(), ch: d.character() };
+      var end = { line: start.line, ch: start.ch + d.length() };
+      var m = doc.markText(start, end, {
+        className: className,
+        title: d.text()
+      });
+      var b = document.createElement('div');
+      b.style.width = '10px';
+      b.style.height = '10px';
+      b.style.background = 'black';
+      b.title = d.text();
+      editor.setGutterMarker(d.line(), index+'', b); 
     }
 
     private _triggerCompletion(editor: CodeMirror.Editor, fullPath: string, force: boolean) {

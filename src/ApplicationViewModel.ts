@@ -152,7 +152,9 @@ module teapo {
         styleActiveLine: true,
         readOnly: 'nocursor',
         tabSize: 2,
-        extraKeys: {"Tab": "indentMore", "Shift-Tab": "indentLess"}
+        extraKeys: {"Tab": "indentMore", "Shift-Tab": "indentLess"},
+        gutters: [ 'teapo-errors' ],
+        
       });
       var activeDoc = this.activeDocument();
       if (activeDoc) {

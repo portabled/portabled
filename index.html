@@ -9911,6 +9911,7 @@ var teapo;
             this._statusText = null;
             this._cursorTimeout = 0;
             this._diagnosticsTimeout = 0;
+            this._gutterMarkers = [];
             this.mode = 'text/typescript';
             this._keymap = {
                 'Ctrl-Space': function (cm) {
@@ -9950,8 +9951,15 @@ var teapo;
                         clearTimeout(_this._diagnosticsTimeout);
                     _this._activeFullPath = null;
                     editor.removeKeyMap(_this._keymap);
+                    _this._clearGutterMarkers(editor);
                 }
             };
+        };
+
+        TypeScriptDocumentMode.prototype._clearGutterMarkers = function (editor) {
+            for (var i = 0; i < this._gutterMarkers.length; i++) {
+                editor.clearGutter(this._gutterMarkers[i]);
+            }
         };
 
         TypeScriptDocumentMode.prototype._cursorActivity = function (editor, fullPath) {
@@ -10008,40 +10016,43 @@ var teapo;
                     existingMarks[i].clear();
                 }
             }
+            this._clearGutterMarkers(editor);
             try  {
                 var diag = this._typescript.getSyntacticDiagnostics(fullPath);
             } catch (e) {
             }
             if (diag) {
                 for (var i = 0; i < diag.length; i++) {
-                    var d = diag[i];
-                    if (d.fileName() !== fullPath)
-                        continue;
-                    var start = { line: d.line(), ch: d.character() };
-                    var end = { line: start.line, ch: start.ch + d.length() };
-                    var m = doc.markText(start, end, {
-                        className: 'teapo-syntax-error',
-                        title: d.text()
-                    });
+                    this._addErrorMark(i, diag[i], editor, doc, fullPath, 'teapo-syntax-error');
                 }
             }
+            var key = i;
             try  {
                 diag = this._typescript.getSemanticDiagnostics(fullPath);
             } catch (e) {
             }
             if (diag) {
                 for (var i = 0; i < diag.length; i++) {
-                    var d = diag[i];
-                    if (d.fileName() !== fullPath)
-                        continue;
-                    var start = { line: d.line(), ch: d.character() };
-                    var end = { line: start.line, ch: start.ch + d.length() };
-                    var m = doc.markText(start, end, {
-                        className: 'teapo-semantic-error',
-                        title: d.text()
-                    });
+                    this._addErrorMark(key + i, diag[i], editor, doc, fullPath, 'teapo-semantic-error');
                 }
             }
+        };
+
+        TypeScriptDocumentMode.prototype._addErrorMark = function (index, d, editor, doc, fullPath, className) {
+            if (d.fileName() !== fullPath)
+                return;
+            var start = { line: d.line(), ch: d.character() };
+            var end = { line: start.line, ch: start.ch + d.length() };
+            var m = doc.markText(start, end, {
+                className: className,
+                title: d.text()
+            });
+            var b = document.createElement('div');
+            b.style.width = '10px';
+            b.style.height = '10px';
+            b.style.background = 'black';
+            b.title = d.text();
+            editor.setGutterMarker(d.line(), index + '', b);
         };
 
         TypeScriptDocumentMode.prototype._triggerCompletion = function (editor, fullPath, force) {
@@ -10845,7 +10856,8 @@ var teapo;
                 styleActiveLine: true,
                 readOnly: 'nocursor',
                 tabSize: 2,
-                extraKeys: { "Tab": "indentMore", "Shift-Tab": "indentLess" }
+                extraKeys: { "Tab": "indentMore", "Shift-Tab": "indentLess" },
+                gutters: ['teapo-errors']
             });
             var activeDoc = this.activeDocument();
             if (activeDoc) {
@@ -78098,6 +78110,10 @@ var TypeScript;
   }
   .teapo-semantic-error {
     text-decoration: underline;
+  }
+  .teapo-errors {
+    width: 0.5em;
+    background: tomato;
   }
   .CodeMirror, textarea.teapo-editor {
     position: fixed;
