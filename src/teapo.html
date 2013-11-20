@@ -34,7 +34,7 @@
       </div>
     </div>
     <textarea data-bind='attach: attachTextarea($element)'>Teapo &mdash; text editor confined to a small place. Select a file on the left to start.</textarea>
-		<button style='position: absolute; right: 0px; top: 0px;' data-bind='visible: activeDocument'>
+		<button style='position: fixed; right: 0px; top: 0px;' data-bind='visible: activeDocument'>
 			delete <span data-bind='text: activeDocument() ? activeDocument().name : null, click: deleteActiveFile'></span>
 		</button>
       <div class=teapo-status data-bind='text: statusText'></div>
@@ -72,7 +72,7 @@
     margin: 0px; padding: 0px;
   }
   .teapo-file-list {
-    position: absolute;
+    position: fixed;
     width: 20%;
     height: 100%;
     background: #dedede;
@@ -91,7 +91,7 @@
     border-right: none;
   }
   .teapo-status {
-    position: absolute;
+    position: fixed;
     bottom: 0px;
     left: 20%; right: 0px;
     height: 1.5em;
@@ -108,7 +108,7 @@
     text-decoration: underline;
   }
   .CodeMirror, textarea.teapo-editor {
-    position: absolute;
+    position: fixed;
     left: 20%;
     top: 0px;
     bottom: 1.5em;
