@@ -3,11 +3,12 @@
 module teapo {
   
   export function getDocumentStoreUniqueKey(w = window): string {
-    var url = w.location + '';
-    var posHash = url.indexOf('#');
-    if (posHash>=0)
-      url = url.slice(0,posHash);
-    return url;
+    var key = w.location.href;
+    key = key.split('#')[0];
+    if (key.length > 'index.html'.length && key.slice(key.length - 'index.html'.length).toLowerCase()==='index.html')
+      key = key.slice(0, key.length-'index.html'.length);
+          key = '[teapo]'+key;
+    return key;
   }
   
   export function appendScriptElement(id: string, d = document): HTMLScriptElement {
