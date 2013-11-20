@@ -1499,10 +1499,136 @@ var teapo;
     }
     teapo.registerKnockoutBindings = registerKnockoutBindings;
 })(teapo || (teapo = {}));
+/// <reference path='typings/knockout.d.ts' />
+/// <reference path='persistence.ts' />
+var teapo;
+(function (teapo) {
+    /**
+    * File list or tree ViewModel.
+    */
+    var FileList = (function () {
+        function FileList(_storage) {
+            this._storage = _storage;
+            this.selectedFile = ko.observable(null);
+            var fileNames = this._storage.documentNames();
+            for (var i = 0; i < fileNames.length; i++) {
+            }
+        }
+        return FileList;
+    })();
+    teapo.FileList = FileList;
+
+    
+
+    
+})(teapo || (teapo = {}));
+/// <reference path='editor.ts' />
+/// <reference path='files.ts' />
+var teapo;
+(function (teapo) {
+    /**
+    * Encapsulating all necessary for storing documents, metadata and properties.
+    */
+    var DocumentStorage = (function () {
+        function DocumentStorage(_typeResolver, _entryResolver, _document, _localStorage) {
+            if (typeof _document === "undefined") { _document = document; }
+            if (typeof _localStorage === "undefined") { _localStorage = localStorage; }
+            this._typeResolver = _typeResolver;
+            this._entryResolver = _entryResolver;
+            this._document = _document;
+            this._localStorage = _localStorage;
+            // TODO: apart from localStorage support better local access API
+        }
+        /**
+        * Full paths of all files.
+        */
+        DocumentStorage.prototype.documentNames = function () {
+            return null;
+        };
+
+        /**
+        * Given a path retrieves an object for reading and writing document state,
+        * also exposes runtime features like editor and entry in the file list.
+        */
+        DocumentStorage.prototype.getDocument = function (fullPath) {
+            return null;
+        };
+        return DocumentStorage;
+    })();
+    teapo.DocumentStorage = DocumentStorage;
+
+    
+
+    var internal;
+    (function (internal) {
+        /**
+        * Standard implementation of DocumentState.
+        * This class is not exposed outside of this module.
+        */
+        var DocumentState = (function () {
+            function DocumentState(_fullPath, _name, _storage, _typeResolver, _entryResolver) {
+                this._fullPath = _fullPath;
+                this._name = _name;
+                this._storage = _storage;
+                this._typeResolver = _typeResolver;
+                this._entryResolver = _entryResolver;
+                this._type = null;
+                this._editor = null;
+                this._fileEntry = null;
+            }
+            DocumentState.prototype.fullPath = function () {
+                return this._fullPath;
+            };
+            DocumentState.prototype.name = function () {
+                return this._name;
+            };
+
+            DocumentState.prototype.type = function () {
+                if (!this._type)
+                    this._type = this._typeResolver(this._fullPath);
+                return this._type;
+            };
+
+            DocumentState.prototype.editor = function () {
+                if (!this._editor)
+                    this._editor = this.type().editDocument(this);
+                return this._editor;
+            };
+
+            DocumentState.prototype.fileEntry = function () {
+                if (this._fileEntry)
+                    this._fileEntry = this._entryResolver(this._fullPath);
+                return this._fileEntry;
+            };
+
+            DocumentState.prototype.getProperty = function (name) {
+                return null;
+            };
+
+            DocumentState.prototype.setProperty = function (name, value) {
+                //
+            };
+
+            DocumentState.prototype.getTransientProperty = function (name) {
+                return null;
+            };
+
+            DocumentState.prototype.setTransientProperty = function (name, value) {
+                //
+            };
+            return DocumentState;
+        })();
+        internal.DocumentState = DocumentState;
+    })(internal || (internal = {}));
+})(teapo || (teapo = {}));
+/// <reference path='persistence.ts' />
 /// <reference path='typings/codemirror.d.ts' />
 /// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='ApplicationViewModel.ts' />
 /// <reference path='KnockoutBindings.ts' />
+/// <reference path='editor.ts' />
+/// <reference path='files.ts' />
+/// <reference path='persistence.ts' />
 window.onload = function () {
     teapo.registerKnockoutBindings(ko);
 

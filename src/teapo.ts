@@ -4,6 +4,10 @@
 /// <reference path='ApplicationViewModel.ts' />
 /// <reference path='KnockoutBindings.ts' />
 
+/// <reference path='editor.ts' />
+/// <reference path='files.ts' />
+/// <reference path='persistence.ts' />
+
 window.onload = function() {
   teapo.registerKnockoutBindings(ko);
 
