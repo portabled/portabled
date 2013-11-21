@@ -1527,6 +1527,7 @@ var teapo;
             }
         }
         FileList.prototype._addFileEntry = function (fullPath) {
+            var _this = this;
             var pathParts = normalizePath(fullPath);
             if (pathParts.length === 0)
                 return;
@@ -1536,17 +1537,7 @@ var teapo;
             var files = this.files;
 
             for (var i = 0; i < pathParts.length - 1; i++) {
-                var folderName = pathParts[i];
-
-                var folderArray = folders();
-                var folderIndex = insertionIndexOfEntry(folderArray, folderName);
-                var folder = folderArray[folderIndex];
-
-                if (!folder || folder.name() !== folderName) {
-                    var folderPath = '/' + pathParts.slice(0, i + 1).join('/');
-                    folder = new RuntimeFolderEntry(folderPath, folderName, parent, this);
-                    folders.splice(folderIndex, 0, folder);
-                }
+                var folder = this._insertOrLookupFolder(parent, folders, pathParts, i);
 
                 folders = folder.folders;
                 files = folder.files;
@@ -1562,9 +1553,36 @@ var teapo;
             if (file && file.name() === fileName)
                 throw new Error('File already exists: ' + file.fullPath() + '.');
 
-            file = new RuntimeFileEntry('/' + pathParts.join('/'), fileName, parent, this);
+            file = new RuntimeFileEntry('/' + pathParts.join('/'), fileName, parent, this, function () {
+                return _this._handleFileClick(file);
+            });
 
             files.splice(fileIndex, 0, file);
+        };
+
+        FileList.prototype._insertOrLookupFolder = function (parent, folders, pathParts, i) {
+            var _this = this;
+            var folderName = pathParts[i];
+
+            var folderArray = folders();
+            var folderIndex = insertionIndexOfEntry(folderArray, folderName);
+            var folder = folderArray[folderIndex];
+
+            if (!folder || folder.name() !== folderName) {
+                var folderPath = '/' + pathParts.slice(0, i + 1).join('/');
+                folder = new RuntimeFolderEntry(folderPath, folderName, parent, this, function () {
+                    return _this._handleFolderClick(folder);
+                });
+                folders.splice(folderIndex, 0, folder);
+            }
+
+            return folder;
+        };
+
+        FileList.prototype._handleFolderClick = function (folder) {
+        };
+
+        FileList.prototype._handleFileClick = function (file) {
         };
         return FileList;
     })();
@@ -1575,11 +1593,12 @@ var teapo;
     
 
     var RuntimeFolderEntry = (function () {
-        function RuntimeFolderEntry(_fullPath, _name, _parent, _owner) {
+        function RuntimeFolderEntry(_fullPath, _name, _parent, _owner, _handleClick) {
             this._fullPath = _fullPath;
             this._name = _name;
             this._parent = _parent;
             this._owner = _owner;
+            this._handleClick = _handleClick;
             this.folders = ko.observableArray();
             this.files = ko.observableArray();
             //
@@ -1592,16 +1611,18 @@ var teapo;
         };
 
         RuntimeFolderEntry.prototype.handleClick = function () {
+            this._handleClick();
         };
         return RuntimeFolderEntry;
     })();
 
     var RuntimeFileEntry = (function () {
-        function RuntimeFileEntry(_fullPath, _name, _parent, _owner) {
+        function RuntimeFileEntry(_fullPath, _name, _parent, _owner, _handleClick) {
             this._fullPath = _fullPath;
             this._name = _name;
             this._parent = _parent;
             this._owner = _owner;
+            this._handleClick = _handleClick;
             this.isSelected = ko.observable(false);
             //
         }
@@ -1613,6 +1634,7 @@ var teapo;
         };
 
         RuntimeFileEntry.prototype.handleClick = function () {
+            this._handleClick();
         };
         return RuntimeFileEntry;
     })();

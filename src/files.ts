@@ -31,21 +31,7 @@ module teapo {
       var files = this.files;
 
       for (var i = 0; i < pathParts.length-1; i++) {
-        var folderName = pathParts[i];
-
-        var folderArray = folders();
-        var folderIndex = insertionIndexOfEntry(folderArray, folderName);
-        var folder = <RuntimeFolderEntry>folderArray[folderIndex];
-
-        if (!folder || folder.name()!==folderName) {
-          var folderPath = '/'+pathParts.slice(0,i+1).join('/');
-          folder = new RuntimeFolderEntry(
-            folderPath,
-            folderName,
-            parent,
-            this);
-          folders.splice(folderIndex, 0, folder);
-        }
+        var folder = this._insertOrLookupFolder(parent, folders, pathParts, i);
 
         folders = folder.folders;
         files = folder.files;
@@ -65,9 +51,41 @@ module teapo {
         '/'+pathParts.join('/'),
         fileName,
         parent,
-        this);
+        this,
+        () => this._handleFileClick(file));
 
       files.splice(fileIndex, 0, file);
+    }
+
+    private _insertOrLookupFolder(
+      parent: RuntimeFolderEntry,
+      folders: KnockoutObservableArray<FolderEntry>,
+      pathParts: string[],
+      i: number): RuntimeFolderEntry {
+      var folderName = pathParts[i];
+
+      var folderArray = folders();
+      var folderIndex = insertionIndexOfEntry(folderArray, folderName);
+      var folder = <RuntimeFolderEntry>folderArray[folderIndex];
+
+      if (!folder || folder.name()!==folderName) {
+        var folderPath = '/'+pathParts.slice(0,i+1).join('/');
+        folder = new RuntimeFolderEntry(
+          folderPath,
+          folderName,
+          parent,
+          this,
+          () => this._handleFolderClick(folder));
+        folders.splice(folderIndex, 0, folder);
+      }
+
+      return folder;
+    }
+
+    private _handleFolderClick(folder: RuntimeFolderEntry) {
+    }
+
+    private _handleFileClick(file: RuntimeFileEntry) {
     }
   }
 
@@ -107,7 +125,8 @@ module teapo {
       private _fullPath: string,
       private _name: string,
       private _parent: FolderEntry,
-      private _owner: FileList) {
+      private _owner: FileList,
+      private _handleClick: () => void) {
       //
     }
 
@@ -115,7 +134,7 @@ module teapo {
     name(): string { return this._name; }
 
     handleClick(): void {
-      
+      this._handleClick();
     }
  }
 
@@ -127,7 +146,8 @@ module teapo {
       private _fullPath: string,
       private _name: string,
       private _parent: FolderEntry,
-      private _owner: FileList) {
+      private _owner: FileList,
+      private _handleClick: () => void) {
       //
     }
 
@@ -135,7 +155,7 @@ module teapo {
     name(): string { return this._name; }
 
     handleClick(): void {
-      
+      this._handleClick();
     }
   }
 
