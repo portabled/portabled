@@ -251,7 +251,7 @@ declare module TypeScript {
         All_named_properties_must_be_subtypes_of_string_indexer_type_0: string;
         All_named_properties_must_be_subtypes_of_string_indexer_type_0_NL_1: string;
         Generic_type_references_must_include_all_type_arguments: string;
-        Default_arguments_are_not_allowed_in_an_overload_parameter: string;
+        Default_arguments_are_only_allowed_in_implementation: string;
         Overloads_cannot_differ_only_by_return_type: string;
         Function_expression_declared_a_non_void_return_type_but_has_no_return_expression: string;
         Import_declaration_referencing_identifier_from_internal_module_can_only_be_made_with_variables_functions_classes_interfaces_enums_and_internal_modules: string;
