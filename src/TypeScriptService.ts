@@ -150,19 +150,9 @@ module teapo {
     }
 
     private _getTextCore(start: number, end: number): string {
-      if (this._version===0) return this._getTextWhenNoChanges(start, end);
-
-      var doc = this._d.getDoc();
-      var startPos = doc.posFromIndex(start);
-      var endPos = doc.posFromIndex(end);
-      var text = doc.getRange(startPos, endPos);
-      return text;
-    }
-
-    private _getTextWhenNoChanges(start: number, end: number): string {
-      if (this._simpleText===null) {
+      if (this._simpleText===null)
         this._simpleText = this._d.getDoc().getValue();
-      }
+
       return this._simpleText.slice(start,end);
     }
   
