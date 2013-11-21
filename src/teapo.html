@@ -134,24 +134,12 @@
   }
   </style>
   <script data-path='#lib.d.ts' inline='imports/typescript/lib.d.ts' type='text/html'></script>
-  <script data-path='/src/main.ts' type='text/html'>/// <reference path='Apple.ts' />
-var appleDefaultColor = new Apple();
-var greenApple = new Apple('green')</script>
-  <script data-path='/src/Apple.ts' type='text/html'>class Apple {
-  constructor(publicc color: string = 'red') {
-  }
-
-  /** This accessor method is not really needed, color member is public anyway. */
-  getColor() { return this.color; }
-}</script>
-  <script data-path='/index.html' type='text/html'><!DOCTYPE html>
-<html>
-<head><title>Dummy HTML page</title>
-</head>
-<body>
-<h2> Dummy HTML page </h2>
-</body>
-</html></script>
+  <script data-path='/src/files.ts' type='text/html' inline='files.ts'></script>
+  <script data-path='/src/editor.ts' type='text/html' inline='editor.ts'></script>
+  <script data-path='/src/persistence.ts' type='text/html' inline='persistence.ts'></script>
+  <script data-path='/src/typings/typescriptServices.d.ts' type='text/html' inline='typings/typescriptServices.d.ts'></script>
+  <script data-path='/src/typings/codemirror.d.ts' type='text/html' inline='typings/codemirror.d.ts'></script>
+  <script data-path='/src/typings/knockout.d.ts' type='text/html' inline='typings/knockout.d.ts'></script>
 </head>
 <body>
   empty...
