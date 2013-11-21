@@ -86,6 +86,33 @@ module teapo {
     }
 
     private _handleFileClick(file: RuntimeFileEntry) {
+      this._updateSelectionProperties(file);
+    }
+
+    private _updateSelectionProperties(newSelectedFile: RuntimeFileEntry) {
+
+      var selectFolders: { [fullPath: string]: FolderEntry; } = {};
+      if (newSelectedFile) {
+        var f = newSelectedFile.parent();
+        while (f) {
+          selectFolders[f.fullPath()] = f;
+          if (!f.containsSelectedFile())
+            f.containsSelectedFile(true);
+        }
+        newSelectedFile.isSelected(true);
+      }
+
+      if (this.selectedFile()) {
+        var f = this.selectedFile().parent();
+        while (f) {
+          if (!selectFolders[f.fullPath()] && f.containsSelectedFile())
+            f.containsSelectedFile(false);
+          f = f.parent();
+        }
+        this.selectedFile().isSelected(false);
+      }
+
+      this.selectedFile(newSelectedFile);
     }
   }
 
@@ -96,9 +123,12 @@ module teapo {
 
     fullPath(): string;
     name(): string;
+    parent(): FolderEntry;
 
     folders: KnockoutObservableArray<FolderEntry>;
     files: KnockoutObservableArray<FileEntry>;
+
+    containsSelectedFile: KnockoutObservable<boolean>;
 
     handleClick(): void;
   }
@@ -110,6 +140,7 @@ module teapo {
 
     fullPath(): string;
     name(): string;
+    parent(): FolderEntry;
 
     isSelected: KnockoutObservable<boolean>;
 
@@ -120,6 +151,7 @@ module teapo {
 
     folders = ko.observableArray<teapo.FolderEntry>();
     files = ko.observableArray<teapo.FileEntry>();
+    containsSelectedFile = ko.observable<boolean>(false);
 
     constructor(
       private _fullPath: string,
@@ -132,6 +164,7 @@ module teapo {
 
     fullPath(): string { return this._fullPath; }
     name(): string { return this._name; }
+    parent(): FolderEntry { return this._parent; }
 
     handleClick(): void {
       this._handleClick();
@@ -153,6 +186,7 @@ module teapo {
 
     fullPath(): string { return this._fullPath; }
     name(): string { return this._name; }
+    parent(): FolderEntry { return this._parent; }
 
     handleClick(): void {
       this._handleClick();
