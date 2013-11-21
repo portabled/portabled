@@ -1517,11 +1517,55 @@ var teapo;
     var FileList = (function () {
         function FileList(_storage) {
             this._storage = _storage;
+            this.folders = ko.observableArray();
+            this.files = ko.observableArray();
             this.selectedFile = ko.observable(null);
+            this._filesByFullPath = {};
             var fileNames = this._storage.documentNames();
             for (var i = 0; i < fileNames.length; i++) {
+                this._addFileEntry(fileNames[i]);
             }
         }
+        FileList.prototype._addFileEntry = function (fullPath) {
+            var pathParts = normalizePath(fullPath);
+            if (pathParts.length === 0)
+                return;
+
+            var parent = null;
+            var folders = this.folders;
+            var files = this.files;
+
+            for (var i = 0; i < pathParts.length - 1; i++) {
+                var folderName = pathParts[i];
+
+                var folderArray = folders();
+                var folderIndex = insertionIndexOfEntry(folderArray, folderName);
+                var folder = folderArray[folderIndex];
+
+                if (!folder || folder.name() !== folderName) {
+                    var folderPath = '/' + pathParts.slice(0, i + 1).join('/');
+                    folder = new RuntimeFolderEntry(folderPath, folderName, parent, this);
+                    folders.splice(folderIndex, 0, folder);
+                }
+
+                folders = folder.folders;
+                files = folder.files;
+                parent = folder;
+            }
+
+            var fileName = pathParts[pathParts.length - 1];
+
+            var fileArray = files();
+            var fileIndex = insertionIndexOfEntry(fileArray, fileName);
+            var file = fileArray[fileIndex];
+
+            if (file && file.name() === fileName)
+                throw new Error('File already exists: ' + file.fullPath() + '.');
+
+            file = new RuntimeFileEntry('/' + pathParts.join('/'), fileName, parent, this);
+
+            files.splice(fileIndex, 0, file);
+        };
         return FileList;
     })();
     teapo.FileList = FileList;
@@ -1529,6 +1573,96 @@ var teapo;
     
 
     
+
+    var RuntimeFolderEntry = (function () {
+        function RuntimeFolderEntry(_fullPath, _name, _parent, _owner) {
+            this._fullPath = _fullPath;
+            this._name = _name;
+            this._parent = _parent;
+            this._owner = _owner;
+            this.folders = ko.observableArray();
+            this.files = ko.observableArray();
+            //
+        }
+        RuntimeFolderEntry.prototype.fullPath = function () {
+            return this._fullPath;
+        };
+        RuntimeFolderEntry.prototype.name = function () {
+            return this._name;
+        };
+
+        RuntimeFolderEntry.prototype.handleClick = function () {
+        };
+        return RuntimeFolderEntry;
+    })();
+
+    var RuntimeFileEntry = (function () {
+        function RuntimeFileEntry(_fullPath, _name, _parent, _owner) {
+            this._fullPath = _fullPath;
+            this._name = _name;
+            this._parent = _parent;
+            this._owner = _owner;
+            this.isSelected = ko.observable(false);
+            //
+        }
+        RuntimeFileEntry.prototype.fullPath = function () {
+            return this._fullPath;
+        };
+        RuntimeFileEntry.prototype.name = function () {
+            return this._name;
+        };
+
+        RuntimeFileEntry.prototype.handleClick = function () {
+        };
+        return RuntimeFileEntry;
+    })();
+
+    function insertionIndexOfEntry(entries, name) {
+        for (var i = 0; i < entries.length; i++) {
+            var entryName = entries[i].name();
+            if (entryName >= name)
+                return i;
+        }
+        return entries.length;
+    }
+
+    /**
+    * Convert string path into an array of path parts,
+    * processing '..' as necessary.
+    */
+    function normalizePath(path) {
+        if (!path)
+            return [];
+
+        var pathMid = stripOuterSlashes(path);
+        var split = pathMid.split('/');
+
+        var result = null;
+        for (var i = 0; i < split.length; i++) {
+            if (split[i] === '..') {
+                if (result.length)
+                    result.length--;
+                continue;
+            } else if (split[i] === '.' || split[i] === '') {
+                continue;
+            } else {
+                result.push(split[i]);
+            }
+        }
+    }
+
+    function stripOuterSlashes(path) {
+        var start = 0;
+        while (path.charAt(start) === '/')
+            start++;
+
+        var end = Math.max(start, path.length - 1);
+        while (end >= start && path.charAt(end) === '/')
+            end--;
+
+        var pathMid = start === 0 && end === path.length - 1 ? path : path.slice(start, end);
+        return pathMid;
+    }
 })(teapo || (teapo = {}));
 /// <reference path='editor.ts' />
 /// <reference path='files.ts' />
