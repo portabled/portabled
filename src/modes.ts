@@ -48,7 +48,8 @@ module teapo {
     constructor(private _typescript: TypeScript.Services.ILanguageService) {
       this._keymap = {
         'Ctrl-Space': (cm: CodeMirror.Editor) => this._ctrlSpace(cm),
-        'Cmd-Space': (cm: CodeMirror.Editor) => this._ctrlSpace(cm)
+        'Cmd-Space': (cm: CodeMirror.Editor) => this._ctrlSpace(cm),
+        'F7': (cm: CodeMirror.Editor) => cm.getDoc().undo(),
       };
     }
 
