@@ -9623,19 +9623,18 @@ var teapo;
 
         DocumentState.prototype.getText = function (start, end) {
             var text = this._getTextCore(start, end);
-
-            //      var doc = this._d.getDoc();
-            //      var startPos = doc.posFromIndex(start);
-            //      var lead = start ? this._getTextCore(start-startPos.ch,start) : '';
-            //      var endPos = doc.posFromIndex(end);
-            //      var line = doc.getLine(endPos.line);
-            //      var trail = endPos.ch < line.length ? this._getTextCore(end, line.length - endPos.ch) : '';
-            //      var textSmall = text;
-            //      if (textSmall.length > 40)
-            //        textSmall = textSmall.slice(0, 17)+'...'+(text.length)+'...'+textSmall.slice(textSmall.length-17);
-            //      if (textSmall.indexOf('\n')>=0)
-            //        textSmall = textSmall.replace(/\n/g, '\\n');
-            //      console.log('DocumentState.getText(',start,',',end,') // "'+lead+'['+textSmall+']'+trail+'"');
+            var doc = this._d.getDoc();
+            var startPos = doc.posFromIndex(start);
+            var lead = start ? this._getTextCore(start - startPos.ch, start) : '';
+            var endPos = doc.posFromIndex(end);
+            var line = doc.getLine(endPos.line);
+            var trail = endPos.ch < line.length ? this._getTextCore(end, end + line.length - endPos.ch) : '';
+            var textSmall = text;
+            if (textSmall.length > 40)
+                textSmall = textSmall.slice(0, 17) + '...' + (text.length) + '...' + textSmall.slice(textSmall.length - 17);
+            if (textSmall.indexOf('\n') >= 0)
+                textSmall = textSmall.replace(/\n/g, '\\n');
+            console.log('DocumentState.getText(', start, ',', end, ') // [' + startPos.line + '] "' + lead + '[' + textSmall + ']' + trail + '"');
             return text;
         };
 
@@ -11042,6 +11041,32 @@ var teapo;
         };
 
         FileList.prototype._handleFileClick = function (file) {
+            this._updateSelectionProperties(file);
+        };
+
+        FileList.prototype._updateSelectionProperties = function (newSelectedFile) {
+            var selectFolders = {};
+            if (newSelectedFile) {
+                var f = newSelectedFile.parent();
+                while (f) {
+                    selectFolders[f.fullPath()] = f;
+                    if (!f.containsSelectedFile())
+                        f.containsSelectedFile(true);
+                }
+                newSelectedFile.isSelected(true);
+            }
+
+            if (this.selectedFile()) {
+                var f = this.selectedFile().parent();
+                while (f) {
+                    if (!selectFolders[f.fullPath()] && f.containsSelectedFile())
+                        f.containsSelectedFile(false);
+                    f = f.parent();
+                }
+                this.selectedFile().isSelected(false);
+            }
+
+            this.selectedFile(newSelectedFile);
         };
         return FileList;
     })();
@@ -11060,6 +11085,7 @@ var teapo;
             this._handleClick = _handleClick;
             this.folders = ko.observableArray();
             this.files = ko.observableArray();
+            this.containsSelectedFile = ko.observable(false);
             //
         }
         RuntimeFolderEntry.prototype.fullPath = function () {
@@ -11067,6 +11093,9 @@ var teapo;
         };
         RuntimeFolderEntry.prototype.name = function () {
             return this._name;
+        };
+        RuntimeFolderEntry.prototype.parent = function () {
+            return this._parent;
         };
 
         RuntimeFolderEntry.prototype.handleClick = function () {
@@ -11090,6 +11119,9 @@ var teapo;
         };
         RuntimeFileEntry.prototype.name = function () {
             return this._name;
+        };
+        RuntimeFileEntry.prototype.parent = function () {
+            return this._parent;
         };
 
         RuntimeFileEntry.prototype.handleClick = function () {

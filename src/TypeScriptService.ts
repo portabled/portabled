@@ -134,18 +134,18 @@ module teapo {
   
     getText(start: number, end: number): string {
       var text = this._getTextCore(start, end);
-//      var doc = this._d.getDoc();
-//      var startPos = doc.posFromIndex(start);
-//      var lead = start ? this._getTextCore(start-startPos.ch,start) : '';
-//      var endPos = doc.posFromIndex(end);
-//      var line = doc.getLine(endPos.line);
-//      var trail = endPos.ch < line.length ? this._getTextCore(end, line.length - endPos.ch) : '';
-//      var textSmall = text;
-//      if (textSmall.length > 40)
-//        textSmall = textSmall.slice(0, 17)+'...'+(text.length)+'...'+textSmall.slice(textSmall.length-17);
-//      if (textSmall.indexOf('\n')>=0)
-//        textSmall = textSmall.replace(/\n/g, '\\n');
-//      console.log('DocumentState.getText(',start,',',end,') // "'+lead+'['+textSmall+']'+trail+'"');
+      var doc = this._d.getDoc();
+      var startPos = doc.posFromIndex(start);
+      var lead = start ? this._getTextCore(start-startPos.ch,start) : '';
+      var endPos = doc.posFromIndex(end);
+      var line = doc.getLine(endPos.line);
+      var trail = endPos.ch < line.length ? this._getTextCore(end, end + line.length - endPos.ch) : '';
+      var textSmall = text;
+      if (textSmall.length > 40)
+        textSmall = textSmall.slice(0, 17)+'...'+(text.length)+'...'+textSmall.slice(textSmall.length-17);
+      if (textSmall.indexOf('\n')>=0)
+        textSmall = textSmall.replace(/\n/g, '\\n');
+      console.log('DocumentState.getText(',start,',',end,') // ['+startPos.line+'] "'+lead+'['+textSmall+']'+trail+'"');
       return text;
     }
 
