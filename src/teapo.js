@@ -1752,7 +1752,7 @@ var teapo;
                 throw new Error('File already exists: ' + fullPath + '.');
 
             var s = appendScriptElement(this._document);
-            var docState = new RuntimeDocumentState(fullPath, true, s, this._document, this._localStorage, this._typeResolver, this._entryResolver);
+            var docState = new RuntimeDocumentState(fullPath, true, s, this._document, this._localStorage, this._uniqueKey + fullPath, this._typeResolver, this._entryResolver);
             this._docByPath[fullPath] = docState;
             return docState;
         };
@@ -1780,7 +1780,7 @@ var teapo;
                     s = appendScriptElement(this._document);
                     s.setAttribute('data-path', lsFullPath);
                 }
-                var docState = new RuntimeDocumentState(lsFullPath, false, s, this._document, this._localStorage, this._typeResolver, this._entryResolver);
+                var docState = new RuntimeDocumentState(lsFullPath, false, s, this._document, this._localStorage, this._uniqueKey + lsFullPath, this._typeResolver, this._entryResolver);
                 this._docByPath[lsFullPath] = docState;
 
                 // leave only DOM elements that are redundant
@@ -1798,7 +1798,7 @@ var teapo;
             for (var fullPath in domElements.pathElements)
                 if (domElements.pathElements.hasOwnProperty(fullPath)) {
                     var s = domElements.pathElements[fullPath];
-                    var docState = new RuntimeDocumentState(fullPath, false, s, this._document, this._localStorage, this._typeResolver, this._entryResolver);
+                    var docState = new RuntimeDocumentState(fullPath, false, s, this._document, this._localStorage, this._uniqueKey + fullPath, this._typeResolver, this._entryResolver);
                     this._docByPath[fullPath] = docState;
                 }
 
@@ -1863,12 +1863,13 @@ var teapo;
     * This class is not exposed outside of this module.
     */
     var RuntimeDocumentState = (function () {
-        function RuntimeDocumentState(_fullPath, _loadFromDom, _storeElement, _document, _localStorage, _typeResolver, _entryResolver) {
+        function RuntimeDocumentState(_fullPath, _loadFromDom, _storeElement, _document, _localStorage, _localStorageKey, _typeResolver, _entryResolver) {
             this._fullPath = _fullPath;
             this._loadFromDom = _loadFromDom;
             this._storeElement = _storeElement;
             this._document = _document;
             this._localStorage = _localStorage;
+            this._localStorageKey = _localStorageKey;
             this._typeResolver = _typeResolver;
             this._entryResolver = _entryResolver;
             this._type = null;
@@ -1904,12 +1905,15 @@ var teapo;
                 else
                     return this._storeElement.innerHTML;
             } else {
+                var slotName = this._localStorageKey + '*' + name;
+                return this._localStorage[slotName];
             }
-            return null;
         };
 
         RuntimeDocumentState.prototype.setProperty = function (name, value) {
-            //
+            this._storeElement.setAttribute('data-' + name, value);
+            var slotName = this._localStorageKey + '*' + name;
+            this._localStorage[slotName] = value;
         };
 
         RuntimeDocumentState.prototype.getTransientProperty = function (name) {

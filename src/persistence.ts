@@ -45,6 +45,7 @@ module teapo {
         s,
         this._document,
         this._localStorage,
+        this._uniqueKey + fullPath,
         this._typeResolver,
         this._entryResolver);
       this._docByPath[fullPath] = docState;
@@ -83,6 +84,7 @@ module teapo {
           s,
           this._document,
           this._localStorage,
+          this._uniqueKey + lsFullPath,
           this._typeResolver,
           this._entryResolver);
         this._docByPath[lsFullPath] = docState;
@@ -110,6 +112,7 @@ module teapo {
           s,
           this._document,
           this._localStorage,
+          this._uniqueKey+fullPath,
           this._typeResolver,
           this._entryResolver);
         this._docByPath[fullPath] = docState;
@@ -239,6 +242,7 @@ module teapo {
       private _storeElement: HTMLScriptElement,
       private _document: typeof document,
       private _localStorage: typeof localStorage,
+      private _localStorageKey: string,
       private _typeResolver: (fullPath: string) => DocumentType,
       private _entryResolver: (fullPath: string) => FileEntry) {
     }
@@ -271,13 +275,15 @@ module teapo {
           return this._storeElement.innerHTML;
       }
       else {
-        
+        var slotName = this._localStorageKey + '*' + name;
+        return this._localStorage[slotName];
       }
-      return null;
     }
 
     setProperty(name: string, value: string): void {
-      // 
+      this._storeElement.setAttribute('data-'+name, value);
+      var slotName = this._localStorageKey + '*' + name;
+      this._localStorage[slotName] = value;
     }
 
     getTransientProperty(name: string): string {
