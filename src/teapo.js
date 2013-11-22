@@ -207,13 +207,18 @@ var teapo;
         };
 
         DocumentState.prototype.getLineStartPositions = function () {
+            if (!this._simpleText)
+                this._simpleText = this._d.getDoc().getValue();
             var result = [];
-            var current = 0;
-            var doc = this._d.getDoc();
-            doc.eachLine(function (lineHandle) {
-                result.push(current);
-                current += lineHandle.text.length + 1; // plus EOL character
-            });
+            var pos = 0;
+            while (pos < this._simpleText.length) {
+                result.push(pos);
+                pos = this._simpleText.indexOf('\n', pos);
+                if (pos < 0)
+                    break;
+                else
+                    pos++;
+            }
             return result;
         };
 
