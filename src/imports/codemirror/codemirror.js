@@ -13,7 +13,7 @@ window.CodeMirror = (function() {
   var ie = /MSIE \d/.test(navigator.userAgent);
   var ie_lt8 = ie && (document.documentMode == null || document.documentMode < 8);
   var ie_lt9 = ie && (document.documentMode == null || document.documentMode < 9);
-  var ie_gt10 = /Trident\/([7-9]|\d{2,})\./;
+  var ie_gt10 = /Trident\/([7-9]|\d{2,})\./.test(navigator.userAgent);
   var webkit = /WebKit\//.test(navigator.userAgent);
   var qtwebkit = webkit && /Qt\/\d+\.\d+/.test(navigator.userAgent);
   var chrome = /Chrome\//.test(navigator.userAgent);
@@ -719,7 +719,7 @@ window.CodeMirror = (function() {
     if (cm.options.lineNumbers || markers) {
       var gutterWrap = wrap.insertBefore(elt("div", null, null, "position: absolute; left: " +
                                              (cm.options.fixedGutter ? dims.fixedPos : -dims.gutterTotalWidth) + "px"),
-                                         wrap.firstChild);
+                                         lineElement);
       if (cm.options.fixedGutter) (wrap.alignable || (wrap.alignable = [])).push(gutterWrap);
       if (cm.options.lineNumbers && (!markers || !markers["CodeMirror-linenumbers"]))
         wrap.lineNumber = gutterWrap.appendChild(
@@ -3288,6 +3288,7 @@ window.CodeMirror = (function() {
   option("specialCharPlaceholder", defaultSpecialCharPlaceholder, function(cm) {cm.refresh();}, true);
   option("electricChars", true);
   option("rtlMoveVisually", !windows);
+  option("wholeLineUpdateBefore", true);
 
   option("theme", "default", function(cm) {
     themeChanged(cm);
@@ -4261,6 +4262,7 @@ window.CodeMirror = (function() {
     this.height = estimateHeight ? estimateHeight(this) : 1;
   };
   eventMixin(Line);
+  Line.prototype.lineNo = function() { return lineNo(this); };
 
   function updateLine(line, text, markedSpans, estimateHeight) {
     line.text = text;
@@ -4617,7 +4619,8 @@ window.CodeMirror = (function() {
     var lastText = lst(text), lastSpans = spansFor(text.length - 1), nlines = to.line - from.line;
 
     // First adjust the line structure
-    if (from.ch == 0 && to.ch == 0 && lastText == "") {
+    if (from.ch == 0 && to.ch == 0 && lastText == "" &&
+        (!doc.cm || doc.cm.options.wholeLineUpdateBefore)) {
       // This is a whole-line replace. Treated specially to make
       // sure line objects move the way they are supposed to.
       for (var i = 0, e = text.length - 1, added = []; i < e; ++i)
@@ -5933,7 +5936,7 @@ window.CodeMirror = (function() {
 
   // THE END
 
-  CodeMirror.version = "3.19.1";
+  CodeMirror.version = "3.20.1";
 
   return CodeMirror;
 })();
