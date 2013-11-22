@@ -1733,6 +1733,8 @@ var teapo;
             this._uniqueKey = _uniqueKey;
             this._document = _document;
             this._localStorage = _localStorage;
+            this._metadataElement = null;
+            this._staticContent = {};
             this._docByPath = {};
             // TODO: apart from localStorage support better local access API
             this._loadInitialState();
@@ -1753,57 +1755,71 @@ var teapo;
         };
 
         DocumentStorage.prototype.createDocument = function (fullPath) {
+            var _this = this;
             if (this._docByPath[fullPath])
                 throw new Error('File already exists: ' + fullPath + '.');
 
             var s = appendScriptElement(this._document);
-            var docState = new RuntimeDocumentState(fullPath, true, s, this._document, this._localStorage, this._uniqueKey + fullPath, this._typeResolver, this._entryResolver);
+            var docState = new RuntimeDocumentState(fullPath, true, s, this._document, this._localStorage, this._uniqueKey + fullPath, function () {
+                return _this._onDocChange(docState);
+            }, this._typeResolver, this._entryResolver);
+
             this._docByPath[fullPath] = docState;
+
+            this._storeFilenamesToLocalStorage();
+            this._storeEdited();
+
             return docState;
         };
 
         DocumentStorage.prototype._loadInitialState = function () {
-            var domElements = this._findDomElements();
+            var pathElements = this._scanDomScripts();
 
             var lsEdited = safeParseDate(this._lsGet('edited'));
-            var domEdited = domElements.metadataElement ? safeParseDate(domElements.metadataElement.getAttribute('edited')) : null;
+            var domEdited = this._metadataElement ? safeParseDate(this._metadataElement.getAttribute('edited')) : null;
 
             if (!lsEdited || domEdited && domEdited > lsEdited)
-                this._loadInitialStateFromLocalStorage(domElements);
+                this._loadInitialStateFromLocalStorage(pathElements);
             else
-                this._loadInitialStateFromDom(domElements);
+                this._loadInitialStateFromDom(pathElements);
         };
 
-        DocumentStorage.prototype._loadInitialStateFromDom = function (domElements) {
+        DocumentStorage.prototype._loadInitialStateFromLocalStorage = function (pathElements) {
+            var _this = this;
             var lsFilenames = this._loadFilenamesFromLocalStorage();
             for (var i = 0; i < lsFilenames.length; i++) {
                 var lsFullPath = lsFilenames[i];
-                var s = domElements.pathElements[lsFullPath];
+                var s = pathElements[lsFullPath];
                 if (s) {
                     // TODO: clear DOM attributes
                 } else {
                     s = appendScriptElement(this._document);
                     s.setAttribute('data-path', lsFullPath);
                 }
-                var docState = new RuntimeDocumentState(lsFullPath, false, s, this._document, this._localStorage, this._uniqueKey + lsFullPath, this._typeResolver, this._entryResolver);
+                var docState = new RuntimeDocumentState(lsFullPath, false, s, this._document, this._localStorage, this._uniqueKey + lsFullPath, function () {
+                    return _this._onDocChange(docState);
+                }, this._typeResolver, this._entryResolver);
                 this._docByPath[lsFullPath] = docState;
 
                 // leave only DOM elements that are redundant
-                delete domElements.pathElements[lsFullPath];
+                delete pathElements[lsFullPath];
             }
 
-            for (var fullPath in domElements.pathElements)
-                if (domElements.pathElements.hasOwnProperty(fullPath)) {
-                    var s = domElements.pathElements[fullPath];
+            for (var fullPath in pathElements)
+                if (pathElements.hasOwnProperty(fullPath)) {
+                    var s = pathElements[fullPath];
                     s.parentElement.removeChild(s);
                 }
         };
 
-        DocumentStorage.prototype._loadInitialStateFromLocalStorage = function (domElements) {
-            for (var fullPath in domElements.pathElements)
-                if (domElements.pathElements.hasOwnProperty(fullPath)) {
-                    var s = domElements.pathElements[fullPath];
-                    var docState = new RuntimeDocumentState(fullPath, false, s, this._document, this._localStorage, this._uniqueKey + fullPath, this._typeResolver, this._entryResolver);
+        DocumentStorage.prototype._loadInitialStateFromDom = function (pathElements) {
+            var _this = this;
+            for (var fullPath in pathElements)
+                if (pathElements.hasOwnProperty(fullPath)) {
+                    var s = pathElements[fullPath];
+                    var docState = new RuntimeDocumentState(fullPath, false, s, this._document, this._localStorage, this._uniqueKey + fullPath, function () {
+                        return _this._onDocChange(docState);
+                    }, this._typeResolver, this._entryResolver);
                     this._docByPath[fullPath] = docState;
                 }
 
@@ -1824,10 +1840,14 @@ var teapo;
                 return null;
         };
 
-        DocumentStorage.prototype._findDomElements = function () {
-            var metadataElement;
+        DocumentStorage.prototype._storeFilenamesToLocalStorage = function () {
+            var files = Object.keys(this._docByPath);
+            var filesStr = files.join('\n');
+            this._lsSet('files', filesStr);
+        };
+
+        DocumentStorage.prototype._scanDomScripts = function () {
             var pathElements = {};
-            var staticContent = {};
 
             for (var i = 0; i < this._document.scripts.length; i++) {
                 var s = this._document.scripts[i];
@@ -1836,18 +1856,14 @@ var teapo;
                     if (path.charAt(0) === '/') {
                         pathElements[path] = s;
                     } else if (path.charAt(0) === '#') {
-                        staticContent[path] = s.innerHTML;
+                        this._staticContent[path] = s.innerHTML;
                     }
                 } else if (s.id === 'storageMetadata') {
-                    metadataElement = s;
+                    this._metadataElement = s;
                 }
             }
 
-            return {
-                pathElements: pathElements,
-                staticContent: staticContent,
-                metadataElement: metadataElement
-            };
+            return pathElements;
         };
 
         DocumentStorage.prototype._lsGet = function (name) {
@@ -1856,6 +1872,21 @@ var teapo;
 
         DocumentStorage.prototype._lsSet = function (name, value) {
             this._localStorage[this._uniqueKey + name] = value;
+        };
+
+        DocumentStorage.prototype._storeEdited = function () {
+            var edited = new Date().toUTCString();
+            this._lsSet('edited', edited);
+
+            if (!this._metadataElement) {
+                this._metadataElement = appendScriptElement(this._document);
+                this._metadataElement.id = 'path-metadata';
+            }
+            this._metadataElement.setAttribute('edited', edited);
+        };
+
+        DocumentStorage.prototype._onDocChange = function (docState) {
+            this._storeEdited();
         };
         return DocumentStorage;
     })();
@@ -1868,13 +1899,14 @@ var teapo;
     * This class is not exposed outside of this module.
     */
     var RuntimeDocumentState = (function () {
-        function RuntimeDocumentState(_fullPath, _loadFromDom, _storeElement, _document, _localStorage, _localStorageKey, _typeResolver, _entryResolver) {
+        function RuntimeDocumentState(_fullPath, _loadFromDom, _storeElement, _document, _localStorage, _localStorageKey, _onchange, _typeResolver, _entryResolver) {
             this._fullPath = _fullPath;
             this._loadFromDom = _loadFromDom;
             this._storeElement = _storeElement;
             this._document = _document;
             this._localStorage = _localStorage;
             this._localStorageKey = _localStorageKey;
+            this._onchange = _onchange;
             this._typeResolver = _typeResolver;
             this._entryResolver = _entryResolver;
             this._type = null;
@@ -1910,29 +1942,43 @@ var teapo;
                 else
                     return this._storeElement.innerHTML;
             } else {
-                var slotName = this._localStorageKey + '*' + name;
+                var slotName = this._localStorageKey + name;
                 return this._localStorage[slotName];
             }
         };
 
         RuntimeDocumentState.prototype.setProperty = function (name, value) {
             this._storeElement.setAttribute('data-' + name, value);
-            var slotName = this._localStorageKey + '*' + name;
+            var slotName = this._localStorageKey + name;
             this._localStorage[slotName] = value;
+            this._onchange();
         };
 
         RuntimeDocumentState.prototype.getTransientProperty = function (name) {
-            return null;
+            var slotName = this._localStorageKey + '~*' + name;
+            return this._localStorage[slotName];
         };
 
         RuntimeDocumentState.prototype.setTransientProperty = function (name, value) {
-            //
+            var slotName = this._localStorageKey + '~*' + name;
+            this._localStorage[slotName] = value;
+            this._onchange();
         };
         return RuntimeDocumentState;
     })();
 
     function getUniqueKey() {
-        return window.location.href;
+        var key = window.location.href;
+
+        key = key.split('?')[0];
+        key = key.split('#')[0];
+
+        if (key.length > 'index.html'.length && key.slice(key.length - 'index.html'.length).toLowerCase() === 'index.html')
+            key = key.slice(0, key.length - 'index.html'.length);
+
+        key += '*';
+
+        return key;
     }
 
     function safeParseDate(str) {

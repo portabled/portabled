@@ -8,6 +8,8 @@ module teapo {
    */
   export class DocumentStorage {
 
+    private _metadataElement: HTMLScriptElement = null;
+    private _staticContent: { [path: string]: string; } = {};
     private _docByPath: { [name: string]: RuntimeDocumentState; } = {};
 
     constructor(
@@ -46,31 +48,37 @@ module teapo {
         this._document,
         this._localStorage,
         this._uniqueKey + fullPath,
+        () => this._onDocChange(docState),
         this._typeResolver,
         this._entryResolver);
+
       this._docByPath[fullPath] = docState;
+
+      this._storeFilenamesToLocalStorage();
+      this._storeEdited();
+
       return docState;
     }
 
     private _loadInitialState() {
-      var domElements = this._findDomElements();
+      var pathElements = this._scanDomScripts();
 
       var lsEdited = safeParseDate(this._lsGet('edited'));
-      var domEdited = domElements.metadataElement ?
-          safeParseDate(domElements.metadataElement.getAttribute('edited')) :
+      var domEdited = this._metadataElement ?
+          safeParseDate(this._metadataElement.getAttribute('edited')) :
           null;
 
       if (!lsEdited || domEdited && domEdited > lsEdited)
-        this._loadInitialStateFromLocalStorage(domElements);
+        this._loadInitialStateFromLocalStorage(pathElements);
       else
-        this._loadInitialStateFromDom(domElements);
+        this._loadInitialStateFromDom(pathElements);
     }
 
-    private _loadInitialStateFromDom(domElements: InitialDomElements) {
+    private _loadInitialStateFromLocalStorage(pathElements: { [fullPath: string]: HTMLScriptElement; }) {
       var lsFilenames = this._loadFilenamesFromLocalStorage();
       for (var i = 0; i < lsFilenames.length; i++) {
         var lsFullPath = lsFilenames[i];
-        var s = domElements.pathElements[lsFullPath];
+        var s = pathElements[lsFullPath];
         if (s) {
           // TODO: clear DOM attributes
           
@@ -85,34 +93,36 @@ module teapo {
           this._document,
           this._localStorage,
           this._uniqueKey + lsFullPath,
+          () => this._onDocChange(docState),
           this._typeResolver,
           this._entryResolver);
         this._docByPath[lsFullPath] = docState;
 
         // leave only DOM elements that are redundant
-        delete domElements.pathElements[lsFullPath];
+        delete pathElements[lsFullPath];
       }
 
       // remove redundant DOM elements,
       // as we consider localStorage the true state
-      for (var fullPath in domElements.pathElements) if (domElements.pathElements.hasOwnProperty(fullPath)) {
-        var s = <HTMLScriptElement>domElements.pathElements[fullPath];
+      for (var fullPath in pathElements) if (pathElements.hasOwnProperty(fullPath)) {
+        var s = pathElements[fullPath];
         s.parentElement.removeChild(s);
       }
     }
 
-    private _loadInitialStateFromLocalStorage(domElements: InitialDomElements) {
+    private _loadInitialStateFromDom(pathElements: { [fullPath: string]: HTMLScriptElement; }) {
       // pull everything from DOM, localStorage is older
-      // (that's a case when they saved/downloaded a new file
+      // (that's the case when they saved/downloaded a new file
       // overwriting the old file in place)
-      for (var fullPath in domElements.pathElements) if (domElements.pathElements.hasOwnProperty(fullPath)) {
-        var s = domElements.pathElements[fullPath];
+      for (var fullPath in pathElements) if (pathElements.hasOwnProperty(fullPath)) {
+        var s = pathElements[fullPath];
         var docState = new RuntimeDocumentState(
           fullPath, false,
           s,
           this._document,
           this._localStorage,
           this._uniqueKey+fullPath,
+          () => this._onDocChange(docState),
           this._typeResolver,
           this._entryResolver);
         this._docByPath[fullPath] = docState;
@@ -134,10 +144,14 @@ module teapo {
         return null;
     }
 
-    private _findDomElements(): InitialDomElements {
-      var metadataElement: HTMLScriptElement;
+    private _storeFilenamesToLocalStorage() {
+      var files = Object.keys(this._docByPath);
+      var filesStr = files.join('\n');
+      this._lsSet('files', filesStr);
+    }
+
+    private _scanDomScripts() {
       var pathElements: { [name: string]: HTMLScriptElement; } = {};
-      var staticContent: { [name: string]: string; } = {};
 
       for (var i = 0; i < this._document.scripts.length; i++) {
         var s = <HTMLScriptElement>this._document.scripts[i];
@@ -147,19 +161,15 @@ module teapo {
             pathElements[path] = s;
           }
           else if (path.charAt(0)==='#') {
-            staticContent[path] = s.innerHTML;
+            this._staticContent[path] = s.innerHTML;
           }
         }
         else if (s.id==='storageMetadata') {
-          metadataElement = s;
+          this._metadataElement = s;
         }
       }
 
-      return {
-        pathElements: pathElements,
-        staticContent: staticContent,
-        metadataElement: metadataElement
-      };
+      return pathElements;
     }
 
     private _lsGet(name: string): string {
@@ -170,6 +180,20 @@ module teapo {
       this._localStorage[this._uniqueKey+name] = value;
     }
 
+    private _storeEdited() {
+      var edited = new Date().toUTCString();
+      this._lsSet('edited', edited);
+
+      if (!this._metadataElement) {
+        this._metadataElement = appendScriptElement(this._document);
+        this._metadataElement.id = 'path-metadata';
+      }
+      this._metadataElement.setAttribute('edited', edited);
+    }
+
+    private _onDocChange(docState: RuntimeDocumentState) {
+      this._storeEdited();
+    }
   }
 
   /**
@@ -218,14 +242,7 @@ module teapo {
      * Transient properties live within a local browser setup and are not persisted in HTML DOM.
      */
     setTransientProperty(name: string, value: string): void;
-  }
-
-  interface InitialDomElements {
-    metadataElement: HTMLScriptElement;
-    pathElements: { [name: string]: HTMLScriptElement; };
-    staticContent: { [name: string]: string; };
-  }
-    
+  }   
 
   /**
    * Standard implementation of DocumentState.
@@ -243,6 +260,7 @@ module teapo {
       private _document: typeof document,
       private _localStorage: typeof localStorage,
       private _localStorageKey: string,
+      private _onchange: () => void,
       private _typeResolver: (fullPath: string) => DocumentType,
       private _entryResolver: (fullPath: string) => FileEntry) {
     }
@@ -275,28 +293,43 @@ module teapo {
           return this._storeElement.innerHTML;
       }
       else {
-        var slotName = this._localStorageKey + '*' + name;
+        var slotName = this._localStorageKey + name;
         return this._localStorage[slotName];
       }
     }
 
     setProperty(name: string, value: string): void {
       this._storeElement.setAttribute('data-'+name, value);
-      var slotName = this._localStorageKey + '*' + name;
+      var slotName = this._localStorageKey + name;
       this._localStorage[slotName] = value;
+      this._onchange();
     }
 
     getTransientProperty(name: string): string {
-      return null;
+      var slotName = this._localStorageKey + '~*' + name;
+      return this._localStorage[slotName];
     }
 
     setTransientProperty(name: string, value: string): void {
-      // 
+      var slotName = this._localStorageKey + '~*' + name;
+      this._localStorage[slotName] = value;
+      this._onchange();
     }
   }
 
   function getUniqueKey(): string {
-    return window.location.href;
+    var key = window.location.href;
+
+    key = key.split('?')[0];
+    key = key.split('#')[0];
+
+    if (key.length > 'index.html'.length
+       && key.slice(key.length-'index.html'.length).toLowerCase()==='index.html')
+      key = key.slice(0, key.length-'index.html'.length);
+
+    key += '*';
+
+    return key;
   }
 
   function safeParseDate(str: string): Date {
