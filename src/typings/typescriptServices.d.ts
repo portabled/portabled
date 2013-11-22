@@ -87,6 +87,7 @@ declare module TypeScript {
         Accessors_are_not_allowed_in_ambient_contexts: string;
         _0_modifier_cannot_appear_on_a_constructor_declaration: string;
         _0_modifier_cannot_appear_on_a_parameter: string;
+        Only_a_single_variable_declaration_is_allowed_in_a_for_in_statement: string;
         Duplicate_identifier_0: string;
         The_name_0_does_not_exist_in_the_current_scope: string;
         The_name_0_does_not_refer_to_a_value: string;
@@ -182,7 +183,7 @@ declare module TypeScript {
         Could_not_find_symbol_0: string;
         get_and_set_accessor_must_have_the_same_type: string;
         this_cannot_be_referenced_in_current_location: string;
-        Static_methods_cannot_reference_class_type_parameters: string;
+        Static_members_cannot_reference_class_type_parameters: string;
         Class_0_is_recursively_referenced_as_a_base_type_of_itself: string;
         Interface_0_is_recursively_referenced_as_a_base_type_of_itself: string;
         super_property_access_is_permitted_only_in_a_constructor_member_function_or_member_accessor_of_a_derived_class: string;
@@ -7285,7 +7286,7 @@ declare module TypeScript {
         private isIterationStatement(ast);
         private isAnyFunctionExpressionOrDeclaration(ast);
         private inSwitchStatement(ast);
-        private inIterationStatement(ast);
+        private inIterationStatement(ast, crossFunctions);
         private getEnclosingLabels(ast, breakable, crossFunctions);
         private typeCheckContinueStatement(ast, context);
         private resolveBreakStatement(ast, context);
@@ -7308,6 +7309,7 @@ declare module TypeScript {
         private computeDottedNameExpression(expression, name, context, checkSuperPrivateAndStaticAccess);
         private resolveTypeNameExpression(nameAST, context);
         private computeTypeNameExpression(nameAST, context);
+        private isInStaticMemberContext(decl);
         private isLeftSideOfQualifiedName(ast);
         private resolveGenericTypeReference(genericTypeAST, context);
         private resolveQualifiedName(dottedNameAST, context);
