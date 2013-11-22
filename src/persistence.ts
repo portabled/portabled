@@ -49,6 +49,7 @@ module teapo {
         this._localStorage,
         this._uniqueKey + fullPath,
         () => this._onDocChange(docState),
+        () => this._onDocRemove(docState),
         this._typeResolver,
         this._entryResolver);
 
@@ -94,6 +95,7 @@ module teapo {
           this._localStorage,
           this._uniqueKey + lsFullPath,
           () => this._onDocChange(docState),
+          () => this._onDocRemove(docState),
           this._typeResolver,
           this._entryResolver);
         this._docByPath[lsFullPath] = docState;
@@ -123,6 +125,7 @@ module teapo {
           this._localStorage,
           this._uniqueKey+fullPath,
           () => this._onDocChange(docState),
+          () => this._onDocRemove(docState),
           this._typeResolver,
           this._entryResolver);
         this._docByPath[fullPath] = docState;
@@ -194,6 +197,10 @@ module teapo {
     private _onDocChange(docState: RuntimeDocumentState) {
       this._storeEdited();
     }
+
+    private _onDocRemove(docState: RuntimeDocumentState) {
+      delete this._docByPath[docState.fullPath()];
+    }
   }
 
   /**
@@ -242,6 +249,8 @@ module teapo {
      * Transient properties live within a local browser setup and are not persisted in HTML DOM.
      */
     setTransientProperty(name: string, value: string): void;
+
+    remove();
   }   
 
   /**
@@ -261,6 +270,7 @@ module teapo {
       private _localStorage: typeof localStorage,
       private _localStorageKey: string,
       private _onchange: () => void,
+      private _onremove: () => void,
       private _typeResolver: (fullPath: string) => DocumentType,
       private _entryResolver: (fullPath: string) => FileEntry) {
     }
@@ -314,6 +324,18 @@ module teapo {
       var slotName = this._localStorageKey + '~*' + name;
       this._localStorage[slotName] = value;
       this._onchange();
+    }
+
+    remove() {
+      this._storeElement.parentElement.removeChild(this._storeElement);
+
+      for (var k in this._localStorage) if (this._localStorage.hasOwnProperty(k)) {
+        if (k.length>=this._localStorageKey
+            && k.slice(0,this._localStorageKey.length)===this._localStorageKey)
+          delete this._localStorage[k];
+      }
+
+      this._onremove();
     }
   }
 

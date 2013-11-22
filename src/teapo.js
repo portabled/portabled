@@ -1762,6 +1762,8 @@ var teapo;
             var s = appendScriptElement(this._document);
             var docState = new RuntimeDocumentState(fullPath, true, s, this._document, this._localStorage, this._uniqueKey + fullPath, function () {
                 return _this._onDocChange(docState);
+            }, function () {
+                return _this._onDocRemove(docState);
             }, this._typeResolver, this._entryResolver);
 
             this._docByPath[fullPath] = docState;
@@ -1798,6 +1800,8 @@ var teapo;
                 }
                 var docState = new RuntimeDocumentState(lsFullPath, false, s, this._document, this._localStorage, this._uniqueKey + lsFullPath, function () {
                     return _this._onDocChange(docState);
+                }, function () {
+                    return _this._onDocRemove(docState);
                 }, this._typeResolver, this._entryResolver);
                 this._docByPath[lsFullPath] = docState;
 
@@ -1819,6 +1823,8 @@ var teapo;
                     var s = pathElements[fullPath];
                     var docState = new RuntimeDocumentState(fullPath, false, s, this._document, this._localStorage, this._uniqueKey + fullPath, function () {
                         return _this._onDocChange(docState);
+                    }, function () {
+                        return _this._onDocRemove(docState);
                     }, this._typeResolver, this._entryResolver);
                     this._docByPath[fullPath] = docState;
                 }
@@ -1888,6 +1894,10 @@ var teapo;
         DocumentStorage.prototype._onDocChange = function (docState) {
             this._storeEdited();
         };
+
+        DocumentStorage.prototype._onDocRemove = function (docState) {
+            delete this._docByPath[docState.fullPath()];
+        };
         return DocumentStorage;
     })();
     teapo.DocumentStorage = DocumentStorage;
@@ -1899,7 +1909,7 @@ var teapo;
     * This class is not exposed outside of this module.
     */
     var RuntimeDocumentState = (function () {
-        function RuntimeDocumentState(_fullPath, _loadFromDom, _storeElement, _document, _localStorage, _localStorageKey, _onchange, _typeResolver, _entryResolver) {
+        function RuntimeDocumentState(_fullPath, _loadFromDom, _storeElement, _document, _localStorage, _localStorageKey, _onchange, _onremove, _typeResolver, _entryResolver) {
             this._fullPath = _fullPath;
             this._loadFromDom = _loadFromDom;
             this._storeElement = _storeElement;
@@ -1907,6 +1917,7 @@ var teapo;
             this._localStorage = _localStorage;
             this._localStorageKey = _localStorageKey;
             this._onchange = _onchange;
+            this._onremove = _onremove;
             this._typeResolver = _typeResolver;
             this._entryResolver = _entryResolver;
             this._type = null;
@@ -1963,6 +1974,18 @@ var teapo;
             var slotName = this._localStorageKey + '~*' + name;
             this._localStorage[slotName] = value;
             this._onchange();
+        };
+
+        RuntimeDocumentState.prototype.remove = function () {
+            this._storeElement.parentElement.removeChild(this._storeElement);
+
+            for (var k in this._localStorage)
+                if (this._localStorage.hasOwnProperty(k)) {
+                    if (k.length >= this._localStorageKey && k.slice(0, this._localStorageKey.length) === this._localStorageKey)
+                        delete this._localStorage[k];
+                }
+
+            this._onremove();
         };
         return RuntimeDocumentState;
     })();
