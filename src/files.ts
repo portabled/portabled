@@ -21,6 +21,10 @@ module teapo {
       }
     }
 
+    getFileEntry(fullPath: string): FileEntry {
+      return this._filesByFullPath[fullPath];
+    }
+
     private _addFileEntry(fullPath: string): void {
       var pathParts = normalizePath(fullPath);
       if (pathParts.length===0)

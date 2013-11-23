@@ -13,7 +13,7 @@ module teapo {
     uniqueKey: string = getUniqueKey();
 
     typeResolver: (fullPath: string) => DocumentType = null;
-    entryResolver: (fullPath: string) => FileEntry = null;
+    entryResolver: { getFileEntry(fullPath: string): FileEntry; } = null;
 
     private _runtime: RuntimeDocumentStorage = null;
 
@@ -126,7 +126,7 @@ module teapo {
      */
     fileEntry(): FileEntry {
       if (this._docState.fileEntry)
-        this._docState.fileEntry = this._docState.runtime.storage.entryResolver(this._docState.fullPath);
+        this._docState.fileEntry = this._docState.runtime.storage.entryResolver.getFileEntry(this._docState.fullPath);
       return this._docState.fileEntry;
     }
 

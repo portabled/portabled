@@ -1523,6 +1523,10 @@ var teapo;
                 this._addFileEntry(fileNames[i]);
             }
         }
+        FileList.prototype.getFileEntry = function (fullPath) {
+            return this._filesByFullPath[fullPath];
+        };
+
         FileList.prototype._addFileEntry = function (fullPath) {
             var _this = this;
             var pathParts = normalizePath(fullPath);
@@ -1833,7 +1837,7 @@ var teapo;
         */
         DocumentState.prototype.fileEntry = function () {
             if (this._docState.fileEntry)
-                this._docState.fileEntry = this._docState.runtime.storage.entryResolver(this._docState.fullPath);
+                this._docState.fileEntry = this._docState.runtime.storage.entryResolver.getFileEntry(this._docState.fullPath);
             return this._docState.fileEntry;
         };
 
@@ -2053,6 +2057,7 @@ var teapo;
     }
 })(teapo || (teapo = {}));
 /// <reference path='persistence.ts' />
+/// <reference path='typings/knockout.d.ts' />
 /// <reference path='editor.ts' />
 /// <reference path='files.ts' />
 /// <reference path='persistence.ts' />
@@ -2060,6 +2065,11 @@ var teapo;
 (function (teapo) {
     var ApplicationShell = (function () {
         function ApplicationShell() {
+            this.fileList = null;
+            this._storage = null;
+            this._storage = new teapo.DocumentStorage();
+            this._storage.entryResolver = this.fileList;
+            this.fileList = new teapo.FileList(this._storage);
         }
         return ApplicationShell;
     })();
