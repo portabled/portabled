@@ -2064,9 +2064,19 @@ var teapo;
     var TextDocumentType = (function () {
         function TextDocumentType() {
             this._editor = null;
+            this._editorElement = null;
         }
         TextDocumentType.prototype.editDocument = function (doc) {
             return null;
+        };
+
+        TextDocumentType.prototype._initEditor = function () {
+            var _this = this;
+            var options = {};
+
+            this._editor = CodeMirror(function (editorElement) {
+                return _this._editorElement = editorElement;
+            }, options);
         };
         return TextDocumentType;
     })();

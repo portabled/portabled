@@ -16,7 +16,8 @@ module teapo {
   }
 
   class TextDocumentType implements DocumentType {
-    private _editor: CodeMirror = null;
+    private _editor: CodeMirror.Editor = null;
+    private _editorElement: HTMLElement = null;
 
     constructor() {
     }
@@ -25,6 +26,13 @@ module teapo {
       return null;
     }
 
-    
+    private _initEditor() {
+      var options = {
+      };
+
+      this._editor = CodeMirror(
+        (editorElement) => this._editorElement = editorElement,
+        options);
+    }
   }
 }
