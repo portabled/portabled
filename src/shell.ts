@@ -13,9 +13,14 @@ module teapo {
     constructor() {
       this._storage = new DocumentStorage();
       this._storage.entryResolver = this.fileList;
+  
       this.fileList = new FileList(this._storage);
+  
+      this.fileList.selectedFile.subscribe((fileEntry) => this._fileSelected(fileEntry));
     }
 
-    
+    private _fileSelected(fileEntry: FileEntry) {
+      // 
+    }
   }
 }

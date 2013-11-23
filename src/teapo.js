@@ -2065,12 +2065,21 @@ var teapo;
 (function (teapo) {
     var ApplicationShell = (function () {
         function ApplicationShell() {
+            var _this = this;
             this.fileList = null;
             this._storage = null;
             this._storage = new teapo.DocumentStorage();
             this._storage.entryResolver = this.fileList;
+
             this.fileList = new teapo.FileList(this._storage);
+
+            this.fileList.selectedFile.subscribe(function (fileEntry) {
+                return _this._fileSelected(fileEntry);
+            });
         }
+        ApplicationShell.prototype._fileSelected = function (fileEntry) {
+            //
+        };
         return ApplicationShell;
     })();
     teapo.ApplicationShell = ApplicationShell;
