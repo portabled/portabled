@@ -2057,6 +2057,20 @@ var teapo;
     }
 })(teapo || (teapo = {}));
 /// <reference path='persistence.ts' />
+var teapo;
+(function (teapo) {
+    var DocumentType = {};
+
+    var TextDocumentType = (function () {
+        function TextDocumentType() {
+            this._editor = null;
+        }
+        TextDocumentType.prototype.editDocument = function (doc) {
+            return null;
+        };
+        return TextDocumentType;
+    })();
+})(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
 /// <reference path='editor.ts' />
 /// <reference path='files.ts' />
