@@ -2068,6 +2068,9 @@ var teapo;
             var _this = this;
             this.fileList = null;
             this._storage = null;
+            this._selectedDocState = null;
+            this._editorElement = null;
+            this._host = null;
             this._storage = new teapo.DocumentStorage();
             this._storage.entryResolver = this.fileList;
 
@@ -2078,7 +2081,27 @@ var teapo;
             });
         }
         ApplicationShell.prototype._fileSelected = function (fileEntry) {
-            //
+            var newDocState = null;
+            if (fileEntry)
+                newDocState = this._storage.getDocument(fileEntry.fullPath());
+
+            if (this._selectedDocState) {
+                this._selectedDocState.editor().close();
+            }
+
+            var newEditorElement = null;
+            if (newDocState) {
+                newEditorElement = newDocState.editor().open();
+            }
+
+            if (newEditorElement !== this._editorElement) {
+                var oldEditorElement = this._editorElement;
+                this._editorElement = newEditorElement;
+                if (oldEditorElement)
+                    this._host.removeChild(oldEditorElement);
+                if (newEditorElement)
+                    this._host.appendChild(newEditorElement);
+            }
         };
         return ApplicationShell;
     })();
