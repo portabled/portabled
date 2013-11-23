@@ -404,6 +404,7 @@ declare module TypeScript {
         DIRECTORY: string;
         NUMBER: string;
         Specify_the_codepage_to_use_when_opening_source_files: string;
+        Additional_locations: string;
         This_version_of_the_Javascript_runtime_does_not_support_the_0_function: string;
         Unknown_rule: string;
         Invalid_line_number_0: string;
@@ -421,6 +422,7 @@ declare module TypeScript {
         Array_Literal_implicitly_has_an_any_type_from_widening: string;
         _0_which_lacks_get_accessor_and_parameter_type_annotation_on_set_accessor_implicitly_has_an_any_type: string;
         Index_signature_of_object_type_implicitly_has_an_any_type: string;
+        Object_literal_s_property_0_implicitly_has_an_any_type_from_widening: string;
     };
 }
 declare var require: any;
@@ -492,20 +494,25 @@ declare module TypeScript {
 }
 declare module TypeScript {
     var LocalizedDiagnosticMessages: IIndexable<any>;
-    class Diagnostic {
+    class Location {
         private _fileName;
         private _lineMap;
         private _start;
         private _length;
-        private _diagnosticKey;
-        private _arguments;
-        constructor(fileName: string, lineMap: TypeScript.LineMap, start: number, length: number, diagnosticKey: string, arguments?: any[]);
-        public toJSON(key: any): any;
+        constructor(fileName: string, lineMap: TypeScript.LineMap, start: number, length: number);
         public fileName(): string;
         public line(): number;
         public character(): number;
         public start(): number;
         public length(): number;
+        static equals(location1: Location, location2: Location): boolean;
+    }
+    class Diagnostic extends Location {
+        private _diagnosticKey;
+        private _arguments;
+        private _additionalLocations;
+        constructor(fileName: string, lineMap: TypeScript.LineMap, start: number, length: number, diagnosticKey: string, arguments?: any[], additionalLocations?: Location[]);
+        public toJSON(key: any): any;
         public diagnosticKey(): string;
         public arguments(): any[];
         /**
@@ -5821,7 +5828,7 @@ declare module TypeScript {
         public kind(): TypeScript.SyntaxKind;
         public structuralEquals(ast: Comment, includingPosition: boolean): boolean;
     }
-    function diagnosticFromDecl(decl: PullDecl, diagnosticKey: string, arguments?: any[]): Diagnostic;
+    function diagnosticFromDecl(decl: PullDecl, diagnosticKey: string, arguments?: any[], additionalLocations?: Location[]): Diagnostic;
 }
 declare module TypeScript {
     function scriptIsElided(sourceUnit: SourceUnit): boolean;
@@ -6781,6 +6788,7 @@ declare module TypeScript {
         public inSymbolPrivacyCheck: boolean;
         public inWrapCheck: boolean;
         public typeReference: TypeScript.PullTypeReferenceSymbol;
+        private _widenedType;
         constructor(name: string, kind: TypeScript.PullElementKind);
         private _isArrayNamedTypeReference;
         public isArrayNamedTypeReference(): boolean;
@@ -6880,12 +6888,16 @@ declare module TypeScript {
         private anyRootTypeBeingWrapped(typeBeingWrapped);
         public _wrapsSomeNestedTypeIntoInfiniteExpansionRecurse(typeBeingWrapped: PullTypeSymbol, isCheckingTypeArgumentList: boolean, knownWrapMap: TypeScript.IBitMatrix): boolean;
         private _wrapsSomeNestedTypeIntoInfiniteExpansionWorker(typeBeingWrapped, isCheckingTypeArgumentList, knownWrapMap);
+        public widenedType(resolver: TypeScript.PullTypeResolver, ast: TypeScript.AST, context: TypeScript.PullTypeResolutionContext): PullTypeSymbol;
     }
     class PullPrimitiveTypeSymbol extends PullTypeSymbol {
         constructor(name: string);
         public isAny(): boolean;
+        public isNull(): boolean;
+        public isUndefined(): boolean;
         public isStringConstant(): boolean;
         public setUnresolved(): void;
+        public getDisplayName(): string;
     }
     class PullStringConstantTypeSymbol extends PullPrimitiveTypeSymbol {
         constructor(name: string);
@@ -7369,7 +7381,10 @@ declare module TypeScript {
         private typeCheckCastExpression(assertionExpression, context, typeAssertionType);
         private resolveAssignmentExpression(binaryExpression, context);
         private getInstanceTypeForAssignment(lhs, type, context);
-        public widenType(type: TypeScript.PullTypeSymbol, ast?: TypeScript.AST, context?: TypeScript.PullTypeResolutionContext): TypeScript.PullTypeSymbol;
+        public widenType(type: TypeScript.PullTypeSymbol, ast: TypeScript.AST, context: TypeScript.PullTypeResolutionContext): TypeScript.PullTypeSymbol;
+        private widenArrayType(type, ast, context);
+        private widenObjectLiteralType(type, ast, context);
+        private needsToWidenObjectLiteralType(type, ast, context);
         public findBestCommonType(collection: IPullTypeCollection, context: TypeScript.PullTypeResolutionContext, comparisonInfo?: TypeComparisonInfo): TypeScript.PullTypeSymbol;
         private typeIsBestCommonTypeCandidate(candidateType, collection, context);
         private typesAreIdenticalInEnclosingTypes(t1, t2, t1EnclosingType, t2EnclosingType, val?);
@@ -7569,8 +7584,11 @@ declare module TypeScript {
         public setASTForDecl(decl: TypeScript.PullDecl, ast: TypeScript.AST): void;
         public topLevelDecl(fileName: string): TypeScript.PullDecl;
         public topLevelDecls(): TypeScript.PullDecl[];
-        public addDiagnosticFromAST(ast: TypeScript.AST, diagnosticKey: string, arguments?: any[]): void;
-        public diagnosticFromAST(ast: TypeScript.AST, diagnosticKey: string, arguments?: any[]): TypeScript.Diagnostic;
+        public addDiagnosticFromAST(ast: TypeScript.AST, diagnosticKey: string, arguments?: any[], additionalLocations?: TypeScript.Location[]): void;
+        public diagnosticFromAST(ast: TypeScript.AST, diagnosticKey: string, arguments?: any[], additionalLocations?: TypeScript.Location[]): TypeScript.Diagnostic;
+        public locationFromAST(ast: TypeScript.AST): TypeScript.Location;
+        public duplicateIdentifierDiagnosticFromAST(ast: TypeScript.AST, identifier: string, additionalLocationAST: TypeScript.AST): TypeScript.Diagnostic;
+        public addDuplicateIdentifierDiagnosticFromAST(ast: TypeScript.AST, identifier: string, additionalLocationAST: TypeScript.AST): void;
     }
 }
 declare module TypeScript {
@@ -7986,6 +8004,8 @@ declare module TypeScript {
         public getDeclForAST(ast: TypeScript.AST): TypeScript.PullDecl;
         public fileNames(): string[];
         public topLevelDecl(fileName: string): TypeScript.PullDecl;
+        private static getLocationText(location);
+        static getFullDiagnosticText(diagnostic: TypeScript.Diagnostic): string;
     }
     function compareDataObjects(dst: any, src: any): boolean;
 }
