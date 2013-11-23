@@ -2053,13 +2053,23 @@ var teapo;
     }
 })(teapo || (teapo = {}));
 /// <reference path='persistence.ts' />
+/// <reference path='editor.ts' />
+/// <reference path='files.ts' />
+/// <reference path='persistence.ts' />
+var teapo;
+(function (teapo) {
+    var ApplicationShell = (function () {
+        function ApplicationShell() {
+        }
+        return ApplicationShell;
+    })();
+    teapo.ApplicationShell = ApplicationShell;
+})(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
 /// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='ApplicationViewModel.ts' />
 /// <reference path='KnockoutBindings.ts' />
-/// <reference path='editor.ts' />
-/// <reference path='files.ts' />
-/// <reference path='persistence.ts' />
+/// <reference path='shell.ts' />
 window.onload = function () {
     teapo.registerKnockoutBindings(ko);
 
