@@ -8,25 +8,24 @@ module teapo {
    */
   export class DocumentStorage {
 
-    private _metadataElement: HTMLScriptElement = null;
-    private _staticContent: { [path: string]: string; } = {};
-    private _docByPath: { [name: string]: RuntimeDocumentState; } = {};
+    document = document;
+    localStorage = localStorage;
+    uniqueKey: string = getUniqueKey();
 
-    constructor(
-      private _typeResolver: (fullPath: string) => DocumentType,
-      private _entryResolver: (fullPath: string) => FileEntry,
-      private _uniqueKey = getUniqueKey(),
-      private _document = document,
-      private _localStorage = localStorage) {
-      // TODO: apart from localStorage support better local access API
-      this._loadInitialState();
+    typeResolver: (fullPath: string) => DocumentType = null;
+    entryResolver: (fullPath: string) => FileEntry = null;
+
+    private _runtime: RuntimeDocumentStorage = null;
+
+    constructor() {
     }
 
     /**
      * Full paths of all files.
      */
     documentNames(): string[] {
-      return Object.keys(this._docByPath);
+      this._ensureRuntime();
+      return Object.keys(this._runtime.docByPath);
     }
 
     /**
@@ -34,39 +33,162 @@ module teapo {
      * also exposes runtime features like editor and entry in the file list.
      */
     getDocument(fullPath: string): DocumentState {
-      return this._docByPath[fullPath];
+      this._ensureRuntime();
+      return this._runtime.docByPath[fullPath].doc;
     }
 
+    /**
+     * Creates a persisted state for a document, and returns it as a result.
+     */
     createDocument(fullPath: string): DocumentState {
-      if (this._docByPath[fullPath])
+      this._ensureRuntime();
+
+      if (this._runtime.docByPath[fullPath])
         throw new Error('File already exists: '+fullPath+'.');
 
-      var s = appendScriptElement(this._document);
+      var s = appendScriptElement(this.document);
       var docState = new RuntimeDocumentState(
         fullPath, true,
         s,
-        this._document,
-        this._localStorage,
-        this._uniqueKey + fullPath,
-        () => this._onDocChange(docState),
-        () => this._onDocRemove(docState),
-        this._typeResolver,
-        this._entryResolver);
+        this._runtime);
 
-      this._docByPath[fullPath] = docState;
+      this._runtime.docByPath[fullPath] = docState;
 
-      this._storeFilenamesToLocalStorage();
-      this._storeEdited();
+      this._runtime.storeFilenamesToLocalStorage();
+      this._runtime.storeEdited();
 
-      return docState;
+      return docState.doc;
     }
 
-    private _loadInitialState() {
+    /**
+     * Removes the document and all its state.
+     */
+    removeDocument(fullPath: string): void {
+      this._ensureRuntime();
+
+      var docState = this._runtime.docByPath[fullPath];
+      if (!docState)
+        throw new Error('File does not exist: '+fullPath+'.');
+  
+      docState.storeElement.parentElement.removeChild(docState.storeElement);
+
+      for (var k in this.localStorage) if (this.localStorage.hasOwnProperty(k)) {
+        if (k.length>=docState.localStorageKey
+            && k.slice(0, docState.localStorageKey.length)===docState.localStorageKey)
+          delete this.localStorage[k];
+      }
+    }
+
+    private _ensureRuntime(): void {
+      if (!this._runtime)
+        this._runtime = new RuntimeDocumentStorage(this);
+    }
+  }
+  
+  /**
+   * Allows reading, writing properties of the document,
+   * and also exposes runtime features like editor and entry in the file list.
+   */  
+  export class DocumentState {
+
+    private _docState: RuntimeDocumentState;
+
+    constructor(docState: any) {
+      this._docState = docState; // cheating against type checks here
+    }
+
+    fullPath(): string {
+      return this._docState.fullPath;
+    }
+
+    /**
+     * Retrieves object encapsulating document type (such as plain text, JavaScript, HTML).
+     * Note that type is metadata, so the instance is shared across all of the documents
+     * of the same type.
+     */
+    type(): DocumentType {
+      if (!this._docState.type)
+        this._docState.type = this._docState.runtime.storage.typeResolver(this._docState.fullPath);
+      return this._docState.type;
+    }
+
+    /**
+     * Retrieves object encapsulating editor behaviour for the document.
+     */
+    editor(): Editor {
+      if (!this._docState.editor)
+        this._docState.editor = this.type().editDocument(this);
+      return this._docState.editor;
+    }
+
+    /**
+     * Retrieves object representing a node in the file list or tree view.
+     */
+    fileEntry(): FileEntry {
+      if (this._docState.fileEntry)
+        this._docState.fileEntry = this._docState.runtime.storage.entryResolver(this._docState.fullPath);
+      return this._docState.fileEntry;
+    }
+
+    /**
+     * Retrieves property value from whatever persistence mechanism is implemented.
+     */
+    getProperty(name: string): string {
+      if (this._docState.loadFromDom) {
+        if (name)
+          return this._docState.storeElement.getAttribute('data-'+name);
+        else
+          return this._docState.storeElement.innerHTML;
+      }
+      else {
+        var slotName = this._docState.localStorageKey + name;
+        return this._docState.runtime.storage.localStorage[slotName];
+      }
+    }
+
+    /**
+     * Persists property value.
+     */
+    setProperty(name: string, value: string): void {
+      this._docState.storeElement.setAttribute('data-'+name, value);
+      var slotName = this._docState.localStorageKey + name;
+      this._docState.runtime.storage.localStorage[slotName] = value;
+      this._docState.runtime.docChanged(this._docState);
+    }
+
+    /**
+     * Retrieves transient property value from whatever persistence mechanism is implemented.
+     * Transient properties live within a local browser setup and are not persisted in HTML DOM.
+     */
+    getTransientProperty(name: string): string {
+      var slotName = this._docState.localStorageKey + '~*' + name;
+      return this._docState.runtime.storage.localStorage[slotName];
+    }
+
+    /**
+     * Persists property value.
+     * Transient properties live within a local browser setup and are not persisted in HTML DOM.
+     */
+    setTransientProperty(name: string, value: string): void {
+      var slotName = this._docState.localStorageKey + '~*' + name;
+      this._docState.runtime.storage.localStorage[slotName] = value;
+      this._docState.runtime.docChanged(this._docState);
+    }
+  }   
+  
+
+  class RuntimeDocumentStorage {
+
+    metadataElement: HTMLScriptElement = null;
+    staticContent: { [path: string]: string; } = {};
+    docByPath: { [name: string]: RuntimeDocumentState; } = {};
+
+    constructor(public storage: DocumentStorage) {
       var pathElements = this._scanDomScripts();
 
       var lsEdited = safeParseDate(this._lsGet('edited'));
-      var domEdited = this._metadataElement ?
-          safeParseDate(this._metadataElement.getAttribute('edited')) :
+      var domEdited = this.metadataElement ?
+          safeParseDate(this.metadataElement.getAttribute('edited')) :
           null;
 
       if (!lsEdited || domEdited && domEdited > lsEdited)
@@ -74,6 +196,29 @@ module teapo {
       else
         this._loadInitialStateFromDom(pathElements);
     }
+
+    docChanged(docState: RuntimeDocumentState) {
+      this.storeEdited();
+    }
+
+    storeFilenamesToLocalStorage() {
+      var files = Object.keys(this.docByPath);
+      var filesStr = files.join('\n');
+      this._lsSet('files', filesStr);
+    }
+
+    storeEdited() {
+      var edited = new Date().toUTCString();
+      this._lsSet('edited', edited);
+
+      if (!this.metadataElement) {
+        this.metadataElement = appendScriptElement(this.storage.document);
+        this.metadataElement.id = 'path-metadata';
+      }
+  
+      this.metadataElement.setAttribute('edited', edited);
+    }
+
 
     private _loadInitialStateFromLocalStorage(pathElements: { [fullPath: string]: HTMLScriptElement; }) {
       var lsFilenames = this._loadFilenamesFromLocalStorage();
@@ -85,20 +230,14 @@ module teapo {
           
         }
         else {
-          s = appendScriptElement(this._document);
+          s = appendScriptElement(this.storage.document);
           s.setAttribute('data-path', lsFullPath);
         }
         var docState = new RuntimeDocumentState(
           lsFullPath, false,
           s,
-          this._document,
-          this._localStorage,
-          this._uniqueKey + lsFullPath,
-          () => this._onDocChange(docState),
-          () => this._onDocRemove(docState),
-          this._typeResolver,
-          this._entryResolver);
-        this._docByPath[lsFullPath] = docState;
+          this);
+        this.docByPath[lsFullPath] = docState;
 
         // leave only DOM elements that are redundant
         delete pathElements[lsFullPath];
@@ -121,21 +260,15 @@ module teapo {
         var docState = new RuntimeDocumentState(
           fullPath, false,
           s,
-          this._document,
-          this._localStorage,
-          this._uniqueKey+fullPath,
-          () => this._onDocChange(docState),
-          () => this._onDocRemove(docState),
-          this._typeResolver,
-          this._entryResolver);
-        this._docByPath[fullPath] = docState;
+          this);
+        this.docByPath[fullPath] = docState;
       }
 
       // clean old stuff from localStorage
-      var deletePrefix = this._uniqueKey + '/';
-      for (var k in this._localStorage) if (this._localStorage.hasOwnProperty(k)) {
+      var deletePrefix = this.storage.uniqueKey + '/';
+      for (var k in this.storage.localStorage) if (this.storage.localStorage.hasOwnProperty(k)) {
         if (k.length>=deletePrefix.length && k.slice(0,deletePrefix.length) === deletePrefix)
-          delete this._localStorage[k];
+          delete this.storage.localStorage[k];
       }
     }
 
@@ -147,28 +280,22 @@ module teapo {
         return null;
     }
 
-    private _storeFilenamesToLocalStorage() {
-      var files = Object.keys(this._docByPath);
-      var filesStr = files.join('\n');
-      this._lsSet('files', filesStr);
-    }
-
     private _scanDomScripts() {
       var pathElements: { [name: string]: HTMLScriptElement; } = {};
 
-      for (var i = 0; i < this._document.scripts.length; i++) {
-        var s = <HTMLScriptElement>this._document.scripts[i];
+      for (var i = 0; i < this.storage.document.scripts.length; i++) {
+        var s = <HTMLScriptElement>this.storage.document.scripts[i];
         var path = s.getAttribute('data-path');
         if (path) {
           if (path.charAt(0)==='/') {
             pathElements[path] = s;
           }
           else if (path.charAt(0)==='#') {
-            this._staticContent[path] = s.innerHTML;
+            this.staticContent[path] = s.innerHTML;
           }
         }
         else if (s.id==='storageMetadata') {
-          this._metadataElement = s;
+          this.metadataElement = s;
         }
       }
 
@@ -176,166 +303,32 @@ module teapo {
     }
 
     private _lsGet(name: string): string {
-      return this._localStorage[this._uniqueKey+name];
+      return this.storage.localStorage[this.storage.uniqueKey+name];
     }
 
     private _lsSet(name: string, value: string) {
-      this._localStorage[this._uniqueKey+name] = value;
-    }
-
-    private _storeEdited() {
-      var edited = new Date().toUTCString();
-      this._lsSet('edited', edited);
-
-      if (!this._metadataElement) {
-        this._metadataElement = appendScriptElement(this._document);
-        this._metadataElement.id = 'path-metadata';
-      }
-      this._metadataElement.setAttribute('edited', edited);
-    }
-
-    private _onDocChange(docState: RuntimeDocumentState) {
-      this._storeEdited();
-    }
-
-    private _onDocRemove(docState: RuntimeDocumentState) {
-      delete this._docByPath[docState.fullPath()];
+      this.storage.localStorage[this.storage.uniqueKey+name] = value;
     }
   }
-
-  /**
-   * Allows reading, writing properties of the document,
-   * and also exposes runtime features like editor and entry in the file list.
-   */  
-  export interface DocumentState {
-
-    fullPath(): string;
-
-    /**
-     * Retrieves object encapsulating document type (such as plain text, JavaScript, HTML).
-     * Note that type is metadata, so the instance is shared across all of the documents
-     * of the same type.
-     */
-    type(): DocumentType;
-
-    /**
-     * Retrieves object encapsulating editor behaviour for the document.
-     */
-    editor(): Editor;
-
-    /**
-     * Retrieves object representing a node in the file list or tree view.
-     */
-    fileEntry(): FileEntry;
-
-    /**
-     * Retrieves property value from whatever persistence mechanism is implemented.
-     */
-    getProperty(name: string): string;
-
-    /**
-     * Persists property value.
-     */
-    setProperty(name: string, value: string): void;
-
-    /**
-     * Retrieves transient property value from whatever persistence mechanism is implemented.
-     * Transient properties live within a local browser setup and are not persisted in HTML DOM.
-     */
-    getTransientProperty(name: string): string;
-
-    /**
-     * Persists property value.
-     * Transient properties live within a local browser setup and are not persisted in HTML DOM.
-     */
-    setTransientProperty(name: string, value: string): void;
-
-    remove();
-  }   
 
   /**
    * Standard implementation of DocumentState.
    * This class is not exposed outside of this module.
    */
-  class RuntimeDocumentState implements teapo.DocumentState {
-    private _type: DocumentType = null;
-    private _editor: Editor = null;
-    private _fileEntry: FileEntry = null;
+  class RuntimeDocumentState {
+    doc: DocumentState;
+    type: DocumentType = null;
+    editor: Editor = null;
+    fileEntry: FileEntry = null;
+    localStorageKey: string;
 
     constructor(
-      private _fullPath: string,
-      private _loadFromDom: boolean,
-      private _storeElement: HTMLScriptElement,
-      private _document: typeof document,
-      private _localStorage: typeof localStorage,
-      private _localStorageKey: string,
-      private _onchange: () => void,
-      private _onremove: () => void,
-      private _typeResolver: (fullPath: string) => DocumentType,
-      private _entryResolver: (fullPath: string) => FileEntry) {
-    }
-
-    fullPath(): string { return this._fullPath; }
-
-    type(): DocumentType {
-      if (!this._type)
-        this._type = this._typeResolver(this._fullPath);
-      return this._type;
-    }
-
-    editor(): Editor {
-      if (!this._editor)
-        this._editor = this.type().editDocument(this);
-      return this._editor;
-    }
-
-    fileEntry(): FileEntry {
-      if (this._fileEntry)
-        this._fileEntry = this._entryResolver(this._fullPath);
-      return this._fileEntry;
-    }
-
-    getProperty(name: string): string {
-      if (this._loadFromDom) {
-        if (name)
-          return this._storeElement.getAttribute('data-'+name);
-        else
-          return this._storeElement.innerHTML;
-      }
-      else {
-        var slotName = this._localStorageKey + name;
-        return this._localStorage[slotName];
-      }
-    }
-
-    setProperty(name: string, value: string): void {
-      this._storeElement.setAttribute('data-'+name, value);
-      var slotName = this._localStorageKey + name;
-      this._localStorage[slotName] = value;
-      this._onchange();
-    }
-
-    getTransientProperty(name: string): string {
-      var slotName = this._localStorageKey + '~*' + name;
-      return this._localStorage[slotName];
-    }
-
-    setTransientProperty(name: string, value: string): void {
-      var slotName = this._localStorageKey + '~*' + name;
-      this._localStorage[slotName] = value;
-      this._onchange();
-    }
-
-    remove() {
-      this._storeElement.parentElement.removeChild(this._storeElement);
-
-      for (var k in this._localStorage) if (this._localStorage.hasOwnProperty(k)) {
-        if (k.length>=this._localStorageKey
-            && k.slice(0,this._localStorageKey.length)===this._localStorageKey)
-          delete this._localStorage[k];
-      }
-
-      this._onremove();
+      public fullPath: string,
+      public loadFromDom: boolean,
+      public storeElement: HTMLScriptElement,
+      public runtime: RuntimeDocumentStorage) {
+      this.localStorageKey = this.runtime.storage.uniqueKey + fullPath;
+      this.doc = new DocumentState(this);
     }
   }
 
