@@ -147,6 +147,10 @@ var teapo;
             return this._parent;
         };
 
+        RuntimeFolderEntry.prototype.nestLevel = function () {
+            return this._parent ? this._parent.nestLevel() + 1 : 0;
+        };
+
         RuntimeFolderEntry.prototype.handleClick = function () {
             this._handleClick();
         };
@@ -171,6 +175,10 @@ var teapo;
         };
         RuntimeFileEntry.prototype.parent = function () {
             return this._parent;
+        };
+
+        RuntimeFileEntry.prototype.nestLevel = function () {
+            return this._parent ? this._parent.nestLevel() + 1 : 0;
         };
 
         RuntimeFileEntry.prototype.handleClick = function () {
@@ -199,7 +207,7 @@ var teapo;
         var pathMid = stripOuterSlashes(path);
         var split = pathMid.split('/');
 
-        var result = null;
+        var result = [];
         for (var i = 0; i < split.length; i++) {
             if (split[i] === '..') {
                 if (result.length)
@@ -211,6 +219,7 @@ var teapo;
                 result.push(split[i]);
             }
         }
+        return result;
     }
 
     function stripOuterSlashes(path) {
@@ -406,9 +415,9 @@ var teapo;
             var domEdited = this.metadataElement ? safeParseDate(this.metadataElement.getAttribute('edited')) : null;
 
             if (!lsEdited || domEdited && domEdited > lsEdited)
-                this._loadInitialStateFromLocalStorage(pathElements);
-            else
                 this._loadInitialStateFromDom(pathElements);
+            else
+                this._loadInitialStateFromLocalStorage(pathElements);
         }
         RuntimeDocumentStorage.prototype.docChanged = function (docState) {
             this.storeEdited();

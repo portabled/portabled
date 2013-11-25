@@ -1,7 +1,7 @@
 <div class=teapo-file-list>
   <button data-sbind='click: newFile' style='display: block;'> ...new </button>
-  <div data-sbind='template: { name: "folder-template", foreach: root.folders }'></div>
-  <div data-sbind='template: { name: "file-template", foreach: root.files }'></div>
+  <div data-bind='template: { name: "folder-template", foreach: fileList.folders }'></div>
+  <div data-bind='template: { name: "file-template", foreach: fileList.files }'></div>
 </div>
 
 <textarea data-sbind='attach: attachTextarea($element)'>Teapo &mdash; text editor confined to a small place. Select a file on the left to start.</textarea>

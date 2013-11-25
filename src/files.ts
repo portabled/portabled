@@ -129,6 +129,8 @@ module teapo {
     name(): string;
     parent(): FolderEntry;
 
+    nestLevel(): number;
+
     folders: KnockoutObservableArray<FolderEntry>;
     files: KnockoutObservableArray<FileEntry>;
 
@@ -145,6 +147,8 @@ module teapo {
     fullPath(): string;
     name(): string;
     parent(): FolderEntry;
+
+    nestLevel(): number;
 
     isSelected: KnockoutObservable<boolean>;
 
@@ -170,6 +174,10 @@ module teapo {
     name(): string { return this._name; }
     parent(): FolderEntry { return this._parent; }
 
+    nestLevel(): number {
+      return this._parent ? this._parent.nestLevel()+1 : 0;
+    }
+
     handleClick(): void {
       this._handleClick();
     }
@@ -191,6 +199,10 @@ module teapo {
     fullPath(): string { return this._fullPath; }
     name(): string { return this._name; }
     parent(): FolderEntry { return this._parent; }
+
+    nestLevel(): number {
+      return this._parent ? this._parent.nestLevel()+1 : 0;
+    }
 
     handleClick(): void {
       this._handleClick();
@@ -216,7 +228,7 @@ module teapo {
     var pathMid = stripOuterSlashes(path);
     var split = pathMid.split('/');
 
-    var result: string[] = null;
+    var result: string[] = [];
     for (var i = 0; i < split.length; i++) {
       if (split[i]==='..') {
         if (result.length)
@@ -230,6 +242,7 @@ module teapo {
         result.push(split[i]);
       }
     }
+    return result;
   }
 
   function stripOuterSlashes(path: string) {

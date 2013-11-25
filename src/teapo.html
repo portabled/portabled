@@ -36,12 +36,6 @@
 <script>###imports/codemirror/active-line.js###</script>
 <script>###imports/knockout/knockout-3.0.0.js###</script>
 
-<!-- Teapo code (this will actually execute stuff straight away) -->
-<script>###teapo.js###</script>
-
-<!-- TypeScript services, taken from TS bin directory verbatim --->
-<script>###imports/typescript/typescriptServices.js###</script>
-
 
 <!-- TypeScript definitions lib.d.ts, taken from TS bin directory verbatim ---> 
 <script data-path='#lib.d.ts' type='text/html'>###imports/typescript/lib.d.ts###</script>
@@ -56,6 +50,12 @@
 <!-- These are embedded files with paths too, declarations for CodeMirror and Knockout --->
 <script data-path='/src/typings/codemirror.d.ts' type='text/html'>###typings/codemirror.d.ts###</script>
 <script data-path='/src/typings/knockout.d.ts' type='text/html'>###typings/knockout.d.ts###</script>
+
+<!-- TypeScript services, taken from TS bin directory verbatim --->
+<script>###imports/typescript/typescriptServices.js###</script>
+
+<!-- Teapo code (this will actually execute stuff straight away) -->
+<script>###teapo.js###</script>
 
 <body>
 </html>

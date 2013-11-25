@@ -192,9 +192,9 @@ module teapo {
           null;
 
       if (!lsEdited || domEdited && domEdited > lsEdited)
-        this._loadInitialStateFromLocalStorage(pathElements);
-      else
         this._loadInitialStateFromDom(pathElements);
+      else
+        this._loadInitialStateFromLocalStorage(pathElements);
     }
 
     docChanged(docState: RuntimeDocumentState) {
