@@ -599,6 +599,8 @@ var teapo;
         function TextDocumentEditorType() {
             this._editor = null;
             this._editorElement = null;
+            // codemirror needs another kick when first time displayed
+            // (and since the editor is shared, we need to share this flag too)
             this._firstUse = { isFirstUse: true };
         }
         TextDocumentEditorType.prototype.canEdit = function (fullPath) {

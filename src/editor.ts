@@ -33,6 +33,9 @@ module teapo {
   class TextDocumentEditorType implements DocumentEditorType {
     private _editor: CodeMirror.Editor = null;
     private _editorElement: HTMLElement = null;
+
+    // codemirror needs another kick when first time displayed
+    // (and since the editor is shared, we need to share this flag too)
     private _firstUse = { isFirstUse: true };
 
     constructor() {
