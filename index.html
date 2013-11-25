@@ -625,7 +625,7 @@ html {
   width: 0.5em;
   background: silver;
 }
-.CodeMirror, textarea.teapo-editor {
+.teapo-content {
   position: fixed;
   left: 20%;
   top: 0px;
@@ -635,6 +635,10 @@ html {
   overflow: hidden;
   border: none;
   font: inherit;
+  background: white;
+}
+.CodeMirror {
+  height: 100%;
 }
 .CodeMirror-activeline-background {
   background: #f8f8f8;
@@ -658,7 +662,9 @@ textarea.teapo-editor {
   <div data-bind='template: { name: "file-template", foreach: fileList.files }'></div>
 </div>
 
-<textarea data-sbind='attach: attachTextarea($element)'>Teapo &mdash; text editor confined to a small place. Select a file on the left to start.</textarea>
+<div data-bind='attach: attachToHost($element)' class=teapo-content>
+  Teapo &mdash; text editor confined to a small place. Select a file on the left to start.
+</div>
 
 <button style='position: fixed; right: 0px; top: 0px;' data-sbind='visible: activeDocument'>
     delete <span data-sbind='text: activeDocument() ? activeDocument().name : null, click: deleteActiveFile'></span>
@@ -23830,10 +23836,19 @@ module teapo {
     constructor() {
       this._storage = new DocumentStorage();
       this._storage.entryResolver = this.fileList;
+      this._storage.typeResolver = DocumentEditorType;
   
       this.fileList = new FileList(this._storage);
   
       this.fileList.selectedFile.subscribe((fileEntry) => this._fileSelected(fileEntry));
+    }
+  
+    attachToHost(host: HTMLElement) {
+      this._host = host;
+      if (this._editorElement) {
+        this._host.innerHTML = '';
+        this._host.appendChild(this._editorElement);
+      }
     }
 
     private _fileSelected(fileEntry: FileEntry) {
@@ -23852,10 +23867,16 @@ module teapo {
 
       if (newEditorElement!==this._editorElement) {
         var oldEditorElement= this._editorElement;
+
         this._editorElement = newEditorElement;
-        if (oldEditorElement)
+
+        if (oldEditorElement && this._host) {
           this._host.removeChild(oldEditorElement);
-        if (newEditorElement)
+        }
+
+        this._host.innerHTML = ''; // removing the initial startup decoration
+
+        if (newEditorElement && this._host)
           this._host.appendChild(newEditorElement);
       }
     }
@@ -24126,11 +24147,13 @@ module teapo {
 
 module teapo {
 
-  var DocumentType: {
-    [name: string]: DocumentType;
+  export var DocumentEditorType: {
+    // [name: string]: DocumentEditorType;
+    getType(fullPath: string): DocumentEditorType;
   };
 
-  export interface DocumentType {
+  export interface DocumentEditorType {
+    canEdit(fullPath: string): boolean;
     editDocument(doc: DocumentState): Editor;
   }
 
@@ -24139,11 +24162,28 @@ module teapo {
     close();
   }
 
-  class TextDocumentType implements DocumentType {
+  class DocumentEditorTypeRegistry {
+
+    getType(fullPath: string): DocumentEditorType {
+      for (var k in DocumentEditorType) if (DocumentEditorType.hasOwnProperty(k)) {
+        var t = <DocumentEditorType>DocumentEditorType[k];
+        if (t.canEdit && t.canEdit(fullPath)) return t;
+      }
+
+      return null;
+    }
+  }
+  
+
+  class TextDocumentEditorType implements DocumentEditorType {
     private _editor: CodeMirror.Editor = null;
     private _editorElement: HTMLElement = null;
 
     constructor() {
+    }
+
+    canEdit(fullPath: string) {
+      return true;
     }
 
     editDocument(docState: DocumentState): Editor {
@@ -24173,8 +24213,9 @@ module teapo {
 
     open(): HTMLElement {
       if (!this._doc) {
-        this._doc = this._editor.getDoc();
-        this._doc.setValue(this._docState.getProperty(null));
+        var content = this._docState.getProperty(null);
+        if (!content) content = '';
+        this._doc = new CodeMirror.Doc(content);
 
         var historyStr = this._docState.getProperty('history');
         if (historyStr) {
@@ -24185,6 +24226,7 @@ module teapo {
         }
       }
 
+      this._editor.swapDoc(this._doc);
       return this._editorElement;
     }
 
@@ -24192,9 +24234,8 @@ module teapo {
     }
   }
 
-  DocumentType = {
-    "Plain Text": new TextDocumentType()
-  };
+  DocumentEditorType = new DocumentEditorTypeRegistry();
+  DocumentEditorType['Plain Text'] = new TextDocumentEditorType();
 }</script>
 <script data-path='/src/persistence.ts' type='text/html'>/// <reference path='editor.ts' />
 /// <reference path='files.ts' />
@@ -24210,7 +24251,7 @@ module teapo {
     localStorage = localStorage;
     uniqueKey: string = getUniqueKey();
 
-    typeResolver: (fullPath: string) => DocumentType = null;
+    typeResolver: { getType(fullPath: string): DocumentEditorType; } = null;
     entryResolver: { getFileEntry(fullPath: string): FileEntry; } = null;
 
     private _runtime: RuntimeDocumentStorage = null;
@@ -24304,9 +24345,9 @@ module teapo {
      * Note that type is metadata, so the instance is shared across all of the documents
      * of the same type.
      */
-    type(): DocumentType {
+    type(): DocumentEditorType {
       if (!this._docState.type)
-        this._docState.type = this._docState.runtime.storage.typeResolver(this._docState.fullPath);
+        this._docState.type = this._docState.runtime.storage.typeResolver.getType(this._docState.fullPath);
       return this._docState.type;
     }
 
@@ -24339,7 +24380,7 @@ module teapo {
           return this._docState.storeElement.innerHTML;
       }
       else {
-        var slotName = this._docState.localStorageKey + name;
+        var slotName = this._docState.localStorageKey + (name?name:'');
         return this._docState.runtime.storage.localStorage[slotName];
       }
     }
@@ -24458,7 +24499,7 @@ module teapo {
       for (var fullPath in pathElements) if (pathElements.hasOwnProperty(fullPath)) {
         var s = pathElements[fullPath];
         var docState = new RuntimeDocumentState(
-          fullPath, false,
+          fullPath, true,
           s,
           this);
         this.docByPath[fullPath] = docState;
@@ -24517,7 +24558,7 @@ module teapo {
    */
   class RuntimeDocumentState {
     doc: DocumentState;
-    type: DocumentType = null;
+    type: DocumentEditorType = null;
     editor: Editor = null;
     fileEntry: FileEntry = null;
     localStorageKey: string;
@@ -93287,7 +93328,7 @@ var teapo;
         */
         DocumentState.prototype.type = function () {
             if (!this._docState.type)
-                this._docState.type = this._docState.runtime.storage.typeResolver(this._docState.fullPath);
+                this._docState.type = this._docState.runtime.storage.typeResolver.getType(this._docState.fullPath);
             return this._docState.type;
         };
 
@@ -93319,7 +93360,7 @@ var teapo;
                 else
                     return this._docState.storeElement.innerHTML;
             } else {
-                var slotName = this._docState.localStorageKey + name;
+                var slotName = this._docState.localStorageKey + (name ? name : '');
                 return this._docState.runtime.storage.localStorage[slotName];
             }
         };
@@ -93425,7 +93466,7 @@ var teapo;
             for (var fullPath in pathElements)
                 if (pathElements.hasOwnProperty(fullPath)) {
                     var s = pathElements[fullPath];
-                    var docState = new RuntimeDocumentState(fullPath, false, s, this);
+                    var docState = new RuntimeDocumentState(fullPath, true, s, this);
                     this.docByPath[fullPath] = docState;
                 }
 
@@ -93529,21 +93570,41 @@ var teapo;
 /// <reference path='persistence.ts' />
 var teapo;
 (function (teapo) {
-    var DocumentType;
+    teapo.DocumentEditorType;
 
-    var TextDocumentType = (function () {
-        function TextDocumentType() {
+    var DocumentEditorTypeRegistry = (function () {
+        function DocumentEditorTypeRegistry() {
+        }
+        DocumentEditorTypeRegistry.prototype.getType = function (fullPath) {
+            for (var k in teapo.DocumentEditorType)
+                if (teapo.DocumentEditorType.hasOwnProperty(k)) {
+                    var t = teapo.DocumentEditorType[k];
+                    if (t.canEdit && t.canEdit(fullPath))
+                        return t;
+                }
+
+            return null;
+        };
+        return DocumentEditorTypeRegistry;
+    })();
+
+    var TextDocumentEditorType = (function () {
+        function TextDocumentEditorType() {
             this._editor = null;
             this._editorElement = null;
         }
-        TextDocumentType.prototype.editDocument = function (docState) {
+        TextDocumentEditorType.prototype.canEdit = function (fullPath) {
+            return true;
+        };
+
+        TextDocumentEditorType.prototype.editDocument = function (docState) {
             if (!this._editor)
                 this._initEditor();
 
             return new TextEditor(this._editor, this._editorElement, docState);
         };
 
-        TextDocumentType.prototype._initEditor = function () {
+        TextDocumentEditorType.prototype._initEditor = function () {
             var _this = this;
             var options = {};
 
@@ -93551,7 +93612,7 @@ var teapo;
                 return _this._editorElement = editorElement;
             }, options);
         };
-        return TextDocumentType;
+        return TextDocumentEditorType;
     })();
 
     var TextEditor = (function () {
@@ -93563,8 +93624,10 @@ var teapo;
         }
         TextEditor.prototype.open = function () {
             if (!this._doc) {
-                this._doc = this._editor.getDoc();
-                this._doc.setValue(this._docState.getProperty(null));
+                var content = this._docState.getProperty(null);
+                if (!content)
+                    content = '';
+                this._doc = new CodeMirror.Doc(content);
 
                 var historyStr = this._docState.getProperty('history');
                 if (historyStr) {
@@ -93577,6 +93640,7 @@ var teapo;
                 }
             }
 
+            this._editor.swapDoc(this._doc);
             return this._editorElement;
         };
 
@@ -93585,9 +93649,8 @@ var teapo;
         return TextEditor;
     })();
 
-    DocumentType = {
-        "Plain Text": new TextDocumentType()
-    };
+    teapo.DocumentEditorType = new DocumentEditorTypeRegistry();
+    teapo.DocumentEditorType['Plain Text'] = new TextDocumentEditorType();
 })(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
 /// <reference path='editor.ts' />
@@ -93605,6 +93668,7 @@ var teapo;
             this._host = null;
             this._storage = new teapo.DocumentStorage();
             this._storage.entryResolver = this.fileList;
+            this._storage.typeResolver = teapo.DocumentEditorType;
 
             this.fileList = new teapo.FileList(this._storage);
 
@@ -93612,6 +93676,14 @@ var teapo;
                 return _this._fileSelected(fileEntry);
             });
         }
+        ApplicationShell.prototype.attachToHost = function (host) {
+            this._host = host;
+            if (this._editorElement) {
+                this._host.innerHTML = '';
+                this._host.appendChild(this._editorElement);
+            }
+        };
+
         ApplicationShell.prototype._fileSelected = function (fileEntry) {
             var newDocState = null;
             if (fileEntry)
@@ -93628,10 +93700,16 @@ var teapo;
 
             if (newEditorElement !== this._editorElement) {
                 var oldEditorElement = this._editorElement;
+
                 this._editorElement = newEditorElement;
-                if (oldEditorElement)
+
+                if (oldEditorElement && this._host) {
                     this._host.removeChild(oldEditorElement);
-                if (newEditorElement)
+                }
+
+                this._host.innerHTML = ''; // removing the initial startup decoration
+
+                if (newEditorElement && this._host)
                     this._host.appendChild(newEditorElement);
             }
         };

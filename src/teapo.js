@@ -335,7 +335,7 @@ var teapo;
         */
         DocumentState.prototype.type = function () {
             if (!this._docState.type)
-                this._docState.type = this._docState.runtime.storage.typeResolver(this._docState.fullPath);
+                this._docState.type = this._docState.runtime.storage.typeResolver.getType(this._docState.fullPath);
             return this._docState.type;
         };
 
@@ -367,7 +367,7 @@ var teapo;
                 else
                     return this._docState.storeElement.innerHTML;
             } else {
-                var slotName = this._docState.localStorageKey + name;
+                var slotName = this._docState.localStorageKey + (name ? name : '');
                 return this._docState.runtime.storage.localStorage[slotName];
             }
         };
@@ -473,7 +473,7 @@ var teapo;
             for (var fullPath in pathElements)
                 if (pathElements.hasOwnProperty(fullPath)) {
                     var s = pathElements[fullPath];
-                    var docState = new RuntimeDocumentState(fullPath, false, s, this);
+                    var docState = new RuntimeDocumentState(fullPath, true, s, this);
                     this.docByPath[fullPath] = docState;
                 }
 
@@ -577,21 +577,41 @@ var teapo;
 /// <reference path='persistence.ts' />
 var teapo;
 (function (teapo) {
-    var DocumentType;
+    teapo.DocumentEditorType;
 
-    var TextDocumentType = (function () {
-        function TextDocumentType() {
+    var DocumentEditorTypeRegistry = (function () {
+        function DocumentEditorTypeRegistry() {
+        }
+        DocumentEditorTypeRegistry.prototype.getType = function (fullPath) {
+            for (var k in teapo.DocumentEditorType)
+                if (teapo.DocumentEditorType.hasOwnProperty(k)) {
+                    var t = teapo.DocumentEditorType[k];
+                    if (t.canEdit && t.canEdit(fullPath))
+                        return t;
+                }
+
+            return null;
+        };
+        return DocumentEditorTypeRegistry;
+    })();
+
+    var TextDocumentEditorType = (function () {
+        function TextDocumentEditorType() {
             this._editor = null;
             this._editorElement = null;
         }
-        TextDocumentType.prototype.editDocument = function (docState) {
+        TextDocumentEditorType.prototype.canEdit = function (fullPath) {
+            return true;
+        };
+
+        TextDocumentEditorType.prototype.editDocument = function (docState) {
             if (!this._editor)
                 this._initEditor();
 
             return new TextEditor(this._editor, this._editorElement, docState);
         };
 
-        TextDocumentType.prototype._initEditor = function () {
+        TextDocumentEditorType.prototype._initEditor = function () {
             var _this = this;
             var options = {};
 
@@ -599,7 +619,7 @@ var teapo;
                 return _this._editorElement = editorElement;
             }, options);
         };
-        return TextDocumentType;
+        return TextDocumentEditorType;
     })();
 
     var TextEditor = (function () {
@@ -611,8 +631,10 @@ var teapo;
         }
         TextEditor.prototype.open = function () {
             if (!this._doc) {
-                this._doc = this._editor.getDoc();
-                this._doc.setValue(this._docState.getProperty(null));
+                var content = this._docState.getProperty(null);
+                if (!content)
+                    content = '';
+                this._doc = new CodeMirror.Doc(content);
 
                 var historyStr = this._docState.getProperty('history');
                 if (historyStr) {
@@ -625,6 +647,7 @@ var teapo;
                 }
             }
 
+            this._editor.swapDoc(this._doc);
             return this._editorElement;
         };
 
@@ -633,9 +656,8 @@ var teapo;
         return TextEditor;
     })();
 
-    DocumentType = {
-        "Plain Text": new TextDocumentType()
-    };
+    teapo.DocumentEditorType = new DocumentEditorTypeRegistry();
+    teapo.DocumentEditorType['Plain Text'] = new TextDocumentEditorType();
 })(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
 /// <reference path='editor.ts' />
@@ -653,6 +675,7 @@ var teapo;
             this._host = null;
             this._storage = new teapo.DocumentStorage();
             this._storage.entryResolver = this.fileList;
+            this._storage.typeResolver = teapo.DocumentEditorType;
 
             this.fileList = new teapo.FileList(this._storage);
 
@@ -660,6 +683,14 @@ var teapo;
                 return _this._fileSelected(fileEntry);
             });
         }
+        ApplicationShell.prototype.attachToHost = function (host) {
+            this._host = host;
+            if (this._editorElement) {
+                this._host.innerHTML = '';
+                this._host.appendChild(this._editorElement);
+            }
+        };
+
         ApplicationShell.prototype._fileSelected = function (fileEntry) {
             var newDocState = null;
             if (fileEntry)
@@ -676,10 +707,16 @@ var teapo;
 
             if (newEditorElement !== this._editorElement) {
                 var oldEditorElement = this._editorElement;
+
                 this._editorElement = newEditorElement;
-                if (oldEditorElement)
+
+                if (oldEditorElement && this._host) {
                     this._host.removeChild(oldEditorElement);
-                if (newEditorElement)
+                }
+
+                this._host.innerHTML = ''; // removing the initial startup decoration
+
+                if (newEditorElement && this._host)
                     this._host.appendChild(newEditorElement);
             }
         };

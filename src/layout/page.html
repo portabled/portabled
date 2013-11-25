@@ -4,7 +4,9 @@
   <div data-bind='template: { name: "file-template", foreach: fileList.files }'></div>
 </div>
 
-<textarea data-sbind='attach: attachTextarea($element)'>Teapo &mdash; text editor confined to a small place. Select a file on the left to start.</textarea>
+<div data-bind='attach: attachToHost($element)' class=teapo-content>
+  Teapo &mdash; text editor confined to a small place. Select a file on the left to start.
+</div>
 
 <button style='position: fixed; right: 0px; top: 0px;' data-sbind='visible: activeDocument'>
     delete <span data-sbind='text: activeDocument() ? activeDocument().name : null, click: deleteActiveFile'></span>

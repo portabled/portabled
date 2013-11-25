@@ -12,7 +12,7 @@ module teapo {
     localStorage = localStorage;
     uniqueKey: string = getUniqueKey();
 
-    typeResolver: (fullPath: string) => DocumentType = null;
+    typeResolver: { getType(fullPath: string): DocumentEditorType; } = null;
     entryResolver: { getFileEntry(fullPath: string): FileEntry; } = null;
 
     private _runtime: RuntimeDocumentStorage = null;
@@ -106,9 +106,9 @@ module teapo {
      * Note that type is metadata, so the instance is shared across all of the documents
      * of the same type.
      */
-    type(): DocumentType {
+    type(): DocumentEditorType {
       if (!this._docState.type)
-        this._docState.type = this._docState.runtime.storage.typeResolver(this._docState.fullPath);
+        this._docState.type = this._docState.runtime.storage.typeResolver.getType(this._docState.fullPath);
       return this._docState.type;
     }
 
@@ -141,7 +141,7 @@ module teapo {
           return this._docState.storeElement.innerHTML;
       }
       else {
-        var slotName = this._docState.localStorageKey + name;
+        var slotName = this._docState.localStorageKey + (name?name:'');
         return this._docState.runtime.storage.localStorage[slotName];
       }
     }
@@ -260,7 +260,7 @@ module teapo {
       for (var fullPath in pathElements) if (pathElements.hasOwnProperty(fullPath)) {
         var s = pathElements[fullPath];
         var docState = new RuntimeDocumentState(
-          fullPath, false,
+          fullPath, true,
           s,
           this);
         this.docByPath[fullPath] = docState;
@@ -319,7 +319,7 @@ module teapo {
    */
   class RuntimeDocumentState {
     doc: DocumentState;
-    type: DocumentType = null;
+    type: DocumentEditorType = null;
     editor: Editor = null;
     fileEntry: FileEntry = null;
     localStorageKey: string;

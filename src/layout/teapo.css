@@ -53,7 +53,7 @@ html {
   width: 0.5em;
   background: silver;
 }
-.CodeMirror, textarea.teapo-editor {
+.teapo-content {
   position: fixed;
   left: 20%;
   top: 0px;
@@ -63,6 +63,10 @@ html {
   overflow: hidden;
   border: none;
   font: inherit;
+  background: white;
+}
+.CodeMirror {
+  height: 100%;
 }
 .CodeMirror-activeline-background {
   background: #f8f8f8;

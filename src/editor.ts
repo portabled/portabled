@@ -2,11 +2,13 @@
 
 module teapo {
 
-  var DocumentType: {
-    [name: string]: DocumentType;
+  export var DocumentEditorType: {
+    // [name: string]: DocumentEditorType;
+    getType(fullPath: string): DocumentEditorType;
   };
 
-  export interface DocumentType {
+  export interface DocumentEditorType {
+    canEdit(fullPath: string): boolean;
     editDocument(doc: DocumentState): Editor;
   }
 
@@ -15,11 +17,28 @@ module teapo {
     close();
   }
 
-  class TextDocumentType implements DocumentType {
+  class DocumentEditorTypeRegistry {
+
+    getType(fullPath: string): DocumentEditorType {
+      for (var k in DocumentEditorType) if (DocumentEditorType.hasOwnProperty(k)) {
+        var t = <DocumentEditorType>DocumentEditorType[k];
+        if (t.canEdit && t.canEdit(fullPath)) return t;
+      }
+
+      return null;
+    }
+  }
+  
+
+  class TextDocumentEditorType implements DocumentEditorType {
     private _editor: CodeMirror.Editor = null;
     private _editorElement: HTMLElement = null;
 
     constructor() {
+    }
+
+    canEdit(fullPath: string) {
+      return true;
     }
 
     editDocument(docState: DocumentState): Editor {
@@ -49,8 +68,9 @@ module teapo {
 
     open(): HTMLElement {
       if (!this._doc) {
-        this._doc = this._editor.getDoc();
-        this._doc.setValue(this._docState.getProperty(null));
+        var content = this._docState.getProperty(null);
+        if (!content) content = '';
+        this._doc = new CodeMirror.Doc(content);
 
         var historyStr = this._docState.getProperty('history');
         if (historyStr) {
@@ -61,6 +81,7 @@ module teapo {
         }
       }
 
+      this._editor.swapDoc(this._doc);
       return this._editorElement;
     }
 
@@ -68,7 +89,6 @@ module teapo {
     }
   }
 
-  DocumentType = {
-    "Plain Text": new TextDocumentType()
-  };
+  DocumentEditorType = new DocumentEditorTypeRegistry();
+  DocumentEditorType['Plain Text'] = new TextDocumentEditorType();
 }
