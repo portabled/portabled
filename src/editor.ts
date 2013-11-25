@@ -33,6 +33,7 @@ module teapo {
   class TextDocumentEditorType implements DocumentEditorType {
     private _editor: CodeMirror.Editor = null;
     private _editorElement: HTMLElement = null;
+    private _firstUse = { isFirstUse: true };
 
     constructor() {
     }
@@ -45,7 +46,7 @@ module teapo {
       if (!this._editor)
         this._initEditor();
 
-      return new TextEditor(this._editor, this._editorElement, docState);
+      return new TextEditor(this._editor, this._editorElement, docState, this._firstUse);
     }
 
     private _initEditor() {
@@ -63,13 +64,20 @@ module teapo {
     constructor(
       private _editor: CodeMirror.Editor,
       private _editorElement: HTMLElement,
-      private _docState: DocumentState) {
+      private _docState: DocumentState,
+      private _firstUse: { isFirstUse: boolean; }) {
     }
 
     open(): HTMLElement {
       if (!this._doc) {
         var content = this._docState.getProperty(null);
         if (!content) content = '';
+
+        if (this._firstUse.isFirstUse) {
+          this._firstUse.isFirstUse = false;
+          setTimeout(() => this._editor.refresh(), 1);
+        }
+
         this._doc = new CodeMirror.Doc(content);
 
         var historyStr = this._docState.getProperty('history');

@@ -599,6 +599,7 @@ var teapo;
         function TextDocumentEditorType() {
             this._editor = null;
             this._editorElement = null;
+            this._firstUse = { isFirstUse: true };
         }
         TextDocumentEditorType.prototype.canEdit = function (fullPath) {
             return true;
@@ -608,7 +609,7 @@ var teapo;
             if (!this._editor)
                 this._initEditor();
 
-            return new TextEditor(this._editor, this._editorElement, docState);
+            return new TextEditor(this._editor, this._editorElement, docState, this._firstUse);
         };
 
         TextDocumentEditorType.prototype._initEditor = function () {
@@ -623,17 +624,27 @@ var teapo;
     })();
 
     var TextEditor = (function () {
-        function TextEditor(_editor, _editorElement, _docState) {
+        function TextEditor(_editor, _editorElement, _docState, _firstUse) {
             this._editor = _editor;
             this._editorElement = _editorElement;
             this._docState = _docState;
+            this._firstUse = _firstUse;
             this._doc = null;
         }
         TextEditor.prototype.open = function () {
+            var _this = this;
             if (!this._doc) {
                 var content = this._docState.getProperty(null);
                 if (!content)
                     content = '';
+
+                if (this._firstUse.isFirstUse) {
+                    this._firstUse.isFirstUse = false;
+                    setTimeout(function () {
+                        return _this._editor.refresh();
+                    }, 1);
+                }
+
                 this._doc = new CodeMirror.Doc(content);
 
                 var historyStr = this._docState.getProperty('history');
