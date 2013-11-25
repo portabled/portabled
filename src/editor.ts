@@ -48,7 +48,18 @@ module teapo {
 
     static standardEditorConfiguration(): CodeMirror.EditorConfiguration {
       return {
-        
+        lineNumbers: true,
+        matchBrackets: true,
+        autoCloseBrackets: true,
+        matchTags: true,
+        showTrailingSpace: true,
+        autoCloseTags: true,
+        highlightSelectionMatches: {showToken: /\w/},
+        styleActiveLine: true,
+        // readOnly: 'nocursor',
+        tabSize: 2,
+        extraKeys: {"Tab": "indentMore", "Shift-Tab": "indentLess"},
+        gutters: [ 'teapo-errors' ]        
       };
     }
 
@@ -88,7 +99,10 @@ module teapo {
 
         if (this._firstUse.isFirstUse) {
           this._firstUse.isFirstUse = false;
-          setTimeout(() => this._editor.refresh(), 1);
+          setTimeout(() => {
+            this._editor.refresh();
+            this._editor.focus();
+          }, 1);
         }
 
         this._doc = new CodeMirror.Doc(content);
@@ -103,6 +117,8 @@ module teapo {
       }
 
       this._editor.swapDoc(this._doc);
+      this._editor.focus();
+
       return this._editorElement;
     }
 

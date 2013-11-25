@@ -150,9 +150,15 @@ module teapo {
      * Persists property value.
      */
     setProperty(name: string, value: string): void {
-      this._docState.storeElement.setAttribute('data-'+name, value);
-      var slotName = this._docState.localStorageKey + name;
-      this._docState.runtime.storage.localStorage[slotName] = value;
+      var valueStr = value ? value : '';
+      if (name)
+        this._docState.storeElement.setAttribute('data-'+name, valueStr);
+      else
+        this._docState.storeElement.innerHTML = valueStr;
+
+      var slotName = this._docState.localStorageKey + (name?name:'');
+      this._docState.runtime.storage.localStorage[slotName] = valueStr;
+
       this._docState.runtime.docChanged(this._docState);
     }
 

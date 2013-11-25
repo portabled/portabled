@@ -376,9 +376,15 @@ var teapo;
         * Persists property value.
         */
         DocumentState.prototype.setProperty = function (name, value) {
-            this._docState.storeElement.setAttribute('data-' + name, value);
-            var slotName = this._docState.localStorageKey + name;
-            this._docState.runtime.storage.localStorage[slotName] = value;
+            var valueStr = value ? value : '';
+            if (name)
+                this._docState.storeElement.setAttribute('data-' + name, valueStr);
+            else
+                this._docState.storeElement.innerHTML = valueStr;
+
+            var slotName = this._docState.localStorageKey + (name ? name : '');
+            this._docState.runtime.storage.localStorage[slotName] = valueStr;
+
             this._docState.runtime.docChanged(this._docState);
         };
 
@@ -606,7 +612,20 @@ var teapo;
             this._firstUse = { isFirstUse: true };
         }
         TextDocumentEditorType.standardEditorConfiguration = function () {
-            return {};
+            return {
+                lineNumbers: true,
+                matchBrackets: true,
+                autoCloseBrackets: true,
+                matchTags: true,
+                showTrailingSpace: true,
+                autoCloseTags: true,
+                highlightSelectionMatches: { showToken: /\w/ },
+                styleActiveLine: true,
+                // readOnly: 'nocursor',
+                tabSize: 2,
+                extraKeys: { "Tab": "indentMore", "Shift-Tab": "indentLess" },
+                gutters: ['teapo-errors']
+            };
         };
 
         TextDocumentEditorType.prototype.canEdit = function (fullPath) {
@@ -649,7 +668,8 @@ var teapo;
                 if (this._firstUse.isFirstUse) {
                     this._firstUse.isFirstUse = false;
                     setTimeout(function () {
-                        return _this._editor.refresh();
+                        _this._editor.refresh();
+                        _this._editor.focus();
                     }, 1);
                 }
 
@@ -667,6 +687,8 @@ var teapo;
             }
 
             this._editor.swapDoc(this._doc);
+            this._editor.focus();
+
             return this._editorElement;
         };
 
