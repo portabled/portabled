@@ -7325,6 +7325,7 @@ declare module TypeScript {
         private isLeftSideOfQualifiedName(ast);
         private resolveGenericTypeReference(genericTypeAST, context);
         private resolveQualifiedName(dottedNameAST, context);
+        private isInImportDeclaration(ast);
         private computeQualifiedName(dottedNameAST, context);
         private shouldContextuallyTypeAnyFunctionExpression(functionExpressionAST, typeParameters, parameters, returnTypeAnnotation, context);
         private resolveAnyFunctionExpression(funcDeclAST, typeParameters, parameters, returnTypeAnnotation, block, bodyExpression, isContextuallyTyped, context);
