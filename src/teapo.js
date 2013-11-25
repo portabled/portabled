@@ -228,10 +228,10 @@ var teapo;
             start++;
 
         var end = Math.max(start, path.length - 1);
-        while (end >= start && path.charAt(end) === '/')
+        while (end > start && path.charAt(end) === '/')
             end--;
 
-        var pathMid = start === 0 && end === path.length - 1 ? path : path.slice(start, end);
+        var pathMid = start === 0 && end === path.length - 1 ? path : path.slice(start, end + 1);
         return pathMid;
     }
 })(teapo || (teapo = {}));
