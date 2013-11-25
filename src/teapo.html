@@ -31,47 +31,17 @@
   <script inline='imports/knockout/knockout-3.0.0.js'></script>
   <script inline='teapo.js'></script>
   <script inline='imports/typescript/typescriptServices.js'></script>
-  <script id=bodyTemplate type='text/html'>
-    <div class=teapo-file-list>
-			<button data-bind='click: newFile' style='display: block;'> ...new </button>
-      <div data-bind='template: { name: "folder-template", foreach: root.folders }'>
-      </div>
-      <div data-bind='template: { name: "file-template", foreach: root.files }'>
-      </div>
-    </div>
-    <textarea data-bind='attach: attachTextarea($element)'>Teapo &mdash; text editor confined to a small place. Select a file on the left to start.</textarea>
-		<button style='position: fixed; right: 0px; top: 0px;' data-bind='visible: activeDocument'>
-			delete <span data-bind='text: activeDocument() ? activeDocument().name : null, click: deleteActiveFile'></span>
-		</button>
-      <div class=teapo-status data-bind='text: statusText'></div>
-  </script>
-  <script id=folder-template type='text/html'>
-    <div class=teapo-file-item data-bind='attr: { title: fullPath+"." }'>
-      <div data-bind='style: { marginLeft: (nestLevel-1)/2+"em" }'>
-        <b data-bind='text:fullPath'></b>
-        <span data-bind='if: containsActiveDocument'>...</span>
-      </div>
-    </div>
-    <div>
-      <div data-bind='template: { name: "folder-template", foreach: folders }'>
-      </div>
-      <div data-bind='template: { name: "file-template", foreach: files }'>
-      </div>
-    </div>
-  </script>
-  <script id=file-template type='text/html'>
-    <div data-bind='click: select, attr: { title: fullPath }, css: { "teapo-file-item-selected": active }' class=teapo-file-item>
-      <div data-bind='style: { marginLeft: parent.nestLevel/2+"em" }'>
-        <span data-bind='text:name'></span>
-      </div>
-    </div>
-  </script>
+  <script id=page-template type='text/html' inline='layout/page.html'></script>
+  <script id=folder-template type='text/html' inline='layout/folder.html'></script>
+  <script id=file-template type='text/html' inline='layout/file.html'></script>
   
   <script data-path='#lib.d.ts' inline='imports/typescript/lib.d.ts' type='text/html'></script>
   <script data-path='/src/files.ts' type='text/html' inline='files.ts'></script>
+  <script data-path='/src/shell.ts' type='text/html' inline='files.ts'></script>
+  <script data-path='/src/files.ts' type='text/html' inline='files.ts'></script>
   <script data-path='/src/editor.ts' type='text/html' inline='editor.ts'></script>
   <script data-path='/src/persistence.ts' type='text/html' inline='persistence.ts'></script>
-  <script data-path='/src/typings/typescriptServices.d.ts' type='text/html' inline='typings/typescriptServices.d.ts'></script>
+
   <script data-path='/src/typings/codemirror.d.ts' type='text/html' inline='typings/codemirror.d.ts'></script>
   <script data-path='/src/typings/knockout.d.ts' type='text/html' inline='typings/knockout.d.ts'></script>
 <body>

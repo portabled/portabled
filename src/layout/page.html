@@ -1,0 +1,13 @@
+<div class=teapo-file-list>
+  <button data-bind='click: newFile' style='display: block;'> ...new </button>
+  <div data-bind='template: { name: "folder-template", foreach: root.folders }'></div>
+  <div data-bind='template: { name: "file-template", foreach: root.files }'></div>
+</div>
+
+<textarea data-bind='attach: attachTextarea($element)'>Teapo &mdash; text editor confined to a small place. Select a file on the left to start.</textarea>
+
+<button style='position: fixed; right: 0px; top: 0px;' data-bind='visible: activeDocument'>
+    delete <span data-bind='text: activeDocument() ? activeDocument().name : null, click: deleteActiveFile'></span>
+</button>
+
+<div class=teapo-status data-bind='text: statusText'></div>

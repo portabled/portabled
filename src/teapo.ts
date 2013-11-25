@@ -24,5 +24,5 @@ window.onload = function() {
     }
   }
 
-  ko.renderTemplate('bodyTemplate', viewModel, null, pageElement);
+  ko.renderTemplate('page-template', viewModel, null, pageElement);
 }
