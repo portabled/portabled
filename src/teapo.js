@@ -437,6 +437,8 @@ var teapo;
         };
 
         RuntimeDocumentStorage.prototype.storeEdited = function () {
+            this.storeFilenamesToLocalStorage();
+
             var edited = new Date().toUTCString();
             this._lsSet('edited', edited);
 
@@ -576,7 +578,7 @@ var teapo;
     function appendScriptElement(doc) {
         var s = doc.createElement('script');
         s.setAttribute('type', 'text/data');
-        doc.body.appendChild(doc);
+        doc.body.appendChild(s);
         return s;
     }
 })(teapo || (teapo = {}));
@@ -647,6 +649,7 @@ var teapo;
                 return _this._editorElement = editorElement;
             }, options);
         };
+        TextDocumentEditorType.saveTimeout = 600;
         return TextDocumentEditorType;
     })();
 
@@ -657,6 +660,7 @@ var teapo;
             this._docState = _docState;
             this._firstUse = _firstUse;
             this._doc = null;
+            this._saveTimeout = null;
         }
         TextEditor.prototype.open = function () {
             var _this = this;
@@ -684,6 +688,10 @@ var teapo;
                     if (history)
                         this._doc.setHistory(history);
                 }
+
+                CodeMirror.on(this._doc, 'change', function (instance, change) {
+                    return _this._onchange(change);
+                });
             }
 
             this._editor.swapDoc(this._doc);
@@ -693,6 +701,19 @@ var teapo;
         };
 
         TextEditor.prototype.close = function () {
+        };
+
+        TextEditor.prototype._onchange = function (change) {
+            var _this = this;
+            if (this._saveTimeout)
+                clearTimeout(this._saveTimeout);
+            this._saveTimeout = setTimeout(function () {
+                return _this._save();
+            }, TextDocumentEditorType.saveTimeout);
+        };
+
+        TextEditor.prototype._save = function () {
+            this._docState.setProperty(null, this._doc.getValue());
         };
         return TextEditor;
     })();
@@ -724,6 +745,49 @@ var teapo;
                 return _this._fileSelected(fileEntry);
             });
         }
+        ApplicationShell.prototype.saveZip = function () {
+        };
+
+        ApplicationShell.prototype.saveHtml = function () {
+            var html = document.head.parentElement.outerHTML;
+            var result = [];
+            var plainStart = 0;
+            for (var i = 0; i < html.length; i++) {
+                var code = html.charCodeAt(i);
+                if (code < 128)
+                    continue;
+
+                if (i > plainStart)
+                    result.push(html.slice(plainStart, i));
+
+                var uriTxt = encodeURIComponent(html.charAt(i));
+                console.log(i, uriTxt, html.charAt(i));
+                for (var j = 1; j < uriTxt.length; j += 3) {
+                    var uriHex = parseInt(uriTxt.slice(j), 16);
+                    result.push(String.fromCharCode(uriHex));
+                }
+
+                plainStart = i;
+            }
+
+            result.push(html.slice(plainStart));
+
+            var totalUtf = result.join('');
+            var base64 = btoa(totalUtf);
+            console.log(totalUtf.length);
+
+            var dataUri = 'data:application/octet-stream;base64,' + base64;
+            try  {
+                var a = document.createElement('a');
+                a.href = dataUri;
+                var slashParts = window.location.pathname.split('/');
+                a.download = slashParts[slashParts.length - 1];
+                a.click();
+            } catch (e) {
+                window.open(dataUri);
+            }
+        };
+
         ApplicationShell.prototype.attachToHost = function (host) {
             this._host = host;
             if (this._editorElement) {

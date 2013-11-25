@@ -46,6 +46,8 @@ module teapo {
     constructor() {
     }
 
+    static saveTimeout = 600;
+
     static standardEditorConfiguration(): CodeMirror.EditorConfiguration {
       return {
         lineNumbers: true,
@@ -85,6 +87,8 @@ module teapo {
 
   class TextEditor implements Editor {
     private _doc: CodeMirror.Doc = null;
+    private _saveTimeout = null;
+
     constructor(
       private _editor: CodeMirror.Editor,
       private _editorElement: HTMLElement,
@@ -114,6 +118,8 @@ module teapo {
           if (history)
             this._doc.setHistory(history);
         }
+
+        CodeMirror.on(this._doc, 'change', (instance: CodeMirror.Doc, change: CodeMirror.EditorChange) => this._onchange(change));
       }
 
       this._editor.swapDoc(this._doc);
@@ -123,6 +129,16 @@ module teapo {
     }
 
     close() {
+    }
+
+    private _onchange(change: CodeMirror.EditorChange) {
+      if (this._saveTimeout)
+        clearTimeout(this._saveTimeout);
+      this._saveTimeout = setTimeout(() => this._save(), TextDocumentEditorType.saveTimeout);
+    }
+
+    private _save() {
+      this._docState.setProperty(null, this._doc.getValue());
     }
   }
 

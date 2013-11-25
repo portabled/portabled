@@ -1,15 +1,23 @@
 <div class=teapo-file-list>
-  <button data-sbind='click: newFile' style='display: block;'> ...new </button>
   <div data-bind='template: { name: "folder-template", foreach: fileList.folders }'></div>
   <div data-bind='template: { name: "file-template", foreach: fileList.files }'></div>
 </div>
 
-<div data-bind='attach: attachToHost($element)' class=teapo-content>
-  Teapo &mdash; text editor confined to a small place. Select a file on the left to start.
+<div class=teapo-navigator-toolbar>
+  <button title='add new file'> + </button>
+  <button data-bind='attr: { title: "remove "+(fileList.selectedFile() ? fileList.selectedFile().name() : " selected document") }'> - </button>
+
+  <button data-bind='click: saveZip'>
+    <div class=teapo-small-button>zip</div>
+  </button>
+  <button data-bind='click: saveHtml'>
+    <div class=teapo-small-button>html</div>
+  </button>
 </div>
 
-<button style='position: fixed; right: 0px; top: 0px;' data-sbind='visible: activeDocument'>
-    delete <span data-sbind='text: activeDocument() ? activeDocument().name : null, click: deleteActiveFile'></span>
-</button>
+<div data-bind='attach: attachToHost($element)' class=teapo-content>
+  Teapo: text editor confined to a small place. Select a file on the left to start.
+</div>
+
 
 <div class=teapo-status data-sbind='text: statusText'></div>

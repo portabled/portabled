@@ -23,6 +23,50 @@ module teapo {
   
       this.fileList.selectedFile.subscribe((fileEntry) => this._fileSelected(fileEntry));
     }
+
+    saveZip() {
+      
+    }
+
+    saveHtml() {
+      var html = document.head.parentElement.outerHTML;
+      var result = [];
+      var plainStart = 0;
+      for (var i = 0; i < html.length; i++) {
+        var code = html.charCodeAt(i);
+        if (code<128) continue;
+
+        if (i>plainStart)
+          result.push(html.slice(plainStart, i));
+
+        var uriTxt = encodeURIComponent(html.charAt(i));
+        console.log(i, uriTxt, html.charAt(i));
+        for (var j = 1; j < uriTxt.length; j+=3) {
+          var uriHex = parseInt(uriTxt.slice(j), 16);
+          result.push(String.fromCharCode(uriHex));
+        }
+
+        plainStart = i;
+      }
+
+      result.push(html.slice(plainStart));
+  
+      var totalUtf = result.join('');
+      var base64 = btoa(totalUtf);
+      console.log(totalUtf.length);
+
+      var dataUri = 'data:application/octet-stream;base64,'+base64;
+      try {
+        var a = document.createElement('a');
+        a.href = dataUri;
+        var slashParts = window.location.pathname.split('/');
+        (<any>a).download = slashParts[slashParts.length-1];
+        a.click();
+      }
+      catch (e) {
+        window.open(dataUri);
+      }
+    }
   
     attachToHost(host: HTMLElement) {
       this._host = host;

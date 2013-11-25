@@ -16,10 +16,9 @@ html {
 
 .teapo-file-list {
   position: fixed;
+  top: 0px; bottom: 2em;
   width: 20%;
-  height: 100%;
-  background: #dedede;
-  padding: 5px;
+  background: white;
 }
 .teapo-file-item {
   border: solid 2px transparent;
@@ -30,8 +29,19 @@ html {
   background: #ffe244;
 }
 .teapo-file-item-selected {
-  border: solid 2px white;
+  border: solid 2px silver;
   border-right: none;
+}
+
+.teapo-navigator-toolbar {
+  position: fixed;
+  bottom: 0px; height: 2em;
+  width: 20%;
+  background: #d8d8d8;
+}
+.teapo-small-button {
+  font-size: 70%;
+  border: solid 1px black;
 }
 
 .teapo-status {
@@ -41,7 +51,7 @@ html {
   height: 1.5em;
   background: white;
   border-top: solid 1px silver;
-  border-left: solid 0.5em white;
+  border-left: solid 0.5em silver;
   font-size: 95%;
 }
 

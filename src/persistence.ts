@@ -214,6 +214,8 @@ module teapo {
     }
 
     storeEdited() {
+      this.storeFilenamesToLocalStorage();
+
       var edited = new Date().toUTCString();
       this._lsSet('edited', edited);
 
@@ -368,7 +370,7 @@ module teapo {
   function appendScriptElement(doc: typeof document): HTMLScriptElement {
     var s = doc.createElement('script');
     s.setAttribute('type', 'text/data');
-    doc.body.appendChild(doc);
+    doc.body.appendChild(s);
     return s;
   }
 }
