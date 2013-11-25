@@ -4,8 +4,6 @@ module teapo {
 
   var DocumentType: {
     [name: string]: DocumentType;
-  } = {
-    "Plain Text": new TextDocumentType()
   };
 
   export interface DocumentType {
@@ -69,4 +67,8 @@ module teapo {
     close() {
     }
   }
+
+  DocumentType = {
+    "Plain Text": new TextDocumentType()
+  };
 }

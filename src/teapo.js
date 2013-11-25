@@ -434,20 +434,22 @@ var teapo;
 
         RuntimeDocumentStorage.prototype._loadInitialStateFromLocalStorage = function (pathElements) {
             var lsFilenames = this._loadFilenamesFromLocalStorage();
-            for (var i = 0; i < lsFilenames.length; i++) {
-                var lsFullPath = lsFilenames[i];
-                var s = pathElements[lsFullPath];
-                if (s) {
-                    // TODO: clear DOM attributes
-                } else {
-                    s = appendScriptElement(this.storage.document);
-                    s.setAttribute('data-path', lsFullPath);
-                }
-                var docState = new RuntimeDocumentState(lsFullPath, false, s, this);
-                this.docByPath[lsFullPath] = docState;
+            if (lsFilenames) {
+                for (var i = 0; i < lsFilenames.length; i++) {
+                    var lsFullPath = lsFilenames[i];
+                    var s = pathElements[lsFullPath];
+                    if (s) {
+                        // TODO: clear DOM attributes
+                    } else {
+                        s = appendScriptElement(this.storage.document);
+                        s.setAttribute('data-path', lsFullPath);
+                    }
+                    var docState = new RuntimeDocumentState(lsFullPath, false, s, this);
+                    this.docByPath[lsFullPath] = docState;
 
-                // leave only DOM elements that are redundant
-                delete pathElements[lsFullPath];
+                    // leave only DOM elements that are redundant
+                    delete pathElements[lsFullPath];
+                }
             }
 
             for (var fullPath in pathElements)
@@ -565,9 +567,7 @@ var teapo;
 /// <reference path='persistence.ts' />
 var teapo;
 (function (teapo) {
-    var DocumentType = {
-        "Plain Text": new TextDocumentType()
-    };
+    var DocumentType;
 
     var TextDocumentType = (function () {
         function TextDocumentType() {
@@ -622,6 +622,10 @@ var teapo;
         };
         return TextEditor;
     })();
+
+    DocumentType = {
+        "Plain Text": new TextDocumentType()
+    };
 })(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
 /// <reference path='editor.ts' />

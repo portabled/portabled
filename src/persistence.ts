@@ -222,25 +222,27 @@ module teapo {
 
     private _loadInitialStateFromLocalStorage(pathElements: { [fullPath: string]: HTMLScriptElement; }) {
       var lsFilenames = this._loadFilenamesFromLocalStorage();
-      for (var i = 0; i < lsFilenames.length; i++) {
-        var lsFullPath = lsFilenames[i];
-        var s = pathElements[lsFullPath];
-        if (s) {
-          // TODO: clear DOM attributes
-          
+      if (lsFilenames) {
+        for (var i = 0; i < lsFilenames.length; i++) {
+          var lsFullPath = lsFilenames[i];
+          var s = pathElements[lsFullPath];
+          if (s) {
+            // TODO: clear DOM attributes
+            
+          }
+          else {
+            s = appendScriptElement(this.storage.document);
+            s.setAttribute('data-path', lsFullPath);
+          }
+          var docState = new RuntimeDocumentState(
+            lsFullPath, false,
+            s,
+            this);
+          this.docByPath[lsFullPath] = docState;
+  
+          // leave only DOM elements that are redundant
+          delete pathElements[lsFullPath];
         }
-        else {
-          s = appendScriptElement(this.storage.document);
-          s.setAttribute('data-path', lsFullPath);
-        }
-        var docState = new RuntimeDocumentState(
-          lsFullPath, false,
-          s,
-          this);
-        this.docByPath[lsFullPath] = docState;
-
-        // leave only DOM elements that are redundant
-        delete pathElements[lsFullPath];
       }
 
       // remove redundant DOM elements,
