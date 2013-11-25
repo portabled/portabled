@@ -9,5 +9,20 @@ window.onload = function() {
 
   var viewModel = new teapo.ApplicationShell();
 
-  ko.renderTemplate('bodyTemplate', viewModel, null, document.body);
+  var pageElement: HTMLElement = null;
+
+  for (var i = 0; i < document.body.childNodes.length; i++) {
+    var e = <HTMLElement>document.body.childNodes.item(i);
+    if (e && e.tagName && e.tagName.toLowerCase()!=='script') {
+      if (e.className && e.className.indexOf('teapo-page')>=0) {
+        pageElement = e;
+        continue;
+      }
+
+      document.body.removeChild(e);
+      i--;
+    }
+  }
+
+  ko.renderTemplate('bodyTemplate', viewModel, null, pageElement);
 }

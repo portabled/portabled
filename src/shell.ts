@@ -1,4 +1,5 @@
 /// <reference path='typings/knockout.d.ts' />
+
 /// <reference path='editor.ts' />
 /// <reference path='files.ts' />
 /// <reference path='persistence.ts' />

@@ -686,6 +686,21 @@ window.onload = function () {
 
     var viewModel = new teapo.ApplicationShell();
 
-    ko.renderTemplate('bodyTemplate', viewModel, null, document.body);
+    var pageElement = null;
+
+    for (var i = 0; i < document.body.childNodes.length; i++) {
+        var e = document.body.childNodes.item(i);
+        if (e && e.tagName && e.tagName.toLowerCase() !== 'script') {
+            if (e.className && e.className.indexOf('teapo-page') >= 0) {
+                pageElement = e;
+                continue;
+            }
+
+            document.body.removeChild(e);
+            i--;
+        }
+    }
+
+    ko.renderTemplate('bodyTemplate', viewModel, null, pageElement);
 };
 //# sourceMappingURL=teapo.js.map

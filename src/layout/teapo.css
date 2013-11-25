@@ -1,0 +1,76 @@
+body {
+  margin: 0px; padding: 0px;
+  font-family: Corbel, Ubuntu, Roboto, Tahoma, sans-serif;
+  font-size: 9pt;
+  overflow: hidden;
+}
+html {
+  overflow: hidden;
+  margin: 0px; padding: 0px;
+}
+.teapo-page {
+  position: fixed;
+  left: 0px; top: 0px; right: 0px; bottom: 0px;
+  overflow: hidden;
+}
+.teapo-file-list {
+  position: fixed;
+  width: 20%;
+  height: 100%;
+  background: #dedede;
+  padding: 5px;
+}
+.teapo-file-item {
+  border: solid 2px transparent;
+  border-right: none;
+  cursor:pointer;
+}
+.teapo-file-item:hover {
+  background: #ffe244;
+}
+.teapo-file-item-selected {
+  border: solid 2px white;
+  border-right: none;
+}
+.teapo-status {
+  position: fixed;
+  bottom: 0px;
+  left: 20%; right: 0px;
+  height: 1.5em;
+  background: white;
+  border-top: solid 1px silver;
+  border-left: solid 0.5em white;
+  font-size: 95%;
+}
+.teapo-syntax-error {
+  text-decoration: underline;
+  background: #ffeaa2;
+}
+.teapo-semantic-error {
+  text-decoration: underline;
+}
+.teapo-errors {
+  width: 0.5em;
+  background: silver;
+}
+.CodeMirror, textarea.teapo-editor {
+  position: fixed;
+  left: 20%;
+  top: 0px;
+  bottom: 1.5em;
+  height: auto;
+  right:0px;
+  overflow: hidden;
+  border: none;
+  font: inherit;
+}
+.CodeMirror-activeline-background {
+  background: #f8f8f8;
+  border: solid 1px #f0f0f0;
+}
+.CodeMirror-hint {
+  max-width: 52em;
+}
+textarea.teapo-editor {
+  overflow: auto;
+}

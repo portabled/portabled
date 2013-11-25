@@ -3,16 +3,22 @@
 <head>
   <title>Teapo</title>
   <meta name="viewport" content="width=600, user-scalable=no">
+  <style inline='imports/codemirror/codemirror.css'></style>
   <style inline='imports/codemirror/codemirror.css' ></style>
+  <style inline='imports/codemirror/show-hint.css' ></style>
+  <style inline='layout/teapo.css'></style>
+</head>
+<body>
+  <div class=teapo-page>
+  </div>
+
   <script inline='imports/codemirror/codemirror.js'></script>
   <script inline='imports/codemirror/javascript.js'></script>
   <script inline='imports/codemirror/css.js'></script>
   <script inline='imports/codemirror/xml.js'></script>
   <script inline='imports/codemirror/htmlmixed.js'></script>
   <script inline='imports/codemirror/htmlembedded.js'></script>
-  <style inline='imports/codemirror/codemirror.css' ></style>
   <script inline='imports/codemirror/show-hint.js'></script>
-  <style inline='imports/codemirror/show-hint.css' ></style>
   <script inline='imports/codemirror/javascript-hint.js'></script>
   <script inline='imports/codemirror/javascript-hint.js'></script>
   <script inline='imports/codemirror/comment.js'></script>
@@ -61,78 +67,6 @@
     </div>
   </script>
   
-<style>
-  body {
-    margin: 0px; padding: 0px;
-    font-family: Corbel, Ubuntu, Roboto, Tahoma, sans-serif;
-    font-size: 9pt;
-  }
-  html {
-    overflow: hidden;
-    margin: 0px; padding: 0px;
-  }
-  .teapo-file-list {
-    position: fixed;
-    width: 20%;
-    height: 100%;
-    background: #dedede;
-    padding: 5px;
-  }
-  .teapo-file-item {
-    border: solid 2px transparent;
-    border-right: none;
-    cursor:pointer;
-  }
-  .teapo-file-item:hover {
-    background: #ffe244;
-  }
-  .teapo-file-item-selected {
-    border: solid 2px white;
-    border-right: none;
-  }
-  .teapo-status {
-    position: fixed;
-    bottom: 0px;
-    left: 20%; right: 0px;
-    height: 1.5em;
-    background: white;
-    border-top: solid 1px silver;
-    border-left: solid 0.5em white;
-    font-size: 95%;
-  }
-  .teapo-syntax-error {
-    text-decoration: underline;
-    background: #ffeaa2;
-  }
-  .teapo-semantic-error {
-    text-decoration: underline;
-  }
-  .teapo-errors {
-    width: 0.5em;
-    background: silver;
-  }
-  .CodeMirror, textarea.teapo-editor {
-    position: fixed;
-    left: 20%;
-    top: 0px;
-    bottom: 1.5em;
-    height: auto;
-    right:0px;
-    overflow: hidden;
-    border: none;
-    font: inherit;
-  }
-  .CodeMirror-activeline-background {
-    background: #f8f8f8;
-    border: solid 1px #f0f0f0;
-  }
-  .CodeMirror-hint {
-    max-width: 52em;
-  }
-  textarea.teapo-editor {
-    overflow: auto;
-  }
-  </style>
   <script data-path='#lib.d.ts' inline='imports/typescript/lib.d.ts' type='text/html'></script>
   <script data-path='/src/files.ts' type='text/html' inline='files.ts'></script>
   <script data-path='/src/editor.ts' type='text/html' inline='editor.ts'></script>
@@ -140,8 +74,5 @@
   <script data-path='/src/typings/typescriptServices.d.ts' type='text/html' inline='typings/typescriptServices.d.ts'></script>
   <script data-path='/src/typings/codemirror.d.ts' type='text/html' inline='typings/codemirror.d.ts'></script>
   <script data-path='/src/typings/knockout.d.ts' type='text/html' inline='typings/knockout.d.ts'></script>
-</head>
-<body>
-  empty...
 <body>
 </html>
