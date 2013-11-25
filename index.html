@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Teapo</title>
-  <meta name="viewport" content="width=600, user-scalable=no">
-  <style>/* BASICS */
+<title>Teapo</title>
+<meta name="viewport" content="width=600, user-scalable=no">
+<style>/* BASICS */
 
 .CodeMirror {
   /* Set height, width, borders, and global font properties here */
@@ -267,7 +267,7 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
   }
 }
 </style>
-  <style >/* BASICS */
+<style>/* BASICS */
 
 .CodeMirror {
   /* Set height, width, borders, and global font properties here */
@@ -531,7 +531,7 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
   }
 }
 </style>
-  <style >.CodeMirror-hints {
+<style>.CodeMirror-hints {
   position: absolute;
   z-index: 10;
   overflow: hidden;
@@ -570,7 +570,7 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
   color: white;
 }
 </style>
-  <style>body {
+<style>body {
   margin: 0px; padding: 0px;
   font-family: Corbel, Ubuntu, Roboto, Tahoma, sans-serif;
   font-size: 9pt;
@@ -651,7 +651,39 @@ textarea.teapo-editor {
   <div class=teapo-page>
   </div>
 
-  <script>// CodeMirror is the only global var we claim
+<!-- Knockout HTML templates -->
+<script id=page-template type='text/html'><div class=teapo-file-list>
+  <button data-bind='click: newFile' style='display: block;'> ...new </button>
+  <div data-bind='template: { name: "folder-template", foreach: root.folders }'></div>
+  <div data-bind='template: { name: "file-template", foreach: root.files }'></div>
+</div>
+
+<textarea data-bind='attach: attachTextarea($element)'>Teapo &mdash; text editor confined to a small place. Select a file on the left to start.</textarea>
+
+<button style='position: fixed; right: 0px; top: 0px;' data-bind='visible: activeDocument'>
+    delete <span data-bind='text: activeDocument() ? activeDocument().name : null, click: deleteActiveFile'></span>
+</button>
+
+<div class=teapo-status data-bind='text: statusText'></div></script>
+<script id=folder-template type='text/html'><div class=teapo-file-item data-bind='attr: { title: fullPath+"." }'>
+  <div data-bind='style: { marginLeft: (nestLevel-1)/2+"em" }'>
+    <b data-bind='text:fullPath'></b>
+    <span data-bind='if: containsActiveDocument'>...</span>
+  </div>
+</div>
+
+<div>
+  <div data-bind='template: { name: "folder-template", foreach: folders }'></div>
+  <div data-bind='template: { name: "file-template", foreach: files }'></div>
+</div></script>
+<script id=file-template type='text/html'><div data-bind='click: select, attr: { title: fullPath }, css: { "teapo-file-item-selected": active }' class=teapo-file-item>
+  <div data-bind='style: { marginLeft: parent.nestLevel/2+"em" }'>
+    <span data-bind='text:name'></span>
+  </div>
+</div></script>
+
+<!-- External JS libraries: CodeMirror and Knockout --->
+<script>// CodeMirror is the only global var we claim
 window.CodeMirror = (function() {
   "use strict";
 
@@ -6594,7 +6626,7 @@ window.CodeMirror = (function() {
   return CodeMirror;
 })();
 </script>
-  <script>// TODO actually recognize syntax of TypeScript constructs
+<script>// TODO actually recognize syntax of TypeScript constructs
 
 CodeMirror.defineMode("javascript", function(config, parserConfig) {
   var indentUnit = config.indentUnit;
@@ -7212,7 +7244,7 @@ CodeMirror.defineMIME("application/x-json", {name: "javascript", json: true});
 CodeMirror.defineMIME("text/typescript", { name: "javascript", typescript: true });
 CodeMirror.defineMIME("application/typescript", { name: "javascript", typescript: true });
 </script>
-  <script>CodeMirror.defineMode("css", function(config, parserConfig) {
+<script>CodeMirror.defineMode("css", function(config, parserConfig) {
   "use strict";
 
   if (!parserConfig.propertyKeywords) parserConfig = CodeMirror.resolveMode("text/css");
@@ -7852,7 +7884,7 @@ CodeMirror.defineMIME("application/typescript", { name: "javascript", typescript
   });
 })();
 </script>
-  <script>CodeMirror.defineMode("xml", function(config, parserConfig) {
+<script>CodeMirror.defineMode("xml", function(config, parserConfig) {
   var indentUnit = config.indentUnit;
   var multilineTagIndentFactor = parserConfig.multilineTagIndentFactor || 1;
   var multilineTagIndentPastTag = parserConfig.multilineTagIndentPastTag || true;
@@ -8198,7 +8230,7 @@ CodeMirror.defineMIME("application/xml", "xml");
 if (!CodeMirror.mimeModes.hasOwnProperty("text/html"))
   CodeMirror.defineMIME("text/html", {name: "xml", htmlMode: true});
 </script>
-  <script>CodeMirror.defineMode("htmlmixed", function(config, parserConfig) {
+<script>CodeMirror.defineMode("htmlmixed", function(config, parserConfig) {
   var htmlMode = CodeMirror.getMode(config, {name: "xml", htmlMode: true});
   var cssMode = CodeMirror.getMode(config, "css");
 
@@ -8303,7 +8335,7 @@ if (!CodeMirror.mimeModes.hasOwnProperty("text/html"))
 
 CodeMirror.defineMIME("text/html", "htmlmixed");
 </script>
-  <script>CodeMirror.defineMode("htmlembedded", function(config, parserConfig) {
+<script>CodeMirror.defineMode("htmlembedded", function(config, parserConfig) {
 
   //config settings
   var scriptStartRegex = parserConfig.scriptStartRegex || /^<%/i,
@@ -8377,7 +8409,7 @@ CodeMirror.defineMIME("application/x-aspx", { name: "htmlembedded", scriptingMod
 CodeMirror.defineMIME("application/x-jsp", { name: "htmlembedded", scriptingModeSpec:"text/x-java"});
 CodeMirror.defineMIME("application/x-erb", { name: "htmlembedded", scriptingModeSpec:"ruby"});
 </script>
-  <script>(function() {
+<script>(function() {
   "use strict";
 
   var HINT_ELEMENT_CLASS        = "CodeMirror-hint";
@@ -8665,7 +8697,7 @@ CodeMirror.defineMIME("application/x-erb", { name: "htmlembedded", scriptingMode
   };
 })();
 </script>
-  <script>(function () {
+<script>(function () {
   var Pos = CodeMirror.Pos;
 
   function forEach(arr, f) {
@@ -8797,7 +8829,7 @@ CodeMirror.defineMIME("application/x-erb", { name: "htmlembedded", scriptingMode
   }
 })();
 </script>
-  <script>(function () {
+<script>(function () {
   var Pos = CodeMirror.Pos;
 
   function forEach(arr, f) {
@@ -8929,7 +8961,7 @@ CodeMirror.defineMIME("application/x-erb", { name: "htmlembedded", scriptingMode
   }
 })();
 </script>
-  <script>(function() {
+<script>(function() {
   "use strict";
 
   var noOptions = {};
@@ -9075,7 +9107,7 @@ CodeMirror.defineMIME("application/x-erb", { name: "htmlembedded", scriptingMode
   });
 })();
 </script>
-  <script>(function() {
+<script>(function() {
   var modes = ["clike", "css", "javascript"];
   for (var i = 0; i < modes.length; ++i)
     CodeMirror.extendMode(modes[i], {blockCommentContinue: " * "});
@@ -9130,7 +9162,7 @@ CodeMirror.defineMIME("application/x-erb", { name: "htmlembedded", scriptingMode
   });
 })();
 </script>
-  <script>(function() {
+<script>(function() {
   var ie_lt8 = /MSIE \d/.test(navigator.userAgent) &&
     (document.documentMode == null || document.documentMode < 8);
 
@@ -9218,7 +9250,7 @@ CodeMirror.defineMIME("application/x-erb", { name: "htmlembedded", scriptingMode
   });
 })();
 </script>
-  <script>(function() {
+<script>(function() {
   var DEFAULT_BRACKETS = "()[]{}''\"\"";
   var DEFAULT_EXPLODE_ON_ENTER = "[]{}";
   var SPACE_CHAR_REGEX = /\s/;
@@ -9301,7 +9333,7 @@ CodeMirror.defineMIME("application/x-erb", { name: "htmlembedded", scriptingMode
   }
 })();
 </script>
-  <script>CodeMirror.defineOption("showTrailingSpace", false, function(cm, val, prev) {
+<script>CodeMirror.defineOption("showTrailingSpace", false, function(cm, val, prev) {
   if (prev == CodeMirror.Init) prev = false;
   if (prev && !val)
     cm.removeOverlay("trailingspace");
@@ -9317,7 +9349,7 @@ CodeMirror.defineMIME("application/x-erb", { name: "htmlembedded", scriptingMode
     });
 });
 </script>
-  <script>/**
+<script>/**
  * Tag-closer extension for CodeMirror.
  *
  * This extension adds an "autoCloseTags" option that can be set to
@@ -9407,7 +9439,7 @@ CodeMirror.defineMIME("application/x-erb", { name: "htmlembedded", scriptingMode
   }
 })();
 </script>
-  <script>// Because sometimes you need to style the cursor's line.
+<script>// Because sometimes you need to style the cursor's line.
 //
 // Adds an option 'styleActiveLine' which, when enabled, gives the
 // active line's wrapping <div> the CSS class "CodeMirror-activeline",
@@ -9447,7 +9479,7 @@ CodeMirror.defineMIME("application/x-erb", { name: "htmlembedded", scriptingMode
   }
 })();
 </script>
-  <script>// Knockout JavaScript library v3.0.0
+<script>// Knockout JavaScript library v3.0.0
 // (c) Steven Sanderson - http://knockoutjs.com/
 // License: MIT (http://www.opensource.org/licenses/mit-license.php)
 
@@ -9542,7 +9574,9 @@ new a.J;a.La(a.J.Aa);a.b("nativeTemplateEngine",a.J);(function(){a.Ba=function()
 "{{/ko_with}}"),b.data("precompiled",h));b=[e.$data];e=u.extend({koBindingContext:e},g.templateOptions);e=u.tmpl(h,b,e);e.appendTo(w.createElement("div"));u.fragments={};return e};this.createJavaScriptEvaluatorBlock=function(a){return"{{ko_code ((function() { return "+a+" })()) }}"};this.addTemplate=function(a,b){w.write("<script type='text/html' id='"+a+"'>"+b+"\x3c/script>")};0<a&&(u.tmpl.tag.ko_code={open:"__.push($1 || '');"},u.tmpl.tag.ko_with={open:"with($1) {",close:"} "})};a.Ba.prototype=
 new a.w;var b=new a.Ba;0<b.Rb&&a.La(b);a.b("jqueryTmplTemplateEngine",a.Ba)})()})})();})();
 </script>
-  <script>/// <reference path='typings/knockout.d.ts' />
+
+<!-- Teapo code (this will actually execute stuff straight away) -->
+<script>/// <reference path='typings/knockout.d.ts' />
 var teapo;
 (function (teapo) {
     function registerKnockoutBindings(ko) {
@@ -10225,7 +10259,7 @@ var teapo;
 /// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='ko.ts' />
 /// <reference path='shell.ts' />
-window.onload = function () {
+function start() {
     teapo.registerKnockoutBindings(ko);
 
     var viewModel = new teapo.ApplicationShell();
@@ -10246,10 +10280,14 @@ window.onload = function () {
     }
 
     ko.renderTemplate('page-template', viewModel, null, pageElement);
-};
+}
+
+start();
 //# sourceMappingURL=teapo.js.map
 </script>
-  <script>/*! *****************************************************************************
+
+<!-- TypeScript services, taken from TS bin directory verbatim --->
+<script>/*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved. 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use
 this file except in compliance with the License. You may obtain a copy of the
@@ -77322,37 +77360,10 @@ var TypeScript;
     var Services = TypeScript.Services;
 })(TypeScript || (TypeScript = {}));
 </script>
-  <script id=page-template type='text/html'><div class=teapo-file-list>
-  <button data-bind='click: newFile' style='display: block;'> ...new </button>
-  <div data-bind='template: { name: "folder-template", foreach: root.folders }'></div>
-  <div data-bind='template: { name: "file-template", foreach: root.files }'></div>
-</div>
 
-<textarea data-bind='attach: attachTextarea($element)'>Teapo &mdash; text editor confined to a small place. Select a file on the left to start.</textarea>
 
-<button style='position: fixed; right: 0px; top: 0px;' data-bind='visible: activeDocument'>
-    delete <span data-bind='text: activeDocument() ? activeDocument().name : null, click: deleteActiveFile'></span>
-</button>
-
-<div class=teapo-status data-bind='text: statusText'></div></script>
-  <script id=folder-template type='text/html'><div class=teapo-file-item data-bind='attr: { title: fullPath+"." }'>
-  <div data-bind='style: { marginLeft: (nestLevel-1)/2+"em" }'>
-    <b data-bind='text:fullPath'></b>
-    <span data-bind='if: containsActiveDocument'>...</span>
-  </div>
-</div>
-
-<div>
-  <div data-bind='template: { name: "folder-template", foreach: folders }'></div>
-  <div data-bind='template: { name: "file-template", foreach: files }'></div>
-</div></script>
-  <script id=file-template type='text/html'><div data-bind='click: select, attr: { title: fullPath }, css: { "teapo-file-item-selected": active }' class=teapo-file-item>
-  <div data-bind='style: { marginLeft: parent.nestLevel/2+"em" }'>
-    <span data-bind='text:name'></span>
-  </div>
-</div></script>
-  
-  <script data-path='#lib.d.ts' type='text/html'>/* *****************************************************************************
+<!-- TypeScript definitions lib.d.ts, taken from TS bin directory verbatim ---> 
+<script data-path='#lib.d.ts' type='text/html'>/* *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved. 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use
 this file except in compliance with the License. You may obtain a copy of the
@@ -91554,7 +91565,89 @@ declare var WScript: {
     Quit(exitCode?: number): number;
 }
 </script>
-  <script data-path='/src/files.ts' type='text/html'>/// <reference path='typings/knockout.d.ts' />
+
+<!-- Embedded files with paths, Teapo's sources in this case --->
+<script data-path='/src/teapo.ts' type='text/html'>/// <reference path='typings/codemirror.d.ts' />
+/// <reference path='typings/typescriptServices.d.ts' />
+
+/// <reference path='ko.ts' />
+/// <reference path='shell.ts' />
+
+function start() {
+  teapo.registerKnockoutBindings(ko);
+
+  var viewModel = new teapo.ApplicationShell();
+
+  var pageElement: HTMLElement = null;
+
+  for (var i = 0; i < document.body.childNodes.length; i++) {
+    var e = <HTMLElement>document.body.childNodes.item(i);
+    if (e && e.tagName && e.tagName.toLowerCase()!=='script') {
+      if (e.className && e.className.indexOf('teapo-page')>=0) {
+        pageElement = e;
+        continue;
+      }
+
+      document.body.removeChild(e);
+      i--;
+    }
+  }
+
+  ko.renderTemplate('page-template', viewModel, null, pageElement);
+}
+
+start();</script>
+<script data-path='/src/shell.ts' type='text/html'>/// <reference path='typings/knockout.d.ts' />
+
+/// <reference path='editor.ts' />
+/// <reference path='files.ts' />
+/// <reference path='persistence.ts' />
+
+module teapo {
+  export class ApplicationShell {
+
+    fileList: FileList = null;
+
+    private _storage: DocumentStorage = null;
+    private _selectedDocState: DocumentState = null;
+    private _editorElement: HTMLElement = null;
+    private _host: HTMLElement = null;
+
+    constructor() {
+      this._storage = new DocumentStorage();
+      this._storage.entryResolver = this.fileList;
+  
+      this.fileList = new FileList(this._storage);
+  
+      this.fileList.selectedFile.subscribe((fileEntry) => this._fileSelected(fileEntry));
+    }
+
+    private _fileSelected(fileEntry: FileEntry) {
+      var newDocState: DocumentState = null;
+      if (fileEntry)
+        newDocState = this._storage.getDocument(fileEntry.fullPath());
+
+      if (this._selectedDocState) {
+        this._selectedDocState.editor().close();
+      }
+
+      var newEditorElement: HTMLElement = null;
+      if (newDocState) {
+        newEditorElement = newDocState.editor().open();
+      }
+
+      if (newEditorElement!==this._editorElement) {
+        var oldEditorElement= this._editorElement;
+        this._editorElement = newEditorElement;
+        if (oldEditorElement)
+          this._host.removeChild(oldEditorElement);
+        if (newEditorElement)
+          this._host.appendChild(newEditorElement);
+      }
+    }
+  }
+}</script>
+<script data-path='/src/files.ts' type='text/html'>/// <reference path='typings/knockout.d.ts' />
 /// <reference path='persistence.ts' />
 
 module teapo {
@@ -91801,501 +91894,7 @@ module teapo {
     return pathMid;
   }
 }</script>
-  <script data-path='/src/shell.ts' type='text/html'>/// <reference path='typings/knockout.d.ts' />
-/// <reference path='persistence.ts' />
-
-module teapo {
-
-  /**
-   * File list or tree ViewModel.
-   */
-  export class FileList {
-
-    folders = ko.observableArray<FolderEntry>();
-    files = ko.observableArray<FileEntry>();
-    selectedFile = ko.observable<FileEntry>(null);
-
-    private _filesByFullPath: { [fullPath: string]: FileEntry; } = {};
-
-    constructor(private _storage: DocumentStorage) {
-      var fileNames = this._storage.documentNames();
-      for (var i = 0; i < fileNames.length; i++) {
-        this._addFileEntry(fileNames[i]);
-      }
-    }
-
-    getFileEntry(fullPath: string): FileEntry {
-      return this._filesByFullPath[fullPath];
-    }
-
-    private _addFileEntry(fullPath: string): void {
-      var pathParts = normalizePath(fullPath);
-      if (pathParts.length===0)
-        return; // empty path - noop
-
-      var parent: RuntimeFolderEntry = null;
-      var folders = this.folders;
-      var files = this.files;
-
-      for (var i = 0; i < pathParts.length-1; i++) {
-        var folder = this._insertOrLookupFolder(parent, folders, pathParts, i);
-
-        folders = folder.folders;
-        files = folder.files;
-        parent = folder;
-      }
-
-      var fileName = pathParts[pathParts.length-1];
-
-      var fileArray = files();
-      var fileIndex = insertionIndexOfEntry(fileArray, fileName);
-      var file = <RuntimeFileEntry>fileArray[fileIndex];
-
-      if (file && file.name()===fileName)
-        throw new Error('File already exists: '+file.fullPath()+'.');
-
-      file = new RuntimeFileEntry(
-        '/'+pathParts.join('/'),
-        fileName,
-        parent,
-        this,
-        () => this._handleFileClick(file));
-
-      files.splice(fileIndex, 0, file);
-    }
-
-    private _insertOrLookupFolder(
-      parent: RuntimeFolderEntry,
-      folders: KnockoutObservableArray<FolderEntry>,
-      pathParts: string[],
-      i: number): RuntimeFolderEntry {
-      var folderName = pathParts[i];
-
-      var folderArray = folders();
-      var folderIndex = insertionIndexOfEntry(folderArray, folderName);
-      var folder = <RuntimeFolderEntry>folderArray[folderIndex];
-
-      if (!folder || folder.name()!==folderName) {
-        var folderPath = '/'+pathParts.slice(0,i+1).join('/');
-        folder = new RuntimeFolderEntry(
-          folderPath,
-          folderName,
-          parent,
-          this,
-          () => this._handleFolderClick(folder));
-        folders.splice(folderIndex, 0, folder);
-      }
-
-      return folder;
-    }
-
-    private _handleFolderClick(folder: RuntimeFolderEntry) {
-    }
-
-    private _handleFileClick(file: RuntimeFileEntry) {
-      this._updateSelectionProperties(file);
-    }
-
-    private _updateSelectionProperties(newSelectedFile: RuntimeFileEntry) {
-
-      var selectFolders: { [fullPath: string]: FolderEntry; } = {};
-      if (newSelectedFile) {
-        var f = newSelectedFile.parent();
-        while (f) {
-          selectFolders[f.fullPath()] = f;
-          if (!f.containsSelectedFile())
-            f.containsSelectedFile(true);
-        }
-        newSelectedFile.isSelected(true);
-      }
-
-      if (this.selectedFile()) {
-        var f = this.selectedFile().parent();
-        while (f) {
-          if (!selectFolders[f.fullPath()] && f.containsSelectedFile())
-            f.containsSelectedFile(false);
-          f = f.parent();
-        }
-        this.selectedFile().isSelected(false);
-      }
-
-      this.selectedFile(newSelectedFile);
-    }
-  }
-
-  /**
-   * Folder entry in file list or tree.
-   */
-  export interface FolderEntry {
-
-    fullPath(): string;
-    name(): string;
-    parent(): FolderEntry;
-
-    folders: KnockoutObservableArray<FolderEntry>;
-    files: KnockoutObservableArray<FileEntry>;
-
-    containsSelectedFile: KnockoutObservable<boolean>;
-
-    handleClick(): void;
-  }
-
-  /**
-   * File entry in file list or tree.
-   */
-  export interface FileEntry {
-
-    fullPath(): string;
-    name(): string;
-    parent(): FolderEntry;
-
-    isSelected: KnockoutObservable<boolean>;
-
-    handleClick(): void;
-  }
-
-  class RuntimeFolderEntry implements teapo.FolderEntry {
-
-    folders = ko.observableArray<teapo.FolderEntry>();
-    files = ko.observableArray<teapo.FileEntry>();
-    containsSelectedFile = ko.observable<boolean>(false);
-
-    constructor(
-      private _fullPath: string,
-      private _name: string,
-      private _parent: FolderEntry,
-      private _owner: FileList,
-      private _handleClick: () => void) {
-      //
-    }
-
-    fullPath(): string { return this._fullPath; }
-    name(): string { return this._name; }
-    parent(): FolderEntry { return this._parent; }
-
-    handleClick(): void {
-      this._handleClick();
-    }
- }
-
-  class RuntimeFileEntry implements teapo.FileEntry {
-
-    isSelected = ko.observable<boolean>(false);
-
-    constructor(
-      private _fullPath: string,
-      private _name: string,
-      private _parent: FolderEntry,
-      private _owner: FileList,
-      private _handleClick: () => void) {
-      //
-    }
-
-    fullPath(): string { return this._fullPath; }
-    name(): string { return this._name; }
-    parent(): FolderEntry { return this._parent; }
-
-    handleClick(): void {
-      this._handleClick();
-    }
-  }
-
-  function insertionIndexOfEntry(entries: { name(): string; }[], name: string): number {
-    for (var i = 0; i < entries.length; i++) {
-      var entryName = entries[i].name();
-      if (entryName >= name)
-        return i;
-    }
-    return entries.length;
-  }
-
-  /**
-   * Convert string path into an array of path parts,
-   * processing '..' as necessary.
-   */
-  function normalizePath(path: string): string[] {
-    if (!path) return [];
-
-    var pathMid = stripOuterSlashes(path);
-    var split = pathMid.split('/');
-
-    var result: string[] = null;
-    for (var i = 0; i < split.length; i++) {
-      if (split[i]==='..') {
-        if (result.length)
-          result.length--;
-        continue;
-      }
-      else if (split[i]==='.' || split[i]==='') {
-        continue;
-      }
-      else {
-        result.push(split[i]);
-      }
-    }
-  }
-
-  function stripOuterSlashes(path: string) {
-    var start = 0;
-    while (path.charAt(start)==='/')
-      start ++;
-
-    var end = Math.max(start, path.length-1);
-    while (end>=start && path.charAt(end)==='/')
-      end--;
-
-    var pathMid = start===0 && end===path.length-1 ? path : path.slice(start,end);
-    return pathMid;
-  }
-}</script>
-  <script data-path='/src/files.ts' type='text/html'>/// <reference path='typings/knockout.d.ts' />
-/// <reference path='persistence.ts' />
-
-module teapo {
-
-  /**
-   * File list or tree ViewModel.
-   */
-  export class FileList {
-
-    folders = ko.observableArray<FolderEntry>();
-    files = ko.observableArray<FileEntry>();
-    selectedFile = ko.observable<FileEntry>(null);
-
-    private _filesByFullPath: { [fullPath: string]: FileEntry; } = {};
-
-    constructor(private _storage: DocumentStorage) {
-      var fileNames = this._storage.documentNames();
-      for (var i = 0; i < fileNames.length; i++) {
-        this._addFileEntry(fileNames[i]);
-      }
-    }
-
-    getFileEntry(fullPath: string): FileEntry {
-      return this._filesByFullPath[fullPath];
-    }
-
-    private _addFileEntry(fullPath: string): void {
-      var pathParts = normalizePath(fullPath);
-      if (pathParts.length===0)
-        return; // empty path - noop
-
-      var parent: RuntimeFolderEntry = null;
-      var folders = this.folders;
-      var files = this.files;
-
-      for (var i = 0; i < pathParts.length-1; i++) {
-        var folder = this._insertOrLookupFolder(parent, folders, pathParts, i);
-
-        folders = folder.folders;
-        files = folder.files;
-        parent = folder;
-      }
-
-      var fileName = pathParts[pathParts.length-1];
-
-      var fileArray = files();
-      var fileIndex = insertionIndexOfEntry(fileArray, fileName);
-      var file = <RuntimeFileEntry>fileArray[fileIndex];
-
-      if (file && file.name()===fileName)
-        throw new Error('File already exists: '+file.fullPath()+'.');
-
-      file = new RuntimeFileEntry(
-        '/'+pathParts.join('/'),
-        fileName,
-        parent,
-        this,
-        () => this._handleFileClick(file));
-
-      files.splice(fileIndex, 0, file);
-    }
-
-    private _insertOrLookupFolder(
-      parent: RuntimeFolderEntry,
-      folders: KnockoutObservableArray<FolderEntry>,
-      pathParts: string[],
-      i: number): RuntimeFolderEntry {
-      var folderName = pathParts[i];
-
-      var folderArray = folders();
-      var folderIndex = insertionIndexOfEntry(folderArray, folderName);
-      var folder = <RuntimeFolderEntry>folderArray[folderIndex];
-
-      if (!folder || folder.name()!==folderName) {
-        var folderPath = '/'+pathParts.slice(0,i+1).join('/');
-        folder = new RuntimeFolderEntry(
-          folderPath,
-          folderName,
-          parent,
-          this,
-          () => this._handleFolderClick(folder));
-        folders.splice(folderIndex, 0, folder);
-      }
-
-      return folder;
-    }
-
-    private _handleFolderClick(folder: RuntimeFolderEntry) {
-    }
-
-    private _handleFileClick(file: RuntimeFileEntry) {
-      this._updateSelectionProperties(file);
-    }
-
-    private _updateSelectionProperties(newSelectedFile: RuntimeFileEntry) {
-
-      var selectFolders: { [fullPath: string]: FolderEntry; } = {};
-      if (newSelectedFile) {
-        var f = newSelectedFile.parent();
-        while (f) {
-          selectFolders[f.fullPath()] = f;
-          if (!f.containsSelectedFile())
-            f.containsSelectedFile(true);
-        }
-        newSelectedFile.isSelected(true);
-      }
-
-      if (this.selectedFile()) {
-        var f = this.selectedFile().parent();
-        while (f) {
-          if (!selectFolders[f.fullPath()] && f.containsSelectedFile())
-            f.containsSelectedFile(false);
-          f = f.parent();
-        }
-        this.selectedFile().isSelected(false);
-      }
-
-      this.selectedFile(newSelectedFile);
-    }
-  }
-
-  /**
-   * Folder entry in file list or tree.
-   */
-  export interface FolderEntry {
-
-    fullPath(): string;
-    name(): string;
-    parent(): FolderEntry;
-
-    folders: KnockoutObservableArray<FolderEntry>;
-    files: KnockoutObservableArray<FileEntry>;
-
-    containsSelectedFile: KnockoutObservable<boolean>;
-
-    handleClick(): void;
-  }
-
-  /**
-   * File entry in file list or tree.
-   */
-  export interface FileEntry {
-
-    fullPath(): string;
-    name(): string;
-    parent(): FolderEntry;
-
-    isSelected: KnockoutObservable<boolean>;
-
-    handleClick(): void;
-  }
-
-  class RuntimeFolderEntry implements teapo.FolderEntry {
-
-    folders = ko.observableArray<teapo.FolderEntry>();
-    files = ko.observableArray<teapo.FileEntry>();
-    containsSelectedFile = ko.observable<boolean>(false);
-
-    constructor(
-      private _fullPath: string,
-      private _name: string,
-      private _parent: FolderEntry,
-      private _owner: FileList,
-      private _handleClick: () => void) {
-      //
-    }
-
-    fullPath(): string { return this._fullPath; }
-    name(): string { return this._name; }
-    parent(): FolderEntry { return this._parent; }
-
-    handleClick(): void {
-      this._handleClick();
-    }
- }
-
-  class RuntimeFileEntry implements teapo.FileEntry {
-
-    isSelected = ko.observable<boolean>(false);
-
-    constructor(
-      private _fullPath: string,
-      private _name: string,
-      private _parent: FolderEntry,
-      private _owner: FileList,
-      private _handleClick: () => void) {
-      //
-    }
-
-    fullPath(): string { return this._fullPath; }
-    name(): string { return this._name; }
-    parent(): FolderEntry { return this._parent; }
-
-    handleClick(): void {
-      this._handleClick();
-    }
-  }
-
-  function insertionIndexOfEntry(entries: { name(): string; }[], name: string): number {
-    for (var i = 0; i < entries.length; i++) {
-      var entryName = entries[i].name();
-      if (entryName >= name)
-        return i;
-    }
-    return entries.length;
-  }
-
-  /**
-   * Convert string path into an array of path parts,
-   * processing '..' as necessary.
-   */
-  function normalizePath(path: string): string[] {
-    if (!path) return [];
-
-    var pathMid = stripOuterSlashes(path);
-    var split = pathMid.split('/');
-
-    var result: string[] = null;
-    for (var i = 0; i < split.length; i++) {
-      if (split[i]==='..') {
-        if (result.length)
-          result.length--;
-        continue;
-      }
-      else if (split[i]==='.' || split[i]==='') {
-        continue;
-      }
-      else {
-        result.push(split[i]);
-      }
-    }
-  }
-
-  function stripOuterSlashes(path: string) {
-    var start = 0;
-    while (path.charAt(start)==='/')
-      start ++;
-
-    var end = Math.max(start, path.length-1);
-    while (end>=start && path.charAt(end)==='/')
-      end--;
-
-    var pathMid = start===0 && end===path.length-1 ? path : path.slice(start,end);
-    return pathMid;
-  }
-}</script>
-  <script data-path='/src/editor.ts' type='text/html'>/// <reference path='persistence.ts' />
+<script data-path='/src/editor.ts' type='text/html'>/// <reference path='persistence.ts' />
 
 module teapo {
 
@@ -92369,7 +91968,7 @@ module teapo {
     "Plain Text": new TextDocumentType()
   };
 }</script>
-  <script data-path='/src/persistence.ts' type='text/html'>/// <reference path='editor.ts' />
+<script data-path='/src/persistence.ts' type='text/html'>/// <reference path='editor.ts' />
 /// <reference path='files.ts' />
 
 module teapo {
@@ -92738,7 +92337,8 @@ module teapo {
   }
 }</script>
 
-  <script data-path='/src/typings/codemirror.d.ts' type='text/html'>declare function CodeMirror(host: HTMLElement, options?: CodeMirror.EditorConfiguration): CodeMirror.Editor;
+<!-- These are embedded files with paths too, declarations for CodeMirror and Knockout --->
+<script data-path='/src/typings/codemirror.d.ts' type='text/html'>declare function CodeMirror(host: HTMLElement, options?: CodeMirror.EditorConfiguration): CodeMirror.Editor;
 declare function CodeMirror(callback: (host: HTMLElement) => void , options?: CodeMirror.EditorConfiguration): CodeMirror.Editor;
 
 declare module CodeMirror {
@@ -93526,7 +93126,7 @@ declare module CodeMirror {
     }
 }
 </script>
-  <script data-path='/src/typings/knockout.d.ts' type='text/html'>// Type definitions for Knockout 2.3
+<script data-path='/src/typings/knockout.d.ts' type='text/html'>// Type definitions for Knockout 2.3
 // Project: http://knockoutjs.com
 // Definitions by: Boris Yankov <https://github.com/borisyankov/>
 // Definitions: https://github.com/borisyankov/DefinitelyTyped
@@ -94045,5 +93645,6 @@ declare module "knockout" {
 
 declare var ko: KnockoutStatic;
 </script>
+
 <body>
 </html>

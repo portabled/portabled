@@ -681,7 +681,7 @@ var teapo;
 /// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='ko.ts' />
 /// <reference path='shell.ts' />
-window.onload = function () {
+function start() {
     teapo.registerKnockoutBindings(ko);
 
     var viewModel = new teapo.ApplicationShell();
@@ -702,5 +702,7 @@ window.onload = function () {
     }
 
     ko.renderTemplate('page-template', viewModel, null, pageElement);
-};
+}
+
+start();
 //# sourceMappingURL=teapo.js.map

@@ -1,48 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Teapo</title>
-  <meta name="viewport" content="width=600, user-scalable=no">
-  <style inline='imports/codemirror/codemirror.css'></style>
-  <style inline='imports/codemirror/codemirror.css' ></style>
-  <style inline='imports/codemirror/show-hint.css' ></style>
-  <style inline='layout/teapo.css'></style>
+<title>Teapo</title>
+<meta name="viewport" content="width=600, user-scalable=no">
+<style>###imports/codemirror/codemirror.css###</style>
+<style>###imports/codemirror/codemirror.css###</style>
+<style>###imports/codemirror/show-hint.css###</style>
+<style>###layout/teapo.css###</style>
 </head>
 <body>
   <div class=teapo-page>
   </div>
 
-  <script inline='imports/codemirror/codemirror.js'></script>
-  <script inline='imports/codemirror/javascript.js'></script>
-  <script inline='imports/codemirror/css.js'></script>
-  <script inline='imports/codemirror/xml.js'></script>
-  <script inline='imports/codemirror/htmlmixed.js'></script>
-  <script inline='imports/codemirror/htmlembedded.js'></script>
-  <script inline='imports/codemirror/show-hint.js'></script>
-  <script inline='imports/codemirror/javascript-hint.js'></script>
-  <script inline='imports/codemirror/javascript-hint.js'></script>
-  <script inline='imports/codemirror/comment.js'></script>
-  <script inline='imports/codemirror/continuecomment.js'></script>
-  <script inline='imports/codemirror/matchbrackets.js'></script>
-  <script inline='imports/codemirror/closebrackets.js'></script>
-  <script inline='imports/codemirror/trailingspace.js'></script>
-  <script inline='imports/codemirror/closetag.js'></script>
-  <script inline='imports/codemirror/active-line.js'></script>
-  <script inline='imports/knockout/knockout-3.0.0.js'></script>
-  <script inline='teapo.js'></script>
-  <script inline='imports/typescript/typescriptServices.js'></script>
-  <script id=page-template type='text/html' inline='layout/page.html'></script>
-  <script id=folder-template type='text/html' inline='layout/folder.html'></script>
-  <script id=file-template type='text/html' inline='layout/file.html'></script>
-  
-  <script data-path='#lib.d.ts' inline='imports/typescript/lib.d.ts' type='text/html'></script>
-  <script data-path='/src/files.ts' type='text/html' inline='files.ts'></script>
-  <script data-path='/src/shell.ts' type='text/html' inline='files.ts'></script>
-  <script data-path='/src/files.ts' type='text/html' inline='files.ts'></script>
-  <script data-path='/src/editor.ts' type='text/html' inline='editor.ts'></script>
-  <script data-path='/src/persistence.ts' type='text/html' inline='persistence.ts'></script>
+<!-- Knockout HTML templates -->
+<script id=page-template type='text/html'>###layout/page.html###</script>
+<script id=folder-template type='text/html'>###layout/folder.html###</script>
+<script id=file-template type='text/html'>###layout/file.html###</script>
 
-  <script data-path='/src/typings/codemirror.d.ts' type='text/html' inline='typings/codemirror.d.ts'></script>
-  <script data-path='/src/typings/knockout.d.ts' type='text/html' inline='typings/knockout.d.ts'></script>
+<!-- External JS libraries: CodeMirror and Knockout --->
+<script>###imports/codemirror/codemirror.js###</script>
+<script>###imports/codemirror/javascript.js###</script>
+<script>###imports/codemirror/css.js###</script>
+<script>###imports/codemirror/xml.js###</script>
+<script>###imports/codemirror/htmlmixed.js###</script>
+<script>###imports/codemirror/htmlembedded.js###</script>
+<script>###imports/codemirror/show-hint.js###</script>
+<script>###imports/codemirror/javascript-hint.js###</script>
+<script>###imports/codemirror/javascript-hint.js###</script>
+<script>###imports/codemirror/comment.js###</script>
+<script>###imports/codemirror/continuecomment.js###</script>
+<script>###imports/codemirror/matchbrackets.js###</script>
+<script>###imports/codemirror/closebrackets.js###</script>
+<script>###imports/codemirror/trailingspace.js###</script>
+<script>###imports/codemirror/closetag.js###</script>
+<script>###imports/codemirror/active-line.js###</script>
+<script>###imports/knockout/knockout-3.0.0.js###</script>
+
+<!-- Teapo code (this will actually execute stuff straight away) -->
+<script>###teapo.js###</script>
+
+<!-- TypeScript services, taken from TS bin directory verbatim --->
+<script>###imports/typescript/typescriptServices.js###</script>
+
+
+<!-- TypeScript definitions lib.d.ts, taken from TS bin directory verbatim ---> 
+<script data-path='#lib.d.ts' type='text/html'>###imports/typescript/lib.d.ts###</script>
+
+<!-- Embedded files with paths, Teapo's sources in this case --->
+<script data-path='/src/teapo.ts' type='text/html'>###teapo.ts###</script>
+<script data-path='/src/shell.ts' type='text/html'>###shell.ts###</script>
+<script data-path='/src/files.ts' type='text/html'>###files.ts###</script>
+<script data-path='/src/editor.ts' type='text/html'>###editor.ts###</script>
+<script data-path='/src/persistence.ts' type='text/html'>###persistence.ts###</script>
+
+<!-- These are embedded files with paths too, declarations for CodeMirror and Knockout --->
+<script data-path='/src/typings/codemirror.d.ts' type='text/html'>###typings/codemirror.d.ts###</script>
+<script data-path='/src/typings/knockout.d.ts' type='text/html'>###typings/knockout.d.ts###</script>
+
 <body>
 </html>

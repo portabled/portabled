@@ -52,7 +52,7 @@ function inline(htmlFile, htmlOutput) {
     var html = fs.readFileSync(htmlFile)+'';
     var convertedOutput = [];
     var offset = 0;
-    var srcRegex = / inline=['"]([^'"]*)['"]/g;
+    var srcRegex = /###(.*)###/g;
     var match;
 
     console.log('Inlining '+htmlFile+'...');
@@ -62,11 +62,9 @@ function inline(htmlFile, htmlOutput) {
         continue;
       }
 
-      var closeElementPos = html.indexOf('</',srcRegex.lastIndex);
       convertedOutput.push(html.slice(offset, match.index));
-      convertedOutput.push(html.slice(srcRegex.lastIndex, closeElementPos));
       convertedOutput.push(fs.readFileSync(match[1])+'');
-      offset = closeElementPos;
+      offset = match.index+match[0].length;
 
       console.log('  '+htmlFile+' -> '+match[1]);
       watchFileNames.push(match[1]);
