@@ -2059,15 +2059,20 @@ var teapo;
 /// <reference path='persistence.ts' />
 var teapo;
 (function (teapo) {
-    var DocumentType = {};
+    var DocumentType = {
+        "Plain Text": new TextDocumentType()
+    };
 
     var TextDocumentType = (function () {
         function TextDocumentType() {
             this._editor = null;
             this._editorElement = null;
         }
-        TextDocumentType.prototype.editDocument = function (doc) {
-            return null;
+        TextDocumentType.prototype.editDocument = function (docState) {
+            if (!this._editor)
+                this._initEditor();
+
+            return new TextEditor(this._editor, this._editorElement, docState);
         };
 
         TextDocumentType.prototype._initEditor = function () {
@@ -2079,6 +2084,37 @@ var teapo;
             }, options);
         };
         return TextDocumentType;
+    })();
+
+    var TextEditor = (function () {
+        function TextEditor(_editor, _editorElement, _docState) {
+            this._editor = _editor;
+            this._editorElement = _editorElement;
+            this._docState = _docState;
+            this._doc = null;
+        }
+        TextEditor.prototype.open = function () {
+            if (!this._doc) {
+                this._doc = this._editor.getDoc();
+                this._doc.setValue(this._docState.getProperty(null));
+
+                var historyStr = this._docState.getProperty('history');
+                if (historyStr) {
+                    try  {
+                        var history = JSON.parse(historyStr);
+                    } catch (e) {
+                    }
+                    if (history)
+                        this._doc.setHistory(history);
+                }
+            }
+
+            return this._editorElement;
+        };
+
+        TextEditor.prototype.close = function () {
+        };
+        return TextEditor;
     })();
 })(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
