@@ -101,6 +101,7 @@ var teapo;
                     selectFolders[f.fullPath()] = f;
                     if (!f.containsSelectedFile())
                         f.containsSelectedFile(true);
+                    f = f.parent();
                 }
                 newSelectedFile.isSelected(true);
             }
