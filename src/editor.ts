@@ -1,9 +1,14 @@
+/// <reference path='typings/codemirror.d.ts' />
+
 /// <reference path='persistence.ts' />
 
 module teapo {
 
+  // this is in fact of DocumentTypeRegistry
   export var DocumentEditorType: {
+
     // [name: string]: DocumentEditorType;
+
     getType(fullPath: string): DocumentEditorType;
   };
 
@@ -41,6 +46,12 @@ module teapo {
     constructor() {
     }
 
+    static standardEditorConfiguration(): CodeMirror.EditorConfiguration {
+      return {
+        
+      };
+    }
+
     canEdit(fullPath: string) {
       return true;
     }
@@ -53,8 +64,7 @@ module teapo {
     }
 
     private _initEditor() {
-      var options = {
-      };
+      var options = TextDocumentEditorType.standardEditorConfiguration();
 
       this._editor = CodeMirror(
         (editorElement) => this._editorElement = editorElement,

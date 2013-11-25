@@ -585,6 +585,7 @@ html {
   left: 0px; top: 0px; right: 0px; bottom: 0px;
   overflow: hidden;
 }
+
 .teapo-file-list {
   position: fixed;
   width: 20%;
@@ -604,6 +605,7 @@ html {
   border: solid 2px white;
   border-right: none;
 }
+
 .teapo-status {
   position: fixed;
   bottom: 0px;
@@ -614,6 +616,7 @@ html {
   border-left: solid 0.5em white;
   font-size: 95%;
 }
+
 .teapo-syntax-error {
   text-decoration: underline;
   background: #ffeaa2;
@@ -625,6 +628,7 @@ html {
   width: 0.5em;
   background: silver;
 }
+
 .teapo-content {
   position: fixed;
   left: 20%;
@@ -637,6 +641,7 @@ html {
   font: inherit;
   background: white;
 }
+
 .CodeMirror {
   height: 100%;
 }
@@ -24143,12 +24148,17 @@ module teapo {
     return pathMid;
   }
 }</script>
-<script data-path='/src/editor.ts' type='text/html'>/// <reference path='persistence.ts' />
+<script data-path='/src/editor.ts' type='text/html'>/// <reference path='typings/codemirror.d.ts' />
+
+/// <reference path='persistence.ts' />
 
 module teapo {
 
+  // this is in fact of DocumentTypeRegistry
   export var DocumentEditorType: {
+
     // [name: string]: DocumentEditorType;
+
     getType(fullPath: string): DocumentEditorType;
   };
 
@@ -24186,6 +24196,12 @@ module teapo {
     constructor() {
     }
 
+    static standardEditorConfiguration(): CodeMirror.EditorConfiguration {
+      return {
+        
+      };
+    }
+
     canEdit(fullPath: string) {
       return true;
     }
@@ -24198,8 +24214,7 @@ module teapo {
     }
 
     private _initEditor() {
-      var options = {
-      };
+      var options = TextDocumentEditorType.standardEditorConfiguration();
 
       this._editor = CodeMirror(
         (editorElement) => this._editorElement = editorElement,
@@ -93578,9 +93593,11 @@ var teapo;
         return s;
     }
 })(teapo || (teapo = {}));
+/// <reference path='typings/codemirror.d.ts' />
 /// <reference path='persistence.ts' />
 var teapo;
 (function (teapo) {
+    // this is in fact of DocumentTypeRegistry
     teapo.DocumentEditorType;
 
     var DocumentEditorTypeRegistry = (function () {
@@ -93607,6 +93624,10 @@ var teapo;
             // (and since the editor is shared, we need to share this flag too)
             this._firstUse = { isFirstUse: true };
         }
+        TextDocumentEditorType.standardEditorConfiguration = function () {
+            return {};
+        };
+
         TextDocumentEditorType.prototype.canEdit = function (fullPath) {
             return true;
         };
@@ -93620,7 +93641,7 @@ var teapo;
 
         TextDocumentEditorType.prototype._initEditor = function () {
             var _this = this;
-            var options = {};
+            var options = TextDocumentEditorType.standardEditorConfiguration();
 
             this._editor = CodeMirror(function (editorElement) {
                 return _this._editorElement = editorElement;

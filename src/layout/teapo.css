@@ -13,6 +13,7 @@ html {
   left: 0px; top: 0px; right: 0px; bottom: 0px;
   overflow: hidden;
 }
+
 .teapo-file-list {
   position: fixed;
   width: 20%;
@@ -32,6 +33,7 @@ html {
   border: solid 2px white;
   border-right: none;
 }
+
 .teapo-status {
   position: fixed;
   bottom: 0px;
@@ -42,6 +44,7 @@ html {
   border-left: solid 0.5em white;
   font-size: 95%;
 }
+
 .teapo-syntax-error {
   text-decoration: underline;
   background: #ffeaa2;
@@ -53,6 +56,7 @@ html {
   width: 0.5em;
   background: silver;
 }
+
 .teapo-content {
   position: fixed;
   left: 20%;
@@ -65,6 +69,7 @@ html {
   font: inherit;
   background: white;
 }
+
 .CodeMirror {
   height: 100%;
 }

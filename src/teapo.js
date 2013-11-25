@@ -574,9 +574,11 @@ var teapo;
         return s;
     }
 })(teapo || (teapo = {}));
+/// <reference path='typings/codemirror.d.ts' />
 /// <reference path='persistence.ts' />
 var teapo;
 (function (teapo) {
+    // this is in fact of DocumentTypeRegistry
     teapo.DocumentEditorType;
 
     var DocumentEditorTypeRegistry = (function () {
@@ -603,6 +605,10 @@ var teapo;
             // (and since the editor is shared, we need to share this flag too)
             this._firstUse = { isFirstUse: true };
         }
+        TextDocumentEditorType.standardEditorConfiguration = function () {
+            return {};
+        };
+
         TextDocumentEditorType.prototype.canEdit = function (fullPath) {
             return true;
         };
@@ -616,7 +622,7 @@ var teapo;
 
         TextDocumentEditorType.prototype._initEditor = function () {
             var _this = this;
-            var options = {};
+            var options = TextDocumentEditorType.standardEditorConfiguration();
 
             this._editor = CodeMirror(function (editorElement) {
                 return _this._editorElement = editorElement;
