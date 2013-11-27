@@ -2199,7 +2199,7 @@ window.CodeMirror = (function() {
     var oldCSS = display.input.style.cssText;
     display.inputDiv.style.position = "absolute";
     display.input.style.cssText = "position: fixed; width: 30px; height: 30px; top: " + (e.clientY - 5) +
-      "px; left: " + (e.clientX - 5) + "px; z-index: 1000; background: white; outline: none;" +
+      "px; left: " + (e.clientX - 5) + "px; z-index: 1000; background: transparent; outline: none;" +
       "border-width: 0; outline: none; overflow: hidden; opacity: .05; -ms-opacity: .05; filter: alpha(opacity=5);";
     focusInput(cm);
     resetInput(cm, true);
@@ -2224,7 +2224,7 @@ window.CodeMirror = (function() {
         if (!ie || ie_lt9) prepareSelectAllHack();
         clearTimeout(detectingSelectAll);
         var i = 0, poll = function(){
-          if (display.prevInput == " " && display.input.selectionStart == 0)
+          if (display.prevInput == "\u200b" && display.input.selectionStart == 0)
             operation(cm, commands.selectAll)(cm);
           else if (i++ < 10) detectingSelectAll = setTimeout(poll, 500);
           else resetInput(cm);
@@ -4168,7 +4168,7 @@ window.CodeMirror = (function() {
       return true;
     for (var sp, i = 0; i < line.markedSpans.length; ++i) {
       sp = line.markedSpans[i];
-      if (sp.marker.collapsed && !sp.marker.replacedWith && sp.from == span.to &&
+      if (sp != span && sp.marker.collapsed && !sp.marker.replacedWith && sp.from == span.to &&
           (sp.marker.inclusiveLeft || span.marker.inclusiveRight) &&
           lineIsHiddenInner(doc, line, sp)) return true;
     }
@@ -5712,22 +5712,22 @@ window.CodeMirror = (function() {
   }
   var bidiOther;
   function getBidiPartAt(order, pos) {
+    bidiOther = null;
     for (var i = 0, found; i < order.length; ++i) {
       var cur = order[i];
-      if (cur.from < pos && cur.to > pos) { bidiOther = null; return i; }
-      if (cur.from == pos || cur.to == pos) {
+      if (cur.from < pos && cur.to > pos) return i;
+      if ((cur.from == pos || cur.to == pos)) {
         if (found == null) {
           found = i;
         } else if (compareBidiLevel(order, cur.level, order[found].level)) {
-          bidiOther = found;
+          if (cur.from != cur.to) bidiOther = found;
           return i;
         } else {
-          bidiOther = i;
+          if (cur.from != cur.to) bidiOther = i;
           return found;
         }
       }
     }
-    bidiOther = null;
     return found;
   }
 

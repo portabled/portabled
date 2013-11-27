@@ -33,6 +33,11 @@ var teapo;
             return this._filesByFullPath[fullPath];
         };
 
+        FileList.prototype.createFileEntry = function (fullPath) {
+            this._addFileEntry(fullPath);
+            return this.getFileEntry(fullPath);
+        };
+
         FileList.prototype._addFileEntry = function (fullPath) {
             var _this = this;
             var pathParts = normalizePath(fullPath);
@@ -345,6 +350,11 @@ var teapo;
         DocumentState.prototype.editor = function () {
             if (!this._docState.editor)
                 this._docState.editor = this.type().editDocument(this);
+
+            return this._docState.editor;
+        };
+
+        DocumentState.prototype.currentEditor = function () {
             return this._docState.editor;
         };
 
@@ -593,133 +603,19 @@ var teapo;
         function DocumentEditorTypeRegistry() {
         }
         DocumentEditorTypeRegistry.prototype.getType = function (fullPath) {
-            for (var k in teapo.DocumentEditorType)
-                if (teapo.DocumentEditorType.hasOwnProperty(k)) {
-                    var t = teapo.DocumentEditorType[k];
-                    if (t.canEdit && t.canEdit(fullPath))
-                        return t;
-                }
+            var reverse = Object.keys(teapo.DocumentEditorType);
+            for (var i = reverse.length - 1; i >= 0; i--) {
+                var t = teapo.DocumentEditorType[reverse[i]];
+                if (t.canEdit && t.canEdit(fullPath))
+                    return t;
+            }
 
             return null;
         };
         return DocumentEditorTypeRegistry;
     })();
 
-    var TextDocumentEditorType = (function () {
-        function TextDocumentEditorType() {
-            this._editor = null;
-            this._editorElement = null;
-            // codemirror needs another kick when first time displayed
-            // (and since the editor is shared, we need to share this flag too)
-            this._firstUse = { isFirstUse: true };
-        }
-        TextDocumentEditorType.standardEditorConfiguration = function () {
-            return {
-                lineNumbers: true,
-                matchBrackets: true,
-                autoCloseBrackets: true,
-                matchTags: true,
-                showTrailingSpace: true,
-                autoCloseTags: true,
-                highlightSelectionMatches: { showToken: /\w/ },
-                styleActiveLine: true,
-                // readOnly: 'nocursor',
-                tabSize: 2,
-                extraKeys: { "Tab": "indentMore", "Shift-Tab": "indentLess" },
-                gutters: ['teapo-errors']
-            };
-        };
-
-        TextDocumentEditorType.prototype.canEdit = function (fullPath) {
-            return true;
-        };
-
-        TextDocumentEditorType.prototype.editDocument = function (docState) {
-            if (!this._editor)
-                this._initEditor();
-
-            return new TextEditor(this._editor, this._editorElement, docState, this._firstUse);
-        };
-
-        TextDocumentEditorType.prototype._initEditor = function () {
-            var _this = this;
-            var options = TextDocumentEditorType.standardEditorConfiguration();
-
-            this._editor = CodeMirror(function (editorElement) {
-                return _this._editorElement = editorElement;
-            }, options);
-        };
-        TextDocumentEditorType.saveTimeout = 600;
-        return TextDocumentEditorType;
-    })();
-
-    var TextEditor = (function () {
-        function TextEditor(_editor, _editorElement, _docState, _firstUse) {
-            this._editor = _editor;
-            this._editorElement = _editorElement;
-            this._docState = _docState;
-            this._firstUse = _firstUse;
-            this._doc = null;
-            this._saveTimeout = null;
-        }
-        TextEditor.prototype.open = function () {
-            var _this = this;
-            if (!this._doc) {
-                var content = this._docState.getProperty(null);
-                if (!content)
-                    content = '';
-
-                if (this._firstUse.isFirstUse) {
-                    this._firstUse.isFirstUse = false;
-                    setTimeout(function () {
-                        _this._editor.refresh();
-                        _this._editor.focus();
-                    }, 1);
-                }
-
-                this._doc = new CodeMirror.Doc(content);
-
-                var historyStr = this._docState.getProperty('history');
-                if (historyStr) {
-                    try  {
-                        var history = JSON.parse(historyStr);
-                    } catch (e) {
-                    }
-                    if (history)
-                        this._doc.setHistory(history);
-                }
-
-                CodeMirror.on(this._doc, 'change', function (instance, change) {
-                    return _this._onchange(change);
-                });
-            }
-
-            this._editor.swapDoc(this._doc);
-            this._editor.focus();
-
-            return this._editorElement;
-        };
-
-        TextEditor.prototype.close = function () {
-        };
-
-        TextEditor.prototype._onchange = function (change) {
-            var _this = this;
-            if (this._saveTimeout)
-                clearTimeout(this._saveTimeout);
-            this._saveTimeout = setTimeout(function () {
-                return _this._save();
-            }, TextDocumentEditorType.saveTimeout);
-        };
-
-        TextEditor.prototype._save = function () {
-            this._docState.setProperty(null, this._doc.getValue());
-        };
-        return TextEditor;
-    })();
-
     teapo.DocumentEditorType = new DocumentEditorTypeRegistry();
-    teapo.DocumentEditorType['Plain Text'] = new TextDocumentEditorType();
 })(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
 /// <reference path='editor.ts' />
@@ -730,11 +626,16 @@ var teapo;
     var ApplicationShell = (function () {
         function ApplicationShell() {
             var _this = this;
+            this.saveDelay = 600;
             this.fileList = null;
             this._storage = null;
             this._selectedDocState = null;
             this._editorElement = null;
             this._host = null;
+            this._saveTimeout = 0;
+            this._saveSelectedFileClosure = function () {
+                return _this._invokeSaveSelectedFile();
+            };
             this._storage = new teapo.DocumentStorage();
             this._storage.entryResolver = this.fileList;
             this._storage.typeResolver = teapo.DocumentEditorType;
@@ -745,47 +646,31 @@ var teapo;
                 return _this._fileSelected(fileEntry);
             });
         }
-        ApplicationShell.prototype.saveZip = function () {
+        ApplicationShell.prototype.newFileClick = function () {
+            var fileName = prompt('New file');
+            if (!fileName)
+                return;
+
+            var fileEntry = this.fileList.createFileEntry(fileName);
+            this._storage.createDocument(fileName);
+            fileEntry.handleClick();
         };
 
-        ApplicationShell.prototype.saveHtml = function () {
-            var html = document.head.parentElement.outerHTML;
-            var result = [];
-            var plainStart = 0;
-            for (var i = 0; i < html.length; i++) {
-                var code = html.charCodeAt(i);
-                if (code < 128)
-                    continue;
+        ApplicationShell.prototype.deleteSelectedFile = function () {
+            if (!this.fileList.selectedFile())
+                return;
 
-                if (i > plainStart)
-                    result.push(html.slice(plainStart, i));
+            if (!confirm('Are you sure dleting ' + this.fileList.selectedFile().name()))
+                return;
+            // TODO: delete the selected file, switch selection somewhere
+        };
 
-                var uriTxt = encodeURIComponent(html.charAt(i));
-                console.log(i, uriTxt, html.charAt(i));
-                for (var j = 1; j < uriTxt.length; j += 3) {
-                    var uriHex = parseInt(uriTxt.slice(j), 16);
-                    result.push(String.fromCharCode(uriHex));
-                }
+        ApplicationShell.prototype.saveFileName = function () {
+            var urlParts = window.location.pathname.split('/');
+            return decodeURI(urlParts[urlParts.length - 1]);
+        };
 
-                plainStart = i;
-            }
-
-            result.push(html.slice(plainStart));
-
-            var totalUtf = result.join('');
-            var base64 = btoa(totalUtf);
-            console.log(totalUtf.length);
-
-            var dataUri = 'data:application/octet-stream;base64,' + base64;
-            try  {
-                var a = document.createElement('a');
-                a.href = dataUri;
-                var slashParts = window.location.pathname.split('/');
-                a.download = slashParts[slashParts.length - 1];
-                a.click();
-            } catch (e) {
-                window.open(dataUri);
-            }
+        ApplicationShell.prototype.saveZip = function () {
         };
 
         ApplicationShell.prototype.attachToHost = function (host) {
@@ -797,17 +682,28 @@ var teapo;
         };
 
         ApplicationShell.prototype._fileSelected = function (fileEntry) {
+            var _this = this;
             var newDocState = null;
             if (fileEntry)
                 newDocState = this._storage.getDocument(fileEntry.fullPath());
 
             if (this._selectedDocState) {
+                // save file if needed before switching
+                if (this._saveTimeout) {
+                    clearTimeout(this._saveTimeout);
+                    this._selectedDocState.editor().save();
+                }
+
+                // close file before switching
                 this._selectedDocState.editor().close();
             }
 
             var newEditorElement = null;
             if (newDocState) {
-                newEditorElement = newDocState.editor().open();
+                var onchanged = function () {
+                    return _this._selectedFileEditorChanged();
+                };
+                newEditorElement = newDocState.editor().open(onchanged);
             }
 
             if (newEditorElement !== this._editorElement) {
@@ -825,14 +721,370 @@ var teapo;
                     this._host.appendChild(newEditorElement);
             }
         };
+
+        ApplicationShell.prototype._selectedFileEditorChanged = function () {
+            if (this._saveTimeout)
+                clearTimeout(this._saveTimeout);
+
+            this._saveTimeout = setTimeout(this._saveSelectedFileClosure, this.saveDelay);
+        };
+
+        ApplicationShell.prototype._invokeSaveSelectedFile = function () {
+            var selectedFileEntry = this.fileList.selectedFile();
+            if (!selectedFileEntry)
+                return;
+
+            var docState = this._storage.getDocument(selectedFileEntry.fullPath());
+            docState.editor().save();
+        };
         return ApplicationShell;
     })();
     teapo.ApplicationShell = ApplicationShell;
 })(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
+/// <reference path='persistence.ts' />
+/// <reference path='editor.ts' />
+var teapo;
+(function (teapo) {
+    var CodeMirrorEditor = (function () {
+        function CodeMirrorEditor(_shared, docState) {
+            this._shared = _shared;
+            this.docState = docState;
+            this._doc = null;
+            this._text = null;
+        }
+        CodeMirrorEditor.standardEditorConfiguration = function () {
+            return {
+                lineNumbers: true,
+                matchBrackets: true,
+                autoCloseBrackets: true,
+                matchTags: true,
+                showTrailingSpace: true,
+                autoCloseTags: true,
+                highlightSelectionMatches: { showToken: /\w/ },
+                styleActiveLine: true,
+                // readOnly: 'nocursor',
+                tabSize: 2,
+                extraKeys: { "Tab": "indentMore", "Shift-Tab": "indentLess" }
+            };
+        };
+
+        CodeMirrorEditor.prototype.open = function (onchange) {
+            this._invokeonchange = onchange;
+
+            var editor = this.editor();
+
+            var element = this._shared.element;
+            if (element && !element.parentElement)
+                setTimeout(function () {
+                    return editor.refresh();
+                }, 1);
+
+            editor.swapDoc(this.doc());
+
+            this.handleOpen();
+
+            return element;
+        };
+
+        CodeMirrorEditor.prototype.save = function () {
+            this.handleSave();
+        };
+
+        CodeMirrorEditor.prototype.close = function () {
+            this._invokeonchange = null;
+            this.handleClose();
+        };
+
+        CodeMirrorEditor.prototype.doc = function () {
+            if (!this._doc)
+                this._initDoc();
+
+            return this._doc;
+        };
+
+        CodeMirrorEditor.prototype.editor = function () {
+            if (!this._shared.editor)
+                this._initEditor();
+
+            return this._shared.editor;
+        };
+
+        CodeMirrorEditor.prototype.text = function () {
+            if (!this._text) {
+                if (this._doc)
+                    this._text = this._doc.getValue();
+                else
+                    this._text = this.docState.getProperty(null);
+            }
+            return this._text;
+        };
+
+        CodeMirrorEditor.prototype.handleOpen = function () {
+            if (this.docState)
+                this.doc().setValue(this.docState.getProperty(null) || '');
+        };
+
+        CodeMirrorEditor.prototype.handleChange = function (change) {
+        };
+
+        CodeMirrorEditor.prototype.handleClose = function () {
+        };
+
+        CodeMirrorEditor.prototype.handleSave = function () {
+            if (this.docState)
+                this.docState.setProperty(null, this.text());
+        };
+
+        CodeMirrorEditor.prototype._initEditor = function () {
+            var _this = this;
+            var options = this._shared.options || CodeMirrorEditor.standardEditorConfiguration();
+            this._shared.editor = CodeMirror(function (element) {
+                return _this._shared.element = element;
+            }, options);
+        };
+
+        CodeMirrorEditor.prototype._initDoc = function () {
+            var _this = this;
+            this._doc = new CodeMirror.Doc('');
+            CodeMirror.on(this._doc, 'change', function (instance, change) {
+                _this._text = null;
+                _this._invokeonchange();
+                _this.handleChange(change);
+            });
+        };
+        return CodeMirrorEditor;
+    })();
+    teapo.CodeMirrorEditor = CodeMirrorEditor;
+
+    var TextDocumentEditorType = (function () {
+        function TextDocumentEditorType() {
+            this._shared = {};
+        }
+        TextDocumentEditorType.prototype.canEdit = function (fullPath) {
+            return true;
+        };
+
+        TextDocumentEditorType.prototype.editDocument = function (docState) {
+            return new CodeMirrorEditor(this._shared, docState);
+        };
+        return TextDocumentEditorType;
+    })();
+
+    teapo.DocumentEditorType['Plain Text'] = new TextDocumentEditorType();
+})(teapo || (teapo = {}));
+/// <reference path='typings/typescriptServices.d.ts' />
+/// <reference path='typings/codemirror.d.ts' />
+var teapo;
+(function (teapo) {
+    var TypeScriptService = (function () {
+        function TypeScriptService() {
+            this.logLevels = {
+                information: true,
+                debug: true,
+                warning: true,
+                error: true,
+                fatal: true
+            };
+            this.compilationSettings = new TypeScript.CompilationSettings();
+            this.scripts = {};
+            var factory = new TypeScript.Services.TypeScriptServicesFactory();
+            this.service = factory.createPullLanguageService(this._createLanguageServiceHost());
+        }
+        TypeScriptService.prototype._createLanguageServiceHost = function () {
+            var _this = this;
+            return {
+                getCompilationSettings: function () {
+                    return _this.compilationSettings;
+                },
+                getScriptFileNames: function () {
+                    var result = Object.keys(_this.scripts);
+
+                    //console.log('...getScriptFileNames():',result);
+                    return result;
+                },
+                getScriptVersion: function (fileName) {
+                    var script = _this.scripts[fileName];
+                    if (script.changes)
+                        return script.changes.length;
+                    return 0;
+                },
+                getScriptIsOpen: function (fileName) {
+                    return true;
+                },
+                getScriptByteOrderMark: function (fileName) {
+                    return 0 /* None */;
+                },
+                getScriptSnapshot: function (fileName) {
+                    var script = _this.scripts[fileName];
+                    if (!script.cachedSnapshot)
+                        script.cachedSnapshot = new TypeScriptDocumentState(script);
+                    return script.cachedSnapshot;
+                },
+                getDiagnosticsObject: function () {
+                    return { log: function (text) {
+                            return _this._log(text);
+                        } };
+                },
+                getLocalizedDiagnosticMessages: function () {
+                    return null;
+                },
+                information: function () {
+                    return _this.logLevels.information;
+                },
+                debug: function () {
+                    return _this.logLevels.debug;
+                },
+                warning: function () {
+                    return _this.logLevels.warning;
+                },
+                error: function () {
+                    return _this.logLevels.error;
+                },
+                fatal: function () {
+                    return _this.logLevels.fatal;
+                },
+                log: function (text) {
+                    return _this._log(text);
+                },
+                resolveRelativePath: function (path) {
+                    var result = path;
+
+                    //console.log('...resolveRelativePath('+path+'):', result);
+                    return result;
+                },
+                fileExists: function (path) {
+                    // don't issue a full resolve,
+                    // this might be a mere probe for a file
+                    return _this.scripts[path] ? true : false;
+                },
+                directoryExists: function (path) {
+                    return true;
+                },
+                getParentDirectory: function (path) {
+                    path = TypeScript.switchToForwardSlashes(path);
+                    var slashPos = path.lastIndexOf('/');
+                    if (slashPos === path.length - 1)
+                        slashPos = path.lastIndexOf('/', path.length - 2);
+                    if (slashPos > 0)
+                        return path.slice(0, slashPos);
+                    else
+                        return '/';
+                }
+            };
+        };
+
+        TypeScriptService.prototype._log = function (text) {
+            // console.log(text);
+        };
+        TypeScriptService._emptySnapshot = {
+            getText: function (start, end) {
+                return '';
+            },
+            getLength: function () {
+                return 0;
+            },
+            getLineStartPositions: function () {
+                return [];
+            },
+            getTextChangeRangeSinceVersion: function (scriptVersion) {
+                return TypeScript.TextChangeRange.unchanged;
+            }
+        };
+        return TypeScriptService;
+    })();
+    teapo.TypeScriptService = TypeScriptService;
+
+    var TypeScriptDocumentState = (function () {
+        function TypeScriptDocumentState(scriptData) {
+            this.scriptData = scriptData;
+        }
+        TypeScriptDocumentState.prototype.getText = function (start, end) {
+            var text = this._getText();
+            var result = text.slice(start, end);
+            return result;
+        };
+
+        TypeScriptDocumentState.prototype.getLength = function () {
+            var text = this._getText();
+            return text.length;
+        };
+
+        TypeScriptDocumentState.prototype.getLineStartPositions = function () {
+            var text = this._getText();
+            var result = TypeScript.TextUtilities.parseLineStarts(text);
+            return result;
+        };
+
+        TypeScriptDocumentState.prototype.getTextChangeRangeSinceVersion = function (scriptVersion) {
+            if (!this.scriptData.changes)
+                return TypeScript.TextChangeRange.unchanged;
+
+            var chunk = this.scriptData.changes.slice(scriptVersion + 1);
+
+            var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(chunk);
+            return result;
+        };
+
+        TypeScriptDocumentState.prototype._getText = function () {
+            return this.scriptData.text ? this.scriptData.text() : this.scriptData;
+        };
+        return TypeScriptDocumentState;
+    })();
+})(teapo || (teapo = {}));
+/// <reference path='typings/codemirror.d.ts' />
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
+/// <reference path='persistence.ts' />
+/// <reference path='editor.ts' />
+/// <reference path='editor-std.ts' />
+/// <reference path='TypeScriptService.ts' />
+var teapo;
+(function (teapo) {
+    var TypeScriptDocumentEditorType = (function () {
+        function TypeScriptDocumentEditorType(_typescript) {
+            this._typescript = _typescript;
+            this._shared = {
+                options: TypeScriptDocumentEditorType.editorConfiguration()
+            };
+        }
+        TypeScriptDocumentEditorType.editorConfiguration = function () {
+            var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
+            options.mode = "text/typescript";
+            return options;
+        };
+
+        TypeScriptDocumentEditorType.prototype.canEdit = function (fullPath) {
+            return fullPath && fullPath.length > 3 && fullPath.slice(fullPath.length - 3).toLowerCase() === '.ts';
+        };
+
+        TypeScriptDocumentEditorType.prototype.editDocument = function (docState) {
+            return new teapo.CodeMirrorEditor(this._shared, docState);
+        };
+        return TypeScriptDocumentEditorType;
+    })();
+
+    var TypeScriptEditor = (function (_super) {
+        __extends(TypeScriptEditor, _super);
+        function TypeScriptEditor(_typescript, shared, docState) {
+            _super.call(this, shared, docState);
+            this._typescript = _typescript;
+        }
+        TypeScriptEditor.prototype.handleChange = function (change) {
+        };
+        return TypeScriptEditor;
+    })(teapo.CodeMirrorEditor);
+})(teapo || (teapo = {}));
+/// <reference path='typings/codemirror.d.ts' />
 /// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='ko.ts' />
 /// <reference path='shell.ts' />
+/// <reference path='editor-std.ts' />
+/// <reference path='editor-ts.ts' />
 function start() {
     teapo.registerKnockoutBindings(ko);
 

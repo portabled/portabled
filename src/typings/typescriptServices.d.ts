@@ -307,6 +307,7 @@ declare module TypeScript {
         Type_of_conditional_0_must_be_identical_to_1_or_2: string;
         Type_of_conditional_0_must_be_identical_to_1_2_or_3: string;
         Duplicate_identifier_0_Compiler_reserves_name_1_in_top_level_scope_of_an_external_module: string;
+        Type_parameter_0_cannot_be_a_direct_or_indirect_constraint_for_itself: string;
         Type_0_is_missing_property_1_from_type_2: string;
         Types_of_property_0_of_types_1_and_2_are_incompatible: string;
         Types_of_property_0_of_types_1_and_2_are_incompatible_NL_3: string;
@@ -475,7 +476,7 @@ declare module TypeScript {
 declare module TypeScript {
     enum Constants {
         Max31BitInteger = 1073741823,
-        Min31BitInteger,
+        Min31BitInteger = -1073741824,
     }
 }
 declare module TypeScript {
@@ -741,10 +742,10 @@ declare module TypeScript {
 }
 declare module TypeScript {
     enum DiagnosticCategory {
-        Warning,
-        Error,
-        Message,
-        NoPrefix,
+        Warning = 0,
+        Error = 1,
+        Message = 2,
+        NoPrefix = 3,
     }
 }
 declare module TypeScript {
@@ -756,25 +757,25 @@ declare module TypeScript {
         maxAsciiCharacter = 127,
         lineFeed = 10,
         carriageReturn = 13,
-        lineSeparator = 0x2028,
-        paragraphSeparator = 0x2029,
-        nextLine = 0x0085,
-        space = 0x0020,
-        nonBreakingSpace = 0x00A0,
-        enQuad = 0x2000,
-        emQuad = 0x2001,
-        enSpace = 0x2002,
-        emSpace = 0x2003,
-        threePerEmSpace = 0x2004,
-        fourPerEmSpace = 0x2005,
-        sixPerEmSpace = 0x2006,
-        figureSpace = 0x2007,
-        punctuationSpace = 0x2008,
-        thinSpace = 0x2009,
-        hairSpace = 0x200A,
-        zeroWidthSpace = 0x200B,
-        narrowNoBreakSpace = 0x202F,
-        ideographicSpace = 0x3000,
+        lineSeparator = 8232,
+        paragraphSeparator = 8233,
+        nextLine = 133,
+        space = 32,
+        nonBreakingSpace = 160,
+        enQuad = 8192,
+        emQuad = 8193,
+        enSpace = 8194,
+        emSpace = 8195,
+        threePerEmSpace = 8196,
+        fourPerEmSpace = 8197,
+        sixPerEmSpace = 8198,
+        figureSpace = 8199,
+        punctuationSpace = 8200,
+        thinSpace = 8201,
+        hairSpace = 8202,
+        zeroWidthSpace = 8203,
+        narrowNoBreakSpace = 8239,
+        ideographicSpace = 12288,
         _ = 95,
         $ = 36,
         _0 = 48,
@@ -840,7 +841,7 @@ declare module TypeScript {
         tilde = 126,
         backspace = 8,
         formFeed = 12,
-        byteOrderMark = 0xFEFF,
+        byteOrderMark = 65279,
         tab = 9,
         verticalTab = 11,
     }
@@ -1088,12 +1089,12 @@ declare module TypeScript {
 }
 declare module TypeScript {
     enum SyntaxConstants {
-        TriviaNewLineMask = 0x00000001,
-        TriviaCommentMask = 0x00000002,
+        TriviaNewLineMask = 1,
+        TriviaCommentMask = 2,
         TriviaFullWidthShift = 2,
-        NodeDataComputed = 0x00000001,
-        NodeIncrementallyUnusableMask = 0x00000002,
-        NodeParsedInStrictModeMask = 0x00000004,
+        NodeDataComputed = 1,
+        NodeIncrementallyUnusableMask = 2,
+        NodeParsedInStrictModeMask = 4,
         NodeFullWidthShift = 3,
         IsVariableWidthKeyword,
     }
@@ -1192,253 +1193,253 @@ declare module TypeScript {
 }
 declare module TypeScript {
     enum SyntaxKind {
-        None,
-        List,
-        SeparatedList,
-        TriviaList,
-        WhitespaceTrivia,
-        NewLineTrivia,
-        MultiLineCommentTrivia,
-        SingleLineCommentTrivia,
-        SkippedTokenTrivia,
-        ErrorToken,
-        EndOfFileToken,
-        IdentifierName,
-        RegularExpressionLiteral,
-        NumericLiteral,
-        StringLiteral,
-        BreakKeyword,
-        CaseKeyword,
-        CatchKeyword,
-        ContinueKeyword,
-        DebuggerKeyword,
-        DefaultKeyword,
-        DeleteKeyword,
-        DoKeyword,
-        ElseKeyword,
-        FalseKeyword,
-        FinallyKeyword,
-        ForKeyword,
-        FunctionKeyword,
-        IfKeyword,
-        InKeyword,
-        InstanceOfKeyword,
-        NewKeyword,
-        NullKeyword,
-        ReturnKeyword,
-        SwitchKeyword,
-        ThisKeyword,
-        ThrowKeyword,
-        TrueKeyword,
-        TryKeyword,
-        TypeOfKeyword,
-        VarKeyword,
-        VoidKeyword,
-        WhileKeyword,
-        WithKeyword,
-        ClassKeyword,
-        ConstKeyword,
-        EnumKeyword,
-        ExportKeyword,
-        ExtendsKeyword,
-        ImportKeyword,
-        SuperKeyword,
-        ImplementsKeyword,
-        InterfaceKeyword,
-        LetKeyword,
-        PackageKeyword,
-        PrivateKeyword,
-        ProtectedKeyword,
-        PublicKeyword,
-        StaticKeyword,
-        YieldKeyword,
-        AnyKeyword,
-        BooleanKeyword,
-        ConstructorKeyword,
-        DeclareKeyword,
-        GetKeyword,
-        ModuleKeyword,
-        RequireKeyword,
-        NumberKeyword,
-        SetKeyword,
-        StringKeyword,
-        OpenBraceToken,
-        CloseBraceToken,
-        OpenParenToken,
-        CloseParenToken,
-        OpenBracketToken,
-        CloseBracketToken,
-        DotToken,
-        DotDotDotToken,
-        SemicolonToken,
-        CommaToken,
-        LessThanToken,
-        GreaterThanToken,
-        LessThanEqualsToken,
-        GreaterThanEqualsToken,
-        EqualsEqualsToken,
-        EqualsGreaterThanToken,
-        ExclamationEqualsToken,
-        EqualsEqualsEqualsToken,
-        ExclamationEqualsEqualsToken,
-        PlusToken,
-        MinusToken,
-        AsteriskToken,
-        PercentToken,
-        PlusPlusToken,
-        MinusMinusToken,
-        LessThanLessThanToken,
-        GreaterThanGreaterThanToken,
-        GreaterThanGreaterThanGreaterThanToken,
-        AmpersandToken,
-        BarToken,
-        CaretToken,
-        ExclamationToken,
-        TildeToken,
-        AmpersandAmpersandToken,
-        BarBarToken,
-        QuestionToken,
-        ColonToken,
-        EqualsToken,
-        PlusEqualsToken,
-        MinusEqualsToken,
-        AsteriskEqualsToken,
-        PercentEqualsToken,
-        LessThanLessThanEqualsToken,
-        GreaterThanGreaterThanEqualsToken,
-        GreaterThanGreaterThanGreaterThanEqualsToken,
-        AmpersandEqualsToken,
-        BarEqualsToken,
-        CaretEqualsToken,
-        SlashToken,
-        SlashEqualsToken,
-        SourceUnit,
-        QualifiedName,
-        ObjectType,
-        FunctionType,
-        ArrayType,
-        ConstructorType,
-        GenericType,
-        TypeQuery,
-        InterfaceDeclaration,
-        FunctionDeclaration,
-        ModuleDeclaration,
-        ClassDeclaration,
-        EnumDeclaration,
-        ImportDeclaration,
-        ExportAssignment,
-        MemberFunctionDeclaration,
-        MemberVariableDeclaration,
-        ConstructorDeclaration,
-        IndexMemberDeclaration,
-        GetAccessor,
-        SetAccessor,
-        PropertySignature,
-        CallSignature,
-        ConstructSignature,
-        IndexSignature,
-        MethodSignature,
-        Block,
-        IfStatement,
-        VariableStatement,
-        ExpressionStatement,
-        ReturnStatement,
-        SwitchStatement,
-        BreakStatement,
-        ContinueStatement,
-        ForStatement,
-        ForInStatement,
-        EmptyStatement,
-        ThrowStatement,
-        WhileStatement,
-        TryStatement,
-        LabeledStatement,
-        DoStatement,
-        DebuggerStatement,
-        WithStatement,
-        PlusExpression,
-        NegateExpression,
-        BitwiseNotExpression,
-        LogicalNotExpression,
-        PreIncrementExpression,
-        PreDecrementExpression,
-        DeleteExpression,
-        TypeOfExpression,
-        VoidExpression,
-        CommaExpression,
-        AssignmentExpression,
-        AddAssignmentExpression,
-        SubtractAssignmentExpression,
-        MultiplyAssignmentExpression,
-        DivideAssignmentExpression,
-        ModuloAssignmentExpression,
-        AndAssignmentExpression,
-        ExclusiveOrAssignmentExpression,
-        OrAssignmentExpression,
-        LeftShiftAssignmentExpression,
-        SignedRightShiftAssignmentExpression,
-        UnsignedRightShiftAssignmentExpression,
-        ConditionalExpression,
-        LogicalOrExpression,
-        LogicalAndExpression,
-        BitwiseOrExpression,
-        BitwiseExclusiveOrExpression,
-        BitwiseAndExpression,
-        EqualsWithTypeConversionExpression,
-        NotEqualsWithTypeConversionExpression,
-        EqualsExpression,
-        NotEqualsExpression,
-        LessThanExpression,
-        GreaterThanExpression,
-        LessThanOrEqualExpression,
-        GreaterThanOrEqualExpression,
-        InstanceOfExpression,
-        InExpression,
-        LeftShiftExpression,
-        SignedRightShiftExpression,
-        UnsignedRightShiftExpression,
-        MultiplyExpression,
-        DivideExpression,
-        ModuloExpression,
-        AddExpression,
-        SubtractExpression,
-        PostIncrementExpression,
-        PostDecrementExpression,
-        MemberAccessExpression,
-        InvocationExpression,
-        ArrayLiteralExpression,
-        ObjectLiteralExpression,
-        ObjectCreationExpression,
-        ParenthesizedExpression,
-        ParenthesizedArrowFunctionExpression,
-        SimpleArrowFunctionExpression,
-        CastExpression,
-        ElementAccessExpression,
-        FunctionExpression,
-        OmittedExpression,
-        VariableDeclaration,
-        VariableDeclarator,
-        ArgumentList,
-        ParameterList,
-        TypeArgumentList,
-        TypeParameterList,
-        ExtendsHeritageClause,
-        ImplementsHeritageClause,
-        EqualsValueClause,
-        CaseSwitchClause,
-        DefaultSwitchClause,
-        ElseClause,
-        CatchClause,
-        FinallyClause,
-        TypeParameter,
-        Constraint,
-        SimplePropertyAssignment,
-        FunctionPropertyAssignment,
-        Parameter,
-        EnumElement,
-        TypeAnnotation,
-        ExternalModuleReference,
-        ModuleNameModuleReference,
+        None = 0,
+        List = 1,
+        SeparatedList = 2,
+        TriviaList = 3,
+        WhitespaceTrivia = 4,
+        NewLineTrivia = 5,
+        MultiLineCommentTrivia = 6,
+        SingleLineCommentTrivia = 7,
+        SkippedTokenTrivia = 8,
+        ErrorToken = 9,
+        EndOfFileToken = 10,
+        IdentifierName = 11,
+        RegularExpressionLiteral = 12,
+        NumericLiteral = 13,
+        StringLiteral = 14,
+        BreakKeyword = 15,
+        CaseKeyword = 16,
+        CatchKeyword = 17,
+        ContinueKeyword = 18,
+        DebuggerKeyword = 19,
+        DefaultKeyword = 20,
+        DeleteKeyword = 21,
+        DoKeyword = 22,
+        ElseKeyword = 23,
+        FalseKeyword = 24,
+        FinallyKeyword = 25,
+        ForKeyword = 26,
+        FunctionKeyword = 27,
+        IfKeyword = 28,
+        InKeyword = 29,
+        InstanceOfKeyword = 30,
+        NewKeyword = 31,
+        NullKeyword = 32,
+        ReturnKeyword = 33,
+        SwitchKeyword = 34,
+        ThisKeyword = 35,
+        ThrowKeyword = 36,
+        TrueKeyword = 37,
+        TryKeyword = 38,
+        TypeOfKeyword = 39,
+        VarKeyword = 40,
+        VoidKeyword = 41,
+        WhileKeyword = 42,
+        WithKeyword = 43,
+        ClassKeyword = 44,
+        ConstKeyword = 45,
+        EnumKeyword = 46,
+        ExportKeyword = 47,
+        ExtendsKeyword = 48,
+        ImportKeyword = 49,
+        SuperKeyword = 50,
+        ImplementsKeyword = 51,
+        InterfaceKeyword = 52,
+        LetKeyword = 53,
+        PackageKeyword = 54,
+        PrivateKeyword = 55,
+        ProtectedKeyword = 56,
+        PublicKeyword = 57,
+        StaticKeyword = 58,
+        YieldKeyword = 59,
+        AnyKeyword = 60,
+        BooleanKeyword = 61,
+        ConstructorKeyword = 62,
+        DeclareKeyword = 63,
+        GetKeyword = 64,
+        ModuleKeyword = 65,
+        RequireKeyword = 66,
+        NumberKeyword = 67,
+        SetKeyword = 68,
+        StringKeyword = 69,
+        OpenBraceToken = 70,
+        CloseBraceToken = 71,
+        OpenParenToken = 72,
+        CloseParenToken = 73,
+        OpenBracketToken = 74,
+        CloseBracketToken = 75,
+        DotToken = 76,
+        DotDotDotToken = 77,
+        SemicolonToken = 78,
+        CommaToken = 79,
+        LessThanToken = 80,
+        GreaterThanToken = 81,
+        LessThanEqualsToken = 82,
+        GreaterThanEqualsToken = 83,
+        EqualsEqualsToken = 84,
+        EqualsGreaterThanToken = 85,
+        ExclamationEqualsToken = 86,
+        EqualsEqualsEqualsToken = 87,
+        ExclamationEqualsEqualsToken = 88,
+        PlusToken = 89,
+        MinusToken = 90,
+        AsteriskToken = 91,
+        PercentToken = 92,
+        PlusPlusToken = 93,
+        MinusMinusToken = 94,
+        LessThanLessThanToken = 95,
+        GreaterThanGreaterThanToken = 96,
+        GreaterThanGreaterThanGreaterThanToken = 97,
+        AmpersandToken = 98,
+        BarToken = 99,
+        CaretToken = 100,
+        ExclamationToken = 101,
+        TildeToken = 102,
+        AmpersandAmpersandToken = 103,
+        BarBarToken = 104,
+        QuestionToken = 105,
+        ColonToken = 106,
+        EqualsToken = 107,
+        PlusEqualsToken = 108,
+        MinusEqualsToken = 109,
+        AsteriskEqualsToken = 110,
+        PercentEqualsToken = 111,
+        LessThanLessThanEqualsToken = 112,
+        GreaterThanGreaterThanEqualsToken = 113,
+        GreaterThanGreaterThanGreaterThanEqualsToken = 114,
+        AmpersandEqualsToken = 115,
+        BarEqualsToken = 116,
+        CaretEqualsToken = 117,
+        SlashToken = 118,
+        SlashEqualsToken = 119,
+        SourceUnit = 120,
+        QualifiedName = 121,
+        ObjectType = 122,
+        FunctionType = 123,
+        ArrayType = 124,
+        ConstructorType = 125,
+        GenericType = 126,
+        TypeQuery = 127,
+        InterfaceDeclaration = 128,
+        FunctionDeclaration = 129,
+        ModuleDeclaration = 130,
+        ClassDeclaration = 131,
+        EnumDeclaration = 132,
+        ImportDeclaration = 133,
+        ExportAssignment = 134,
+        MemberFunctionDeclaration = 135,
+        MemberVariableDeclaration = 136,
+        ConstructorDeclaration = 137,
+        IndexMemberDeclaration = 138,
+        GetAccessor = 139,
+        SetAccessor = 140,
+        PropertySignature = 141,
+        CallSignature = 142,
+        ConstructSignature = 143,
+        IndexSignature = 144,
+        MethodSignature = 145,
+        Block = 146,
+        IfStatement = 147,
+        VariableStatement = 148,
+        ExpressionStatement = 149,
+        ReturnStatement = 150,
+        SwitchStatement = 151,
+        BreakStatement = 152,
+        ContinueStatement = 153,
+        ForStatement = 154,
+        ForInStatement = 155,
+        EmptyStatement = 156,
+        ThrowStatement = 157,
+        WhileStatement = 158,
+        TryStatement = 159,
+        LabeledStatement = 160,
+        DoStatement = 161,
+        DebuggerStatement = 162,
+        WithStatement = 163,
+        PlusExpression = 164,
+        NegateExpression = 165,
+        BitwiseNotExpression = 166,
+        LogicalNotExpression = 167,
+        PreIncrementExpression = 168,
+        PreDecrementExpression = 169,
+        DeleteExpression = 170,
+        TypeOfExpression = 171,
+        VoidExpression = 172,
+        CommaExpression = 173,
+        AssignmentExpression = 174,
+        AddAssignmentExpression = 175,
+        SubtractAssignmentExpression = 176,
+        MultiplyAssignmentExpression = 177,
+        DivideAssignmentExpression = 178,
+        ModuloAssignmentExpression = 179,
+        AndAssignmentExpression = 180,
+        ExclusiveOrAssignmentExpression = 181,
+        OrAssignmentExpression = 182,
+        LeftShiftAssignmentExpression = 183,
+        SignedRightShiftAssignmentExpression = 184,
+        UnsignedRightShiftAssignmentExpression = 185,
+        ConditionalExpression = 186,
+        LogicalOrExpression = 187,
+        LogicalAndExpression = 188,
+        BitwiseOrExpression = 189,
+        BitwiseExclusiveOrExpression = 190,
+        BitwiseAndExpression = 191,
+        EqualsWithTypeConversionExpression = 192,
+        NotEqualsWithTypeConversionExpression = 193,
+        EqualsExpression = 194,
+        NotEqualsExpression = 195,
+        LessThanExpression = 196,
+        GreaterThanExpression = 197,
+        LessThanOrEqualExpression = 198,
+        GreaterThanOrEqualExpression = 199,
+        InstanceOfExpression = 200,
+        InExpression = 201,
+        LeftShiftExpression = 202,
+        SignedRightShiftExpression = 203,
+        UnsignedRightShiftExpression = 204,
+        MultiplyExpression = 205,
+        DivideExpression = 206,
+        ModuloExpression = 207,
+        AddExpression = 208,
+        SubtractExpression = 209,
+        PostIncrementExpression = 210,
+        PostDecrementExpression = 211,
+        MemberAccessExpression = 212,
+        InvocationExpression = 213,
+        ArrayLiteralExpression = 214,
+        ObjectLiteralExpression = 215,
+        ObjectCreationExpression = 216,
+        ParenthesizedExpression = 217,
+        ParenthesizedArrowFunctionExpression = 218,
+        SimpleArrowFunctionExpression = 219,
+        CastExpression = 220,
+        ElementAccessExpression = 221,
+        FunctionExpression = 222,
+        OmittedExpression = 223,
+        VariableDeclaration = 224,
+        VariableDeclarator = 225,
+        ArgumentList = 226,
+        ParameterList = 227,
+        TypeArgumentList = 228,
+        TypeParameterList = 229,
+        ExtendsHeritageClause = 230,
+        ImplementsHeritageClause = 231,
+        EqualsValueClause = 232,
+        CaseSwitchClause = 233,
+        DefaultSwitchClause = 234,
+        ElseClause = 235,
+        CatchClause = 236,
+        FinallyClause = 237,
+        TypeParameter = 238,
+        Constraint = 239,
+        SimplePropertyAssignment = 240,
+        FunctionPropertyAssignment = 241,
+        Parameter = 242,
+        EnumElement = 243,
+        TypeAnnotation = 244,
+        ExternalModuleReference = 245,
+        ModuleNameModuleReference = 246,
         Last,
         FirstStandardKeyword,
         LastStandardKeyword,
@@ -5834,7 +5835,6 @@ declare module TypeScript {
     function scriptIsElided(sourceUnit: SourceUnit): boolean;
     function moduleIsElided(declaration: ModuleDeclaration): boolean;
     function enumIsElided(declaration: EnumDeclaration): boolean;
-    function importDeclarationIsElided(importDeclAST: ImportDeclaration, semanticInfoChain: SemanticInfoChain, compilationSettings?: ImmutableCompilationSettings): boolean;
     function isValidAstNode(ast: IASTSpan): boolean;
     function getAstAtPosition(script: AST, pos: number, useTrailingTriviaAsLimChar?: boolean, forceInclusive?: boolean): AST;
     function getExtendsHeritageClause(clauses: ISyntaxList2): HeritageClause;
@@ -5945,14 +5945,14 @@ declare module TypeScript {
 }
 declare module TypeScript {
     enum EmitContainer {
-        Prog,
-        Module,
-        DynamicModule,
-        Class,
-        Constructor,
-        Function,
-        Args,
-        Interface,
+        Prog = 0,
+        Module = 1,
+        DynamicModule = 2,
+        Class = 3,
+        Constructor = 4,
+        Function = 5,
+        Args = 6,
+        Interface = 7,
     }
     class EmitState {
         public column: number;
@@ -6534,14 +6534,12 @@ declare module TypeScript {
     }
 }
 declare module TypeScript {
-    var pullDeclID: number;
     class PullDecl {
         public kind: TypeScript.PullElementKind;
         public name: string;
         private declDisplayName;
         public declID: number;
         public flags: TypeScript.PullElementFlags;
-        private span;
         private declGroups;
         private childDecls;
         private typeParameters;
@@ -6550,7 +6548,7 @@ declare module TypeScript {
         public childDeclValueCache: TypeScript.IIndexable<PullDecl[]>;
         public childDeclNamespaceCache: TypeScript.IIndexable<PullDecl[]>;
         public childDeclTypeParameterCache: TypeScript.IIndexable<PullDecl[]>;
-        constructor(declName: string, displayName: string, kind: TypeScript.PullElementKind, declFlags: TypeScript.PullElementFlags, span: TypeScript.TextSpan);
+        constructor(declName: string, displayName: string, kind: TypeScript.PullElementKind, declFlags: TypeScript.PullElementFlags);
         public fileName(): string;
         public getParentPath(): PullDecl[];
         public getParentDecl(): PullDecl;
@@ -6563,7 +6561,7 @@ declare module TypeScript {
         */
         public getDisplayName(): string;
         public setSymbol(symbol: TypeScript.PullSymbol): void;
-        public ensureSymbolIsBound(bindSignatureSymbol?: boolean): void;
+        public ensureSymbolIsBound(): void;
         public getSymbol(): TypeScript.PullSymbol;
         public hasSymbol(): boolean;
         public setSignatureSymbol(signatureSymbol: TypeScript.PullSignatureSymbol): void;
@@ -6571,10 +6569,8 @@ declare module TypeScript {
         public hasSignatureSymbol(): boolean;
         public setFlags(flags: TypeScript.PullElementFlags): void;
         public setFlag(flags: TypeScript.PullElementFlags): void;
-        public getSpan(): TypeScript.TextSpan;
         public setValueDecl(valDecl: PullDecl): void;
         public getValueDecl(): PullDecl;
-        public isEqual(other: PullDecl): boolean;
         private getChildDeclCache(declKind);
         public addChildDecl(childDecl: PullDecl): void;
         public searchChildDecls(declName: string, searchKind: TypeScript.PullElementKind): PullDecl[];
@@ -6590,7 +6586,7 @@ declare module TypeScript {
         private _semanticInfoChain;
         private _isExternalModule;
         private _fileName;
-        constructor(name: string, fileName: string, kind: TypeScript.PullElementKind, declFlags: TypeScript.PullElementFlags, span: TypeScript.TextSpan, semanticInfoChain: TypeScript.SemanticInfoChain, isExternalModule: boolean);
+        constructor(name: string, fileName: string, kind: TypeScript.PullElementKind, declFlags: TypeScript.PullElementFlags, semanticInfoChain: TypeScript.SemanticInfoChain, isExternalModule: boolean);
         public fileName(): string;
         public getParentPath(): PullDecl[];
         public getParentDecl(): PullDecl;
@@ -6601,7 +6597,7 @@ declare module TypeScript {
     class NormalPullDecl extends PullDecl {
         private parentDecl;
         private parentPath;
-        constructor(declName: string, displayName: string, kind: TypeScript.PullElementKind, declFlags: TypeScript.PullElementFlags, parentDecl: PullDecl, span: TypeScript.TextSpan, addToParent?: boolean);
+        constructor(declName: string, displayName: string, kind: TypeScript.PullElementKind, declFlags: TypeScript.PullElementFlags, parentDecl: PullDecl, addToParent?: boolean);
         public fileName(): string;
         public getParentDecl(): PullDecl;
         public getParentPath(): PullDecl[];
@@ -6611,16 +6607,16 @@ declare module TypeScript {
     }
     class PullEnumElementDecl extends NormalPullDecl {
         public constantValue: number;
-        constructor(declName: string, displayName: string, parentDecl: PullDecl, span: TypeScript.TextSpan);
+        constructor(declName: string, displayName: string, parentDecl: PullDecl);
     }
     class PullFunctionExpressionDecl extends NormalPullDecl {
         private functionExpressionName;
-        constructor(expressionName: string, declFlags: TypeScript.PullElementFlags, parentDecl: PullDecl, span: TypeScript.TextSpan, displayName?: string);
+        constructor(expressionName: string, declFlags: TypeScript.PullElementFlags, parentDecl: PullDecl, displayName?: string);
         public getFunctionExpressionName(): string;
     }
     class PullSynthesizedDecl extends NormalPullDecl {
         private _semanticInfoChain;
-        constructor(declName: string, displayName: string, kind: TypeScript.PullElementKind, declFlags: TypeScript.PullElementFlags, parentDecl: PullDecl, span: TypeScript.TextSpan, semanticInfoChain: TypeScript.SemanticInfoChain);
+        constructor(declName: string, displayName: string, kind: TypeScript.PullElementKind, declFlags: TypeScript.PullElementFlags, parentDecl: PullDecl, semanticInfoChain: TypeScript.SemanticInfoChain);
         public semanticInfoChain(): TypeScript.SemanticInfoChain;
         public isSynthesized(): boolean;
     }
@@ -7174,7 +7170,7 @@ declare module TypeScript {
         private resolveAnyFunctionTypeSignature(funcDeclAST, typeParameters, parameterList, returnTypeAnnotation, context);
         private resolveFunctionTypeSignatureParameter(argDeclAST, signature, enclosingDecl, context);
         private resolveFunctionExpressionParameter(argDeclAST, id, typeExpr, equalsValueClause, contextParam, enclosingDecl, context);
-        private checkNameForCompilerGeneratedDeclarationCollision(astWithName, isDeclaration, name, context, immediateThisCheck?);
+        private checkNameForCompilerGeneratedDeclarationCollision(astWithName, isDeclaration, name, context);
         private hasRestParameterCodeGen(someFunctionDecl);
         private checkArgumentsCollides(ast, context);
         private checkIndexOfRestArgumentInitializationCollides(ast, context);
@@ -7215,6 +7211,7 @@ declare module TypeScript {
         private typeCheckFunctionExpression(funcDecl, isContextuallyTyped, context);
         private typeCheckCallSignature(funcDecl, context);
         private typeCheckConstructSignature(funcDecl, context);
+        private containsSingleThrowStatement(block);
         private typeCheckFunctionDeclaration(funcDeclAST, isStatic, name, typeParameters, parameters, returnTypeAnnotation, block, context);
         private typeCheckIndexSignature(funcDeclAST, context);
         private postTypeCheckFunctionDeclaration(funcDeclAST, context);
@@ -7449,6 +7446,9 @@ declare module TypeScript {
         static typeCheck(compilationSettings: TypeScript.ImmutableCompilationSettings, semanticInfoChain: TypeScript.SemanticInfoChain, document: TypeScript.Document): void;
         private validateVariableDeclarationGroups(enclosingDecl, context);
         private typeCheckFunctionOverloads(funcDecl, context, signature?, allSignatures?);
+        private isTypeParameterConstraintHasSelfReference(originalTypeParameter);
+        private reportErrorThatTypeParameterReferencesItselfInConstraint(typeParameterSymbol, enclosingSymbol, typeParameterAST, context);
+        private checkTypeParameterListForSelfReferencesInConstraints(typeParameters, enclosingSymbol, context);
         private checkSymbolPrivacy(declSymbol, symbol, privacyErrorReporter);
         private checkTypePrivacyOfSignatures(declSymbol, signatures, privacyErrorReporter);
         private typeParameterOfTypeDeclarationPrivacyErrorReporter(classOrInterface, indexOfTypeParameter, typeParameter, symbol, context);
@@ -7659,10 +7659,10 @@ declare module TypeScript {
 }
 declare module TypeScript {
     enum GenerativeTypeClassification {
-        Unknown,
-        Open,
-        Closed,
-        InfinitelyExpanding,
+        Unknown = 0,
+        Open = 1,
+        Closed = 2,
+        InfinitelyExpanding = 3,
     }
     class PullTypeReferenceSymbol extends TypeScript.PullTypeSymbol {
         public referencedTypeSymbol: TypeScript.PullTypeSymbol;
@@ -7939,9 +7939,9 @@ declare module TypeScript {
         public diagnostics: TypeScript.Diagnostic[];
     }
     enum OutputFileType {
-        JavaScript,
-        SourceMap,
-        Declaration,
+        JavaScript = 0,
+        SourceMap = 1,
+        Declaration = 2,
     }
     class OutputFile {
         public name: string;
@@ -8012,21 +8012,21 @@ declare module TypeScript {
 }
 declare module TypeScript.Services {
     enum EndOfLineState {
-        Start,
-        InMultiLineCommentTrivia,
-        InSingleQuoteStringLiteral,
-        InDoubleQuoteStringLiteral,
+        Start = 0,
+        InMultiLineCommentTrivia = 1,
+        InSingleQuoteStringLiteral = 2,
+        InDoubleQuoteStringLiteral = 3,
     }
     enum TokenClass {
-        Punctuation,
-        Keyword,
-        Operator,
-        Comment,
-        Whitespace,
-        Identifier,
-        NumberLiteral,
-        StringLiteral,
-        RegExpLiteral,
+        Punctuation = 0,
+        Keyword = 1,
+        Operator = 2,
+        Comment = 3,
+        Whitespace = 4,
+        Identifier = 5,
+        NumberLiteral = 6,
+        StringLiteral = 7,
+        RegExpLiteral = 8,
     }
     class Classifier {
         public host: IClassifierHost;
@@ -8362,12 +8362,12 @@ declare module TypeScript.Services.Formatting {
 }
 declare module TypeScript.Services.Formatting {
     enum FormattingRequestKind {
-        FormatDocument,
-        FormatSelection,
-        FormatOnEnter,
-        FormatOnSemicolon,
-        FormatOnClosingCurlyBrace,
-        FormatOnPaste,
+        FormatDocument = 0,
+        FormatSelection = 1,
+        FormatOnEnter = 2,
+        FormatOnSemicolon = 3,
+        FormatOnClosingCurlyBrace = 4,
+        FormatOnPaste = 5,
     }
 }
 declare module TypeScript.Services.Formatting {
@@ -8381,10 +8381,10 @@ declare module TypeScript.Services.Formatting {
 }
 declare module TypeScript.Services.Formatting {
     enum RuleAction {
-        Ignore,
-        Space,
-        NewLine,
-        Delete,
+        Ignore = 0,
+        Space = 1,
+        NewLine = 2,
+        Delete = 3,
     }
 }
 declare module TypeScript.Services.Formatting {
@@ -8401,8 +8401,8 @@ declare module TypeScript.Services.Formatting {
 }
 declare module TypeScript.Services.Formatting {
     enum RuleFlags {
-        None,
-        CanDeleteNewLines,
+        None = 0,
+        CanDeleteNewLines = 1,
     }
 }
 declare module TypeScript.Services.Formatting {
@@ -8835,6 +8835,7 @@ declare module TypeScript.Services {
 }
 declare module TypeScript.Services {
     class CompletionHelpers {
+        private static getSpan(ast);
         static filterContextualMembersList(contextualMemberSymbols: TypeScript.PullSymbol[], existingMembers: TypeScript.PullVisibleSymbolsInfo, fileName: string, position: number): TypeScript.PullSymbol[];
         static isCompletionListBlocker(sourceUnit: TypeScript.SourceUnitSyntax, position: number): boolean;
         static getContainingObjectLiteralApplicableForCompletion(sourceUnit: TypeScript.SourceUnitSyntax, position: number): TypeScript.PositionedElement;

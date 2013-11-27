@@ -118,6 +118,11 @@ module teapo {
     editor(): Editor {
       if (!this._docState.editor)
         this._docState.editor = this.type().editDocument(this);
+
+      return this._docState.editor;
+    }
+
+    currentEditor(): Editor {
       return this._docState.editor;
     }
 

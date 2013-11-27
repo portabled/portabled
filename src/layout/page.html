@@ -4,15 +4,15 @@
 </div>
 
 <div class=teapo-navigator-toolbar>
-  <button title='add new file'> + </button>
-  <button data-bind='attr: { title: "remove "+(fileList.selectedFile() ? fileList.selectedFile().name() : " selected document") }'> - </button>
+  <button title='add new file' data-bind='click: newFileClick'> + </button>
+  <button data-bind='attr: { title: "remove "+(fileList.selectedFile() ? fileList.selectedFile().name() : " selected document") }, click: deleteSelectedFile'> - </button>
 
   <button data-bind='click: saveZip'>
     <div class=teapo-small-button>zip</div>
   </button>
-  <button data-bind='click: saveHtml'>
-    <div class=teapo-small-button>html</div>
-  </button>
+  <a href='#' data-bind='attr: { download: saveFileName() }' class=teapo-small-button> 
+    html
+  </a>
 </div>
 
 <div data-bind='attach: attachToHost($element)' class=teapo-content>

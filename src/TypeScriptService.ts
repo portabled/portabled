@@ -23,56 +23,36 @@ module teapo {
   
     service: TypeScript.Services.ILanguageService;
   
-    private _scriptCache: any = {};
-    private _staticScripts: any = {};
+    scripts: { [fullPath: string]: TypeScriptService.Script; } = {};
   
-    constructor(staticScripts: any = {}) {
-  
-      if (staticScripts) {
-        for (var s in staticScripts) if (staticScripts.hasOwnProperty(s)) {
-          var script = TypeScript.ScriptSnapshot.fromString(staticScripts[s]+'');
-          this._staticScripts[s] = script;
-        }
-      }
-  
+    constructor() {
       var factory = new TypeScript.Services.TypeScriptServicesFactory();
       this.service = factory.createPullLanguageService(this._createLanguageServiceHost());
-    }
-  
-    addDocument(d: { fullPath: string; getDoc(): CodeMirror.Doc; }) {
-      var script = new DocumentState(d);
-      this._scriptCache[d.fullPath] = script;
-    }
-  
-    removeDocument(fileName) {
-      delete this._scriptCache[fileName];
     }
   
     private _createLanguageServiceHost() {
       return {
         getCompilationSettings: () => this.compilationSettings,
         getScriptFileNames: () => {
-          var result = Object.keys(this._scriptCache);
-          for (var s in this._staticScripts) if (this._staticScripts.hasOwnProperty(s)) {
-            if (!this._scriptCache.hasOwnProperty(s))
-              result.push(s);
-          }
+          var result = Object.keys(this.scripts);
           //console.log('...getScriptFileNames():',result);
           return result;
         },
         getScriptVersion: (fileName: string) => {
-          var script: DocumentState = this._scriptCache[fileName];
-          if (script)
-            return script.getVersion();
-          return -1;
+          var script = this.scripts[fileName];
+          if (script.changes)
+            return script.changes.length;
+          return 0;
         },
         getScriptIsOpen: (fileName: string) => {
           return true;
         },
         getScriptByteOrderMark: (fileName: string) => TypeScript.ByteOrderMark.None,
         getScriptSnapshot: (fileName: string) => {
-          var script: DocumentState = this._scriptCache[fileName] || this._staticScripts[fileName];
-          return script;
+          var script = this.scripts[fileName];
+          if (!script.cachedSnapshot)
+            script.cachedSnapshot = new TypeScriptDocumentState(script);
+          return script.cachedSnapshot;
         },
         getDiagnosticsObject: () => {
           return { log: (text:string) => this._log(text) };
@@ -92,7 +72,7 @@ module teapo {
         fileExists: (path: string) => {
           // don't issue a full resolve,
           // this might be a mere probe for a file
-          return this._scriptCache[path] || this._staticScripts[path] ? true : false;
+          return this.scripts[path] ? true : false;
         },
         directoryExists: (path: string) => true,
         getParentDirectory: (path: string) => {
@@ -112,133 +92,57 @@ module teapo {
       // console.log(text);
     }
   }
-          
-  class DocumentState implements TypeScript.IScriptSnapshot {
-  
-    private _version = 0;
-    private _changes: TypeScript.TextChangeRange[] = [];
-    private _simpleText: string = null;
-  
-    constructor(private _d: { fullPath: string; getDoc(): CodeMirror.Doc; }) {
-      CodeMirror.on(this._d.getDoc(), 'change', (e,change) => this._onChange(change));
+
+  export module TypeScriptService {
+    export interface Script {
+      text(): string;
+      changes: TypeScript.TextChangeRange[];
+      cachedSnapshot: TypeScript.IScriptSnapshot;
     }
+  }
+ 
+  class TypeScriptDocumentState implements TypeScript.IScriptSnapshot {
   
-    /**
-     * Not a part of IScriptSnapshot, unlike other public methods here.
-     * Need to find out who's calling into this (and kill them, naturally).
-     */
-    getVersion(): number {
-      // console.log('DocumentState.getVersion() // ',this._version);
-      return this._version;
+    constructor(public scriptData: TypeScriptService.Script) {
     }
-  
+
     getText(start: number, end: number): string {
-      var text = this._getTextCore(start, end);
-//      var doc = this._d.getDoc();
-//      var startPos = doc.posFromIndex(start);
-//      var lead = start ? this._getTextCore(start-startPos.ch,start) : '';
-//      var endPos = doc.posFromIndex(end);
-//      var line = doc.getLine(endPos.line);
-//      var trail = endPos.ch < line.length ? this._getTextCore(end, end + line.length - endPos.ch) : '';
-//      var textSmall = text;
-//      if (textSmall.length > 40)
-//        textSmall = textSmall.slice(0, 17)+'...'+(text.length)+'...'+textSmall.slice(textSmall.length-17);
-//      if (textSmall.indexOf('\n')>=0)
-//        textSmall = textSmall.replace(/\n/g, '\\n');
-//      console.log('DocumentState.getText(',start,',',end,') // ['+startPos.line+'] "'+lead+'['+textSmall+']'+trail+'"');
-      return text;
-    }
-
-    private _getTextCore(start: number, end: number): string {
-      if (this._simpleText===null)
-        this._simpleText = this._d.getDoc().getValue();
-
-      return this._simpleText.slice(start,end);
+      var text = this._getText();
+      var result = text.slice(start,end);
+      return result;
     }
   
     getLength(): number {
-      var length = this._getLengthCore();
-      // console.log('DocumentState.getLength() // ',length);
-      return length;
-    }
-
-    private _getLengthCore(): number {
-      var doc = this._d.getDoc();
-      var lineCount = doc.lineCount();
-      if (lineCount===0)
-        return 0;
-  
-      var lastLineStart = doc.indexFromPos({line:lineCount-1,ch:0});
-      var lastLine = doc.getLine(lineCount-1);
-      var length = lastLineStart + lastLine.length;
-      return length;
+      var text = this._getText();
+      return text.length;
     }
   
     getLineStartPositions(): number[] {
-      if (!this._simpleText)
-        this._simpleText = this._d.getDoc().getValue();
-      var result: number[] = [];
-      var pos = 0;
-      while (pos < this._simpleText.length) {
-        result.push(pos);
-        pos = this._simpleText.indexOf('\n', pos);
-        if (pos < 0)
-          break;
-        else
-          pos++;
-      }
+      var text = this._getText();
+      var result = TypeScript.TextUtilities.parseLineStarts(text);
       return result;
     }
   
     getTextChangeRangeSinceVersion(scriptVersion: number): TypeScript.TextChangeRange {
-      var startVersion = this._version - this._changes.length;
+      if (!this.scriptData.changes)
+        return TypeScript.TextChangeRange.unchanged;
 
-      var doc = this._d.getDoc();
-  
-      if (scriptVersion < startVersion) {
-        var wholeText = doc.getValue();
-        return new TypeScript.TextChangeRange(
-          TypeScript.TextSpan.fromBounds(0,0),
-          wholeText.length);
-      }
-  
-      var chunk: TypeScript.TextChangeRange[];
-  
-       if (scriptVersion = startVersion)
-        chunk = this._changes;
-      else
-        chunk = this._changes.slice(scriptVersion - startVersion);
-      //this._changes.length = 0;
-      var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(this._changes);
+      var chunk = this.scriptData.changes.slice(scriptVersion+1);
+
+      var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(chunk);
       return result;
     }
-  
-  
-    private _onChange(change): void {
-      var doc = this._d.getDoc();
-      var offset = doc.indexFromPos(change.from);
-      var oldLength = this._totalLengthOfLines(change.removed);
-      var newLength = this._totalLengthOfLines(change.text);
-  
-      var ch = new TypeScript.TextChangeRange(
-          TypeScript.TextSpan.fromBounds(offset, offset+oldLength),
-          newLength);
-  
-      this._changes.push(ch) ;
-  
-      this._version++;
-      this._simpleText = null;
+
+    private _getText() {
+      return this.scriptData.text ? this.scriptData.text() : <string><any>this.scriptData;
     }
-                          
-    private _totalLengthOfLines(lines: string[]): number {
-      var length = 0;
-      for (var i = 0; i < lines.length; i++) {
-        if (i>0)
-          length++; // '\n'
   
-        length += lines[i].length;
-      }
-      return length;
-    }
+//      var offset = doc.indexFromPos(change.from);
+//      var oldLength = this._totalLengthOfLines(change.removed);
+//      var newLength = this._totalLengthOfLines(change.text);
+//  
+//      var ch = new TypeScript.TextChangeRange(
+//          TypeScript.TextSpan.fromBounds(offset, offset+oldLength),
+//          newLength);
   }
 }

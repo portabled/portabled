@@ -4,6 +4,9 @@
 /// <reference path='ko.ts' />
 /// <reference path='shell.ts' />
 
+/// <reference path='editor-std.ts' />
+/// <reference path='editor-ts.ts' />
+
 function start() {
   teapo.registerKnockoutBindings(ko);
 

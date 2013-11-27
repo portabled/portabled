@@ -7,12 +7,15 @@
 module teapo {
   export class ApplicationShell {
 
+    saveDelay = 600;
     fileList: FileList = null;
 
     private _storage: DocumentStorage = null;
     private _selectedDocState: DocumentState = null;
     private _editorElement: HTMLElement = null;
     private _host: HTMLElement = null;
+    private _saveTimeout = 0;
+    private _saveSelectedFileClosure = () => this._invokeSaveSelectedFile();
 
     constructor() {
       this._storage = new DocumentStorage();
@@ -24,50 +27,34 @@ module teapo {
       this.fileList.selectedFile.subscribe((fileEntry) => this._fileSelected(fileEntry));
     }
 
+    newFileClick() {
+      var fileName = prompt('New file');
+      if (!fileName)
+        return;
+
+      var fileEntry = this.fileList.createFileEntry(fileName);
+      this._storage.createDocument(fileName);
+      fileEntry.handleClick();
+    }
+
+    deleteSelectedFile() {
+      if (!this.fileList.selectedFile()) return;
+
+      if (!confirm('Are you sure dleting '+this.fileList.selectedFile().name()))
+        return;
+
+      // TODO: delete the selected file, switch selection somewhere
+    }
+
+    saveFileName() {
+      var urlParts = window.location.pathname.split('/');
+      return decodeURI(urlParts[urlParts.length-1]);
+    }
+
     saveZip() {
       
     }
 
-    saveHtml() {
-      var html = document.head.parentElement.outerHTML;
-      var result = [];
-      var plainStart = 0;
-      for (var i = 0; i < html.length; i++) {
-        var code = html.charCodeAt(i);
-        if (code<128) continue;
-
-        if (i>plainStart)
-          result.push(html.slice(plainStart, i));
-
-        var uriTxt = encodeURIComponent(html.charAt(i));
-        console.log(i, uriTxt, html.charAt(i));
-        for (var j = 1; j < uriTxt.length; j+=3) {
-          var uriHex = parseInt(uriTxt.slice(j), 16);
-          result.push(String.fromCharCode(uriHex));
-        }
-
-        plainStart = i;
-      }
-
-      result.push(html.slice(plainStart));
-  
-      var totalUtf = result.join('');
-      var base64 = btoa(totalUtf);
-      console.log(totalUtf.length);
-
-      var dataUri = 'data:application/octet-stream;base64,'+base64;
-      try {
-        var a = document.createElement('a');
-        a.href = dataUri;
-        var slashParts = window.location.pathname.split('/');
-        (<any>a).download = slashParts[slashParts.length-1];
-        a.click();
-      }
-      catch (e) {
-        window.open(dataUri);
-      }
-    }
-  
     attachToHost(host: HTMLElement) {
       this._host = host;
       if (this._editorElement) {
@@ -82,12 +69,21 @@ module teapo {
         newDocState = this._storage.getDocument(fileEntry.fullPath());
 
       if (this._selectedDocState) {
+  
+        // save file if needed before switching
+        if (this._saveTimeout) {
+          clearTimeout(this._saveTimeout);
+          this._selectedDocState.editor().save();
+        }
+  
+        // close file before switching
         this._selectedDocState.editor().close();
       }
 
       var newEditorElement: HTMLElement = null;
       if (newDocState) {
-        newEditorElement = newDocState.editor().open();
+        var onchanged = () => this._selectedFileEditorChanged();
+        newEditorElement = newDocState.editor().open(onchanged);
       }
 
       if (newEditorElement!==this._editorElement) {
@@ -104,6 +100,23 @@ module teapo {
         if (newEditorElement && this._host)
           this._host.appendChild(newEditorElement);
       }
+    }
+
+    private _selectedFileEditorChanged() {
+      if (this._saveTimeout)
+        clearTimeout(this._saveTimeout);
+
+      this._saveTimeout = setTimeout(
+        this._saveSelectedFileClosure,
+        this.saveDelay);
+    }
+
+    private _invokeSaveSelectedFile() {
+      var selectedFileEntry = this.fileList.selectedFile();
+      if (!selectedFileEntry) return;
+
+      var docState = this._storage.getDocument(selectedFileEntry.fullPath());
+      docState.editor().save();
     }
   }
 }
