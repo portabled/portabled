@@ -4,13 +4,7 @@
 module teapo {
 
   export class TypeScriptService {
-    private static _emptySnapshot = {
-      getText: (start, end) => '',
-      getLength: () => 0,
-      getLineStartPositions: () => [],
-      getTextChangeRangeSinceVersion: (scriptVersion) => TypeScript.TextChangeRange.unchanged
-    };
-  
+
     logLevels = {
       information: true,
       debug: true,

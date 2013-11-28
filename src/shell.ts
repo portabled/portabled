@@ -20,7 +20,7 @@ module teapo {
     constructor() {
       this._storage = new DocumentStorage();
       this._storage.entryResolver = this.fileList;
-      this._storage.typeResolver = DocumentEditorType;
+      this._storage.typeResolver = EditorType;
   
       this.fileList = new FileList(this._storage);
   

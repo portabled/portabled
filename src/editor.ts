@@ -4,15 +4,7 @@
 
 module teapo {
 
-  // this is in fact of DocumentTypeRegistry
-  export var DocumentEditorType: {
-
-    // [name: string]: DocumentEditorType;
-
-    getType(fullPath: string): DocumentEditorType;
-  };
-
-  export interface DocumentEditorType {
+  export interface EditorType {
     canEdit(fullPath: string): boolean;
     editDocument(docState: DocumentState): Editor;
   }
@@ -23,18 +15,18 @@ module teapo {
     close();
   }
 
-  class DocumentEditorTypeRegistry {
+  export module EditorType {
 
-    getType(fullPath: string): DocumentEditorType {
-      var reverse = Object.keys(DocumentEditorType);
+    export function getType(fullPath: string): EditorType {
+
+      // must iterate in reverse, so more generic types get used last
+      var reverse = Object.keys(EditorType);
       for (var i = reverse.length-1; i>=0; i--  ) {
-        var t = <DocumentEditorType>DocumentEditorType[reverse[i]];
+        var t = <EditorType>this[reverse[i]];
         if (t.canEdit && t.canEdit(fullPath)) return t;
       }
 
       return null;
     }
   }
-  
-  DocumentEditorType = new DocumentEditorTypeRegistry();
 }

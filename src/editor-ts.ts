@@ -8,10 +8,12 @@
 
 module teapo {
 
-  class TypeScriptDocumentEditorType implements DocumentEditorType {
+  class TypeScriptEditorType implements EditorType {
 
-    private _shared: CodeMirrorEditorSharedState = {
-      options: TypeScriptDocumentEditorType.editorConfiguration()
+    private _tsService = new TypeScriptService();
+
+    private _shared: CodeMirrorEditor.SharedState = {
+      options: TypeScriptEditorType.editorConfiguration()
     };
 
     constructor(private _typescript: TypeScriptService) {
@@ -34,7 +36,7 @@ module teapo {
   }
 
   class TypeScriptEditor extends CodeMirrorEditor {
-    constructor(private _typescript: TypeScriptService, shared: CodeMirrorEditorSharedState, docState: DocumentState) {
+    constructor(private _typescript: TypeScriptService, shared: CodeMirrorEditor.SharedState, docState: DocumentState) {
       super(shared, docState);
     }
 

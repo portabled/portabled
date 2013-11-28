@@ -12,7 +12,7 @@ module teapo {
     localStorage = localStorage;
     uniqueKey: string = getUniqueKey();
 
-    typeResolver: { getType(fullPath: string): DocumentEditorType; } = null;
+    typeResolver: { getType(fullPath: string): EditorType; } = null;
     entryResolver: { getFileEntry(fullPath: string): FileEntry; } = null;
 
     private _runtime: RuntimeDocumentStorage = null;
@@ -106,7 +106,7 @@ module teapo {
      * Note that type is metadata, so the instance is shared across all of the documents
      * of the same type.
      */
-    type(): DocumentEditorType {
+    type(): EditorType {
       if (!this._docState.type)
         this._docState.type = this._docState.runtime.storage.typeResolver.getType(this._docState.fullPath);
       return this._docState.type;
@@ -332,7 +332,7 @@ module teapo {
    */
   class RuntimeDocumentState {
     doc: DocumentState;
-    type: DocumentEditorType = null;
+    type: EditorType = null;
     editor: Editor = null;
     fileEntry: FileEntry = null;
     localStorageKey: string;

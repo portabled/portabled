@@ -10,7 +10,7 @@ module teapo {
     private _invokeonchange: () => void;
     private _text: string = null;
 
-    constructor(private _shared: CodeMirrorEditorSharedState, public docState?: DocumentState) {
+    constructor(private _shared: CodeMirrorEditor.SharedState, public docState?: DocumentState) {
     }
 
     static standardEditorConfiguration(): CodeMirror.EditorConfiguration {
@@ -114,15 +114,17 @@ module teapo {
     }
   }
 
-  export interface CodeMirrorEditorSharedState {
-    editor?: CodeMirror.Editor;
-    element?: HTMLElement;
-    options?: CodeMirror.EditorConfiguration;
+  export module CodeMirrorEditor {
+    export interface SharedState {
+      editor?: CodeMirror.Editor;
+      element?: HTMLElement;
+      options?: CodeMirror.EditorConfiguration;
+    }
   }
 
 
-  class TextDocumentEditorType implements DocumentEditorType {
-    private _shared: CodeMirrorEditorSharedState = {};
+  class PlainTextEditorType implements EditorType {
+    private _shared: CodeMirrorEditor.SharedState = {};
 
     constructor() {
     }
@@ -136,5 +138,7 @@ module teapo {
     }
   }
 
-  DocumentEditorType['Plain Text'] = new TextDocumentEditorType();
+  export module EditorType {
+    export var PlainText: EditorType = new PlainTextEditorType();
+  }
 }

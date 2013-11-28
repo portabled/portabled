@@ -596,26 +596,21 @@ var teapo;
 /// <reference path='persistence.ts' />
 var teapo;
 (function (teapo) {
-    // this is in fact of DocumentTypeRegistry
-    teapo.DocumentEditorType;
-
-    var DocumentEditorTypeRegistry = (function () {
-        function DocumentEditorTypeRegistry() {
-        }
-        DocumentEditorTypeRegistry.prototype.getType = function (fullPath) {
-            var reverse = Object.keys(teapo.DocumentEditorType);
+    (function (EditorType) {
+        function getType(fullPath) {
+            // must iterate in reverse, so more generic types get used last
+            var reverse = Object.keys(EditorType);
             for (var i = reverse.length - 1; i >= 0; i--) {
-                var t = teapo.DocumentEditorType[reverse[i]];
+                var t = this[reverse[i]];
                 if (t.canEdit && t.canEdit(fullPath))
                     return t;
             }
 
             return null;
-        };
-        return DocumentEditorTypeRegistry;
-    })();
-
-    teapo.DocumentEditorType = new DocumentEditorTypeRegistry();
+        }
+        EditorType.getType = getType;
+    })(teapo.EditorType || (teapo.EditorType = {}));
+    var EditorType = teapo.EditorType;
 })(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
 /// <reference path='editor.ts' />
@@ -638,7 +633,7 @@ var teapo;
             };
             this._storage = new teapo.DocumentStorage();
             this._storage.entryResolver = this.fileList;
-            this._storage.typeResolver = teapo.DocumentEditorType;
+            this._storage.typeResolver = teapo.EditorType;
 
             this.fileList = new teapo.FileList(this._storage);
 
@@ -857,21 +852,24 @@ var teapo;
     })();
     teapo.CodeMirrorEditor = CodeMirrorEditor;
 
-    var TextDocumentEditorType = (function () {
-        function TextDocumentEditorType() {
+    var PlainTextEditorType = (function () {
+        function PlainTextEditorType() {
             this._shared = {};
         }
-        TextDocumentEditorType.prototype.canEdit = function (fullPath) {
+        PlainTextEditorType.prototype.canEdit = function (fullPath) {
             return true;
         };
 
-        TextDocumentEditorType.prototype.editDocument = function (docState) {
+        PlainTextEditorType.prototype.editDocument = function (docState) {
             return new CodeMirrorEditor(this._shared, docState);
         };
-        return TextDocumentEditorType;
+        return PlainTextEditorType;
     })();
 
-    teapo.DocumentEditorType['Plain Text'] = new TextDocumentEditorType();
+    (function (EditorType) {
+        EditorType.PlainText = new PlainTextEditorType();
+    })(teapo.EditorType || (teapo.EditorType = {}));
+    var EditorType = teapo.EditorType;
 })(teapo || (teapo = {}));
 /// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='typings/codemirror.d.ts' />
@@ -977,20 +975,6 @@ var teapo;
         TypeScriptService.prototype._log = function (text) {
             // console.log(text);
         };
-        TypeScriptService._emptySnapshot = {
-            getText: function (start, end) {
-                return '';
-            },
-            getLength: function () {
-                return 0;
-            },
-            getLineStartPositions: function () {
-                return [];
-            },
-            getTextChangeRangeSinceVersion: function (scriptVersion) {
-                return TypeScript.TextChangeRange.unchanged;
-            }
-        };
         return TypeScriptService;
     })();
     teapo.TypeScriptService = TypeScriptService;
@@ -1045,27 +1029,28 @@ var __extends = this.__extends || function (d, b) {
 /// <reference path='TypeScriptService.ts' />
 var teapo;
 (function (teapo) {
-    var TypeScriptDocumentEditorType = (function () {
-        function TypeScriptDocumentEditorType(_typescript) {
+    var TypeScriptEditorType = (function () {
+        function TypeScriptEditorType(_typescript) {
             this._typescript = _typescript;
+            this._tsService = new teapo.TypeScriptService();
             this._shared = {
-                options: TypeScriptDocumentEditorType.editorConfiguration()
+                options: TypeScriptEditorType.editorConfiguration()
             };
         }
-        TypeScriptDocumentEditorType.editorConfiguration = function () {
+        TypeScriptEditorType.editorConfiguration = function () {
             var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
             options.mode = "text/typescript";
             return options;
         };
 
-        TypeScriptDocumentEditorType.prototype.canEdit = function (fullPath) {
+        TypeScriptEditorType.prototype.canEdit = function (fullPath) {
             return fullPath && fullPath.length > 3 && fullPath.slice(fullPath.length - 3).toLowerCase() === '.ts';
         };
 
-        TypeScriptDocumentEditorType.prototype.editDocument = function (docState) {
+        TypeScriptEditorType.prototype.editDocument = function (docState) {
             return new teapo.CodeMirrorEditor(this._shared, docState);
         };
-        return TypeScriptDocumentEditorType;
+        return TypeScriptEditorType;
     })();
 
     var TypeScriptEditor = (function (_super) {
