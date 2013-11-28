@@ -89,6 +89,12 @@ module teapo {
       this._triggerDiagnosticsUpdate();
     }
 
+    handleLoad() {
+      super.handleLoad();
+
+      this._updateDocDiagnostics();
+    }
+
     private _triggerDiagnosticsUpdate() {
       if (this._updateDiagnosticsTimeout)
         clearTimeout(this._updateDiagnosticsTimeout);
@@ -103,8 +109,36 @@ module teapo {
       this._syntacticDiagnostics = this._typescript.getSyntacticDiagnostics(this.docState.fullPath());
       this._semanticDiagnostics = this._typescript.getSemanticDiagnostics(this.docState.fullPath());
 
-      console.log(this._syntacticDiagnostics, this._semanticDiagnostics);
       this._updateGutter();
+      this._updateDocDiagnostics();
+    }
+
+    private _updateDocDiagnostics() {
+      var doc = this.doc();
+
+      if (this._syntacticDiagnostics) {
+        for (var i = 0; i < this._syntacticDiagnostics.length; i++) {
+          this._markDocError(this._syntacticDiagnostics[i], 'teapo-syntax-error', doc);
+        }
+      }
+
+      if (this._semanticDiagnostics) {
+        for (var i = 0; i < this._semanticDiagnostics.length; i++) {
+          this._markDocError(this._semanticDiagnostics[i], 'teapo-semantic-error', doc);
+        }
+      }
+    }
+
+    private _markDocError(error: TypeScript.Diagnostic, className: string, doc: CodeMirror.Doc) {
+      var from = { line: error.line(), ch: error.character() };
+      var to = { line: error.line(), ch: from.ch + error.length() };
+
+      doc.markText(
+        from, to,
+        {
+          className: className,
+          title: error.text()
+        });
     }
 
     private _updateGutter() {
@@ -120,14 +154,16 @@ module teapo {
         for (var i = 0; i < this._syntacticDiagnostics.length; i++) {
           this._markError(this._syntacticDiagnostics[i], 'teapo-gutter-syntax-error', editor);
         }
+      }
+
+      if (this._semanticDiagnostics && this._semanticDiagnostics.length) {
+        gutterClassName += ' teapo-errors-semantic';
 
         for (var i = 0; i < this._semanticDiagnostics.length; i++) {
           this._markError(this._semanticDiagnostics[i], 'teapo-gutter-semantic-error', editor);
         }
       }
-      if (this._semanticDiagnostics && this._semanticDiagnostics.length) {
-        gutterClassName += ' teapo-errors-semantic';
-      }
+
       gutterElement.className = gutterClassName;
     }
 
@@ -136,7 +172,7 @@ module teapo {
       var errorElement = document.createElement('div');
       errorElement.className = className;
       errorElement.title = error.text();
-      errorElement.onclick = () => alert(error.text() + '\nat '+(lineNumber+1));
+      errorElement.onclick = () => alert(error.text() + '\nat '+(lineNumber+1)+':'+(error.character()+1)+'.');
 
       editor.setGutterMarker(lineNumber, 'teapo-errors', errorElement);
 
