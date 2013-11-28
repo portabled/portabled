@@ -1138,11 +1138,11 @@ var teapo;
                 gutterClassName += ' teapo-errors-syntactic';
 
                 for (var i = 0; i < this._syntacticDiagnostics.length; i++) {
-                    this._markError(i, this._syntacticDiagnostics[i], 'teapo-syntax-error', editor);
+                    this._markError(this._syntacticDiagnostics[i], 'teapo-gutter-syntax-error', editor);
                 }
 
                 for (var i = 0; i < this._semanticDiagnostics.length; i++) {
-                    this._markError(i, this._semanticDiagnostics[i], 'teapo-semantic-error', editor);
+                    this._markError(this._semanticDiagnostics[i], 'teapo-gutter-semantic-error', editor);
                 }
             }
             if (this._semanticDiagnostics && this._semanticDiagnostics.length) {
@@ -1151,15 +1151,16 @@ var teapo;
             gutterElement.className = gutterClassName;
         };
 
-        TypeScriptEditor.prototype._markError = function (line, error, className, editor) {
+        TypeScriptEditor.prototype._markError = function (error, className, editor) {
+            var lineNumber = error.line();
             var errorElement = document.createElement('div');
             errorElement.className = className;
             errorElement.title = error.text();
             errorElement.onclick = function () {
-                return alert(error.text() + '\nat ' + error.line());
+                return alert(error.text() + '\nat ' + (lineNumber + 1));
             };
 
-            editor.setGutterMarker(line, 'teapo-errors', errorElement);
+            editor.setGutterMarker(lineNumber, 'teapo-errors', errorElement);
             //doc.markText(from: { error.line
         };
 
