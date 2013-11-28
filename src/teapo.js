@@ -26,10 +26,16 @@ var teapo;
             this._filesByFullPath = {};
             var fileNames = this._storage.documentNames();
             for (var i = 0; i < fileNames.length; i++) {
+                if (fileNames[i].charAt(0) !== '/')
+                    continue;
+
                 this._addFileEntry(fileNames[i]);
             }
         }
         FileList.prototype.getFileEntry = function (fullPath) {
+            if (fullPath.charAt(0) !== '/')
+                return null;
+
             return this._filesByFullPath[fullPath];
         };
 
@@ -424,7 +430,6 @@ var teapo;
         function RuntimeDocumentStorage(storage) {
             this.storage = storage;
             this.metadataElement = null;
-            this.staticContent = {};
             this.docByPath = {};
             var pathElements = this._scanDomScripts();
 
@@ -519,10 +524,8 @@ var teapo;
                 var s = this.storage.document.scripts[i];
                 var path = s.getAttribute('data-path');
                 if (path) {
-                    if (path.charAt(0) === '/') {
+                    if (path.charAt(0) === '/' || path.charAt(0) === '#') {
                         pathElements[path] = s;
-                    } else if (path.charAt(0) === '#') {
-                        this.staticContent[path] = s.innerHTML;
                     }
                 } else if (s.id === 'storageMetadata') {
                     this.metadataElement = s;
@@ -640,6 +643,13 @@ var teapo;
             this.fileList.selectedFile.subscribe(function (fileEntry) {
                 return _this._fileSelected(fileEntry);
             });
+
+            // loading editors for all the files
+            var allFiles = this._storage.documentNames();
+            for (var i = 0; i < allFiles.length; i++) {
+                var docState = this._storage.getDocument(allFiles[i]);
+                docState.editor();
+            }
         }
         ApplicationShell.prototype.newFileClick = function () {
             var fileName = prompt('New file');

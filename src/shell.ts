@@ -25,6 +25,13 @@ module teapo {
       this.fileList = new FileList(this._storage);
   
       this.fileList.selectedFile.subscribe((fileEntry) => this._fileSelected(fileEntry));
+
+      // loading editors for all the files
+      var allFiles = this._storage.documentNames();
+      for (var i = 0; i < allFiles.length; i++) {
+        var docState = this._storage.getDocument(allFiles[i]);
+        docState.editor();
+      }
     }
 
     newFileClick() {

@@ -17,11 +17,18 @@ module teapo {
     constructor(private _storage: DocumentStorage) {
       var fileNames = this._storage.documentNames();
       for (var i = 0; i < fileNames.length; i++) {
+
+        if (fileNames[i].charAt(0)!=='/')
+          continue; // ignore hidden files
+
         this._addFileEntry(fileNames[i]);
       }
     }
 
     getFileEntry(fullPath: string): FileEntry {
+      if (fullPath.charAt(0)!=='/')
+        return null; // ignore hidden files
+
       return this._filesByFullPath[fullPath];
     }
 

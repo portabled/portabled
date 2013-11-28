@@ -191,7 +191,6 @@ module teapo {
   class RuntimeDocumentStorage {
 
     metadataElement: HTMLScriptElement = null;
-    staticContent: { [path: string]: string; } = {};
     docByPath: { [name: string]: RuntimeDocumentState; } = {};
 
     constructor(public storage: DocumentStorage) {
@@ -302,11 +301,8 @@ module teapo {
         var s = <HTMLScriptElement>this.storage.document.scripts[i];
         var path = s.getAttribute('data-path');
         if (path) {
-          if (path.charAt(0)==='/') {
+          if (path.charAt(0)==='/' || path.charAt(0)==='#') {
             pathElements[path] = s;
-          }
-          else if (path.charAt(0)==='#') {
-            this.staticContent[path] = s.innerHTML;
           }
         }
         else if (s.id==='storageMetadata') {
