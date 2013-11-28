@@ -79,14 +79,19 @@ module teapo {
     }
 
     handleOpen() {
-      if (this.docState)
-        this.doc().setValue(this.docState.getProperty(null) || '');
     }
 
     handleChange(change: CodeMirror.EditorChange) {
     }
 
     handleClose() {
+    }
+
+    handleLoad() {
+      if (this.docState) {
+        this.doc().setValue(this.docState.getProperty(null) || '');
+        this.doc().clearHistory();
+      }
     }
 
     handleSave() {
@@ -103,6 +108,7 @@ module teapo {
 
     private _initDoc() {
       this._doc = new CodeMirror.Doc('');
+      this.handleLoad();
       CodeMirror.on(
         this._doc,
         'change',

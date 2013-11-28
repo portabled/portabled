@@ -64,7 +64,16 @@ html {
 }
 .teapo-errors {
   width: 0.5em;
+  height: 100%;
   background: silver;
+}
+.teapo-errors-semantic {
+  width: 0.5em;
+  background: goldenrod;
+}
+.teapo-errors-syntactic {
+  width: 0.5em;
+  background: tomato;
 }
 
 .teapo-content {

@@ -121,7 +121,7 @@ module teapo {
       if (!this.scriptData.changes)
         return TypeScript.TextChangeRange.unchanged;
 
-      var chunk = this.scriptData.changes.slice(scriptVersion+1);
+      var chunk = this.scriptData.changes.slice(scriptVersion);
 
       var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(chunk);
       return result;
@@ -130,13 +130,5 @@ module teapo {
     private _getText() {
       return this.scriptData.text ? this.scriptData.text() : <string><any>this.scriptData;
     }
-  
-//      var offset = doc.indexFromPos(change.from);
-//      var oldLength = this._totalLengthOfLines(change.removed);
-//      var newLength = this._totalLengthOfLines(change.text);
-//  
-//      var ch = new TypeScript.TextChangeRange(
-//          TypeScript.TextSpan.fromBounds(offset, offset+oldLength),
-//          newLength);
   }
 }

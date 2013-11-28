@@ -816,14 +816,19 @@ var teapo;
         };
 
         CodeMirrorEditor.prototype.handleOpen = function () {
-            if (this.docState)
-                this.doc().setValue(this.docState.getProperty(null) || '');
         };
 
         CodeMirrorEditor.prototype.handleChange = function (change) {
         };
 
         CodeMirrorEditor.prototype.handleClose = function () {
+        };
+
+        CodeMirrorEditor.prototype.handleLoad = function () {
+            if (this.docState) {
+                this.doc().setValue(this.docState.getProperty(null) || '');
+                this.doc().clearHistory();
+            }
         };
 
         CodeMirrorEditor.prototype.handleSave = function () {
@@ -842,6 +847,7 @@ var teapo;
         CodeMirrorEditor.prototype._initDoc = function () {
             var _this = this;
             this._doc = new CodeMirror.Doc('');
+            this.handleLoad();
             CodeMirror.on(this._doc, 'change', function (instance, change) {
                 _this._text = null;
                 _this._invokeonchange();
@@ -1004,7 +1010,7 @@ var teapo;
             if (!this.scriptData.changes)
                 return TypeScript.TextChangeRange.unchanged;
 
-            var chunk = this.scriptData.changes.slice(scriptVersion + 1);
+            var chunk = this.scriptData.changes.slice(scriptVersion);
 
             var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(chunk);
             return result;
@@ -1031,8 +1037,8 @@ var teapo;
 (function (teapo) {
     var TypeScriptEditorType = (function () {
         function TypeScriptEditorType(_typescript) {
+            if (typeof _typescript === "undefined") { _typescript = new teapo.TypeScriptService(); }
             this._typescript = _typescript;
-            this._tsService = new teapo.TypeScriptService();
             this._shared = {
                 options: TypeScriptEditorType.editorConfiguration()
             };
@@ -1040,6 +1046,7 @@ var teapo;
         TypeScriptEditorType.editorConfiguration = function () {
             var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
             options.mode = "text/typescript";
+            options.gutters = ['teapo-errors'];
             return options;
         };
 
@@ -1048,7 +1055,11 @@ var teapo;
         };
 
         TypeScriptEditorType.prototype.editDocument = function (docState) {
-            return new teapo.CodeMirrorEditor(this._shared, docState);
+            var editor = new TypeScriptEditor(this._typescript.service, this._shared, docState);
+
+            this._typescript.scripts[docState.fullPath()] = editor;
+
+            return editor;
         };
         return TypeScriptEditorType;
     })();
@@ -1056,13 +1067,139 @@ var teapo;
     var TypeScriptEditor = (function (_super) {
         __extends(TypeScriptEditor, _super);
         function TypeScriptEditor(_typescript, shared, docState) {
+            var _this = this;
             _super.call(this, shared, docState);
             this._typescript = _typescript;
+            this.changes = [];
+            this.cachedSnapshot = null;
+            this._syntacticDiagnostics = [];
+            this._semanticDiagnostics = [];
+            this._updateDiagnosticsTimeout = -1;
+            this._updateDiagnosticsClosure = function () {
+                return _this._updateDiagnostics();
+            };
+            this._teapoErrorsGutterElement = null;
         }
-        TypeScriptEditor.prototype.handleChange = function (change) {
+        TypeScriptEditor.prototype.handleOpen = function () {
+            this._updateGutter();
+
+            if (this._updateDiagnosticsTimeout) {
+                this._updateDiagnosticsTimeout = 0;
+                this._triggerDiagnosticsUpdate();
+            }
         };
+
+        TypeScriptEditor.prototype.handleClose = function () {
+            if (this._updateDiagnosticsTimeout) {
+                if (this._updateDiagnosticsTimeout !== -1)
+                    clearTimeout(this._updateDiagnosticsTimeout);
+
+                this._updateDiagnosticsTimeout = -1;
+            }
+        };
+
+        TypeScriptEditor.prototype.handleChange = function (change) {
+            var doc = this.doc();
+            var offset = doc.indexFromPos(change.from);
+            var oldLength = this._totalLengthOfLines(change.removed);
+            var newLength = this._totalLengthOfLines(change.text);
+
+            var ch = new TypeScript.TextChangeRange(TypeScript.TextSpan.fromBounds(offset, offset + oldLength), newLength);
+
+            this.changes.push(ch);
+
+            this._triggerDiagnosticsUpdate();
+        };
+
+        TypeScriptEditor.prototype._triggerDiagnosticsUpdate = function () {
+            if (this._updateDiagnosticsTimeout)
+                clearTimeout(this._updateDiagnosticsTimeout);
+            this._updateDiagnosticsTimeout = setTimeout(this._updateDiagnosticsClosure, TypeScriptEditor.updateDiagnosticsDelay);
+        };
+
+        TypeScriptEditor.prototype._updateDiagnostics = function () {
+            this._updateDiagnosticsTimeout = 0;
+
+            this._syntacticDiagnostics = this._typescript.getSyntacticDiagnostics(this.docState.fullPath());
+            this._semanticDiagnostics = this._typescript.getSemanticDiagnostics(this.docState.fullPath());
+
+            console.log(this._syntacticDiagnostics, this._semanticDiagnostics);
+            this._updateGutter();
+        };
+
+        TypeScriptEditor.prototype._updateGutter = function () {
+            var editor = this.editor();
+
+            editor.clearGutter('teapo-errors');
+
+            var gutterElement = this._getTeapoErrorsGutterElement();
+            var gutterClassName = 'teapo-errors';
+            if (this._syntacticDiagnostics && this._syntacticDiagnostics.length) {
+                gutterClassName += ' teapo-errors-syntactic';
+
+                for (var i = 0; i < this._syntacticDiagnostics.length; i++) {
+                    this._markError(i, this._syntacticDiagnostics[i], 'teapo-syntax-error', editor);
+                }
+
+                for (var i = 0; i < this._semanticDiagnostics.length; i++) {
+                    this._markError(i, this._semanticDiagnostics[i], 'teapo-semantic-error', editor);
+                }
+            }
+            if (this._semanticDiagnostics && this._semanticDiagnostics.length) {
+                gutterClassName += ' teapo-errors-semantic';
+            }
+            gutterElement.className = gutterClassName;
+        };
+
+        TypeScriptEditor.prototype._markError = function (line, error, className, editor) {
+            var errorElement = document.createElement('div');
+            errorElement.className = className;
+            errorElement.title = error.text();
+            errorElement.onclick = function () {
+                return alert(error.text() + '\nat ' + error.line());
+            };
+
+            editor.setGutterMarker(line, 'teapo-errors', errorElement);
+            //doc.markText(from: { error.line
+        };
+
+        TypeScriptEditor.prototype._getTeapoErrorsGutterElement = function () {
+            if (!this._teapoErrorsGutterElement)
+                this._teapoErrorsGutterElement = this._findGutterElement('teapo-errors');
+
+            return this._teapoErrorsGutterElement;
+        };
+
+        TypeScriptEditor.prototype._findGutterElement = function (className) {
+            var gutterElement = this.editor().getGutterElement();
+
+            for (var i = 0; i < gutterElement.children.length; i++) {
+                var candidate = gutterElement.children[i];
+                if (candidate.className && candidate.className.indexOf(className) >= 0)
+                    return candidate;
+            }
+
+            return null;
+        };
+
+        TypeScriptEditor.prototype._totalLengthOfLines = function (lines) {
+            var length = 0;
+            for (var i = 0; i < lines.length; i++) {
+                if (i > 0)
+                    length++; // '\n'
+
+                length += lines[i].length;
+            }
+            return length;
+        };
+        TypeScriptEditor.updateDiagnosticsDelay = 1000;
         return TypeScriptEditor;
     })(teapo.CodeMirrorEditor);
+
+    (function (EditorType) {
+        EditorType.TypeScript = new TypeScriptEditorType();
+    })(teapo.EditorType || (teapo.EditorType = {}));
+    var EditorType = teapo.EditorType;
 })(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
 /// <reference path='typings/typescriptServices.d.ts' />
