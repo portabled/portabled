@@ -1091,6 +1091,12 @@ var teapo;
                 return _this._updateDiagnostics();
             };
             this._teapoErrorsGutterElement = null;
+            this._completionTimeout = 0;
+            this._completionClosure = function () {
+                return _this._performCompletion();
+            };
+            this._forcedCompletion = false;
+            this._completionActive = false;
         }
         TypeScriptEditor.prototype.handleOpen = function () {
             this._updateGutter();
@@ -1108,6 +1114,12 @@ var teapo;
 
                 this._updateDiagnosticsTimeout = -1;
             }
+
+            if (this._completionTimeout) {
+                clearTimeout(this._completionTimeout);
+
+                this._completionTimeout = 0;
+            }
         };
 
         TypeScriptEditor.prototype.handleChange = function (change) {
@@ -1121,12 +1133,169 @@ var teapo;
             this.changes.push(ch);
 
             this._triggerDiagnosticsUpdate();
+            this._triggerCompletion();
         };
 
         TypeScriptEditor.prototype.handleLoad = function () {
+            var _this = this;
             _super.prototype.handleLoad.call(this);
 
+            CodeMirror.on(this.doc(), 'cursorActivity', function (instance) {
+                return _this._handleCursorActivity();
+            });
+
             this._updateDocDiagnostics();
+        };
+
+        TypeScriptEditor.prototype._handleCursorActivity = function () {
+            this._triggerCompletion();
+        };
+
+        TypeScriptEditor.prototype._triggerCompletion = function () {
+            if (this._completionTimeout)
+                clearTimeout(this._completionTimeout);
+
+            this._completionTimeout = setTimeout(this._completionClosure, TypeScriptEditor.completionDelay);
+        };
+
+        TypeScriptEditor.prototype._performCompletion = function () {
+            var _this = this;
+            this._completionTimeout = 0;
+
+            if (this._completionActive)
+                return;
+
+            if (!this._forcedCompletion) {
+                var nh = this._getNeighborhood();
+                if (nh.leadLength === 0 && nh.tailLength === 0 && nh.prefixChar !== '.')
+                    return;
+            }
+
+            CodeMirror.showHint(this.editor(), function () {
+                return _this._continueCompletion();
+            }, { completeSingle: false });
+        };
+
+        TypeScriptEditor.prototype._continueCompletion = function () {
+            var _this = this;
+            var editor = this.editor();
+            var fullPath = this.docState.fullPath();
+            var nh = this._getNeighborhood();
+
+            var completions = this._typescript.getCompletionsAtPosition(fullPath, nh.offset, false);
+
+            var from = {
+                line: nh.pos.line,
+                ch: nh.pos.ch - nh.leadLength
+            };
+            var to = {
+                line: nh.pos.line,
+                ch: nh.pos.ch + nh.tailLength
+            };
+            var lead = nh.line.slice(from.ch, nh.pos.ch);
+            var tail = nh.line.slice(nh.pos.ch, to.ch);
+            var leadLower = lead.toLowerCase();
+            var leadFirstChar = leadLower[0];
+            var filteredList = (completions ? completions.entries : []).filter(function (e) {
+                if (leadLower.length === 0)
+                    return true;
+                if (!e.name)
+                    return false;
+                if (e.name.length < leadLower.length)
+                    return false;
+                if (e.name[0].toLowerCase() !== leadFirstChar)
+                    return false;
+                if (e.name.slice(0, leadLower.length).toLowerCase() !== leadLower)
+                    return false;
+                return true;
+            });
+            if (filteredList.length > TypeScriptEditor.maxCompletions)
+                filteredList.length = TypeScriptEditor.maxCompletions;
+            var list = filteredList.map(function (e, index) {
+                var details = _this._typescript.getCompletionEntryDetails(fullPath, nh.offset, e.name);
+                return new CompletionItem(e, details, index, lead, tail);
+            });
+            if (list.length) {
+                if (!this._completionActive) {
+                    // only set active when we have a completion
+                    var onendcompletion = function () {
+                        CodeMirror.off(editor, 'endCompletion', onendcompletion);
+                        setTimeout(function () {
+                            return _this._completionActive = false;
+                        }, 1);
+                    };
+                    CodeMirror.on(editor, 'endCompletion', onendcompletion);
+                    this._completionActive = true;
+                }
+            }
+
+            return {
+                list: list,
+                from: from,
+                to: to
+            };
+        };
+
+        TypeScriptEditor.prototype._getNeighborhood = function () {
+            var doc = this.doc();
+            var pos = doc.getCursor();
+            var offset = doc.indexFromPos(pos);
+            var line = doc.getLine(pos.line);
+
+            var leadLength = 0;
+            var prefixChar = '';
+            var whitespace = false;
+            for (var i = pos.ch - 1; i >= 0; i--) {
+                var ch = line[i];
+                if (!whitespace && this._isWordChar(ch)) {
+                    leadLength++;
+                    continue;
+                }
+
+                whitespace = /\s/.test(ch);
+                if (!whitespace) {
+                    prefixChar = ch;
+                    break;
+                }
+            }
+
+            var tailLength = 0;
+            var suffixChar = '';
+            whitespace = false;
+            for (var i = pos.ch; i < line.length; i++) {
+                var ch = line[i];
+                if (!whitespace && this._isWordChar(ch)) {
+                    leadLength++;
+                    continue;
+                }
+
+                whitespace = /\s/.test(ch);
+                if (!whitespace) {
+                    suffixChar = ch;
+                    break;
+                }
+            }
+
+            return {
+                pos: pos,
+                offset: offset,
+                line: line,
+                leadLength: leadLength,
+                prefixChar: prefixChar,
+                tailLength: tailLength,
+                suffixChar: suffixChar
+            };
+        };
+
+        TypeScriptEditor.prototype._isWordChar = function (ch) {
+            if (ch.toLowerCase() !== ch.toUpperCase())
+                return true;
+            else if (ch === '_' || ch === '$')
+                return true;
+            else if (ch >= '0' && ch <= '9')
+                return true;
+            else
+                return false;
         };
 
         TypeScriptEditor.prototype._triggerDiagnosticsUpdate = function () {
@@ -1240,8 +1409,48 @@ var teapo;
             return length;
         };
         TypeScriptEditor.updateDiagnosticsDelay = 1000;
+        TypeScriptEditor.completionDelay = 200;
+        TypeScriptEditor.maxCompletions = 20;
         return TypeScriptEditor;
     })(teapo.CodeMirrorEditor);
+
+    var CompletionItem = (function () {
+        function CompletionItem(_completionEntry, _completionEntryDetails, _index, _lead, _tail) {
+            this._completionEntry = _completionEntry;
+            this._completionEntryDetails = _completionEntryDetails;
+            this._index = _index;
+            this._lead = _lead;
+            this._tail = _tail;
+            this.text = this._completionEntry.name;
+        }
+        CompletionItem.prototype.render = function (element) {
+            var kindSpan = document.createElement('span');
+            kindSpan.textContent = this._completionEntry.kind + ' ';
+            kindSpan.style.opacity = '0.6';
+            element.appendChild(kindSpan);
+
+            var nameSpan = document.createElement('span');
+            nameSpan.textContent = this.text;
+            element.appendChild(nameSpan);
+
+            if (this._completionEntryDetails.type) {
+                var typeSpan = document.createElement('span');
+                typeSpan.textContent = ' : ' + this._completionEntryDetails.type;
+                typeSpan.style.opacity = '0.7';
+                element.appendChild(typeSpan);
+            }
+
+            if (this._completionEntryDetails.docComment) {
+                var commentDiv = document.createElement('div');
+                commentDiv.textContent = this._completionEntryDetails.docComment;
+                commentDiv.style.opacity = '0.7';
+                commentDiv.style.fontStyle = 'italic';
+                commentDiv.style.marginLeft = '2em';
+                element.appendChild(commentDiv);
+            }
+        };
+        return CompletionItem;
+    })();
 
     (function (EditorType) {
         EditorType.TypeScript = new TypeScriptEditorType();

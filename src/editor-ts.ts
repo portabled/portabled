@@ -44,12 +44,19 @@ module teapo {
     cachedSnapshot: TypeScript.IScriptSnapshot = null; // needed for TypeScriptService optimization
 
     static updateDiagnosticsDelay = 1000;
+    static completionDelay = 200;
+    static maxCompletions = 20;
 
     private _syntacticDiagnostics: TypeScript.Diagnostic[] = [];
     private _semanticDiagnostics: TypeScript.Diagnostic[] = [];
     private _updateDiagnosticsTimeout = -1;
     private _updateDiagnosticsClosure = () => this._updateDiagnostics();
     private _teapoErrorsGutterElement: HTMLElement = null;
+
+    private _completionTimeout = 0;
+    private _completionClosure = () => this._performCompletion();
+    private _forcedCompletion = false;
+    private _completionActive = false;
 
     constructor(private _typescript: TypeScript.Services.ILanguageService, shared: CodeMirrorEditor.SharedState, docState: DocumentState) {
       super(shared, docState);
@@ -72,6 +79,12 @@ module teapo {
 
         this._updateDiagnosticsTimeout = -1;
       }
+
+      if (this._completionTimeout) {
+        clearTimeout(this._completionTimeout);
+
+        this._completionTimeout = 0;
+      }
     }
 
     handleChange(change: CodeMirror.EditorChange) {
@@ -87,12 +100,161 @@ module teapo {
       this.changes.push(ch);
 
       this._triggerDiagnosticsUpdate();
+      this._triggerCompletion();
     }
 
     handleLoad() {
       super.handleLoad();
 
+      CodeMirror.on(
+        this.doc(),
+        'cursorActivity', (instance) => this._handleCursorActivity());
+
       this._updateDocDiagnostics();
+    }
+
+    private _handleCursorActivity() {
+      this._triggerCompletion();
+    }
+
+    private _triggerCompletion() {
+      if (this._completionTimeout)
+        clearTimeout(this._completionTimeout);
+
+      this._completionTimeout = setTimeout(this._completionClosure, TypeScriptEditor.completionDelay);
+    }
+
+    private _performCompletion() {
+      this._completionTimeout = 0;
+
+      if (this._completionActive)
+        return;
+
+      if (!this._forcedCompletion) {
+        var nh = this._getNeighborhood();
+        if (nh.leadLength===0 && nh.tailLength===0
+          && nh.prefixChar!=='.')
+          return;
+      }
+
+      (<any>CodeMirror).showHint(
+        this.editor(),
+        () => this._continueCompletion(),
+        { completeSingle: false });
+    }
+
+    private _continueCompletion() {
+      var editor = this.editor();
+      var fullPath = this.docState.fullPath();
+      var nh = this._getNeighborhood();
+
+      var completions = this._typescript.getCompletionsAtPosition(fullPath, nh.offset, false);
+
+      var from = {
+        line: nh.pos.line,
+        ch: nh.pos.ch - nh.leadLength
+      };
+      var to = {
+        line: nh.pos.line,
+        ch: nh.pos.ch + nh.tailLength
+      };
+      var lead = nh.line.slice(from.ch, nh.pos.ch);
+      var tail = nh.line.slice(nh.pos.ch, to.ch);
+      var leadLower = lead.toLowerCase();
+      var leadFirstChar = leadLower[0];
+      var filteredList = (completions ? completions.entries : []).filter((e) => {
+        if (leadLower.length===0) return true;
+        if (!e.name) return false;
+        if (e.name.length<leadLower.length) return false;
+        if (e.name[0].toLowerCase() !== leadFirstChar) return false;
+        if (e.name.slice(0,leadLower.length).toLowerCase()!==leadLower) return false;
+        return true;      
+      });
+      if (filteredList.length>TypeScriptEditor.maxCompletions)
+        filteredList.length = TypeScriptEditor.maxCompletions;
+      var list = filteredList.map((e, index) => {
+        var details = this._typescript.getCompletionEntryDetails(fullPath, nh.offset, e.name);
+        return new CompletionItem(e, details, index, lead, tail);
+      });
+      if (list.length) {
+        if (!this._completionActive) {
+          // only set active when we have a completion
+          var onendcompletion = () => {
+            CodeMirror.off(editor,'endCompletion', onendcompletion);
+            setTimeout(() => this._completionActive = false, 1);
+          };
+          CodeMirror.on(editor,'endCompletion', onendcompletion);
+          this._completionActive = true;
+        }
+      }
+
+      return {
+        list: list,
+        from: from,
+        to: to
+      };
+    }
+
+    private _getNeighborhood() {
+      var doc = this.doc();
+      var pos = doc.getCursor();
+      var offset = doc.indexFromPos(pos);
+      var line = doc.getLine(pos.line);
+
+      var leadLength = 0;
+      var prefixChar = '';
+      var whitespace = false;
+      for (var i = pos.ch-1; i >=0; i--) {
+        var ch = line[i];
+        if (!whitespace && this._isWordChar(ch)) {
+          leadLength++;
+          continue;
+        }
+
+        whitespace = /\s/.test(ch);
+        if (!whitespace) {
+          prefixChar = ch;
+          break;
+        }
+      }
+
+      var tailLength = 0;
+      var suffixChar = '';
+      whitespace = false;
+      for (var i = pos.ch; i <line.length; i++) {
+        var ch = line[i];
+        if (!whitespace && this._isWordChar(ch)) {
+          leadLength++;
+          continue;
+        }
+
+        whitespace = /\s/.test(ch);
+        if (!whitespace) {
+          suffixChar = ch;
+          break;
+        }
+      }
+
+      return {
+        pos: pos,
+        offset: offset,
+        line: line,
+        leadLength: leadLength,
+        prefixChar: prefixChar,
+        tailLength: tailLength,
+        suffixChar: suffixChar
+      };
+    }
+
+    private _isWordChar(ch: string): boolean {
+      if (ch.toLowerCase()!==ch.toUpperCase())
+        return true;
+      else if (ch==='_' || ch==='$')
+        return true;
+      else if (ch>='0' && ch<='9')
+        return true;
+      else
+        return false;
     }
 
     private _triggerDiagnosticsUpdate() {
@@ -207,6 +369,45 @@ module teapo {
         length += lines[i].length;
       }
       return length;
+    }
+  }
+
+  class CompletionItem {
+    text: string;
+  
+    constructor(
+      private _completionEntry: TypeScript.Services.CompletionEntry,
+      private _completionEntryDetails: TypeScript.Services.CompletionEntryDetails,
+      private _index: number,
+      private _lead: string, private _tail: string) {
+      this.text = this._completionEntry.name;
+    }
+  
+    render(element: HTMLElement) {
+      var kindSpan = document.createElement('span');
+      kindSpan.textContent = this._completionEntry.kind+' ';
+      kindSpan.style.opacity = '0.6';
+      element.appendChild(kindSpan);
+  
+      var nameSpan = document.createElement('span');
+      nameSpan.textContent = this.text;
+      element.appendChild(nameSpan);
+  
+      if (this._completionEntryDetails.type) {
+        var typeSpan = document.createElement('span');
+        typeSpan.textContent = ' : '+this._completionEntryDetails.type;
+        typeSpan.style.opacity = '0.7';
+        element.appendChild(typeSpan);
+      }
+  
+      if (this._completionEntryDetails.docComment) {
+        var commentDiv = document.createElement('div');
+        commentDiv.textContent = this._completionEntryDetails.docComment;
+        commentDiv.style.opacity = '0.7';
+        commentDiv.style.fontStyle = 'italic';
+        commentDiv.style.marginLeft = '2em';
+        element.appendChild(commentDiv);
+      }
     }
   }
 
