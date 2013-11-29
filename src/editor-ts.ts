@@ -4,16 +4,21 @@
 /// <reference path='editor.ts' />
 /// <reference path='editor-std.ts' />
 
-/// <reference path='TypeScriptService.ts' />
+/// <reference path='TypeScriptService.ts'  />
 
 module teapo {
 
+  /**
+   * Handling detection of .ts files and creation of TypeScriptEditor,
+   * as well as storing the shared instance of TypeScriptService.
+   */
   class TypeScriptEditorType implements EditorType {
 
     private _shared: CodeMirrorEditor.SharedState = {
       options: TypeScriptEditorType.editorConfiguration()
     };
 
+    /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
     constructor(private _typescript = new TypeScriptService()) {
     }
 
@@ -32,15 +37,21 @@ module teapo {
     editDocument(docState: DocumentState): Editor {
       var editor = new TypeScriptEditor(this._typescript.service, this._shared, docState);
 
+      // TODO: think how it will be removed.
       this._typescript.scripts[docState.fullPath()] = editor;
 
       return editor;
     }
   }
 
+  /**
+   * Implements rich code-aware editing for TypeScript files.
+   */
   class TypeScriptEditor extends CodeMirrorEditor {
 
+    /** Required as part of interface to TypeScriptService. */
     changes: TypeScript.TextChangeRange[] = [];
+    /** Required as part of interface to TypeScriptService. */
     cachedSnapshot: TypeScript.IScriptSnapshot = null; // needed for TypeScriptService optimization
 
     static updateDiagnosticsDelay = 1000;
@@ -52,6 +63,7 @@ module teapo {
     private _updateDiagnosticsTimeout = -1;
     private _updateDiagnosticsClosure = () => this._updateDiagnostics();
     private _teapoErrorsGutterElement: HTMLElement = null;
+    private _docErrorMarks: CodeMirror.TextMarker[] = [];
 
     private _completionTimeout = 0;
     private _completionClosure = () => this._performCompletion();
@@ -66,6 +78,8 @@ module teapo {
 
       this._updateGutter();
 
+      // handling situation where an error refresh was queued,
+      // but did not finish when the document was closed last time
       if (this._updateDiagnosticsTimeout) {
         this._updateDiagnosticsTimeout = 0;
         this._triggerDiagnosticsUpdate();
@@ -73,6 +87,8 @@ module teapo {
     }
 
     handleClose() {
+
+      // if error refresh is queued, cancel it, but keep a special value as a flag
       if (this._updateDiagnosticsTimeout) {
         if (this._updateDiagnosticsTimeout!==-1)
           clearTimeout(this._updateDiagnosticsTimeout);
@@ -80,6 +96,7 @@ module teapo {
         this._updateDiagnosticsTimeout = -1;
       }
 
+      // completion should be cancelled outright
       if (this._completionTimeout) {
         clearTimeout(this._completionTimeout);
 
@@ -88,8 +105,11 @@ module teapo {
     }
 
     handleChange(change: CodeMirror.EditorChange) {
+
+      // convert change from CodeMirror to TypeScript format
       var doc = this.doc();
       var offset = doc.indexFromPos(change.from);
+
       var oldLength = this._totalLengthOfLines(<string[]><any>change.removed); // it's an array not a string
       var newLength = this._totalLengthOfLines(change.text);
   
@@ -97,24 +117,27 @@ module teapo {
           TypeScript.TextSpan.fromBounds(offset, offset+oldLength),
           newLength);
 
+      // store the change in an array
       this.changes.push(ch);
 
+      // trigger error refresh and completion
       this._triggerDiagnosticsUpdate();
       this._triggerCompletion();
     }
 
     handleLoad() {
-      super.handleLoad();
+      super.handleLoad(); // fetches the text from docState
 
       CodeMirror.on(
         this.doc(),
         'cursorActivity', (instance) => this._handleCursorActivity());
 
-      this._updateDocDiagnostics();
+      // on first load we populate the errors
+      this._triggerDiagnosticsUpdate();
     }
 
     private _handleCursorActivity() {
-      this._triggerCompletion();
+      // TODO: display syntactic information about the current cursor position in the status bar
     }
 
     private _triggerCompletion() {
@@ -131,6 +154,8 @@ module teapo {
         return;
 
       if (!this._forcedCompletion) {
+        // if user didn't ask for completion, only do it within an identifier
+        // or after dot
         var nh = this._getNeighborhood();
         if (nh.leadLength===0 && nh.tailLength===0
           && nh.prefixChar!=='.')
@@ -143,6 +168,11 @@ module teapo {
         { completeSingle: false });
     }
 
+    /**
+     * Invoked from CodeMirror's completion logic
+     * either at completion start, or on typing.
+     * Expected to return a set of completions plus extra metadata.
+     */
     private _continueCompletion() {
       var editor = this.editor();
       var fullPath = this.docState.fullPath();
@@ -158,31 +188,52 @@ module teapo {
         line: nh.pos.line,
         ch: nh.pos.ch + nh.tailLength
       };
+
       var lead = nh.line.slice(from.ch, nh.pos.ch);
       var tail = nh.line.slice(nh.pos.ch, to.ch);
+
       var leadLower = lead.toLowerCase();
       var leadFirstChar = leadLower[0];
+
+      // filter by lead/prefix (case-insensitive)
       var filteredList = (completions ? completions.entries : []).filter((e) => {
         if (leadLower.length===0) return true;
         if (!e.name) return false;
         if (e.name.length<leadLower.length) return false;
         if (e.name[0].toLowerCase() !== leadFirstChar) return false;
         if (e.name.slice(0,leadLower.length).toLowerCase()!==leadLower) return false;
-        return true;      
+        return true;
       });
+
+      // TODO: consider maxCompletions while filtering, to avoid excessive processing of long lists
+
+      // limit the size of the completion list
       if (filteredList.length>TypeScriptEditor.maxCompletions)
         filteredList.length = TypeScriptEditor.maxCompletions;
+
+      // convert from TypeScript details objects to CodeMirror completion API shape
       var list = filteredList.map((e, index) => {
         var details = this._typescript.getCompletionEntryDetails(fullPath, nh.offset, e.name);
         return new CompletionItem(e, details, index, lead, tail);
       });
+
       if (list.length) {
         if (!this._completionActive) {
-          // only set active when we have a completion
+
           var onendcompletion = () => {
             CodeMirror.off(editor,'endCompletion', onendcompletion);
-            setTimeout(() => this._completionActive = false, 1);
+            setTimeout(() => {
+                // clearing _completionActive bit and further completions
+                // (left with delay to settle possible race with change handling)
+                this._completionActive = false;
+                if (this._completionTimeout) {
+                  clearTimeout(this._completionTimeout);
+                  this._completionTimeout = 0;
+                }
+            }, 1);
           };
+
+          // first completion result: set _completionActive bit
           CodeMirror.on(editor,'endCompletion', onendcompletion);
           this._completionActive = true;
         }
@@ -195,6 +246,11 @@ module teapo {
       };
     }
 
+    /**
+     * Retrieves parts of the line before and after current cursor,
+     * looking for indentifier and whitespace boundaries.
+     * Needed for correct handling of completion context.
+     */
     private _getNeighborhood() {
       var doc = this.doc();
       var pos = doc.getCursor();
@@ -206,7 +262,7 @@ module teapo {
       var whitespace = false;
       for (var i = pos.ch-1; i >=0; i--) {
         var ch = line[i];
-        if (!whitespace && this._isWordChar(ch)) {
+        if (!whitespace && this._isIdentifierChar(ch)) {
           leadLength++;
           continue;
         }
@@ -223,7 +279,7 @@ module teapo {
       whitespace = false;
       for (var i = pos.ch; i <line.length; i++) {
         var ch = line[i];
-        if (!whitespace && this._isWordChar(ch)) {
+        if (!whitespace && this._isIdentifierChar(ch)) {
           leadLength++;
           continue;
         }
@@ -246,7 +302,7 @@ module teapo {
       };
     }
 
-    private _isWordChar(ch: string): boolean {
+    private _isIdentifierChar(ch: string): boolean {
       if (ch.toLowerCase()!==ch.toUpperCase())
         return true;
       else if (ch==='_' || ch==='$')
@@ -277,6 +333,10 @@ module teapo {
 
     private _updateDocDiagnostics() {
       var doc = this.doc();
+      for (var i = 0; i < this._docErrorMarks.length; i++) {
+        this._docErrorMarks[i].clear();
+      }
+      this._docErrorMarks = [];
 
       if (this._syntacticDiagnostics) {
         for (var i = 0; i < this._syntacticDiagnostics.length; i++) {
@@ -295,12 +355,13 @@ module teapo {
       var from = { line: error.line(), ch: error.character() };
       var to = { line: error.line(), ch: from.ch + error.length() };
 
-      doc.markText(
+      var m = doc.markText(
         from, to,
         {
           className: className,
           title: error.text()
         });
+      this._docErrorMarks.push(m);
     }
 
     private _updateGutter() {
@@ -337,8 +398,6 @@ module teapo {
       errorElement.onclick = () => alert(error.text() + '\nat '+(lineNumber+1)+':'+(error.character()+1)+'.');
 
       editor.setGutterMarker(lineNumber, 'teapo-errors', errorElement);
-
-      //doc.markText(from: { error.line
     }
 
     private _getTeapoErrorsGutterElement() {

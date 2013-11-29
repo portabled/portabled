@@ -3,6 +3,12 @@
 
 module teapo {
 
+  /**
+   * Pubic API exposing access to TypeScript language  services
+   * (see service member)
+   * and handling the interfaces TypeScript requires
+   * to access to the source code and the changes.
+   */
   export class TypeScriptService {
 
     logLevels = {
@@ -44,9 +50,15 @@ module teapo {
         getScriptByteOrderMark: (fileName: string) => TypeScript.ByteOrderMark.None,
         getScriptSnapshot: (fileName: string) => {
           var script = this.scripts[fileName];
-          if (!script.cachedSnapshot)
-            script.cachedSnapshot = new TypeScriptDocumentState(script);
-          return script.cachedSnapshot;
+          var snapshot = <TypeScriptDocumentSnapshot>script.cachedSnapshot;
+
+          // checking if snapshot is out of date
+          if (!snapshot || (script.changes && snapshot.version<script.changes.length)) {
+            script.cachedSnapshot =
+              snapshot = new TypeScriptDocumentSnapshot(script);
+          }
+
+          return snapshot;
         },
         getDiagnosticsObject: () => {
           return { log: (text:string) => this._log(text) };
@@ -95,9 +107,13 @@ module teapo {
     }
   }
  
-  class TypeScriptDocumentState implements TypeScript.IScriptSnapshot {
-  
+  class TypeScriptDocumentSnapshot implements TypeScript.IScriptSnapshot {
+    version = 0;
+    private _text: string = null;
+
     constructor(public scriptData: TypeScriptService.Script) {
+      if (this.scriptData.changes)
+        this.version = this.scriptData.changes.length;
     }
 
     getText(start: number, end: number): string {
@@ -121,6 +137,8 @@ module teapo {
       if (!this.scriptData.changes)
         return TypeScript.TextChangeRange.unchanged;
 
+      // TODO: check that we are not called for changes on old snapshots
+
       var chunk = this.scriptData.changes.slice(scriptVersion);
 
       var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(chunk);
@@ -128,7 +146,9 @@ module teapo {
     }
 
     private _getText() {
-      return this.scriptData.text ? this.scriptData.text() : <string><any>this.scriptData;
+      if (!this._text)
+        this._text = this.scriptData.text ? this.scriptData.text() : <string><any>this.scriptData;
+      return this._text;
     }
   }
 }

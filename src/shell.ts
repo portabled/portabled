@@ -5,6 +5,15 @@
 /// <reference path='persistence.ts' />
 
 module teapo {
+
+  /**
+   * Hadles high-level application behavior,
+   * creates and holds DocumentStorage and FileList,
+   * that in turn manage persistence and file list/tree.
+   *
+   * Note that ApplicationShell serves as the top-level
+   * ViewModel used in Knockout.js bindings.
+   */
   export class ApplicationShell {
 
     saveDelay = 600;
@@ -41,6 +50,7 @@ module teapo {
 
       var fileEntry = this.fileList.createFileEntry(fileName);
       this._storage.createDocument(fileName);
+
       fileEntry.handleClick();
     }
 

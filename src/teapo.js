@@ -258,8 +258,17 @@ var teapo;
         function DocumentStorage() {
             this.document = document;
             this.localStorage = localStorage;
+            /** Needed to separate data slots for file:// scheme. */
             this.uniqueKey = getUniqueKey();
+            /**
+            * Returns EditorType object handling editor behavior for a given file.
+            * Expected to be populated externally.
+            */
             this.typeResolver = null;
+            /**
+            * Returns FileEntry object representing the file in list/tree.
+            * Expected to be populated externally.
+            */
             this.entryResolver = null;
             this._runtime = null;
         }
@@ -377,15 +386,17 @@ var teapo;
         * Retrieves property value from whatever persistence mechanism is implemented.
         */
         DocumentState.prototype.getProperty = function (name) {
-            if (this._docState.loadFromDom) {
-                if (name)
-                    return this._docState.storeElement.getAttribute('data-' + name);
-                else
-                    return this._docState.storeElement.innerHTML;
-            } else {
+            if (!this._docState.loadFromDom) {
                 var slotName = this._docState.localStorageKey + (name ? name : '');
-                return this._docState.runtime.storage.localStorage[slotName];
+                var localValue = this._docState.runtime.storage.localStorage[slotName];
+                if (typeof localValue !== 'undefined')
+                    return localValue;
             }
+
+            if (name)
+                return this._docState.storeElement.getAttribute('data-' + name);
+            else
+                return this._docState.storeElement.innerHTML;
         };
 
         /**
@@ -621,6 +632,14 @@ var teapo;
 /// <reference path='persistence.ts' />
 var teapo;
 (function (teapo) {
+    /**
+    * Hadles high-level application behavior,
+    * creates and holds DocumentStorage and FileList,
+    * that in turn manage persistence and file list/tree.
+    *
+    * Note that ApplicationShell serves as the top-level
+    * ViewModel used in Knockout.js bindings.
+    */
     var ApplicationShell = (function () {
         function ApplicationShell() {
             var _this = this;
@@ -658,6 +677,7 @@ var teapo;
 
             var fileEntry = this.fileList.createFileEntry(fileName);
             this._storage.createDocument(fileName);
+
             fileEntry.handleClick();
         };
 
@@ -751,6 +771,9 @@ var teapo;
 /// <reference path='editor.ts' />
 var teapo;
 (function (teapo) {
+    /**
+    * Basic implementation for a text-based editor.
+    */
     var CodeMirrorEditor = (function () {
         function CodeMirrorEditor(_shared, docState) {
             this._shared = _shared;
@@ -768,35 +791,48 @@ var teapo;
                 autoCloseTags: true,
                 highlightSelectionMatches: { showToken: /\w/ },
                 styleActiveLine: true,
-                // readOnly: 'nocursor',
                 tabSize: 2,
                 extraKeys: { "Tab": "indentMore", "Shift-Tab": "indentLess" }
             };
         };
 
+        /**
+        * Invoked when a file is selected in the file list/tree and brought open.
+        */
         CodeMirrorEditor.prototype.open = function (onchange) {
+            // storing passed function
+            // (it should be invoked for any change to trigger saving)
             this._invokeonchange = onchange;
 
+            // this may actually create CodeMirror instance
             var editor = this.editor();
+
+            editor.swapDoc(this.doc());
+
+            // invoking overridable logic
+            this.handleOpen();
 
             var element = this._shared.element;
             if (element && !element.parentElement)
                 setTimeout(function () {
                     return editor.refresh();
                 }, 1);
-
-            editor.swapDoc(this.doc());
-
-            this.handleOpen();
-
             return element;
         };
 
+        /**
+        * Invoked when file needs to be saved.
+        */
         CodeMirrorEditor.prototype.save = function () {
+            // invoking overridable logic
             this.handleSave();
         };
 
+        /**
+        * Invoked when file is closed (normally it means another one is being opened).
+        */
         CodeMirrorEditor.prototype.close = function () {
+            // should not try triggering a save when not opened
             this._invokeonchange = null;
             this.handleClose();
         };
@@ -809,6 +845,7 @@ var teapo;
         };
 
         CodeMirrorEditor.prototype.editor = function () {
+            // note that editor instance is shared
             if (!this._shared.editor)
                 this._initEditor();
 
@@ -861,7 +898,9 @@ var teapo;
 
             this.handleLoad();
             CodeMirror.on(this._doc, 'change', function (instance, change) {
+                // it is critical that _text is cleared on any change
                 _this._text = null;
+
                 _this._invokeonchange();
                 _this.handleChange(change);
             });
@@ -893,6 +932,12 @@ var teapo;
 /// <reference path='typings/codemirror.d.ts' />
 var teapo;
 (function (teapo) {
+    /**
+    * Pubic API exposing access to TypeScript language  services
+    * (see service member)
+    * and handling the interfaces TypeScript requires
+    * to access to the source code and the changes.
+    */
     var TypeScriptService = (function () {
         function TypeScriptService() {
             this.logLevels = {
@@ -933,9 +978,14 @@ var teapo;
                 },
                 getScriptSnapshot: function (fileName) {
                     var script = _this.scripts[fileName];
-                    if (!script.cachedSnapshot)
-                        script.cachedSnapshot = new TypeScriptDocumentState(script);
-                    return script.cachedSnapshot;
+                    var snapshot = script.cachedSnapshot;
+
+                    // checking if snapshot is out of date
+                    if (!snapshot || (script.changes && snapshot.version < script.changes.length)) {
+                        script.cachedSnapshot = snapshot = new TypeScriptDocumentSnapshot(script);
+                    }
+
+                    return snapshot;
                 },
                 getDiagnosticsObject: function () {
                     return { log: function (text) {
@@ -997,41 +1047,48 @@ var teapo;
     })();
     teapo.TypeScriptService = TypeScriptService;
 
-    var TypeScriptDocumentState = (function () {
-        function TypeScriptDocumentState(scriptData) {
+    var TypeScriptDocumentSnapshot = (function () {
+        function TypeScriptDocumentSnapshot(scriptData) {
             this.scriptData = scriptData;
+            this.version = 0;
+            this._text = null;
+            if (this.scriptData.changes)
+                this.version = this.scriptData.changes.length;
         }
-        TypeScriptDocumentState.prototype.getText = function (start, end) {
+        TypeScriptDocumentSnapshot.prototype.getText = function (start, end) {
             var text = this._getText();
             var result = text.slice(start, end);
             return result;
         };
 
-        TypeScriptDocumentState.prototype.getLength = function () {
+        TypeScriptDocumentSnapshot.prototype.getLength = function () {
             var text = this._getText();
             return text.length;
         };
 
-        TypeScriptDocumentState.prototype.getLineStartPositions = function () {
+        TypeScriptDocumentSnapshot.prototype.getLineStartPositions = function () {
             var text = this._getText();
             var result = TypeScript.TextUtilities.parseLineStarts(text);
             return result;
         };
 
-        TypeScriptDocumentState.prototype.getTextChangeRangeSinceVersion = function (scriptVersion) {
+        TypeScriptDocumentSnapshot.prototype.getTextChangeRangeSinceVersion = function (scriptVersion) {
             if (!this.scriptData.changes)
                 return TypeScript.TextChangeRange.unchanged;
 
+            // TODO: check that we are not called for changes on old snapshots
             var chunk = this.scriptData.changes.slice(scriptVersion);
 
             var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(chunk);
             return result;
         };
 
-        TypeScriptDocumentState.prototype._getText = function () {
-            return this.scriptData.text ? this.scriptData.text() : this.scriptData;
+        TypeScriptDocumentSnapshot.prototype._getText = function () {
+            if (!this._text)
+                this._text = this.scriptData.text ? this.scriptData.text() : this.scriptData;
+            return this._text;
         };
-        return TypeScriptDocumentState;
+        return TypeScriptDocumentSnapshot;
     })();
 })(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
@@ -1044,10 +1101,15 @@ var __extends = this.__extends || function (d, b) {
 /// <reference path='persistence.ts' />
 /// <reference path='editor.ts' />
 /// <reference path='editor-std.ts' />
-/// <reference path='TypeScriptService.ts' />
+/// <reference path='TypeScriptService.ts'  />
 var teapo;
 (function (teapo) {
+    /**
+    * Handling detection of .ts files and creation of TypeScriptEditor,
+    * as well as storing the shared instance of TypeScriptService.
+    */
     var TypeScriptEditorType = (function () {
+        /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
         function TypeScriptEditorType(_typescript) {
             if (typeof _typescript === "undefined") { _typescript = new teapo.TypeScriptService(); }
             this._typescript = _typescript;
@@ -1069,6 +1131,7 @@ var teapo;
         TypeScriptEditorType.prototype.editDocument = function (docState) {
             var editor = new TypeScriptEditor(this._typescript.service, this._shared, docState);
 
+            // TODO: think how it will be removed.
             this._typescript.scripts[docState.fullPath()] = editor;
 
             return editor;
@@ -1076,13 +1139,18 @@ var teapo;
         return TypeScriptEditorType;
     })();
 
+    /**
+    * Implements rich code-aware editing for TypeScript files.
+    */
     var TypeScriptEditor = (function (_super) {
         __extends(TypeScriptEditor, _super);
         function TypeScriptEditor(_typescript, shared, docState) {
             var _this = this;
             _super.call(this, shared, docState);
             this._typescript = _typescript;
+            /** Required as part of interface to TypeScriptService. */
             this.changes = [];
+            /** Required as part of interface to TypeScriptService. */
             this.cachedSnapshot = null;
             this._syntacticDiagnostics = [];
             this._semanticDiagnostics = [];
@@ -1091,6 +1159,7 @@ var teapo;
                 return _this._updateDiagnostics();
             };
             this._teapoErrorsGutterElement = null;
+            this._docErrorMarks = [];
             this._completionTimeout = 0;
             this._completionClosure = function () {
                 return _this._performCompletion();
@@ -1101,6 +1170,8 @@ var teapo;
         TypeScriptEditor.prototype.handleOpen = function () {
             this._updateGutter();
 
+            // handling situation where an error refresh was queued,
+            // but did not finish when the document was closed last time
             if (this._updateDiagnosticsTimeout) {
                 this._updateDiagnosticsTimeout = 0;
                 this._triggerDiagnosticsUpdate();
@@ -1108,6 +1179,7 @@ var teapo;
         };
 
         TypeScriptEditor.prototype.handleClose = function () {
+            // if error refresh is queued, cancel it, but keep a special value as a flag
             if (this._updateDiagnosticsTimeout) {
                 if (this._updateDiagnosticsTimeout !== -1)
                     clearTimeout(this._updateDiagnosticsTimeout);
@@ -1115,6 +1187,7 @@ var teapo;
                 this._updateDiagnosticsTimeout = -1;
             }
 
+            // completion should be cancelled outright
             if (this._completionTimeout) {
                 clearTimeout(this._completionTimeout);
 
@@ -1123,32 +1196,37 @@ var teapo;
         };
 
         TypeScriptEditor.prototype.handleChange = function (change) {
+            // convert change from CodeMirror to TypeScript format
             var doc = this.doc();
             var offset = doc.indexFromPos(change.from);
+
             var oldLength = this._totalLengthOfLines(change.removed);
             var newLength = this._totalLengthOfLines(change.text);
 
             var ch = new TypeScript.TextChangeRange(TypeScript.TextSpan.fromBounds(offset, offset + oldLength), newLength);
 
+            // store the change in an array
             this.changes.push(ch);
 
+            // trigger error refresh and completion
             this._triggerDiagnosticsUpdate();
             this._triggerCompletion();
         };
 
         TypeScriptEditor.prototype.handleLoad = function () {
             var _this = this;
-            _super.prototype.handleLoad.call(this);
+            _super.prototype.handleLoad.call(this); // fetches the text from docState
 
             CodeMirror.on(this.doc(), 'cursorActivity', function (instance) {
                 return _this._handleCursorActivity();
             });
 
-            this._updateDocDiagnostics();
+            // on first load we populate the errors
+            this._triggerDiagnosticsUpdate();
         };
 
         TypeScriptEditor.prototype._handleCursorActivity = function () {
-            this._triggerCompletion();
+            // TODO: display syntactic information about the current cursor position in the status bar
         };
 
         TypeScriptEditor.prototype._triggerCompletion = function () {
@@ -1166,6 +1244,8 @@ var teapo;
                 return;
 
             if (!this._forcedCompletion) {
+                // if user didn't ask for completion, only do it within an identifier
+                // or after dot
                 var nh = this._getNeighborhood();
                 if (nh.leadLength === 0 && nh.tailLength === 0 && nh.prefixChar !== '.')
                     return;
@@ -1176,6 +1256,11 @@ var teapo;
             }, { completeSingle: false });
         };
 
+        /**
+        * Invoked from CodeMirror's completion logic
+        * either at completion start, or on typing.
+        * Expected to return a set of completions plus extra metadata.
+        */
         TypeScriptEditor.prototype._continueCompletion = function () {
             var _this = this;
             var editor = this.editor();
@@ -1192,10 +1277,14 @@ var teapo;
                 line: nh.pos.line,
                 ch: nh.pos.ch + nh.tailLength
             };
+
             var lead = nh.line.slice(from.ch, nh.pos.ch);
             var tail = nh.line.slice(nh.pos.ch, to.ch);
+
             var leadLower = lead.toLowerCase();
             var leadFirstChar = leadLower[0];
+
+            // filter by lead/prefix (case-insensitive)
             var filteredList = (completions ? completions.entries : []).filter(function (e) {
                 if (leadLower.length === 0)
                     return true;
@@ -1209,21 +1298,34 @@ var teapo;
                     return false;
                 return true;
             });
+
+            // TODO: consider maxCompletions while filtering, to avoid excessive processing of long lists
+            // limit the size of the completion list
             if (filteredList.length > TypeScriptEditor.maxCompletions)
                 filteredList.length = TypeScriptEditor.maxCompletions;
+
+            // convert from TypeScript details objects to CodeMirror completion API shape
             var list = filteredList.map(function (e, index) {
                 var details = _this._typescript.getCompletionEntryDetails(fullPath, nh.offset, e.name);
                 return new CompletionItem(e, details, index, lead, tail);
             });
+
             if (list.length) {
                 if (!this._completionActive) {
-                    // only set active when we have a completion
                     var onendcompletion = function () {
                         CodeMirror.off(editor, 'endCompletion', onendcompletion);
                         setTimeout(function () {
-                            return _this._completionActive = false;
+                            // clearing _completionActive bit and further completions
+                            // (left with delay to settle possible race with change handling)
+                            _this._completionActive = false;
+                            if (_this._completionTimeout) {
+                                clearTimeout(_this._completionTimeout);
+                                _this._completionTimeout = 0;
+                            }
                         }, 1);
                     };
+
+                    // first completion result: set _completionActive bit
                     CodeMirror.on(editor, 'endCompletion', onendcompletion);
                     this._completionActive = true;
                 }
@@ -1236,6 +1338,11 @@ var teapo;
             };
         };
 
+        /**
+        * Retrieves parts of the line before and after current cursor,
+        * looking for indentifier and whitespace boundaries.
+        * Needed for correct handling of completion context.
+        */
         TypeScriptEditor.prototype._getNeighborhood = function () {
             var doc = this.doc();
             var pos = doc.getCursor();
@@ -1247,7 +1354,7 @@ var teapo;
             var whitespace = false;
             for (var i = pos.ch - 1; i >= 0; i--) {
                 var ch = line[i];
-                if (!whitespace && this._isWordChar(ch)) {
+                if (!whitespace && this._isIdentifierChar(ch)) {
                     leadLength++;
                     continue;
                 }
@@ -1264,7 +1371,7 @@ var teapo;
             whitespace = false;
             for (var i = pos.ch; i < line.length; i++) {
                 var ch = line[i];
-                if (!whitespace && this._isWordChar(ch)) {
+                if (!whitespace && this._isIdentifierChar(ch)) {
                     leadLength++;
                     continue;
                 }
@@ -1287,7 +1394,7 @@ var teapo;
             };
         };
 
-        TypeScriptEditor.prototype._isWordChar = function (ch) {
+        TypeScriptEditor.prototype._isIdentifierChar = function (ch) {
             if (ch.toLowerCase() !== ch.toUpperCase())
                 return true;
             else if (ch === '_' || ch === '$')
@@ -1316,6 +1423,10 @@ var teapo;
 
         TypeScriptEditor.prototype._updateDocDiagnostics = function () {
             var doc = this.doc();
+            for (var i = 0; i < this._docErrorMarks.length; i++) {
+                this._docErrorMarks[i].clear();
+            }
+            this._docErrorMarks = [];
 
             if (this._syntacticDiagnostics) {
                 for (var i = 0; i < this._syntacticDiagnostics.length; i++) {
@@ -1334,10 +1445,11 @@ var teapo;
             var from = { line: error.line(), ch: error.character() };
             var to = { line: error.line(), ch: from.ch + error.length() };
 
-            doc.markText(from, to, {
+            var m = doc.markText(from, to, {
                 className: className,
                 title: error.text()
             });
+            this._docErrorMarks.push(m);
         };
 
         TypeScriptEditor.prototype._updateGutter = function () {
@@ -1376,7 +1488,6 @@ var teapo;
             };
 
             editor.setGutterMarker(lineNumber, 'teapo-errors', errorElement);
-            //doc.markText(from: { error.line
         };
 
         TypeScriptEditor.prototype._getTeapoErrorsGutterElement = function () {

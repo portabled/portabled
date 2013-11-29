@@ -5,12 +5,17 @@
 
 module teapo {
 
+  /**
+   * Basic implementation for a text-based editor.
+   */
   export class CodeMirrorEditor implements Editor {
     private _doc: CodeMirror.Doc = null;
     private _invokeonchange: () => void;
     private _text: string = null;
 
-    constructor(private _shared: CodeMirrorEditor.SharedState, public docState?: DocumentState) {
+    constructor(
+      private _shared: CodeMirrorEditor.SharedState,
+      public docState: DocumentState) {
     }
 
     static standardEditorConfiguration(): CodeMirror.EditorConfiguration {
@@ -23,33 +28,46 @@ module teapo {
         autoCloseTags: true,
         highlightSelectionMatches: {showToken: /\w/},
         styleActiveLine: true,
-        // readOnly: 'nocursor',
         tabSize: 2,
         extraKeys: {"Tab": "indentMore", "Shift-Tab": "indentLess"}
       };
     }
 
+    /**
+     * Invoked when a file is selected in the file list/tree and brought open.
+     */
     open(onchange: () => void): HTMLElement {
+      // storing passed function
+      // (it should be invoked for any change to trigger saving)
       this._invokeonchange = onchange;
 
+      // this may actually create CodeMirror instance
       var editor = this.editor();
+
+      editor.swapDoc(this.doc());
+
+      // invoking overridable logic
+      this.handleOpen();
 
       var element = this._shared.element;
       if (element && !element.parentElement)
         setTimeout(() => editor.refresh(), 1);
-  
-      editor.swapDoc(this.doc());
-  
-      this.handleOpen();
-
       return element;
     }
 
+    /**
+     * Invoked when file needs to be saved.
+     */
     save() {
+      // invoking overridable logic
       this.handleSave();
     }
 
+    /**
+     * Invoked when file is closed (normally it means another one is being opened).
+     */
     close() {
+      // should not try triggering a save when not opened
       this._invokeonchange = null;
       this.handleClose();
     }
@@ -62,6 +80,7 @@ module teapo {
     }
 
     editor() {
+      // note that editor instance is shared
       if (!this._shared.editor)
         this._initEditor();
 
@@ -117,7 +136,10 @@ module teapo {
         this._doc,
         'change',
         (instance, change) => {
+
+          // it is critical that _text is cleared on any change
           this._text = null;
+
           this._invokeonchange();
           this.handleChange(change);
         });

@@ -10,9 +10,20 @@ module teapo {
 
     document = document;
     localStorage = localStorage;
+
+    /** Needed to separate data slots for file:// scheme. */
     uniqueKey: string = getUniqueKey();
 
+    /**
+     * Returns EditorType object handling editor behavior for a given file.
+     * Expected to be populated externally.
+     */
     typeResolver: { getType(fullPath: string): EditorType; } = null;
+
+    /**
+     * Returns FileEntry object representing the file in list/tree.
+     * Expected to be populated externally.
+     */
     entryResolver: { getFileEntry(fullPath: string): FileEntry; } = null;
 
     private _runtime: RuntimeDocumentStorage = null;
@@ -139,16 +150,17 @@ module teapo {
      * Retrieves property value from whatever persistence mechanism is implemented.
      */
     getProperty(name: string): string {
-      if (this._docState.loadFromDom) {
-        if (name)
-          return this._docState.storeElement.getAttribute('data-'+name);
-        else
-          return this._docState.storeElement.innerHTML;
-      }
-      else {
+      if (!this._docState.loadFromDom) {
         var slotName = this._docState.localStorageKey + (name?name:'');
-        return this._docState.runtime.storage.localStorage[slotName];
+        var localValue = this._docState.runtime.storage.localStorage[slotName];
+        if (typeof localValue!=='undefined')
+          return localValue;
       }
+
+      if (name)
+        return this._docState.storeElement.getAttribute('data-'+name);
+      else
+        return this._docState.storeElement.innerHTML;
     }
 
     /**
