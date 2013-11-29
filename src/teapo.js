@@ -886,7 +886,7 @@ var teapo;
         CodeMirrorEditor.prototype._initEditor = function () {
             var _this = this;
             var options = this._shared.options || CodeMirrorEditor.standardEditorConfiguration();
-            this._shared.editor = CodeMirror(function (element) {
+            this._shared.editor = new CodeMirror(function (element) {
                 return _this._shared.element = element;
             }, options);
         };

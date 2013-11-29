@@ -390,7 +390,7 @@ module teapo {
       gutterElement.className = gutterClassName;
     }
 
-    private _markError(error: TypeScript.Diagnostic, className: string, editor: CodeMirror.Editor) {
+    private _markError(error: TypeScript.Diagnostic, className: string, editor: CodeMirror) {
       var lineNumber = error.line();
       var errorElement = document.createElement('div');
       errorElement.className = className;

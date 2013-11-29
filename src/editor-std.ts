@@ -18,7 +18,7 @@ module teapo {
       public docState: DocumentState) {
     }
 
-    static standardEditorConfiguration(): CodeMirror.EditorConfiguration {
+    static standardEditorConfiguration(): CodeMirror.Options {
       return {
         lineNumbers: true,
         matchBrackets: true,
@@ -119,8 +119,8 @@ module teapo {
     }
 
     private _initEditor() {
-      var options = this._shared.options || CodeMirrorEditor.standardEditorConfiguration();
-      this._shared.editor = CodeMirror(
+      var options: CodeMirror.Options = this._shared.options || CodeMirrorEditor.standardEditorConfiguration();
+      this._shared.editor = new CodeMirror(
         (element) => this._shared.element = element,
         options);
     }
@@ -148,9 +148,9 @@ module teapo {
 
   export module CodeMirrorEditor {
     export interface SharedState {
-      editor?: CodeMirror.Editor;
+      editor?: CodeMirror;
       element?: HTMLElement;
-      options?: CodeMirror.EditorConfiguration;
+      options?: CodeMirror.Options;
     }
   }
 
