@@ -1,9 +1,6 @@
-interface CodeMirror {
-  (host: HTMLElement, options?: CodeMirror.Options): CodeMirror;
-  (callback: (host: HTMLElement) => void , options?: CodeMirror.Options): CodeMirror;
-  
-  new (host: HTMLElement, options?: CodeMirror.Options): CodeMirror;
-  new (callback: (host: HTMLElement) => void , options?: CodeMirror.Options): CodeMirror;
+declare class CodeMirror {
+  constructor (host: HTMLElement, options?: CodeMirror.Options);
+  constructor (callback: (host: HTMLElement) => void , options?: CodeMirror.Options);
 
   /** Tells you whether the editor currently has focus. */
   hasFocus(): boolean;
