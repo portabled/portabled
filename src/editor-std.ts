@@ -107,7 +107,11 @@ module teapo {
     }
 
     private _initDoc() {
-      this._doc = new CodeMirror.Doc('');
+      var options = this._shared.options || CodeMirrorEditor.standardEditorConfiguration();
+      this._doc =
+        options.mode ? new CodeMirror.Doc('', options.mode) :
+        new CodeMirror.Doc('');
+
       this.handleLoad();
       CodeMirror.on(
         this._doc,

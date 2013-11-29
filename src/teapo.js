@@ -856,7 +856,9 @@ var teapo;
 
         CodeMirrorEditor.prototype._initDoc = function () {
             var _this = this;
-            this._doc = new CodeMirror.Doc('');
+            var options = this._shared.options || CodeMirrorEditor.standardEditorConfiguration();
+            this._doc = options.mode ? new CodeMirror.Doc('', options.mode) : new CodeMirror.Doc('');
+
             this.handleLoad();
             CodeMirror.on(this._doc, 'change', function (instance, change) {
                 _this._text = null;
