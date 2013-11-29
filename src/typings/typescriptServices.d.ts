@@ -6630,7 +6630,6 @@ declare module TypeScript {
 }
 declare module TypeScript {
     var pullSymbolID: number;
-    var globalTyvarID: number;
     var sentinelEmptyArray: any[];
     class PullSymbol {
         public pullSymbolID: number;
@@ -7322,7 +7321,7 @@ declare module TypeScript {
         private isLeftSideOfQualifiedName(ast);
         private resolveGenericTypeReference(genericTypeAST, context);
         private resolveQualifiedName(dottedNameAST, context);
-        private isInImportDeclaration(ast);
+        private isLastNameOfModuleNameModuleReference(ast);
         private computeQualifiedName(dottedNameAST, context);
         private shouldContextuallyTypeAnyFunctionExpression(functionExpressionAST, typeParameters, parameters, returnTypeAnnotation, context);
         private resolveAnyFunctionExpression(funcDeclAST, typeParameters, parameters, returnTypeAnnotation, block, bodyExpression, isContextuallyTyped, context);
@@ -7546,7 +7545,7 @@ declare module TypeScript {
         public getDocument(fileName: string): TypeScript.Document;
         public lineMap(fileName: string): TypeScript.LineMap;
         public fileNames(): string[];
-        private bindPrimitiveSymbol(decl, newSymbol);
+        private bindPrimitiveSymbol<TSymbol extends TypeScript.PullSymbol>(decl, newSymbol);
         private addPrimitiveTypeSymbol(decl);
         private addPrimitiveValueSymbol(decl, type);
         private resetGlobalSymbols();
@@ -8727,6 +8726,7 @@ declare module TypeScript.Services.Formatting {
         private getTokenIndentationAmount(token);
         private getCommentIndentationAmount(token);
         private getNodeIndentation(node, newLineInsertedByFormatting?);
+        private shouldIndentBlockInParent(parent);
         private forceRecomputeIndentationOfParent(tokenStart, newLineAdded);
     }
 }
