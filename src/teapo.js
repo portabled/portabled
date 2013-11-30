@@ -483,7 +483,10 @@ var teapo;
                     var lsFullPath = lsFilenames[i];
                     var s = pathElements[lsFullPath];
                     if (s) {
-                        // TODO: clear DOM attributes
+                        for (var iattr = 0; iattr < s.attributes.length; i++) {
+                            s.removeAttribute(s.attributes.item(i).name);
+                        }
+                        s.innerHTML = '';
                     } else {
                         s = appendScriptElement(this.storage.document);
                         s.setAttribute('data-path', lsFullPath);
