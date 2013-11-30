@@ -40,8 +40,7 @@ var teapo;
         };
 
         FileList.prototype.createFileEntry = function (fullPath) {
-            this._addFileEntry(fullPath);
-            return this.getFileEntry(fullPath);
+            return this._addFileEntry(fullPath);
         };
 
         FileList.prototype._addFileEntry = function (fullPath) {
@@ -71,11 +70,15 @@ var teapo;
             if (file && file.name() === fileName)
                 throw new Error('File already exists: ' + file.fullPath() + '.');
 
-            file = new RuntimeFileEntry('/' + pathParts.join('/'), fileName, parent, this, function () {
+            var fullPath = '/' + pathParts.join('/');
+            file = new RuntimeFileEntry(fullPath, fileName, parent, this, function () {
                 return _this._handleFileClick(file);
             });
 
             files.splice(fileIndex, 0, file);
+            this._filesByFullPath[fullPath] = file;
+
+            return file;
         };
 
         FileList.prototype._insertOrLookupFolder = function (parent, folders, pathParts, i) {
@@ -483,10 +486,7 @@ var teapo;
                     var lsFullPath = lsFilenames[i];
                     var s = pathElements[lsFullPath];
                     if (s) {
-                        for (var iattr = 0; iattr < s.attributes.length; i++) {
-                            s.removeAttribute(s.attributes.item(i).name);
-                        }
-                        s.innerHTML = '';
+                        // TODO: copy all properties from localStorage
                     } else {
                         s = appendScriptElement(this.storage.document);
                         s.setAttribute('data-path', lsFullPath);
@@ -687,7 +687,7 @@ var teapo;
                 return;
 
             var fileEntry = this.fileList.createFileEntry(fileName);
-            this._storage.createDocument(fileName);
+            this._storage.createDocument(fileEntry.fullPath());
 
             fileEntry.handleClick();
         };

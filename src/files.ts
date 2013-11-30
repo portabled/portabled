@@ -33,8 +33,7 @@ module teapo {
     }
 
     createFileEntry(fullPath: string): FileEntry {
-      this._addFileEntry(fullPath);
-      return this.getFileEntry(fullPath);
+      return this._addFileEntry(fullPath);
     }
 
     private _addFileEntry(fullPath: string): void {
@@ -63,14 +62,18 @@ module teapo {
       if (file && file.name()===fileName)
         throw new Error('File already exists: '+file.fullPath()+'.');
 
+      var fullPath = '/'+pathParts.join('/');
       file = new RuntimeFileEntry(
-        '/'+pathParts.join('/'),
+        fullPath,
         fileName,
         parent,
         this,
         () => this._handleFileClick(file));
 
       files.splice(fileIndex, 0, file);
+      this._filesByFullPath[fullPath] = file;
+
+      return file;
     }
 
     private _insertOrLookupFolder(

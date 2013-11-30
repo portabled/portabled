@@ -251,10 +251,7 @@ module teapo {
           var lsFullPath = lsFilenames[i];
           var s = pathElements[lsFullPath];
           if (s) {
-            for (var iattr=0; iattr < s.attributes.length; i++) {
-              s.removeAttribute(s.attributes.item(i).name);
-            }
-            s.innerHTML = '';
+            // TODO: copy all properties from localStorage
           }
           else {
             s = appendScriptElement(this.storage.document);

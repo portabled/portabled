@@ -49,7 +49,7 @@ module teapo {
         return;
 
       var fileEntry = this.fileList.createFileEntry(fileName);
-      this._storage.createDocument(fileName);
+      this._storage.createDocument(fileEntry.fullPath());
 
       fileEntry.handleClick();
     }
