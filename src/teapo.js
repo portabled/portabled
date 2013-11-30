@@ -610,7 +610,15 @@ var teapo;
 /// <reference path='persistence.ts' />
 var teapo;
 (function (teapo) {
+    
+
+    
+
+    // types are registered by adding variables/properties to this module
     (function (EditorType) {
+        /**
+        * Resolve to a type that accepts this file.
+        */
         function getType(fullPath) {
             // must iterate in reverse, so more generic types get used last
             var reverse = Object.keys(EditorType);
@@ -837,6 +845,9 @@ var teapo;
             this.handleClose();
         };
 
+        /**
+        * Retrieve CodeMirror.Doc that is solely used for this document editing.
+        */
         CodeMirrorEditor.prototype.doc = function () {
             if (!this._doc)
                 this._initDoc();
@@ -844,6 +855,10 @@ var teapo;
             return this._doc;
         };
 
+        /**
+        * Retrieve CodeMirror editor that normally is shared with other documents of the same type.
+        * Be careful not to use it when this specific document is closed.
+        */
         CodeMirrorEditor.prototype.editor = function () {
             // note that editor instance is shared
             if (!this._shared.editor)
@@ -852,6 +867,12 @@ var teapo;
             return this._shared.editor;
         };
 
+        /**
+        * Retrieve the text of this document.
+        * This property is cached, so retrieving the text is cheap between the edits.
+        * If the document has never been edited, the text is retrieved from the storage instead,
+        * which is much cheaper still.
+        */
         CodeMirrorEditor.prototype.text = function () {
             if (!this._text) {
                 if (this._doc)
@@ -862,15 +883,30 @@ var teapo;
             return this._text;
         };
 
+        /**
+        * Overridable method, invoked when the document is being opened.
+        */
         CodeMirrorEditor.prototype.handleOpen = function () {
         };
 
+        /**
+        * Overridable method, invoked when the document has been changed.
+        * CodeMirrorEditor subscribes to corresponding event internally, and does some internal handling before invoking handleChange.
+        */
         CodeMirrorEditor.prototype.handleChange = function (change) {
         };
 
+        /**
+        * Overridable method, invoked when the document is being closed.
+        */
         CodeMirrorEditor.prototype.handleClose = function () {
         };
 
+        /**
+        * Overridable method, invoked when the document is being loaded first time from the storage.
+        * The default implementation fetches 'null' property from the storage.
+        * Keep calling super.handleLoad() if that is the desired behavior.
+        */
         CodeMirrorEditor.prototype.handleLoad = function () {
             if (this.docState) {
                 this.doc().setValue(this.docState.getProperty(null) || '');
@@ -878,6 +914,11 @@ var teapo;
             }
         };
 
+        /**
+        * Overridable method, invoked when the document needs to be saved.
+        * The default implementation stores into 'null' property of the storage.
+        * Keep calling super.handleSave() if that is the desired behavior.
+        */
         CodeMirrorEditor.prototype.handleSave = function () {
             if (this.docState)
                 this.docState.setProperty(null, this.text());
@@ -893,15 +934,21 @@ var teapo;
 
         CodeMirrorEditor.prototype._initDoc = function () {
             var _this = this;
+            // resolve options (allow override)
             var options = this._shared.options || CodeMirrorEditor.standardEditorConfiguration();
             this._doc = options.mode ? new CodeMirror.Doc('', options.mode) : new CodeMirror.Doc('');
 
+            // invoke overridable handleLoad()
             this.handleLoad();
+
+            // subscribe to change event
             CodeMirror.on(this._doc, 'change', function (instance, change) {
                 // it is critical that _text is cleared on any change
                 _this._text = null;
 
+                // notify the external logic that the document was changed
                 _this._invokeonchange();
+
                 _this.handleChange(change);
             });
         };
@@ -909,6 +956,9 @@ var teapo;
     })();
     teapo.CodeMirrorEditor = CodeMirrorEditor;
 
+    /**
+    * Simple document type using CodeMirrorEditor, usable as a default type for text files.
+    */
     var PlainTextEditorType = (function () {
         function PlainTextEditorType() {
             this._shared = {};
@@ -924,6 +974,9 @@ var teapo;
     })();
 
     (function (EditorType) {
+        /**
+        * Registering PlainTextEditorType.
+        */
         EditorType.PlainText = new PlainTextEditorType();
     })(teapo.EditorType || (teapo.EditorType = {}));
     var EditorType = teapo.EditorType;
@@ -1167,6 +1220,9 @@ var teapo;
             this._forcedCompletion = false;
             this._completionActive = false;
         }
+        /**
+        * Overriding opening of the file, refreshing error marks.
+        */
         TypeScriptEditor.prototype.handleOpen = function () {
             this._updateGutter();
 
@@ -1178,6 +1234,9 @@ var teapo;
             }
         };
 
+        /**
+        * Overringin closing of the file, stopping queued requests.
+        */
         TypeScriptEditor.prototype.handleClose = function () {
             // if error refresh is queued, cancel it, but keep a special value as a flag
             if (this._updateDiagnosticsTimeout) {
@@ -1195,6 +1254,10 @@ var teapo;
             }
         };
 
+        /**
+        * Storing changes for TypeScript incremental compilation/parsing,
+        * queueing refresh of errors and code completion.
+        */
         TypeScriptEditor.prototype.handleChange = function (change) {
             // convert change from CodeMirror to TypeScript format
             var doc = this.doc();
@@ -1213,6 +1276,9 @@ var teapo;
             this._triggerCompletion();
         };
 
+        /**
+        * Subscribing to cursor activity.
+        */
         TypeScriptEditor.prototype.handleLoad = function () {
             var _this = this;
             _super.prototype.handleLoad.call(this); // fetches the text from docState
@@ -1220,9 +1286,7 @@ var teapo;
             CodeMirror.on(this.doc(), 'cursorActivity', function (instance) {
                 return _this._handleCursorActivity();
             });
-
-            // on first load we populate the errors
-            this._triggerDiagnosticsUpdate();
+            // TODO: when file icons introduced, populate errors here early
         };
 
         TypeScriptEditor.prototype._handleCursorActivity = function () {

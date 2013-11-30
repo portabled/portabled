@@ -72,13 +72,20 @@ module teapo {
       this.handleClose();
     }
 
+    /**
+     * Retrieve CodeMirror.Doc that is solely used for this document editing.
+     */
     doc() {
       if (!this._doc)
         this._initDoc();
-  
+
       return this._doc;
     }
 
+    /**
+     * Retrieve CodeMirror editor that normally is shared with other documents of the same type.
+     * Be careful not to use it when this specific document is closed.
+     */
     editor() {
       // note that editor instance is shared
       if (!this._shared.editor)
@@ -87,6 +94,12 @@ module teapo {
       return this._shared.editor;
     }
 
+    /**
+     * Retrieve the text of this document.
+     * This property is cached, so retrieving the text is cheap between the edits.
+     * If the document has never been edited, the text is retrieved from the storage instead,
+     * which is much cheaper still.
+     */
     text(): string {
       if (!this._text) {
         if (this._doc)
@@ -97,15 +110,30 @@ module teapo {
       return this._text;
     }
 
+    /**
+     * Overridable method, invoked when the document is being opened.
+     */
     handleOpen() {
     }
 
+    /**
+     * Overridable method, invoked when the document has been changed.
+     * CodeMirrorEditor subscribes to corresponding event internally, and does some internal handling before invoking handleChange.
+     */
     handleChange(change: CodeMirror.EditorChange) {
     }
 
+    /**
+     * Overridable method, invoked when the document is being closed.
+     */
     handleClose() {
     }
 
+    /**
+     * Overridable method, invoked when the document is being loaded first time from the storage.
+     * The default implementation fetches 'null' property from the storage.
+     * Keep calling super.handleLoad() if that is the desired behavior.
+     */
     handleLoad() {
       if (this.docState) {
         this.doc().setValue(this.docState.getProperty(null) || '');
@@ -113,25 +141,35 @@ module teapo {
       }
     }
 
+    /**
+     * Overridable method, invoked when the document needs to be saved.
+     * The default implementation stores into 'null' property of the storage.
+     * Keep calling super.handleSave() if that is the desired behavior.
+     */
     handleSave() {
       if (this.docState)
         this.docState.setProperty(null, this.text());
     }
 
     private _initEditor() {
-      var options: CodeMirror.Options = this._shared.options || CodeMirrorEditor.standardEditorConfiguration();
+      var options = this._shared.options || CodeMirrorEditor.standardEditorConfiguration();
       this._shared.editor = new CodeMirror(
         (element) => this._shared.element = element,
         options);
     }
 
     private _initDoc() {
+
+      // resolve options (allow override)
       var options = this._shared.options || CodeMirrorEditor.standardEditorConfiguration();
       this._doc =
         options.mode ? new CodeMirror.Doc('', options.mode) :
         new CodeMirror.Doc('');
 
+      // invoke overridable handleLoad()
       this.handleLoad();
+
+      // subscribe to change event
       CodeMirror.on(
         this._doc,
         'change',
@@ -140,13 +178,21 @@ module teapo {
           // it is critical that _text is cleared on any change
           this._text = null;
 
+          // notify the external logic that the document was changed
           this._invokeonchange();
+
           this.handleChange(change);
         });
     }
   }
 
   export module CodeMirrorEditor {
+
+    /**
+     * Editors need to share a CodeMirror instance, and physical HTML element.
+     * CodeMirror options therefore must be decided centrally too.
+     * Note that all the properties are optional, they are going to be assigned by CodeMirrorEditor.
+     */
     export interface SharedState {
       editor?: CodeMirror;
       element?: HTMLElement;
@@ -155,6 +201,9 @@ module teapo {
   }
 
 
+  /**
+   * Simple document type using CodeMirrorEditor, usable as a default type for text files.
+   */
   class PlainTextEditorType implements EditorType {
     private _shared: CodeMirrorEditor.SharedState = {};
 
@@ -171,6 +220,10 @@ module teapo {
   }
 
   export module EditorType {
+
+    /**
+     * Registering PlainTextEditorType.
+     */
     export var PlainText: EditorType = new PlainTextEditorType();
   }
 }

@@ -74,6 +74,9 @@ module teapo {
       super(shared, docState);
     }
 
+    /**
+     * Overriding opening of the file, refreshing error marks.
+     */
     handleOpen() {
 
       this._updateGutter();
@@ -86,6 +89,9 @@ module teapo {
       }
     }
 
+    /**
+     * Overringin closing of the file, stopping queued requests.
+     */
     handleClose() {
 
       // if error refresh is queued, cancel it, but keep a special value as a flag
@@ -104,6 +110,10 @@ module teapo {
       }
     }
 
+    /**
+     * Storing changes for TypeScript incremental compilation/parsing,
+     * queueing refresh of errors and code completion.
+     */
     handleChange(change: CodeMirror.EditorChange) {
 
       // convert change from CodeMirror to TypeScript format
@@ -125,6 +135,9 @@ module teapo {
       this._triggerCompletion();
     }
 
+    /**
+     * Subscribing to cursor activity.
+     */
     handleLoad() {
       super.handleLoad(); // fetches the text from docState
 
@@ -132,8 +145,7 @@ module teapo {
         this.doc(),
         'cursorActivity', (instance) => this._handleCursorActivity());
 
-      // on first load we populate the errors
-      this._triggerDiagnosticsUpdate();
+      // TODO: when file icons introduced, populate errors here early
     }
 
     private _handleCursorActivity() {
