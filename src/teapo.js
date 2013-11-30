@@ -43,6 +43,33 @@ var teapo;
             return this._addFileEntry(fullPath);
         };
 
+        FileList.prototype.removeFileEntry = function (fullPath) {
+            var fileEntry = this.getFileEntry(fullPath);
+            if (!fileEntry)
+                return null;
+
+            if (fileEntry.parent()) {
+                var wasSelected = fileEntry.isSelected();
+
+                var fo = fileEntry.parent();
+                fo.files.remove(fileEntry);
+
+                while (fo.parent()) {
+                    var pa = fo.parent();
+                    pa.folders.remove(fo);
+                    fo.containsSelectedFile(false);
+                    fo = pa;
+                }
+
+                fo.containsSelectedFile(false);
+                this.folders.remove(fo);
+            } else {
+                this.files.remove(fileEntry);
+            }
+
+            this.selectedFile(null);
+        };
+
         FileList.prototype._addFileEntry = function (fullPath) {
             var _this = this;
             var pathParts = normalizePath(fullPath);
@@ -693,12 +720,19 @@ var teapo;
         };
 
         ApplicationShell.prototype.deleteSelectedFile = function () {
-            if (!this.fileList.selectedFile())
+            var selectedFileEntry = this.fileList.selectedFile();
+            if (!selectedFileEntry)
                 return;
 
-            if (!confirm('Are you sure dleting ' + this.fileList.selectedFile().name()))
+            if (!confirm('Are you sure dleting ' + selectedFileEntry.name()))
                 return;
-            // TODO: delete the selected file, switch selection somewhere
+
+            this._storage.removeDocument(selectedFileEntry.fullPath());
+            this.fileList.removeFileEntry(selectedFileEntry.fullPath());
+
+            if (this._host) {
+                this._host.innerHTML = '';
+            }
         };
 
         ApplicationShell.prototype.saveFileName = function () {
@@ -1611,14 +1645,14 @@ var teapo;
             nameSpan.textContent = this.text;
             element.appendChild(nameSpan);
 
-            if (this._completionEntryDetails.type) {
+            if (this._completionEntryDetails && this._completionEntryDetails.type) {
                 var typeSpan = document.createElement('span');
                 typeSpan.textContent = ' : ' + this._completionEntryDetails.type;
                 typeSpan.style.opacity = '0.7';
                 element.appendChild(typeSpan);
             }
 
-            if (this._completionEntryDetails.docComment) {
+            if (this._completionEntryDetails && this._completionEntryDetails.docComment) {
                 var commentDiv = document.createElement('div');
                 commentDiv.textContent = this._completionEntryDetails.docComment;
                 commentDiv.style.opacity = '0.7';

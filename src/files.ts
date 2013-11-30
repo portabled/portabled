@@ -36,7 +36,34 @@ module teapo {
       return this._addFileEntry(fullPath);
     }
 
-    private _addFileEntry(fullPath: string): void {
+    removeFileEntry(fullPath: string): FileEntry {
+      var fileEntry = this.getFileEntry(fullPath);
+      if (!fileEntry) return null;
+
+      if (fileEntry.parent()) {
+        var wasSelected = fileEntry.isSelected();
+
+        var fo = fileEntry.parent();
+        fo.files.remove(fileEntry);
+
+        while (fo.parent()) {
+          var pa = fo.parent();
+          pa.folders.remove(fo);
+          fo.containsSelectedFile(false);
+          fo = pa;
+        }
+
+        fo.containsSelectedFile(false);
+        this.folders.remove(fo);
+      }
+      else {
+        this.files.remove(fileEntry);
+      }
+
+      this.selectedFile(null);
+    }
+
+    private _addFileEntry(fullPath: string) {
       var pathParts = normalizePath(fullPath);
       if (pathParts.length===0)
         return; // empty path - noop

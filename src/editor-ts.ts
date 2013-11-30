@@ -464,14 +464,14 @@ module teapo {
       nameSpan.textContent = this.text;
       element.appendChild(nameSpan);
   
-      if (this._completionEntryDetails.type) {
+      if (this._completionEntryDetails && this._completionEntryDetails.type) {
         var typeSpan = document.createElement('span');
         typeSpan.textContent = ' : '+this._completionEntryDetails.type;
         typeSpan.style.opacity = '0.7';
         element.appendChild(typeSpan);
       }
   
-      if (this._completionEntryDetails.docComment) {
+      if (this._completionEntryDetails && this._completionEntryDetails.docComment) {
         var commentDiv = document.createElement('div');
         commentDiv.textContent = this._completionEntryDetails.docComment;
         commentDiv.style.opacity = '0.7';

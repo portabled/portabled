@@ -55,12 +55,18 @@ module teapo {
     }
 
     deleteSelectedFile() {
-      if (!this.fileList.selectedFile()) return;
+      var selectedFileEntry = this.fileList.selectedFile();
+      if (!selectedFileEntry) return;
 
-      if (!confirm('Are you sure dleting '+this.fileList.selectedFile().name()))
+      if (!confirm('Are you sure dleting '+selectedFileEntry.name()))
         return;
 
-      // TODO: delete the selected file, switch selection somewhere
+      this._storage.removeDocument(selectedFileEntry.fullPath());
+      this.fileList.removeFileEntry(selectedFileEntry.fullPath());
+
+      if (this._host) {
+        this._host.innerHTML = '';
+      }
     }
 
     saveFileName() {
