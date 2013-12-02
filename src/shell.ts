@@ -19,7 +19,6 @@ module teapo {
     saveDelay = 600;
     fileList: FileList = null;
 
-    private _storage: DocumentStorage = null;
     private _selectedDocState: DocumentState = null;
     private _editorElement: HTMLElement = null;
     private _host: HTMLElement = null;
@@ -27,9 +26,8 @@ module teapo {
     private _saveSelectedFileClosure = () => this._invokeSaveSelectedFile();
 
     constructor(private _storage: DocumentStorage) {
-      this._storage.entryResolver = this.fileList;
-      this._storage.typeResolver = EditorType;
-  
+//      this._storage.entryResolver = this.fileList;
+//      this._storage.typeResolver = EditorType;
       this.fileList = new FileList(this._storage);
   
       this.fileList.selectedFile.subscribe((fileEntry) => this._fileSelected(fileEntry));
