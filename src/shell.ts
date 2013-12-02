@@ -26,8 +26,7 @@ module teapo {
     private _saveTimeout = 0;
     private _saveSelectedFileClosure = () => this._invokeSaveSelectedFile();
 
-    constructor() {
-      this._storage = new DocumentStorage();
+    constructor(private _storage: DocumentStorage) {
       this._storage.entryResolver = this.fileList;
       this._storage.typeResolver = EditorType;
   
