@@ -43,6 +43,9 @@ module teapo {
      * Removes the document and all its state.
      */
     removeDocument(fullPath: string): DocumentState;
+
+    getProperty(name: string): string;
+    setProperty(name: string, value: string): void;
   }
 
   /**
@@ -121,53 +124,44 @@ module teapo {
   }
 
   class RuntimeDocumentStorage implements DocumentStorage {
-    uniqueKey: string = '';
     document: typeof document = null;
 
-    private _metadataElement: HTMLScriptElement = null;
+    _metadataElement: HTMLScriptElement = null;
+
+    private _metadataProperties: any = null;
     private _docByPath: { [name: string]: RuntimeDocumentState; } = {};
 
-    private _dbName = 'teapo';
-    private _db;
-
-    static persistToWebSqlDelay = 100;
-    private _modifiedDocByPath: { [name: string]: RuntimeDocumentState; } = null;
-    private _persistenceTimeout = 0;
-    private _persistToWebsqlClosure = () => this._persistToWebSql();
+    private _executeSql = null;
 
     constructor(
       public handler: DocumentStorageHandler) {
 
-      this.uniqueKey = this.handler.uniqueKey ? this.handler.uniqueKey : getUniqueKey();
       this.document = this.handler.document ? this.handler.document : document;
 
       var pathElements = this._scanDomScripts();
 
       var openDatabase = this.handler.openDatabase;
-      if (typeof openDatabase !== 'function') {
-        this._loadInitialStateFromDom(pathElements);
-        return;
-      }
+      if (typeof openDatabase==='function') {
+        var dbName = this.handler.uniqueKey ? this.handler.uniqueKey : getUniqueKey();
+        var db = openDatabase(dbName, 1, null, 1024*1024*40);
 
-      this._db = openDatabase(this._dbName, 1, null);
-      this._execSql(
-        'select * in metadata', [],
-        (result) => {
-          if (!result.rows || !result.rows.length) {
-            this._loadInitialStateFromDom(pathElements);
-            return;
-          }
+        this._executeSql = (sql, args, callback, errorcallback) => 
+          db.transaction((t) => t.executeSql(sql, args, callback, errorcallback));
 
-          var lsEdited = safeParseDate(result.rows.item(0).edited);
+        this._loadMetadataFromWebSql(() => {
+          var wsEdited = safeParseDate(this._metadataProperties.edited);
           var domEdited = this._metadataElement ?
-              safeParseDate(this._metadataElement.getAttribute('edited')) :
-              null;
-    
-          if (!lsEdited || domEdited && domEdited > lsEdited)
+            safeParseDate(this._metadataElement.getAttribute('edited')) :
+            null;
+          if (!wsEdited || domEdited && domEdited > wsEdited)
             this._loadInitialStateFromDom(pathElements);
           else
             this._loadInitialStateFromWebSql(pathElements);
         });
+      }
+      else {
+        this._loadInitialStateFromDom(pathElements);
+      }
     }
 
     documentNames(): string[] {
@@ -184,9 +178,11 @@ module teapo {
 
       var s = appendScriptElement(document);
       var docState = new RuntimeDocumentState(
-        fullPath, true,
+        fullPath,
         s,
-        this);
+        this._executeSql,
+        this,
+        true);
 
       this._docByPath[fullPath] = docState;
 
@@ -194,92 +190,118 @@ module teapo {
     }
 
     removeDocument(fullPath: string): DocumentState {
-      throw new Error('Not implemented');
-    }
+      var docState = this._docByPath[fullPath];
 
-   
-
-    /**
-     * Used from RuntimeDocumentState to trigger the saving of properties.
-     * Potentially several changes can be saved together.
-     */
-    notifyDocChanged(docState: RuntimeDocumentState): void {
-      if(!this._modifiedDocByPath)
-        this._modifiedDocByPath = {};
-      this._modifiedDocByPath[docState.fullPath()] = docState;
-
-      if (!this._metadataElement) {
-        this._metadataElement = appendScriptElement(document);
-        this._metadataElement.id = 'path-metadata';
+      if (docState) {
+        docState._removeStorage();
+        delete this._docByPath[fullPath];
       }
 
-      var edited = new Date().toUTCString();
-      this._metadataElement.setAttribute('edited', edited);
-
-      if (this._persistenceTimeout)
-        clearTimeout(this._persistenceTimeout);
-      this._persistenceTimeout = setTimeout(this._persistToWebsqlClosure);
+      return docState;
     }
 
-    private _persistToWebSql() {
-      this._persistenceTimeout = 0;
-
-      var collectSql: string[] = [];
-      var collectArgs: any[] = [];
-      // TODO: cycle through _modifiedDocByPath, concatenate SQL, issue _execSql
-      for (var k in this._modifiedDocByPath) if (this._modifiedDocByPath.hasOwnProperty(k)) {
-        var docState = this._modifiedDocByPath[k];
-        docState.appendUpdateSql(collectSql, collectArgs);
-      }
+    getProperty(name: string): string {
+      throw null;
     }
 
-    private _execSql(sql: string, args: any[], callback: Function) {
-      this._db.transaction((t) => {
-        t.executeSql(sql, args, callback);
-      });
+    setProperty(name: string, value: string): void {
+      throw null;
     }
+
+
 
     private _loadInitialStateFromDom(
       pathElements: { [fullPath: string]: HTMLScriptElement; }) {
+
+      if (this._executeSql) {
+        // TODO: drop database, create database
+      }
+
       // pull everything from DOM, websql is older
       // (that's the case when they saved/downloaded a new file
       // overwriting the old file in place)
       for (var fullPath in pathElements) if (pathElements.hasOwnProperty(fullPath)) {
+
         var s = pathElements[fullPath];
+
+        if (this._executeSql) {
+          // TODO: create table
+        }
+
+        var properties = {};
+        properties[''] = s.innerHTML;
+
+        var sql = 'INSERT INTO "'+fullPath+'"(name,value) VALUES(?,?)';
+        for (var i=0; i<s.attributes.length; i++) {
+          var a = s.attributes.item(i);
+          properties[a.name] = a.value;
+
+          if (this._executeSql) {
+            this._executeSql(
+              sql,
+              [a.name, a.value]);
+          }
+        }
+
         var docState = new RuntimeDocumentState(
-          fullPath, true,
+          fullPath,
+          properties,
           s,
           this);
         this._docByPath[fullPath] = docState;
       }
 
-      // TODO: push the changes to websql
+      // TODO: update metadata
 
       this.handler.documentStorageCreated(null, this);
     }
 
     private _loadInitialStateFromWebSql(
       pathElements: { [fullPath: string]: HTMLScriptElement; }) {
-      this._loadFileListFromWebsql(
-      (files) => {
+
+      // removing HTML DOM - easier to recreate than to merge
+      for (var k in pathElements) if (pathElements.hasOwnProperty(k)) {
+        var s = pathElements[k];
+        s.parentElement.removeChild(s);
+      }
+
+      // retrieving data from WebSQL and creating documents
+      this._loadFileListFromWebsql((files) => {
         var completedFileCount = 0;
         for (var i = 0; i < files.length; i++) {
           this._loadDocFromWebSql(
             files[i],
              () => {
                completedFileCount++;
-             if (completedFileCount===files.length) {
-               // TODO: load metadata
-               // TODO: recreate HTML DOM for docs and metadata
-             }
+               if (completedFileCount===files.length) {
+                 this._loadMetadataFromWebSql(
+                   () => this._finishLoadingInitialStateFromWebSql());
+               }
              });
         }
       });
     }
 
+    private _finishLoadingInitialStateFromWebSql() {
+      this.handler.documentStorageCreated(null, this);
+    }
+
+    private _loadMetadataFromWebSql(completed: () => void) {
+      this._execSql(
+        'SELECT name, value FROM "*metadata"',
+        [],
+         (result) => {
+           this._metadataProperties = {};
+           for (var i=0; i<result.rows.length; i++)  {
+             this._metadataProperties[result.rows.item(i).name] = result.rows(i).value;
+           }
+           completed();
+         });
+    }
+
     private _loadDocFromWebSql(fullPath: string, completed: () => void) {
       this._execSql(
-        'SELECT name, value FROM '+this.uniqueKey+fullPath,
+        'SELECT name, value FROM "'+fullPath+'"',
          [],
          (result) => {
            var properties: any = {};
@@ -318,21 +340,18 @@ module teapo {
     }
 
     private _loadFileListFromWebsql(callback: (filenames: string[]) => void) {
-      var sql = 'SELECT name FROM sqlite_master WHERE type=\'table\' AND name like \''+this.uniqueKey+'%\'';
+      var sql = 'SELECT name FROM sqlite_master WHERE type=\'table\'';
       this._execSql(sql, [], (result) => {
         var files: string[] = [];
         for (var i = 0; i < result.rows.length; i++) {
           var tableName = result.rows(i).name;
-          var fileName = tableName.slice(this.uniqueKey.length);
-          files.push(fileName);
+          if (tableName.charAt(0)==='/'
+               || tableName.charAt(0)==='#') {
+            files.push(tableName);
+          }
         }
         callback(files);
       });
-    }
-  }
-
-  class SqlUpdateRequest {
-    constructor(public sql: string, public args: any[]) {
     }
   }
 
@@ -345,18 +364,29 @@ module teapo {
     private _type: EditorType = null;
     private _editor: Editor = null;
     private _fileEntry: FileEntry = null;
-    private _tableName: string;
-    private _modifiedProperties: any = null;
+
+    private _properties: any = null;
 
     private _updateSql: string = '';
     private _insertSql: string = '';
 
     constructor(
       private _fullPath: string,
-      private _properties: any,
       private _storeElement: HTMLScriptElement,
-      private _storage: RuntimeDocumentStorage) {
-      this._tableName = this._storage.uniqueKey + this._fullPath;
+      private _executeSql: (sql: string, args: any[], callback, errorcallback) => void ,
+      private _storage: RuntimeDocumentStorage,
+      loadFromDom: boolean) {
+
+      var tableName = this._fullPath;
+      this._insertSql = 'INSERT INTO "'+tableName+'"(name,value) VALUES(?,?)';
+      this._updateSql = 'UPDATE "'+tableName+'" SET value=? WHERE name=?';
+
+      if(loadFromDom) {
+        // TODO: populate _properties
+      }
+      else {
+        // TODO: populate _properties, use a callback
+      }
     }
     
     fullPath() {
@@ -389,36 +419,34 @@ module teapo {
     }
 
     getProperty(name: string): string {
-      if (this._modifiedProperties && name in this._modifiedProperties[name])
-        return this._modifiedProperties[name];
-      else
-        return this._properties[name];
+      return this._properties[name];
     }
 
     setProperty(name: string, value: string) {
       if (value===this._properties[name])
         return;
 
+      var existingProperty = this._properties.hasOwnProperty(name);
       this._properties[name] = value;
-      if (!this._modifiedProperties)
-        this._modifiedProperties[name] = value;
 
-      this._storage.notifyDocChanged(this);
-    }
+      if (name)
+        this._storeElement.setAttribute(name, value);
+      else
+        this._storeElement.innerHTML = value;
 
-
-    appendUpdateSql(collectSql: string[], collectArgs: any[]){
-      // TODO: handle table creation
-      for (var k in this._modifiedProperties) if (this._modifiedProperties.hasOwnProperty(k)) {
-        if (this._properties.hasOwnProperty(k))
-          collectSql.push(this._updateSql);
-        else
-          collectSql.push(this._insertSql);
-
-        collectArgs.push(k);
-        collectArgs.push(this._modifiedProperties[k]);
+      if (this._executeSql) {
+        var sql = existingProperty ? this._updateSql : this._insertSql;
+        this._executeSql(
+          sql,
+          [name, value],
+          null, null);
       }
     }
+
+    _removeStorage() {
+      // TODO: remove _storeElement, drop table
+    }
+
   }
 
   function getUniqueKey(): string {
@@ -456,4 +484,5 @@ module teapo {
     doc.body.appendChild(s);
     return s;
   }
+
 }
