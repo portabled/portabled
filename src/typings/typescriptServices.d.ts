@@ -308,6 +308,8 @@ declare module TypeScript {
         Type_of_conditional_0_must_be_identical_to_1_2_or_3: string;
         Duplicate_identifier_0_Compiler_reserves_name_1_in_top_level_scope_of_an_external_module: string;
         Type_parameter_0_cannot_be_a_direct_or_indirect_constraint_for_itself: string;
+        Initializer_of_instance_member_variable_0_cannot_reference_identifier_1_declared_in_the_constructor: string;
+        Parameter_0_cannot_be_referenced_in_its_initializer: string;
         Type_0_is_missing_property_1_from_type_2: string;
         Types_of_property_0_of_types_1_and_2_are_incompatible: string;
         Types_of_property_0_of_types_1_and_2_are_incompatible_NL_3: string;
@@ -5842,6 +5844,8 @@ declare module TypeScript {
     function isCallExpression(ast: AST): boolean;
     function isCallExpressionTarget(ast: AST): boolean;
     function isDeclarationASTOrDeclarationNameAST(ast: AST): boolean;
+    function getEnclosingParameter(ast: AST): Parameter;
+    function getEnclosingMemberVariableDeclaration(ast: AST): MemberVariableDeclaration;
     function isNameOfFunction(ast: AST): boolean;
     function isNameOfMemberFunction(ast: AST): boolean;
     function isNameOfMemberAccessExpression(ast: AST): boolean;
@@ -7310,6 +7314,7 @@ declare module TypeScript {
         private isInEnumDecl(decl);
         private getSomeInnermostFunctionScopeDecl(declPath);
         private isFromFunctionScope(nameSymbol, functionScopeDecl);
+        private findConstructorDeclOfEnclosingType(decl);
         private computeNameExpression(nameAST, context, reportDiagnostics);
         private getCurrentParameterIndexForFunction(parameter, funcDecl);
         private resolveMemberAccessExpression(dottedNameAST, context);
