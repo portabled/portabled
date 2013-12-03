@@ -260,9 +260,42 @@ module teapo {
 
     private _loadInitialStateFromWebSql(
       pathElements: { [fullPath: string]: HTMLScriptElement; }) {
-      // TODO: load from ***metadata table,
-      // TODO: cycle through the documents and load them, 
-      // TODO: recreate HTML DOM
+      this._loadFileListFromWebsql(
+      (files) => {
+        var completedFileCount = 0;
+        for (var i = 0; i < files.length; i++) {
+          this._loadDocFromWebSql(
+            files[i],
+             () => {
+               completedFileCount++;
+             if (completedFileCount===files.length) {
+               // TODO: load metadata
+               // TODO: recreate HTML DOM for docs and metadata
+             }
+             });
+        }
+      });
+    }
+
+    private _loadDocFromWebSql(fullPath: string, completed: () => void) {
+      this._execSql(
+        'SELECT name, value FROM '+this.uniqueKey+fullPath,
+         [],
+         (result) => {
+           var properties: any = {};
+           for (var i = 0; i < result.rows.length; i++) {
+             properties[result.rows(i).name] = result.rows[i].value;
+           }
+
+           var storeElement = appendScriptElement(this.document);
+           storeElement.setAttribute('data-path', fullPath);
+
+           var docState = new RuntimeDocumentState(
+             fullPath,
+             properties,
+             storeElement,
+             this);
+         });
     }
 
     private _scanDomScripts() {
@@ -284,6 +317,18 @@ module teapo {
       return pathElements;
     }
 
+    private _loadFileListFromWebsql(callback: (filenames: string[]) => void) {
+      var sql = 'SELECT name FROM sqlite_master WHERE type=\'table\' AND name like \''+this.uniqueKey+'%\'';
+      this._execSql(sql, [], (result) => {
+        var files: string[] = [];
+        for (var i = 0; i < result.rows.length; i++) {
+          var tableName = result.rows(i).name;
+          var fileName = tableName.slice(this.uniqueKey.length);
+          files.push(fileName);
+        }
+        callback(files);
+      });
+    }
   }
 
   class SqlUpdateRequest {

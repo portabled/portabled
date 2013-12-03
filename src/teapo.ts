@@ -8,9 +8,10 @@
 /// <reference path='editor-ts.ts' />
 
 function start() {
+
   teapo.registerKnockoutBindings(ko);
 
-  var viewModel = new teapo.ApplicationShell();
+  var viewModel = new teapo.ApplicationShell(null);
 
   var pageElement: HTMLElement = null;
 
