@@ -123,6 +123,16 @@ module teapo {
     openDatabase?: typeof openDatabase;
   }
 
+
+
+
+  interface ExecuteSqlDelegate {
+    (sqlStatement: string,
+    arguments?: any[],
+    callback?: (result: SQLResultSet) => void,
+    errorCallback?: (transaction: SQLTransaction, resultSet: SQLResultSet) => void): void;
+  }
+
   class RuntimeDocumentStorage implements DocumentStorage {
     document: typeof document = null;
 
@@ -131,7 +141,7 @@ module teapo {
     private _metadataProperties: any = null;
     private _docByPath: { [name: string]: RuntimeDocumentState; } = {};
 
-    private _executeSql = null;
+    private _executeSql: ExecuteSqlDelegate = null;
 
     constructor(
       public handler: DocumentStorageHandler) {
@@ -139,25 +149,37 @@ module teapo {
       this.document = this.handler.document ? this.handler.document : document;
 
       var pathElements = this._scanDomScripts();
+      if (!this._metadataElement) {
+        this._metadataElement = appendScriptElement(this.document);
+        this._metadataElement.id = 'storageMetadata';
+      }
 
       var openDatabase = this.handler.openDatabase;
       if (typeof openDatabase==='function') {
         var dbName = this.handler.uniqueKey ? this.handler.uniqueKey : getUniqueKey();
-        var db = openDatabase(dbName, 1, null, 1024*1024*40);
+        var db = openDatabase(dbName, 1, null, 1024*1024*5);
 
-        this._executeSql = (sql, args, callback, errorcallback) => 
-          db.transaction((t) => t.executeSql(sql, args, callback, errorcallback));
+        this._executeSql = (sqlStatement, arguments?, callback?, errorCallback?) => 
+          db.transaction((t) => t.executeSql(sqlStatement, arguments, callback, errorCallback));
 
-        this._loadMetadataFromWebSql(() => {
-          var wsEdited = safeParseDate(this._metadataProperties.edited);
-          var domEdited = this._metadataElement ?
-            safeParseDate(this._metadataElement.getAttribute('edited')) :
-            null;
-          if (!wsEdited || domEdited && domEdited > wsEdited)
-            this._loadInitialStateFromDom(pathElements);
-          else
-            this._loadInitialStateFromWebSql(pathElements);
-        });
+        this._metadataProperties = {};
+        loadPropertiesFromWebSql(
+          '*metadata',
+           this._metadataElement,
+           this._metadataProperties,
+           this._executeSql,
+           () => {
+
+            var wsEdited = safeParseDate(this._metadataProperties.edited);
+            var domEdited = this._metadataElement ?
+              safeParseDate(this._metadataElement.getAttribute('edited')) :
+              null;
+            if (!wsEdited || domEdited && domEdited > wsEdited)
+              this._loadInitialStateFromDom(pathElements);
+            else
+              this._loadInitialStateFromWebSql(pathElements);
+           
+           });
       }
       else {
         this._loadInitialStateFromDom(pathElements);
@@ -177,12 +199,14 @@ module teapo {
         throw new Error('File already exists: '+fullPath+'.');
 
       var s = appendScriptElement(document);
+      s.setAttribute('data-path', fullPath);
+
       var docState = new RuntimeDocumentState(
         fullPath,
         s,
         this._executeSql,
         this,
-        true);
+        null);
 
       this._docByPath[fullPath] = docState;
 
@@ -213,47 +237,56 @@ module teapo {
     private _loadInitialStateFromDom(
       pathElements: { [fullPath: string]: HTMLScriptElement; }) {
 
-      if (this._executeSql) {
-        // TODO: drop database, create database
-      }
+      /** pull from DOM assuming webSQL state is clean of any tables */
+      var loadInClearState = () => {
+        
+        for (var fullPath in pathElements) if (pathElements.hasOwnProperty(fullPath)) {
+  
+          var s = pathElements[fullPath];
+  
+          var docState = new RuntimeDocumentState(
+            fullPath,
+            s,
+            this._executeSql,
+            this,
+            null);
 
-      // pull everything from DOM, websql is older
-      // (that's the case when they saved/downloaded a new file
-      // overwriting the old file in place)
-      for (var fullPath in pathElements) if (pathElements.hasOwnProperty(fullPath)) {
-
-        var s = pathElements[fullPath];
+          this._docByPath[fullPath] = docState;
+        }
 
         if (this._executeSql) {
-          // TODO: create table
+          this._executeSql(
+            'CREATE TABLE "*metadata" (name TEXT, value TEXT)',
+            [],
+            null, null);
+
         }
+  
+        this.setProperty('edited', Date.now()+'');
+  
+        this.handler.documentStorageCreated(null, this);
+      };
 
-        var properties = {};
-        properties[''] = s.innerHTML;
-
-        var sql = 'INSERT INTO "'+fullPath+'"(name,value) VALUES(?,?)';
-        for (var i=0; i<s.attributes.length; i++) {
-          var a = s.attributes.item(i);
-          properties[a.name] = a.value;
-
-          if (this._executeSql) {
-            this._executeSql(
-              sql,
-              [a.name, a.value]);
-          }
-        }
-
-        var docState = new RuntimeDocumentState(
-          fullPath,
-          properties,
-          s,
-          this);
-        this._docByPath[fullPath] = docState;
+      if (this._executeSql) {
+        this._dropAllTables(loadInClearState);
       }
+      else {
+        loadInClearState();
+      }
+    }
 
-      // TODO: update metadata
+    private _dropAllTables(completed: () => void) {
+      this._loadTableListFromWebsql(
+        (tableList) => {
+          for (var i = 0; i < tableList.length; i++) {
+            this._executeSql(
+              'DROP TABLE "'+tableList[i]+'"',
+              [],
+              null, null);
+          }
 
-      this.handler.documentStorageCreated(null, this);
+          completed();
+        });
     }
 
     private _loadInitialStateFromWebSql(
@@ -266,59 +299,36 @@ module teapo {
       }
 
       // retrieving data from WebSQL and creating documents
-      this._loadFileListFromWebsql((files) => {
+      this._loadTableListFromWebsql((tables) => {
+
+        var files = tables.filter((tab) => tab.charAt(0) === '/' || tab.charAt(0)==='#');
         var completedFileCount = 0;
         for (var i = 0; i < files.length; i++) {
-          this._loadDocFromWebSql(
-            files[i],
-             () => {
-               completedFileCount++;
-               if (completedFileCount===files.length) {
-                 this._loadMetadataFromWebSql(
-                   () => this._finishLoadingInitialStateFromWebSql());
-               }
-             });
+
+          var fullPath = files[i];
+          
+          var s = appendScriptElement(this.document);
+          s.setAttribute('data-path', fullPath);
+          
+          var docState = new RuntimeDocumentState(
+            fullPath,
+            s,
+            this._executeSql,
+            this,
+            () => {
+          
+              completedFileCount++;
+          
+              if (completedFileCount===files.length) {
+                this.handler.documentStorageCreated(null, this);
+              }
+            });
+          
+          this._docByPath[fullPath] = docState;
         }
       });
     }
 
-    private _finishLoadingInitialStateFromWebSql() {
-      this.handler.documentStorageCreated(null, this);
-    }
-
-    private _loadMetadataFromWebSql(completed: () => void) {
-      this._execSql(
-        'SELECT name, value FROM "*metadata"',
-        [],
-         (result) => {
-           this._metadataProperties = {};
-           for (var i=0; i<result.rows.length; i++)  {
-             this._metadataProperties[result.rows.item(i).name] = result.rows(i).value;
-           }
-           completed();
-         });
-    }
-
-    private _loadDocFromWebSql(fullPath: string, completed: () => void) {
-      this._execSql(
-        'SELECT name, value FROM "'+fullPath+'"',
-         [],
-         (result) => {
-           var properties: any = {};
-           for (var i = 0; i < result.rows.length; i++) {
-             properties[result.rows(i).name] = result.rows[i].value;
-           }
-
-           var storeElement = appendScriptElement(this.document);
-           storeElement.setAttribute('data-path', fullPath);
-
-           var docState = new RuntimeDocumentState(
-             fullPath,
-             properties,
-             storeElement,
-             this);
-         });
-    }
 
     private _scanDomScripts() {
       var pathElements: { [name: string]: HTMLScriptElement; } = {};
@@ -339,19 +349,23 @@ module teapo {
       return pathElements;
     }
 
-    private _loadFileListFromWebsql(callback: (filenames: string[]) => void) {
+    private _loadTableListFromWebsql(callback: (filenames: string[]) => void) {
       var sql = 'SELECT name FROM sqlite_master WHERE type=\'table\'';
-      this._execSql(sql, [], (result) => {
-        var files: string[] = [];
-        for (var i = 0; i < result.rows.length; i++) {
-          var tableName = result.rows(i).name;
-          if (tableName.charAt(0)==='/'
-               || tableName.charAt(0)==='#') {
-            files.push(tableName);
+      this._executeSql(
+        sql,
+        [],
+        (result) => {
+          var files: string[] = [];
+          for (var i = 0; i < result.rows.length; i++) {
+            var tableName = result.rows.item(i).name;
+            if (tableName.charAt(0)==='/'
+                 || tableName.charAt(0)==='#') {
+              files.push(tableName);
+            }
           }
-        }
-        callback(files);
-      });
+          callback(files);
+        },
+      null);
     }
   }
 
@@ -365,7 +379,7 @@ module teapo {
     private _editor: Editor = null;
     private _fileEntry: FileEntry = null;
 
-    private _properties: any = null;
+    private _properties: any = {};
 
     private _updateSql: string = '';
     private _insertSql: string = '';
@@ -373,19 +387,28 @@ module teapo {
     constructor(
       private _fullPath: string,
       private _storeElement: HTMLScriptElement,
-      private _executeSql: (sql: string, args: any[], callback, errorcallback) => void ,
+      private _executeSql: ExecuteSqlDelegate,
       private _storage: RuntimeDocumentStorage,
-      loadFromDom: boolean) {
+      loadFromWebsqlCallback: (docState: RuntimeDocumentState) => void) {
 
       var tableName = this._fullPath;
-      this._insertSql = 'INSERT INTO "'+tableName+'"(name,value) VALUES(?,?)';
-      this._updateSql = 'UPDATE "'+tableName+'" SET value=? WHERE name=?';
 
-      if(loadFromDom) {
-        // TODO: populate _properties
+      if (loadFromWebsqlCallback) {
+        loadPropertiesFromDom(
+          tableName,
+          this._storeElement,
+          this._properties,
+          this._executeSql);
       }
       else {
-        // TODO: populate _properties, use a callback
+        loadPropertiesFromWebSql(
+          tableName,
+          this._storeElement,
+          this._properties,
+          this._executeSql,
+          () => {
+            loadFromWebsqlCallback(this);
+          });
       }
     }
     
@@ -483,6 +506,54 @@ module teapo {
     s.setAttribute('type', 'text/data');
     doc.body.appendChild(s);
     return s;
+  }
+
+  function loadPropertiesFromDom(
+    tableName: string,
+    script: HTMLScriptElement,
+    properties: any,
+    executeSql: ExecuteSqlDelegate) {
+
+    if (executeSql) {
+      executeSql(
+        'CREATE TABLE "'+tableName+'" ( name TEXT, value TEXT)');
+    }
+
+    for (var i = 0; i < script.attributes.length; i++) {
+      var a = script.attributes.item(i);
+
+      if (a.name==='id' || a.name=='data-path')
+        continue;
+
+      properties[a.name] = a.value;
+
+      if (executeSql)
+        executeSql('INSERT INTO "'+tableName+'" (name, value) VALUES(?,?)',
+          [a.name, a.value]);
+    }
+  }
+
+  function loadPropertiesFromWebSql(
+    tableName: string,
+    script: HTMLScriptElement,
+    properties: any,
+    executeSql: ExecuteSqlDelegate,
+    completed: () => void) {
+
+    executeSql(
+      'SELECT name, value from "'+tableName+'"',
+       [],
+      (results) => {
+
+        var row: { name: string; value: string; };
+
+        for (var i=0; row = results.rows.item(i); i++) {
+          properties[row.name] = row.value || '';
+          script.setAttribute(row.name, row.value || '')
+        }
+
+        completed();
+      });
   }
 
 }

@@ -277,311 +277,215 @@ var teapo;
         return pathMid;
     }
 })(teapo || (teapo = {}));
+/// <reference path='typings/websql.d.ts' />
 /// <reference path='editor.ts' />
 /// <reference path='files.ts' />
 var teapo;
 (function (teapo) {
     /**
-    * Encapsulating all necessary for storing documents, metadata and properties.
+    * Initialize storage loading the state from HTML DOM, WebSQL
+    * and getting everything in a running state.
+    * The API is asynchronous, provide handler.documentStorageCreated function
+    * to receive the callback.
+    * @param handler All necessary parameters and overrides
+    * for instantiating DocumentStorage.
     */
-    var DocumentStorage = (function () {
-        function DocumentStorage() {
-            this.document = document;
-            this.localStorage = localStorage;
-            /** Needed to separate data slots for file:// scheme. */
-            this.uniqueKey = getUniqueKey();
-            /**
-            * Returns EditorType object handling editor behavior for a given file.
-            * Expected to be populated externally.
-            */
-            this.typeResolver = null;
-            /**
-            * Returns FileEntry object representing the file in list/tree.
-            * Expected to be populated externally.
-            */
-            this.entryResolver = null;
-            this._runtime = null;
-        }
-        /**
-        * Full paths of all files.
-        */
-        DocumentStorage.prototype.documentNames = function () {
-            this._ensureRuntime();
-            return Object.keys(this._runtime.docByPath);
-        };
+    function openStorage(handler) {
+        var storage = new RuntimeDocumentStorage(handler);
+    }
+    teapo.openStorage = openStorage;
 
-        /**
-        * Given a path retrieves an object for reading and writing document state,
-        * also exposes runtime features like editor and entry in the file list.
-        */
-        DocumentStorage.prototype.getDocument = function (fullPath) {
-            this._ensureRuntime();
-            return this._runtime.docByPath[fullPath].doc;
-        };
+    
 
-        /**
-        * Creates a persisted state for a document, and returns it as a result.
-        */
-        DocumentStorage.prototype.createDocument = function (fullPath) {
-            this._ensureRuntime();
+    
 
-            if (this._runtime.docByPath[fullPath])
-                throw new Error('File already exists: ' + fullPath + '.');
-
-            var s = appendScriptElement(this.document);
-            var docState = new RuntimeDocumentState(fullPath, true, s, this._runtime);
-
-            this._runtime.docByPath[fullPath] = docState;
-
-            this._runtime.storeFilenamesToLocalStorage();
-            this._runtime.storeEdited();
-
-            return docState.doc;
-        };
-
-        /**
-        * Removes the document and all its state.
-        */
-        DocumentStorage.prototype.removeDocument = function (fullPath) {
-            this._ensureRuntime();
-
-            var docState = this._runtime.docByPath[fullPath];
-            if (!docState)
-                throw new Error('File does not exist: ' + fullPath + '.');
-
-            docState.storeElement.parentElement.removeChild(docState.storeElement);
-
-            for (var k in this.localStorage)
-                if (this.localStorage.hasOwnProperty(k)) {
-                    if (k.length >= docState.localStorageKey && k.slice(0, docState.localStorageKey.length) === docState.localStorageKey)
-                        delete this.localStorage[k];
-                }
-        };
-
-        DocumentStorage.prototype._ensureRuntime = function () {
-            if (!this._runtime)
-                this._runtime = new RuntimeDocumentStorage(this);
-        };
-        return DocumentStorage;
-    })();
-    teapo.DocumentStorage = DocumentStorage;
-
-    /**
-    * Allows reading, writing properties of the document,
-    * and also exposes runtime features like editor and entry in the file list.
-    */
-    var DocumentState = (function () {
-        function DocumentState(docState) {
-            this._docState = docState; // cheating against type checks here
-        }
-        DocumentState.prototype.fullPath = function () {
-            return this._docState.fullPath;
-        };
-
-        /**
-        * Retrieves object encapsulating document type (such as plain text, JavaScript, HTML).
-        * Note that type is metadata, so the instance is shared across all of the documents
-        * of the same type.
-        */
-        DocumentState.prototype.type = function () {
-            if (!this._docState.type)
-                this._docState.type = this._docState.runtime.storage.typeResolver.getType(this._docState.fullPath);
-            return this._docState.type;
-        };
-
-        /**
-        * Retrieves object encapsulating editor behaviour for the document.
-        */
-        DocumentState.prototype.editor = function () {
-            if (!this._docState.editor)
-                this._docState.editor = this.type().editDocument(this);
-
-            return this._docState.editor;
-        };
-
-        DocumentState.prototype.currentEditor = function () {
-            return this._docState.editor;
-        };
-
-        /**
-        * Retrieves object representing a node in the file list or tree view.
-        */
-        DocumentState.prototype.fileEntry = function () {
-            if (this._docState.fileEntry)
-                this._docState.fileEntry = this._docState.runtime.storage.entryResolver.getFileEntry(this._docState.fullPath);
-            return this._docState.fileEntry;
-        };
-
-        /**
-        * Retrieves property value from whatever persistence mechanism is implemented.
-        */
-        DocumentState.prototype.getProperty = function (name) {
-            if (!this._docState.loadFromDom) {
-                var slotName = this._docState.localStorageKey + (name ? name : '');
-                var localValue = this._docState.runtime.storage.localStorage[slotName];
-                if (typeof localValue !== 'undefined')
-                    return localValue;
-            }
-
-            if (name)
-                return this._docState.storeElement.getAttribute('data-' + name);
-            else
-                return this._docState.storeElement.innerHTML;
-        };
-
-        /**
-        * Persists property value.
-        */
-        DocumentState.prototype.setProperty = function (name, value) {
-            var valueStr = value ? value : '';
-            if (name)
-                this._docState.storeElement.setAttribute('data-' + name, valueStr);
-            else
-                this._docState.storeElement.innerHTML = valueStr;
-
-            var slotName = this._docState.localStorageKey + (name ? name : '');
-            this._docState.runtime.storage.localStorage[slotName] = valueStr;
-
-            this._docState.runtime.docChanged(this._docState);
-        };
-
-        /**
-        * Retrieves transient property value from whatever persistence mechanism is implemented.
-        * Transient properties live within a local browser setup and are not persisted in HTML DOM.
-        */
-        DocumentState.prototype.getTransientProperty = function (name) {
-            var slotName = this._docState.localStorageKey + '~*' + name;
-            return this._docState.runtime.storage.localStorage[slotName];
-        };
-
-        /**
-        * Persists property value.
-        * Transient properties live within a local browser setup and are not persisted in HTML DOM.
-        */
-        DocumentState.prototype.setTransientProperty = function (name, value) {
-            var slotName = this._docState.localStorageKey + '~*' + name;
-            this._docState.runtime.storage.localStorage[slotName] = value;
-            this._docState.runtime.docChanged(this._docState);
-        };
-        return DocumentState;
-    })();
-    teapo.DocumentState = DocumentState;
+    
 
     var RuntimeDocumentStorage = (function () {
-        function RuntimeDocumentStorage(storage) {
-            this.storage = storage;
-            this.metadataElement = null;
-            this.docByPath = {};
+        function RuntimeDocumentStorage(handler) {
+            var _this = this;
+            this.handler = handler;
+            this.document = null;
+            this._metadataElement = null;
+            this._metadataProperties = null;
+            this._docByPath = {};
+            this._executeSql = null;
+            this.document = this.handler.document ? this.handler.document : document;
+
             var pathElements = this._scanDomScripts();
+            if (!this._metadataElement) {
+                this._metadataElement = appendScriptElement(this.document);
+                this._metadataElement.id = 'storageMetadata';
+            }
 
-            var lsEdited = safeParseDate(this._lsGet('edited'));
-            var domEdited = this.metadataElement ? safeParseDate(this.metadataElement.getAttribute('edited')) : null;
+            var openDatabase = this.handler.openDatabase;
+            if (typeof openDatabase === 'function') {
+                var dbName = this.handler.uniqueKey ? this.handler.uniqueKey : getUniqueKey();
+                var db = openDatabase(dbName, 1, null, 1024 * 1024 * 5);
 
-            if (!lsEdited || domEdited && domEdited > lsEdited)
+                this._executeSql = function (sqlStatement, arguments, callback, errorCallback) {
+                    return db.transaction(function (t) {
+                        return t.executeSql(sqlStatement, arguments, callback, errorCallback);
+                    });
+                };
+
+                this._metadataProperties = {};
+                loadPropertiesFromWebSql('*metadata', this._metadataElement, this._metadataProperties, this._executeSql, function () {
+                    var wsEdited = safeParseDate(_this._metadataProperties.edited);
+                    var domEdited = _this._metadataElement ? safeParseDate(_this._metadataElement.getAttribute('edited')) : null;
+                    if (!wsEdited || domEdited && domEdited > wsEdited)
+                        _this._loadInitialStateFromDom(pathElements);
+                    else
+                        _this._loadInitialStateFromWebSql(pathElements);
+                });
+            } else {
                 this._loadInitialStateFromDom(pathElements);
-            else
-                this._loadInitialStateFromLocalStorage(pathElements);
+            }
         }
-        RuntimeDocumentStorage.prototype.docChanged = function (docState) {
-            this.storeEdited();
+        RuntimeDocumentStorage.prototype.documentNames = function () {
+            return Object.keys(this._docByPath);
         };
 
-        RuntimeDocumentStorage.prototype.storeFilenamesToLocalStorage = function () {
-            var files = Object.keys(this.docByPath);
-            var filesStr = files.join('\n');
-            this._lsSet('files', filesStr);
+        RuntimeDocumentStorage.prototype.getDocument = function (fullPath) {
+            return this._docByPath[fullPath];
         };
 
-        RuntimeDocumentStorage.prototype.storeEdited = function () {
-            this.storeFilenamesToLocalStorage();
+        RuntimeDocumentStorage.prototype.createDocument = function (fullPath) {
+            if (this._docByPath[fullPath])
+                throw new Error('File already exists: ' + fullPath + '.');
 
-            var edited = new Date().toUTCString();
-            this._lsSet('edited', edited);
+            var s = appendScriptElement(document);
+            s.setAttribute('data-path', fullPath);
 
-            if (!this.metadataElement) {
-                this.metadataElement = appendScriptElement(this.storage.document);
-                this.metadataElement.id = 'path-metadata';
+            var docState = new RuntimeDocumentState(fullPath, s, this._executeSql, this, null);
+
+            this._docByPath[fullPath] = docState;
+
+            return docState;
+        };
+
+        RuntimeDocumentStorage.prototype.removeDocument = function (fullPath) {
+            var docState = this._docByPath[fullPath];
+
+            if (docState) {
+                docState._removeStorage();
+                delete this._docByPath[fullPath];
             }
 
-            this.metadataElement.setAttribute('edited', edited);
+            return docState;
         };
 
-        RuntimeDocumentStorage.prototype._loadInitialStateFromLocalStorage = function (pathElements) {
-            var lsFilenames = this._loadFilenamesFromLocalStorage();
-            if (lsFilenames) {
-                for (var i = 0; i < lsFilenames.length; i++) {
-                    var lsFullPath = lsFilenames[i];
-                    var s = pathElements[lsFullPath];
-                    if (s) {
-                        // TODO: copy all properties from localStorage
-                    } else {
-                        s = appendScriptElement(this.storage.document);
-                        s.setAttribute('data-path', lsFullPath);
-                    }
-                    var docState = new RuntimeDocumentState(lsFullPath, false, s, this);
-                    this.docByPath[lsFullPath] = docState;
+        RuntimeDocumentStorage.prototype.getProperty = function (name) {
+            throw null;
+        };
 
-                    // leave only DOM elements that are redundant
-                    delete pathElements[lsFullPath];
-                }
-            }
-
-            for (var fullPath in pathElements)
-                if (pathElements.hasOwnProperty(fullPath)) {
-                    var s = pathElements[fullPath];
-                    s.parentElement.removeChild(s);
-                }
+        RuntimeDocumentStorage.prototype.setProperty = function (name, value) {
+            throw null;
         };
 
         RuntimeDocumentStorage.prototype._loadInitialStateFromDom = function (pathElements) {
-            for (var fullPath in pathElements)
-                if (pathElements.hasOwnProperty(fullPath)) {
-                    var s = pathElements[fullPath];
-                    var docState = new RuntimeDocumentState(fullPath, true, s, this);
-                    this.docByPath[fullPath] = docState;
+            var _this = this;
+            /** pull from DOM assuming webSQL state is clean of any tables */
+            var loadInClearState = function () {
+                for (var fullPath in pathElements)
+                    if (pathElements.hasOwnProperty(fullPath)) {
+                        var s = pathElements[fullPath];
+
+                        var docState = new RuntimeDocumentState(fullPath, s, _this._executeSql, _this, null);
+
+                        _this._docByPath[fullPath] = docState;
+                    }
+
+                if (_this._executeSql) {
+                    _this._executeSql('CREATE TABLE "*metadata" (name TEXT, value TEXT)', [], null, null);
                 }
 
-            // clean old stuff from localStorage
-            var deletePrefix = this.storage.uniqueKey + '/';
-            for (var k in this.storage.localStorage)
-                if (this.storage.localStorage.hasOwnProperty(k)) {
-                    if (k.length >= deletePrefix.length && k.slice(0, deletePrefix.length) === deletePrefix)
-                        delete this.storage.localStorage[k];
-                }
+                _this.setProperty('edited', Date.now() + '');
+
+                _this.handler.documentStorageCreated(null, _this);
+            };
+
+            if (this._executeSql) {
+                this._dropAllTables(loadInClearState);
+            } else {
+                loadInClearState();
+            }
         };
 
-        RuntimeDocumentStorage.prototype._loadFilenamesFromLocalStorage = function () {
-            var filenamesStr = this._lsGet('files');
-            if (filenamesStr)
-                return filenamesStr.split('\n');
-            else
-                return null;
+        RuntimeDocumentStorage.prototype._dropAllTables = function (completed) {
+            var _this = this;
+            this._loadTableListFromWebsql(function (tableList) {
+                for (var i = 0; i < tableList.length; i++) {
+                    _this._executeSql('DROP TABLE "' + tableList[i] + '"', [], null, null);
+                }
+
+                completed();
+            });
+        };
+
+        RuntimeDocumentStorage.prototype._loadInitialStateFromWebSql = function (pathElements) {
+            var _this = this;
+            for (var k in pathElements)
+                if (pathElements.hasOwnProperty(k)) {
+                    var s = pathElements[k];
+                    s.parentElement.removeChild(s);
+                }
+
+            // retrieving data from WebSQL and creating documents
+            this._loadTableListFromWebsql(function (tables) {
+                var files = tables.filter(function (tab) {
+                    return tab.charAt(0) === '/' || tab.charAt(0) === '#';
+                });
+                var completedFileCount = 0;
+                for (var i = 0; i < files.length; i++) {
+                    var fullPath = files[i];
+
+                    var s = appendScriptElement(_this.document);
+                    s.setAttribute('data-path', fullPath);
+
+                    var docState = new RuntimeDocumentState(fullPath, s, _this._executeSql, _this, function () {
+                        completedFileCount++;
+
+                        if (completedFileCount === files.length) {
+                            _this.handler.documentStorageCreated(null, _this);
+                        }
+                    });
+
+                    _this._docByPath[fullPath] = docState;
+                }
+            });
         };
 
         RuntimeDocumentStorage.prototype._scanDomScripts = function () {
             var pathElements = {};
 
-            for (var i = 0; i < this.storage.document.scripts.length; i++) {
-                var s = this.storage.document.scripts[i];
+            for (var i = 0; i < document.scripts.length; i++) {
+                var s = document.scripts[i];
                 var path = s.getAttribute('data-path');
                 if (path) {
                     if (path.charAt(0) === '/' || path.charAt(0) === '#') {
                         pathElements[path] = s;
                     }
                 } else if (s.id === 'storageMetadata') {
-                    this.metadataElement = s;
+                    this._metadataElement = s;
                 }
             }
 
             return pathElements;
         };
 
-        RuntimeDocumentStorage.prototype._lsGet = function (name) {
-            return this.storage.localStorage[this.storage.uniqueKey + name];
-        };
-
-        RuntimeDocumentStorage.prototype._lsSet = function (name, value) {
-            this.storage.localStorage[this.storage.uniqueKey + name] = value;
+        RuntimeDocumentStorage.prototype._loadTableListFromWebsql = function (callback) {
+            var sql = 'SELECT name FROM sqlite_master WHERE type=\'table\'';
+            this._executeSql(sql, [], function (result) {
+                var files = [];
+                for (var i = 0; i < result.rows.length; i++) {
+                    var tableName = result.rows.item(i).name;
+                    if (tableName.charAt(0) === '/' || tableName.charAt(0) === '#') {
+                        files.push(tableName);
+                    }
+                }
+                callback(files);
+            }, null);
         };
         return RuntimeDocumentStorage;
     })();
@@ -591,17 +495,82 @@ var teapo;
     * This class is not exposed outside of this module.
     */
     var RuntimeDocumentState = (function () {
-        function RuntimeDocumentState(fullPath, loadFromDom, storeElement, runtime) {
-            this.fullPath = fullPath;
-            this.loadFromDom = loadFromDom;
-            this.storeElement = storeElement;
-            this.runtime = runtime;
-            this.type = null;
-            this.editor = null;
-            this.fileEntry = null;
-            this.localStorageKey = this.runtime.storage.uniqueKey + fullPath;
-            this.doc = new DocumentState(this);
+        function RuntimeDocumentState(_fullPath, _storeElement, _executeSql, _storage, loadFromWebsqlCallback) {
+            var _this = this;
+            this._fullPath = _fullPath;
+            this._storeElement = _storeElement;
+            this._executeSql = _executeSql;
+            this._storage = _storage;
+            this._type = null;
+            this._editor = null;
+            this._fileEntry = null;
+            this._properties = {};
+            this._updateSql = '';
+            this._insertSql = '';
+            var tableName = this._fullPath;
+
+            if (loadFromWebsqlCallback) {
+                loadPropertiesFromDom(tableName, this._storeElement, this._properties, this._executeSql);
+            } else {
+                loadPropertiesFromWebSql(tableName, this._storeElement, this._properties, this._executeSql, function () {
+                    loadFromWebsqlCallback(_this);
+                });
+            }
         }
+        RuntimeDocumentState.prototype.fullPath = function () {
+            return this._fullPath;
+        };
+
+        RuntimeDocumentState.prototype.type = function () {
+            if (!this._type)
+                this._type = this._storage.handler.getType(this._fullPath);
+
+            return this._type;
+        };
+
+        RuntimeDocumentState.prototype.fileEntry = function () {
+            if (!this._fileEntry)
+                this._fileEntry = this._storage.handler.getFileEntry(this._fullPath);
+
+            return this._fileEntry;
+        };
+
+        RuntimeDocumentState.prototype.editor = function () {
+            if (!this._editor)
+                this._editor = this.type().editDocument(this);
+
+            return this._editor;
+        };
+
+        RuntimeDocumentState.prototype.currentEditor = function () {
+            return this._editor;
+        };
+
+        RuntimeDocumentState.prototype.getProperty = function (name) {
+            return this._properties[name];
+        };
+
+        RuntimeDocumentState.prototype.setProperty = function (name, value) {
+            if (value === this._properties[name])
+                return;
+
+            var existingProperty = this._properties.hasOwnProperty(name);
+            this._properties[name] = value;
+
+            if (name)
+                this._storeElement.setAttribute(name, value);
+            else
+                this._storeElement.innerHTML = value;
+
+            if (this._executeSql) {
+                var sql = existingProperty ? this._updateSql : this._insertSql;
+                this._executeSql(sql, [name, value], null, null);
+            }
+        };
+
+        RuntimeDocumentState.prototype._removeStorage = function () {
+            // TODO: remove _storeElement, drop table
+        };
         return RuntimeDocumentState;
     })();
 
@@ -619,6 +588,10 @@ var teapo;
         return key;
     }
 
+    function getOpenDatabase() {
+        return typeof openDatabase == 'undefined' ? null : openDatabase;
+    }
+
     function safeParseDate(str) {
         if (!str)
             return null;
@@ -634,6 +607,37 @@ var teapo;
         s.setAttribute('type', 'text/data');
         doc.body.appendChild(s);
         return s;
+    }
+
+    function loadPropertiesFromDom(tableName, script, properties, executeSql) {
+        if (executeSql) {
+            executeSql('CREATE TABLE "' + tableName + '" ( name TEXT, value TEXT)');
+        }
+
+        for (var i = 0; i < script.attributes.length; i++) {
+            var a = script.attributes.item(i);
+
+            if (a.name === 'id' || a.name == 'data-path')
+                continue;
+
+            properties[a.name] = a.value;
+
+            if (executeSql)
+                executeSql('INSERT INTO "' + tableName + '" (name, value) VALUES(?,?)', [a.name, a.value]);
+        }
+    }
+
+    function loadPropertiesFromWebSql(tableName, script, properties, executeSql, completed) {
+        executeSql('SELECT name, value from "' + tableName + '"', [], function (results) {
+            var row;
+
+            for (var i = 0; row = results.rows.item(i); i++) {
+                properties[row.name] = row.value || '';
+                script.setAttribute(row.name, row.value || '');
+            }
+
+            completed();
+        });
     }
 })(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
@@ -679,11 +683,11 @@ var teapo;
     * ViewModel used in Knockout.js bindings.
     */
     var ApplicationShell = (function () {
-        function ApplicationShell() {
+        function ApplicationShell(_storage) {
             var _this = this;
+            this._storage = _storage;
             this.saveDelay = 600;
             this.fileList = null;
-            this._storage = null;
             this._selectedDocState = null;
             this._editorElement = null;
             this._host = null;
@@ -691,10 +695,8 @@ var teapo;
             this._saveSelectedFileClosure = function () {
                 return _this._invokeSaveSelectedFile();
             };
-            this._storage = new teapo.DocumentStorage();
-            this._storage.entryResolver = this.fileList;
-            this._storage.typeResolver = teapo.EditorType;
-
+            //      this._storage.entryResolver = this.fileList;
+            //      this._storage.typeResolver = EditorType;
             this.fileList = new teapo.FileList(this._storage);
 
             this.fileList.selectedFile.subscribe(function (fileEntry) {
@@ -1676,26 +1678,44 @@ var teapo;
 /// <reference path='editor-std.ts' />
 /// <reference path='editor-ts.ts' />
 function start() {
-    teapo.registerKnockoutBindings(ko);
+    var storage = null;
+    var viewModel = null;
 
-    var viewModel = new teapo.ApplicationShell();
+    var storageLoaded = function () {
+        teapo.registerKnockoutBindings(ko);
 
-    var pageElement = null;
+        viewModel = new teapo.ApplicationShell(storage);
 
-    for (var i = 0; i < document.body.childNodes.length; i++) {
-        var e = document.body.childNodes.item(i);
-        if (e && e.tagName && e.tagName.toLowerCase() !== 'script') {
-            if (e.className && e.className.indexOf('teapo-page') >= 0) {
-                pageElement = e;
-                continue;
+        var pageElement = null;
+
+        for (var i = 0; i < document.body.childNodes.length; i++) {
+            var e = document.body.childNodes.item(i);
+            if (e && e.tagName && e.tagName.toLowerCase() !== 'script') {
+                if (e.className && e.className.indexOf('teapo-page') >= 0) {
+                    pageElement = e;
+                    continue;
+                }
+
+                document.body.removeChild(e);
+                i--;
             }
-
-            document.body.removeChild(e);
-            i--;
         }
-    }
 
-    ko.renderTemplate('page-template', viewModel, null, pageElement);
+        ko.renderTemplate('page-template', viewModel, null, pageElement);
+    };
+
+    teapo.openStorage({
+        documentStorageCreated: function (error, s) {
+            storage = s;
+            storageLoaded();
+        },
+        getType: function (fullPath) {
+            return teapo.EditorType.getType(fullPath);
+        },
+        getFileEntry: function (fullPath) {
+            return viewModel.fileList.getFileEntry(fullPath);
+        }
+    });
 }
 
 start();
