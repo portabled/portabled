@@ -1548,7 +1548,7 @@ var teapo;
             for (var i = pos.ch; i < line.length; i++) {
                 var ch = line[i];
                 if (!whitespace && this._isIdentifierChar(ch)) {
-                    leadLength++;
+                    tailLength++;
                     continue;
                 }
 
