@@ -20,6 +20,11 @@ module teapo {
 
     /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
     constructor(private _typescript = new TypeScriptService()) {
+      this._shared.options.extraKeys['Ctrl-Space'] = () => {
+        var editor = <TypeScriptEditor>this._shared.editor;
+        if (!editor) return;
+        editor._triggerCompletion();
+      };
     }
 
     static editorConfiguration() {
@@ -152,7 +157,7 @@ module teapo {
       // TODO: display syntactic information about the current cursor position in the status bar
     }
 
-    private _triggerCompletion() {
+    _triggerCompletion() {
       if (this._completionTimeout)
         clearTimeout(this._completionTimeout);
 

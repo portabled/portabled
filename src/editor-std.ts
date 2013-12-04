@@ -37,6 +37,9 @@ module teapo {
      * Invoked when a file is selected in the file list/tree and brought open.
      */
     open(onchange: () => void): HTMLElement {
+
+      this._shared.editor = this;
+
       // storing passed function
       // (it should be invoked for any change to trigger saving)
       this._invokeonchange = onchange;
@@ -67,6 +70,10 @@ module teapo {
      * Invoked when file is closed (normally it means another one is being opened).
      */
     close() {
+
+      if (this._shared.editor===this)
+        this._shared.editor = null;
+
       // should not try triggering a save when not opened
       this._invokeonchange = null;
       this.handleClose();
@@ -88,10 +95,10 @@ module teapo {
      */
     editor() {
       // note that editor instance is shared
-      if (!this._shared.editor)
+      if (!this._shared.cm)
         this._initEditor();
 
-      return this._shared.editor;
+      return this._shared.cm;
     }
 
     /**
@@ -105,7 +112,7 @@ module teapo {
         if (this._doc)
           this._text= this._doc.getValue();
         else
-          this._text = this.docState.getProperty(null);
+          this._text = this.docState.getProperty(null) ||'';
       }
       return this._text;
     }
@@ -153,7 +160,7 @@ module teapo {
 
     private _initEditor() {
       var options = this._shared.options || CodeMirrorEditor.standardEditorConfiguration();
-      this._shared.editor = new CodeMirror(
+      this._shared.cm = new CodeMirror(
         (element) => this._shared.element = element,
         options);
     }
@@ -194,7 +201,8 @@ module teapo {
      * Note that all the properties are optional, they are going to be assigned by CodeMirrorEditor.
      */
     export interface SharedState {
-      editor?: CodeMirror;
+      editor?: CodeMirrorEditor;
+      cm?: CodeMirror;
       element?: HTMLElement;
       options?: CodeMirror.Options;
     }

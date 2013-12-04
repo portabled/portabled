@@ -34,8 +34,8 @@ interface SQLTransaction {
   executeSql(
     sqlStatement: string,
     arguments?: any[],
-    callback?: (result: SQLResultSet) => void,
-    errorCallback?: (transaction: SQLTransaction, resultSet: SQLResultSet) => void): void;
+    callback?: (transaction: SQLTransaction, result: SQLResultSet) => void,
+    errorCallback?: (transaction: SQLTransaction, error: SQLError) => void): void;
 }
 
 interface SQLError {

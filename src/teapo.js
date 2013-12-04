@@ -310,6 +310,8 @@ var teapo;
             this._metadataProperties = null;
             this._docByPath = {};
             this._executeSql = null;
+            this._insertMetadataSql = '';
+            this._updateMetadataSql = '';
             this.document = this.handler.document ? this.handler.document : document;
 
             var pathElements = this._scanDomScripts();
@@ -318,25 +320,46 @@ var teapo;
                 this._metadataElement.id = 'storageMetadata';
             }
 
-            var openDatabase = this.handler.openDatabase;
+            var openDatabase = this.handler.openDatabase || getOpenDatabase();
             if (typeof openDatabase === 'function') {
                 var dbName = this.handler.uniqueKey ? this.handler.uniqueKey : getUniqueKey();
                 var db = openDatabase(dbName, 1, null, 1024 * 1024 * 5);
 
-                this._executeSql = function (sqlStatement, arguments, callback, errorCallback) {
-                    return db.transaction(function (t) {
-                        return t.executeSql(sqlStatement, arguments, callback, errorCallback);
+                this._executeSql = function (sqlStatement, args, callback, errorCallback) {
+                    var errorCallbackSafe = errorCallback;
+                    if (!errorCallbackSafe)
+                        errorCallbackSafe = function (t, e) {
+                            return alert(e + ' ' + e.message + '\n' + sqlStatement + '\n' + args);
+                        };
+                    db.transaction(function (t) {
+                        return t.executeSql(sqlStatement, args, callback, errorCallbackSafe);
                     });
                 };
+                this._insertMetadataSql = 'INSERT INTO "*metadata" (name, value) VALUES(?,?)';
+                this._updateMetadataSql = 'UPDATE "*metadata" SET value=? WHERE name=?';
 
                 this._metadataProperties = {};
-                loadPropertiesFromWebSql('*metadata', this._metadataElement, this._metadataProperties, this._executeSql, function () {
-                    var wsEdited = safeParseDate(_this._metadataProperties.edited);
-                    var domEdited = _this._metadataElement ? safeParseDate(_this._metadataElement.getAttribute('edited')) : null;
-                    if (!wsEdited || domEdited && domEdited > wsEdited)
+                this._loadTableListFromWebsql(function (tableList) {
+                    var metadataTableExists = false;
+                    for (var i = 0; i < tableList.length; i++) {
+                        if (tableList[i] === '*metadata') {
+                            metadataTableExists = true;
+                            break;
+                        }
+                    }
+                    if (!metadataTableExists) {
                         _this._loadInitialStateFromDom(pathElements);
-                    else
-                        _this._loadInitialStateFromWebSql(pathElements);
+                        return;
+                    }
+
+                    loadPropertiesFromWebSql('*metadata', _this._metadataElement, _this._metadataProperties, _this._executeSql, function () {
+                        var wsEdited = safeParseInt(_this._metadataProperties.edited);
+                        var domEdited = _this._metadataElement ? safeParseInt(_this._metadataElement.getAttribute('edited')) : null;
+                        if (!wsEdited || domEdited && domEdited > wsEdited)
+                            _this._loadInitialStateFromDom(pathElements);
+                        else
+                            _this._loadInitialStateFromWebSql(pathElements);
+                    });
                 });
             } else {
                 this._loadInitialStateFromDom(pathElements);
@@ -376,11 +399,31 @@ var teapo;
         };
 
         RuntimeDocumentStorage.prototype.getProperty = function (name) {
-            throw null;
+            return this._metadataProperties[name || ''];
         };
 
         RuntimeDocumentStorage.prototype.setProperty = function (name, value) {
-            throw null;
+            name = name || '';
+            if (value === this._metadataProperties[name])
+                return;
+
+            var existingProperty = this._metadataProperties.hasOwnProperty(name);
+            this._metadataProperties[name] = value;
+
+            if (name)
+                this._metadataElement.setAttribute(name, value);
+            else
+                this._metadataElement.innerHTML = value;
+
+            if (this._executeSql) {
+                if (existingProperty)
+                    this._executeSql(this._updateMetadataSql, [value, name]);
+                else
+                    this._executeSql(this._insertMetadataSql, [name, value]);
+            }
+
+            if (name !== 'edited')
+                this.setProperty('edited', Date.now());
         };
 
         RuntimeDocumentStorage.prototype._loadInitialStateFromDom = function (pathElements) {
@@ -399,8 +442,6 @@ var teapo;
                 if (_this._executeSql) {
                     _this._executeSql('CREATE TABLE "*metadata" (name TEXT, value TEXT)', [], null, null);
                 }
-
-                _this.setProperty('edited', Date.now() + '');
 
                 _this.handler.documentStorageCreated(null, _this);
             };
@@ -476,16 +517,16 @@ var teapo;
 
         RuntimeDocumentStorage.prototype._loadTableListFromWebsql = function (callback) {
             var sql = 'SELECT name FROM sqlite_master WHERE type=\'table\'';
-            this._executeSql(sql, [], function (result) {
+            this._executeSql(sql, [], function (t, result) {
                 var files = [];
                 for (var i = 0; i < result.rows.length; i++) {
                     var tableName = result.rows.item(i).name;
-                    if (tableName.charAt(0) === '/' || tableName.charAt(0) === '#') {
+                    if (tableName.charAt(0) === '/' || tableName.charAt(0) === '#' || tableName.charAt(0) === '*') {
                         files.push(tableName);
                     }
                 }
                 callback(files);
-            }, null);
+            });
         };
         return RuntimeDocumentStorage;
     })();
@@ -508,13 +549,17 @@ var teapo;
             this._updateSql = '';
             this._insertSql = '';
             var tableName = this._fullPath;
+            if (this._executeSql) {
+                this._insertSql = 'INSERT INTO "' + tableName + '" (name, value) VALUES(?,?)';
+                this._updateSql = 'UPDATE "' + tableName + '" SET value=? WHERE name=?';
+            }
 
             if (loadFromWebsqlCallback) {
-                loadPropertiesFromDom(tableName, this._storeElement, this._properties, this._executeSql);
-            } else {
                 loadPropertiesFromWebSql(tableName, this._storeElement, this._properties, this._executeSql, function () {
                     loadFromWebsqlCallback(_this);
                 });
+            } else {
+                loadPropertiesFromDom(tableName, this._storeElement, this._properties, this._executeSql);
             }
         }
         RuntimeDocumentState.prototype.fullPath = function () {
@@ -547,10 +592,11 @@ var teapo;
         };
 
         RuntimeDocumentState.prototype.getProperty = function (name) {
-            return this._properties[name];
+            return this._properties[name || ''];
         };
 
         RuntimeDocumentState.prototype.setProperty = function (name, value) {
+            var name = name || '';
             if (value === this._properties[name])
                 return;
 
@@ -563,9 +609,13 @@ var teapo;
                 this._storeElement.innerHTML = value;
 
             if (this._executeSql) {
-                var sql = existingProperty ? this._updateSql : this._insertSql;
-                this._executeSql(sql, [name, value], null, null);
+                if (existingProperty)
+                    this._executeSql(this._updateSql, [value, name]);
+                else
+                    this._executeSql(this._insertSql, [name, value]);
             }
+
+            this._storage.setProperty('edited', Date.now());
         };
 
         RuntimeDocumentState.prototype._removeStorage = function () {
@@ -592,11 +642,13 @@ var teapo;
         return typeof openDatabase == 'undefined' ? null : openDatabase;
     }
 
-    function safeParseDate(str) {
+    function safeParseInt(str) {
         if (!str)
             return null;
+        if (typeof str === 'number')
+            return str;
         try  {
-            return new Date(str);
+            return parseInt(str);
         } catch (e) {
             return null;
         }
@@ -614,26 +666,35 @@ var teapo;
             executeSql('CREATE TABLE "' + tableName + '" ( name TEXT, value TEXT)');
         }
 
+        var insertSQL = 'INSERT INTO "' + tableName + '" (name, value) VALUES(?,?)';
+
         for (var i = 0; i < script.attributes.length; i++) {
             var a = script.attributes.item(i);
 
-            if (a.name === 'id' || a.name == 'data-path')
+            if (a.name === 'id' || a.name === 'data-path' || a.name === 'type')
                 continue;
 
             properties[a.name] = a.value;
 
             if (executeSql)
-                executeSql('INSERT INTO "' + tableName + '" (name, value) VALUES(?,?)', [a.name, a.value]);
+                executeSql(insertSQL, [a.name, a.value]);
         }
+
+        properties[''] = script.innerHTML;
+        if (executeSql)
+            executeSql(insertSQL, ['', script.innerHTML]);
     }
 
     function loadPropertiesFromWebSql(tableName, script, properties, executeSql, completed) {
-        executeSql('SELECT name, value from "' + tableName + '"', [], function (results) {
-            var row;
-
-            for (var i = 0; row = results.rows.item(i); i++) {
+        executeSql('SELECT name, value from "' + tableName + '"', [], function (t, results) {
+            var rowCount = results.rows.length;
+            for (var i = 0; i < rowCount; i++) {
+                var row = results.rows.item(i);
                 properties[row.name] = row.value || '';
-                script.setAttribute(row.name, row.value || '');
+                if (row.name)
+                    script.setAttribute(row.name, row.value || '');
+                else
+                    script.innerHTML = row.value;
             }
 
             completed();
@@ -847,6 +908,8 @@ var teapo;
         * Invoked when a file is selected in the file list/tree and brought open.
         */
         CodeMirrorEditor.prototype.open = function (onchange) {
+            this._shared.editor = this;
+
             // storing passed function
             // (it should be invoked for any change to trigger saving)
             this._invokeonchange = onchange;
@@ -879,6 +942,9 @@ var teapo;
         * Invoked when file is closed (normally it means another one is being opened).
         */
         CodeMirrorEditor.prototype.close = function () {
+            if (this._shared.editor === this)
+                this._shared.editor = null;
+
             // should not try triggering a save when not opened
             this._invokeonchange = null;
             this.handleClose();
@@ -900,10 +966,10 @@ var teapo;
         */
         CodeMirrorEditor.prototype.editor = function () {
             // note that editor instance is shared
-            if (!this._shared.editor)
+            if (!this._shared.cm)
                 this._initEditor();
 
-            return this._shared.editor;
+            return this._shared.cm;
         };
 
         /**
@@ -917,7 +983,7 @@ var teapo;
                 if (this._doc)
                     this._text = this._doc.getValue();
                 else
-                    this._text = this.docState.getProperty(null);
+                    this._text = this.docState.getProperty(null) || '';
             }
             return this._text;
         };
@@ -966,7 +1032,7 @@ var teapo;
         CodeMirrorEditor.prototype._initEditor = function () {
             var _this = this;
             var options = this._shared.options || CodeMirrorEditor.standardEditorConfiguration();
-            this._shared.editor = new CodeMirror(function (element) {
+            this._shared.cm = new CodeMirror(function (element) {
                 return _this._shared.element = element;
             }, options);
         };
@@ -1204,9 +1270,16 @@ var teapo;
         /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
         function TypeScriptEditorType(_typescript) {
             if (typeof _typescript === "undefined") { _typescript = new teapo.TypeScriptService(); }
+            var _this = this;
             this._typescript = _typescript;
             this._shared = {
                 options: TypeScriptEditorType.editorConfiguration()
+            };
+            this._shared.options.extraKeys['Ctrl-Space'] = function () {
+                var editor = _this._shared.editor;
+                if (!editor)
+                    return;
+                editor._triggerCompletion();
             };
         }
         TypeScriptEditorType.editorConfiguration = function () {
