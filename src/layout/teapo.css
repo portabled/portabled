@@ -56,12 +56,19 @@ html {
   font-size: 95%;
 }
 
+.cm-matchhighlight {
+  border: solid 1px rgba(100, 149, 237, 0.44);
+  background: rgba(100, 149, 237, 0.1);
+  margin: -1px;
+}
+
 .teapo-syntax-error {
-  text-decoration: underline;
-  background: #ffeaa2;
+  background: rgba(255, 205, 162, 0.62);
 }
 .teapo-semantic-error {
-  text-decoration: underline;
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3QUXCToH00Y1UgAAACFJREFUCNdjPMDBUc/AwNDAAAFMTAwMDA0OP34wQgX/AQBYgwYEx4f9lQAAAABJRU5ErkJggg==);
+  background-position: bottom left;
+  background-repeat: repeat-x;
 }
 .teapo-gutter-syntax-error {
   background: brown;
@@ -113,11 +120,7 @@ html {
 .CodeMirror-hint {
   max-width: 52em;
 }
-.cm-matchhighlight {
-  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFklEQVQI12NgYGBgkKzc8x9CMDAwAAAmhwSbidEoSQAAAABJRU5ErkJggg==);
-  background-position: bottom;
-  background-repeat: repeat-x;
-}
+
 .cm-tab {
    background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAMCAYAAAAkuj5RAAAAAXNSR0IArs4c6QAAAGFJREFUSMft1LsRQFAQheHPowAKoACx3IgEKtaEHujDjORSgWTH/ZOdnZOcM/sgk/kFFWY0qV8foQwS4MKBCS3qR6ixBJvElOobYAtivseIE120FaowJPN75GMu8j/LfMwNjh4HUpwg4LUAAAAASUVORK5CYII=);
    background-position: right;
