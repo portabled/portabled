@@ -46,4 +46,4 @@ function start() {
     });
 }
 
-start();
+setTimeout(start, 100);

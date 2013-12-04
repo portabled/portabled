@@ -1791,5 +1791,5 @@ function start() {
     });
 }
 
-start();
+setTimeout(start, 100);
 //# sourceMappingURL=teapo.js.map
