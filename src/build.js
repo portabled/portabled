@@ -56,6 +56,7 @@ function inline(htmlFile, htmlOutput) {
     var match;
 
     console.log('Inlining '+htmlFile+'...');
+    var inlinedFileSizes = [];
     while (match = srcRegex.exec(html)) {
       if (!fs.existsSync(match[1])) {
         console.log(match[1]+' inline reference is missing, skipping');
@@ -68,7 +69,10 @@ function inline(htmlFile, htmlOutput) {
       convertedOutput.push(embedContent);
       offset = match.index+match[0].length;
 
-      console.log('  '+htmlFile+' -> '+match[1]+' inlined '+embedContent.length+' bytes at '+offset);
+      var shortName = match[1];
+      shortName = shortName.slice(shortName.lastIndexOf('/')+1);
+      inlinedFileSizes.push(shortName);
+
       watchFileNames.push(match[1]);
     }
 
@@ -78,7 +82,8 @@ function inline(htmlFile, htmlOutput) {
     var combinedConvertedOutput = convertedOutput.join('');
 
     fs.writeFileSync(htmlOutput, combinedConvertedOutput);
-    console.log(' written '+combinedConvertedOutput.length+'.');
+    console.log('  '+htmlFile+' inlined: '+inlinedFileSizes.join(',  ')+' - total '+combinedConvertedOutput.length+'.');
+    console.log('  inlined '+inlinedFileSizes.length+' files.');
 
     for (var i = 0; i < watchFileNames.length; i++) {
       var stopWatching = onFileChanged(
@@ -221,6 +226,7 @@ function checkAndImportExternal(sourceDir, files, targetDir, handleDetected, cal
 function importFiles(repository, files, targetDir, callback) {
   var completeCount = 0;
   var error = null;
+  var successFiles = [];
   files.forEach(function(f) {
     var isComplete = false;
     continueCopyFile(f, function(err) {
@@ -228,9 +234,16 @@ function importFiles(repository, files, targetDir, callback) {
         return;
       isComplete = true;
 
+      if (!err) {
+        var shortName = f.slice(f.lastIndexOf('/')+1);
+        successFiles.push(shortName);
+      }
+
       completeCount++;
       error = error || err;
       if (completeCount===files.length) {
+        console.log('  copied: '+successFiles.join(',  ')+'.');
+        console.log('  copied '+successFiles.length+' files.'); 
         callback(error);
       }
     });
@@ -260,8 +273,6 @@ function importFiles(repository, files, targetDir, callback) {
     copyFile(repository+f, targetDir+'/'+shortName, function(error) {
         if (error)
           console.log('  '+error.message+' '+shortName);
-        else
-          console.log('  copied '+shortName);
 
         onCopyComplete(error);
       });
