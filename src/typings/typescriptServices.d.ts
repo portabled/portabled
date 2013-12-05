@@ -6936,10 +6936,12 @@ declare module TypeScript {
         private _isUsedAsValue;
         private _typeUsedExternally;
         private retrievingExportAssignment;
+        private contingentValueSymbols;
         constructor(name: string);
         public typeUsedExternally(): boolean;
         public isUsedAsValue(): boolean;
         public setTypeUsedExternally(value: boolean): void;
+        public addContingentValueSymbol(contingentValueSymbol: PullTypeAliasSymbol): void;
         public setIsUsedAsValue(value: boolean): void;
         public assignedValue(): PullSymbol;
         public assignedType(): PullTypeSymbol;
