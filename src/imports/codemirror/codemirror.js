@@ -535,6 +535,7 @@ window.CodeMirror = (function() {
     }
     display.showingFrom = from; display.showingTo = to;
 
+    display.gutters.style.height = "";
     updateHeightsInViewport(cm);
     updateViewOffset(cm);
 
@@ -1113,7 +1114,7 @@ window.CodeMirror = (function() {
         }
       }
       if (!rect) rect = data[i] = measureRect(getRect(node));
-      if (cur.measureRight) rect.right = getRect(cur.measureRight).left;
+      if (cur.measureRight) rect.right = getRect(cur.measureRight).left - outer.left;
       if (cur.leftSide) rect.leftSide = measureRect(getRect(cur.leftSide));
     }
     removeChildren(cm.display.measure);
@@ -3709,11 +3710,12 @@ window.CodeMirror = (function() {
     this.string = string;
     this.tabSize = tabSize || 8;
     this.lastColumnPos = this.lastColumnValue = 0;
+    this.lineStart = 0;
   }
 
   StringStream.prototype = {
     eol: function() {return this.pos >= this.string.length;},
-    sol: function() {return this.pos == 0;},
+    sol: function() {return this.pos == this.lineStart;},
     peek: function() {return this.string.charAt(this.pos) || undefined;},
     next: function() {
       if (this.pos < this.string.length)
@@ -3746,9 +3748,12 @@ window.CodeMirror = (function() {
         this.lastColumnValue = countColumn(this.string, this.start, this.tabSize, this.lastColumnPos, this.lastColumnValue);
         this.lastColumnPos = this.start;
       }
-      return this.lastColumnValue;
+      return this.lastColumnValue - (this.lineStart ? countColumn(this.string, this.lineStart, this.tabSize) : 0);
     },
-    indentation: function() {return countColumn(this.string, null, this.tabSize);},
+    indentation: function() {
+      return countColumn(this.string, null, this.tabSize) -
+        (this.lineStart ? countColumn(this.string, this.lineStart, this.tabSize) : 0);
+    },
     match: function(pattern, consume, caseInsensitive) {
       if (typeof pattern == "string") {
         var cased = function(str) {return caseInsensitive ? str.toLowerCase() : str;};
@@ -3764,7 +3769,12 @@ window.CodeMirror = (function() {
         return match;
       }
     },
-    current: function(){return this.string.slice(this.start, this.pos);}
+    current: function(){return this.string.slice(this.start, this.pos);},
+    hideFirstChars: function(n, inner) {
+      this.lineStart += n;
+      try { return inner(); }
+      finally { this.lineStart -= n; }
+    }
   };
   CodeMirror.StringStream = StringStream;
 
@@ -3869,10 +3879,9 @@ window.CodeMirror = (function() {
     if (doc.cm && !doc.cm.curOp) return operation(doc.cm, markText)(doc, from, to, options, type);
 
     var marker = new TextMarker(doc, type);
-    if (posLess(to, from) || posEq(from, to) && type == "range" &&
-        !(options.inclusiveLeft && options.inclusiveRight))
-      return marker;
     if (options) copyObj(options, marker);
+    if (posLess(to, from) || posEq(from, to) && marker.clearWhenEmpty !== false)
+      return marker;
     if (marker.replacedWith) {
       marker.collapsed = true;
       marker.replacedWith = elt("span", [marker.replacedWith], "CodeMirror-widget");
@@ -3987,9 +3996,7 @@ window.CodeMirror = (function() {
     if (old) for (var i = 0, nw; i < old.length; ++i) {
       var span = old[i], marker = span.marker;
       var startsBefore = span.from == null || (marker.inclusiveLeft ? span.from <= startCh : span.from < startCh);
-      if (startsBefore ||
-          (marker.inclusiveLeft && marker.inclusiveRight || marker.type == "bookmark") &&
-          span.from == startCh && (!isInsert || !span.marker.insertLeft)) {
+      if (startsBefore || span.from == startCh && marker.type == "bookmark" && (!isInsert || !span.marker.insertLeft)) {
         var endsAfter = span.to == null || (marker.inclusiveRight ? span.to >= startCh : span.to > startCh);
         (nw || (nw = [])).push({from: span.from,
                                 to: endsAfter ? null : span.to,
@@ -4003,7 +4010,7 @@ window.CodeMirror = (function() {
     if (old) for (var i = 0, nw; i < old.length; ++i) {
       var span = old[i], marker = span.marker;
       var endsAfter = span.to == null || (marker.inclusiveRight ? span.to >= endCh : span.to > endCh);
-      if (endsAfter || marker.type == "bookmark" && span.from == endCh && (!isInsert || span.marker.insertLeft)) {
+      if (endsAfter || span.from == endCh && marker.type == "bookmark" && (!isInsert || span.marker.insertLeft)) {
         var startsBefore = span.from == null || (marker.inclusiveLeft ? span.from <= endCh : span.from < endCh);
         (nw || (nw = [])).push({from: startsBefore ? null : span.from - endCh,
                                 to: span.to == null ? null : span.to - endCh,
@@ -4053,13 +4060,9 @@ window.CodeMirror = (function() {
         }
       }
     }
-    if (sameLine && first) {
-      // Make sure we didn't create any zero-length spans
-      for (var i = 0; i < first.length; ++i)
-        if (first[i].from != null && first[i].from == first[i].to && first[i].marker.type != "bookmark")
-          first.splice(i--, 1);
-      if (!first.length) first = null;
-    }
+    // Make sure we didn't create any zero-length spans
+    if (first) first = clearEmptySpans(first);
+    if (last && last != first) last = clearEmptySpans(last);
 
     var newMarkers = [first];
     if (!sameLine) {
@@ -4074,6 +4077,16 @@ window.CodeMirror = (function() {
       newMarkers.push(last);
     }
     return newMarkers;
+  }
+
+  function clearEmptySpans(spans) {
+    for (var i = 0; i < spans.length; ++i) {
+      var span = spans[i];
+      if (span.from != null && span.from == span.to && span.marker.clearWhenEmpty !== false)
+        spans.splice(i--, 1);
+    }
+    if (!spans.length) return null;
+    return spans;
   }
 
   function mergeOldSpans(doc, change) {
@@ -4168,7 +4181,8 @@ window.CodeMirror = (function() {
       return true;
     for (var sp, i = 0; i < line.markedSpans.length; ++i) {
       sp = line.markedSpans[i];
-      if (sp != span && sp.marker.collapsed && !sp.marker.replacedWith && sp.from == span.to &&
+      if (sp.marker.collapsed && !sp.marker.replacedWith && sp.from == span.to &&
+          (sp.to == null || sp.to != span.from) &&
           (sp.marker.inclusiveLeft || span.marker.inclusiveRight) &&
           lineIsHiddenInner(doc, line, sp)) return true;
     }
@@ -4927,7 +4941,8 @@ window.CodeMirror = (function() {
     },
     setBookmark: function(pos, options) {
       var realOpts = {replacedWith: options && (options.nodeType == null ? options.widget : options),
-                      insertLeft: options && options.insertLeft};
+                      insertLeft: options && options.insertLeft,
+                      clearWhenEmpty: false};
       pos = clipPos(this, pos);
       return markText(this, pos, pos, realOpts, "bookmark");
     },
@@ -5507,7 +5522,7 @@ window.CodeMirror = (function() {
     return true;
   }
 
-  var isExtendingChar = /[\u0300-\u036F\u0483-\u0487\u0488-\u0489\u0591-\u05BD\u05BF\u05C1-\u05C2\u05C4-\u05C5\u05C7\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7-\u06E8\u06EA-\u06ED\uA66F\u1DC0–\u1DFF\u20D0–\u20FF\uA670-\uA672\uA674-\uA67D\uA69F\udc00-\udfff\uFE20–\uFE2F]/;
+  var isExtendingChar = /[\u0300-\u036F\u0483-\u0487\u0488-\u0489\u0591-\u05BD\u05BF\u05C1-\u05C2\u05C4-\u05C5\u05C7\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7-\u06E8\u06EA-\u06ED\uA66F\u1DC0-\u1DFF\u20D0-\u20FF\uA670-\uA672\uA674-\uA67D\uA69F\udc00-\udfff\uFE20-\uFE2F]/;
 
   // DOM UTILITIES
 
@@ -5580,7 +5595,7 @@ window.CodeMirror = (function() {
         if (/\w/.test(str.charAt(i - 2)) && /[^\-?\.]/.test(str.charAt(i))) return true;
         if (i > 2 && /[\d\.,]/.test(str.charAt(i - 2)) && /[\d\.,]/.test(str.charAt(i))) return false;
       }
-      return /[~!#%&*)=+}\]\\|\"\.>,:;][({[<]|-[^\-?\.\u2010-\u201f\u2026]|\?[\w~`@#$%\^&*(_=+{[|><]|…[\w~`@#$%\^&*(_=+{[><]/.test(str.slice(i - 1, i + 1));
+      return /[~!#%&*)=+}\]\\|\"\.>,:;][({[<]|-[^\-?\.\u2010-\u201f\u2026]|\?[\w~`@#$%\^&*(_=+{[|><]|\u2026[\w~`@#$%\^&*(_=+{[><]/.test(str.slice(i - 1, i + 1));
     };
 
   var knownScrollbarWidth;
@@ -5861,7 +5876,7 @@ window.CodeMirror = (function() {
         if (type == ",") types[i] = "N";
         else if (type == "%") {
           for (var end = i + 1; end < len && types[end] == "%"; ++end) {}
-          var replace = (i && types[i-1] == "!") || (end < len - 1 && types[end] == "1") ? "1" : "N";
+          var replace = (i && types[i-1] == "!") || (end < len && types[end] == "1") ? "1" : "N";
           for (var j = i; j < end; ++j) types[j] = replace;
           i = end - 1;
         }
@@ -5886,7 +5901,7 @@ window.CodeMirror = (function() {
         if (isNeutral.test(types[i])) {
           for (var end = i + 1; end < len && isNeutral.test(types[end]); ++end) {}
           var before = (i ? types[i-1] : outerType) == "L";
-          var after = (end < len - 1 ? types[end] : outerType) == "L";
+          var after = (end < len ? types[end] : outerType) == "L";
           var replace = before || after ? "L" : "R";
           for (var j = i; j < end; ++j) types[j] = replace;
           i = end - 1;
