@@ -46,4 +46,5 @@ function start() {
     });
 }
 
+// TODO: remove this ridiculous timeout (need to insert scripts above teapo.js)
 setTimeout(start, 100);
