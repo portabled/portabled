@@ -12,7 +12,7 @@ module teapo {
    * creates and holds DocumentStorage and FileList,
    * that in turn manage persistence and file list/tree.
    *
-   * Note that ApplicationShell serves as the top-level
+   * Note that ApplicationShell serves as a top-level
    * ViewModel used in Knockout.js bindings.
    */
   export class ApplicationShell {
@@ -22,13 +22,11 @@ module teapo {
 
     private _selectedDocState: DocumentState = null;
     private _editorElement: HTMLElement = null;
-    private _host: HTMLElement = null;
+    private _editorHost: HTMLElement = null;
     private _saveTimeout = 0;
     private _saveSelectedFileClosure = () => this._invokeSaveSelectedFile();
 
     constructor(private _storage: DocumentStorage) {
-//      this._storage.entryResolver = this.fileList;
-//      this._storage.typeResolver = EditorType;
       this.fileList = new FileList(this._storage);
   
       this.fileList.selectedFile.subscribe((fileEntry) => this._fileSelected(fileEntry));
@@ -41,6 +39,10 @@ module teapo {
       }
     }
 
+    /**
+     * Prompts user for a name, creates a new file and opens it in the editor.
+     * Exposed as a button bound using Knockout.
+     */
     newFileClick() {
       var fileName = prompt('New file');
       if (!fileName)
@@ -52,26 +54,38 @@ module teapo {
       fileEntry.handleClick();
     }
 
+    /**
+     * Pops a confirmation dialog up, then deletes the currently selected file.
+     * Exposed as a button bound using Knockout.
+     */
     deleteSelectedFile() {
       var selectedFileEntry = this.fileList.selectedFile();
       if (!selectedFileEntry) return;
 
-      if (!confirm('Are you sure dleting '+selectedFileEntry.name()))
+      if (!confirm('Are you sure deleting '+selectedFileEntry.name()))
         return;
 
       this._storage.removeDocument(selectedFileEntry.fullPath());
       this.fileList.removeFileEntry(selectedFileEntry.fullPath());
 
-      if (this._host) {
-        this._host.innerHTML = '';
+      if (this._editorHost) {
+        this._editorHost.innerHTML = '';
       }
     }
 
+    /**
+     * Suggested name for file save operation.
+     */
     saveFileName() {
       var urlParts = window.location.pathname.split('/');
       return decodeURI(urlParts[urlParts.length-1]);
     }
 
+    /**
+     * Triggers a download of the whole current HTML, which contains the filesystem state and all the necessary code.
+     * Relies on blob URLs, doesn't work in old browsers.
+     * Exposed as a button bound using Knockout.
+     */
     saveHtml() {
       var filename = this.saveFileName();
       var blob = new Blob([document.documentElement.outerHTML], {type: 'application/octet-stream'});
@@ -82,6 +96,11 @@ module teapo {
       a.click();
     }
 
+    /**
+     * Packs the current filesystem content in a zip, then triggers a download.
+      * Relies on blob URLs and Zip.js, doesn't work in old browsers.
+     * Exposed as a button bound using Knockout.
+     */
     saveZip() {
       zip.useWebWorkers = false;
       var filename = this.saveFileName();
@@ -99,7 +118,9 @@ module teapo {
           var docState = this._storage.getDocument(files[i]);
           var content = docState.getProperty(null);
 
-          zipWriter.add(files[i], new zip.TextReader(content), () => {
+          var zipRelativePath = files[i].slice(1);
+
+          zipWriter.add(zipRelativePath, new zip.TextReader(content), () => {
             completedCount++;
             if (completedCount===files.length) {
               zipWriter.close((blob) => {
@@ -115,11 +136,15 @@ module teapo {
       });
     }
 
-    attachToHost(host: HTMLElement) {
-      this._host = host;
+    /**
+     * Invoked from the Knockout/view side to pass the editor host DIV
+     * to ApplicationShell.
+     */
+    attachToHost(editorHost: HTMLElement) {
+      this._editorHost = editorHost;
       if (this._editorElement) {
-        this._host.innerHTML = '';
-        this._host.appendChild(this._editorElement);
+        this._editorHost.innerHTML = '';
+        this._editorHost.appendChild(this._editorElement);
       }
     }
 
@@ -151,14 +176,14 @@ module teapo {
 
         this._editorElement = newEditorElement;
 
-        if (oldEditorElement && this._host) {
-          this._host.removeChild(oldEditorElement);
+        if (oldEditorElement && this._editorHost) {
+          this._editorHost.removeChild(oldEditorElement);
         }
 
-        this._host.innerHTML = ''; // removing the initial startup decoration
+        this._editorHost.innerHTML = ''; // removing the initial startup decoration
 
-        if (newEditorElement && this._host)
-          this._host.appendChild(newEditorElement);
+        if (newEditorElement && this._editorHost)
+          this._editorHost.appendChild(newEditorElement);
       }
     }
 
