@@ -5,31 +5,39 @@ module teapo {
 
   /**
    * Pubic API exposing access to TypeScript language  services
-   * (see service member)
+   * (see its service property)
    * and handling the interfaces TypeScript requires
    * to access to the source code and the changes.
    */
   export class TypeScriptService {
 
+    /** Set of booleans for each log severity level. */
     logLevels = {
-      information: true,
-      debug: true,
-      warning: true,
+      information: false,
+      debug: false,
+      warning: false,
       error: true,
       fatal: true
     };
-    
+
+    /** TypeScript custom settings. */
     compilationSettings = new TypeScript.CompilationSettings();
   
+    /** Main public API of TypeScript compiler/parser engine. */
     service: TypeScript.Services.ILanguageService;
   
+    /** Files added to the compiler/parser scope, by full path. */
     scripts: { [fullPath: string]: TypeScriptService.Script; } = {};
-  
+
+
     constructor() {
+
       var factory = new TypeScript.Services.TypeScriptServicesFactory();
       this.service = factory.createPullLanguageService(this._createLanguageServiceHost());
     }
-  
+
+    /**
+     * The main API required by TypeScript for talking to the host environment. */
     private _createLanguageServiceHost() {
       return {
         getCompilationSettings: () => this.compilationSettings,
@@ -50,11 +58,11 @@ module teapo {
         getScriptByteOrderMark: (fileName: string) => TypeScript.ByteOrderMark.None,
         getScriptSnapshot: (fileName: string) => {
           var script = this.scripts[fileName];
-          var snapshot = <TypeScriptDocumentSnapshot>script.cachedSnapshot;
+          var snapshot = <TypeScriptDocumentSnapshot>script._cachedSnapshot;
 
           // checking if snapshot is out of date
           if (!snapshot || (script.changes && snapshot.version<script.changes.length)) {
-            script.cachedSnapshot =
+            script._cachedSnapshot =
               snapshot = new TypeScriptDocumentSnapshot(script);
           }
 
@@ -100,10 +108,27 @@ module teapo {
   }
 
   export module TypeScriptService {
+
+    /**
+     * Shape of an object that must represent a file for TypeScript service.
+     */
     export interface Script {
+
+      /**
+       * Whole text of the file as a single string.
+       */
       text(): string;
+
+      /**
+       * History of changes to the file, in a form of objects expected by TypeScript
+       * (basically, offset, old length, new length).
+       */
       changes: TypeScript.TextChangeRange[];
-      cachedSnapshot: TypeScript.IScriptSnapshot;
+
+      /**
+       * Used internally, don't ever change.
+       */
+      _cachedSnapshot: TypeScript.IScriptSnapshot;
     }
   }
  
