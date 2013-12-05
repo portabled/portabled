@@ -1,4 +1,5 @@
 /// <reference path='typings/knockout.d.ts' />
+/// <reference path='typings/zip.js.d.ts' />
 
 /// <reference path='editor.ts' />
 /// <reference path='files.ts' />
@@ -72,11 +73,46 @@ module teapo {
     }
 
     saveHtml() {
-      alert(this.saveFileName());
+      var filename = this.saveFileName();
+      var blob = new Blob([document.documentElement.outerHTML], {type: 'application/octet-stream'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.setAttribute('download', filename);
+      a.click();
     }
 
     saveZip() {
-      alert(2);
+      zip.useWebWorkers = false;
+      var filename = this.saveFileName();
+      if (filename.length>'.html'.length && filename.slice(filename.length-'.html'.length).toLowerCase()==='.html')
+        filename = filename.slice(0,filename.length-'.html'.length);
+      else if (filename.length>'.htm'.length && filename.slice(filename.length-'.htm'.length).toLowerCase()==='.htm')
+        filename = filename.slice(0,filename.length-'.htm'.length);
+      filename+='.zip';
+
+      zip.createWriter(new zip.BlobWriter(), (zipWriter) => {
+        var files = this._storage.documentNames();
+        var completedCount = 0;
+
+        for (var i=0; i<files.length; i++) {
+          var docState = this._storage.getDocument(files[i]);
+          var content = docState.getProperty(null);
+
+          zipWriter.add(files[i], new zip.TextReader(content), () => {
+            completedCount++;
+            if (completedCount===files.length) {
+              zipWriter.close((blob) => {
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.setAttribute('download', filename);
+                a.click();
+              });
+            }
+          });
+        }
+      });
     }
 
     attachToHost(host: HTMLElement) {

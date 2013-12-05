@@ -730,6 +730,7 @@ var teapo;
     var EditorType = teapo.EditorType;
 })(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
+/// <reference path='typings/zip.js.d.ts' />
 /// <reference path='editor.ts' />
 /// <reference path='files.ts' />
 /// <reference path='persistence.ts' />
@@ -804,10 +805,47 @@ var teapo;
         };
 
         ApplicationShell.prototype.saveHtml = function () {
-            alert(this.saveFileName());
+            var filename = this.saveFileName();
+            var blob = new Blob([document.documentElement.outerHTML], { type: 'application/octet-stream' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.setAttribute('download', filename);
+            a.click();
         };
 
         ApplicationShell.prototype.saveZip = function () {
+            var _this = this;
+            zip.useWebWorkers = false;
+            var filename = this.saveFileName();
+            if (filename.length > '.html'.length && filename.slice(filename.length - '.html'.length).toLowerCase() === '.html')
+                filename = filename.slice(0, filename.length - '.html'.length);
+            else if (filename.length > '.htm'.length && filename.slice(filename.length - '.htm'.length).toLowerCase() === '.htm')
+                filename = filename.slice(0, filename.length - '.htm'.length);
+            filename += '.zip';
+
+            zip.createWriter(new zip.BlobWriter(), function (zipWriter) {
+                var files = _this._storage.documentNames();
+                var completedCount = 0;
+
+                for (var i = 0; i < files.length; i++) {
+                    var docState = _this._storage.getDocument(files[i]);
+                    var content = docState.getProperty(null);
+
+                    zipWriter.add(files[i], new zip.TextReader(content), function () {
+                        completedCount++;
+                        if (completedCount === files.length) {
+                            zipWriter.close(function (blob) {
+                                var url = URL.createObjectURL(blob);
+                                var a = document.createElement('a');
+                                a.href = url;
+                                a.setAttribute('download', filename);
+                                a.click();
+                            });
+                        }
+                    });
+                }
+            });
         };
 
         ApplicationShell.prototype.attachToHost = function (host) {
