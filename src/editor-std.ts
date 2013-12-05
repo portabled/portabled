@@ -79,6 +79,11 @@ module teapo {
       this.handleClose();
     }
 
+    remove() {
+      this.handleRemove();
+    }
+
+
     /**
      * Retrieve CodeMirror.Doc that is solely used for this document editing.
      */
@@ -134,6 +139,12 @@ module teapo {
      * Overridable method, invoked when the document is being closed.
      */
     handleClose() {
+    }
+
+    /**
+     * Overridable method, invoked when the file was removed and the editor needs to be destroyed.
+     */
+    handleRemove() {
     }
 
     /**

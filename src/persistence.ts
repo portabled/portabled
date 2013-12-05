@@ -517,7 +517,13 @@ module teapo {
     }
 
     _removeStorage() {
-      // TODO: remove _storeElement, drop table
+      if (this._editor)
+        this._editor.remove();
+
+      this._storeElement.parentElement.removeChild(this._storeElement);
+      if (this._executeSql) {
+        this._executeSql('DROP TABLE "'+this._fullPath+'"');
+      }
     }
 
   }

@@ -619,7 +619,13 @@ var teapo;
         };
 
         RuntimeDocumentState.prototype._removeStorage = function () {
-            // TODO: remove _storeElement, drop table
+            if (this._editor)
+                this._editor.remove();
+
+            this._storeElement.parentElement.removeChild(this._storeElement);
+            if (this._executeSql) {
+                this._executeSql('DROP TABLE "' + this._fullPath + '"');
+            }
         };
         return RuntimeDocumentState;
     })();
@@ -992,6 +998,10 @@ var teapo;
             this.handleClose();
         };
 
+        CodeMirrorEditor.prototype.remove = function () {
+            this.handleRemove();
+        };
+
         /**
         * Retrieve CodeMirror.Doc that is solely used for this document editing.
         */
@@ -1047,6 +1057,12 @@ var teapo;
         * Overridable method, invoked when the document is being closed.
         */
         CodeMirrorEditor.prototype.handleClose = function () {
+        };
+
+        /**
+        * Overridable method, invoked when the file was removed and the editor needs to be destroyed.
+        */
+        CodeMirrorEditor.prototype.handleRemove = function () {
         };
 
         /**

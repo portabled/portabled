@@ -38,6 +38,11 @@ module teapo {
      * Invoked when editor is closed.
      */
     close();
+
+    /**
+     * Invoked when the underlying file is being removed, the editor is supposed to clear any internal bookmarking links.
+     */
+    remove();
   }
 
 
