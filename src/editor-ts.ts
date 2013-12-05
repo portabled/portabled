@@ -56,8 +56,9 @@ module teapo {
 
     /** Required as part of interface to TypeScriptService. */
     changes: TypeScript.TextChangeRange[] = [];
+
     /** Required as part of interface to TypeScriptService. */
-    cachedSnapshot: TypeScript.IScriptSnapshot = null; // needed for TypeScriptService optimization
+    _cachedSnapshot: TypeScript.IScriptSnapshot = null; // needed for TypeScriptService optimization
 
     static updateDiagnosticsDelay = 1000;
     static completionDelay = 200;
@@ -326,6 +327,7 @@ module teapo {
       };
     }
 
+    /** More specifially, number or identifier (numbers, letters, underscore and dollar). */
     private _isIdentifierChar(ch: string): boolean {
       if (ch.toLowerCase()!==ch.toUpperCase())
         return true;
@@ -394,12 +396,23 @@ module teapo {
       editor.clearGutter('teapo-errors');
 
       var gutterElement = this._getTeapoErrorsGutterElement();
+
       var gutterClassName = 'teapo-errors';
+      var lineErrors: { text: string; syntax: boolean; semantic: boolean; }[] = [];
+
       if (this._syntacticDiagnostics && this._syntacticDiagnostics.length) {
-        gutterClassName += ' teapo-errors-syntactic';
+        gutterClassName += ' teapo-errors-syntax';
 
         for (var i = 0; i < this._syntacticDiagnostics.length; i++) {
-          this._markError(this._syntacticDiagnostics[i], 'teapo-gutter-syntax-error', editor);
+          var err = this._syntacticDiagnostics[i];
+          var lnerr = lineErrors[err.line()];
+          if (lnerr) {
+            lnerr.text += '\n'+err.text();
+            lnerr.syntax = true;
+          }
+          else {
+            lnerr = { text: err.text(), syntax: true, semantic: false };
+          }
         }
       }
 
@@ -407,21 +420,34 @@ module teapo {
         gutterClassName += ' teapo-errors-semantic';
 
         for (var i = 0; i < this._semanticDiagnostics.length; i++) {
-          this._markError(this._semanticDiagnostics[i], 'teapo-gutter-semantic-error', editor);
+          var err = this._semanticDiagnostics[i];
+          var lnerr = lineErrors[err.line()];
+          if (lnerr) {
+            lnerr.text += '\n'+err.text();
+            lnerr.semantic = true;
+          }
+          else {
+            lnerr = { text: err.text(), syntax: false, semantic: true };
+          }
         }
       }
 
+      for (var i=0; lineErrors.length; i++) {
+        var lnerr = lineErrors[i];
+        if (!lnerr) continue;
+
+        var errorElement = document.createElement('div');
+        errorElement.className = lnerr.syntax ?
+          (lnerr.semantic ? 'teapo-syntax-error teapo-semantic-error' : 'teapo-syntax-error'):
+          (lnerr.semantic ? 'teapo-semantic' : '');
+        errorElement.title = lnerr.text;
+
+        errorElement.onclick = () => alert(lnerr.text);
+  
+        editor.setGutterMarker(i, 'teapo-errors', errorElement);
+      }
+
       gutterElement.className = gutterClassName;
-    }
-
-    private _markError(error: TypeScript.Diagnostic, className: string, editor: CodeMirror) {
-      var lineNumber = error.line();
-      var errorElement = document.createElement('div');
-      errorElement.className = className;
-      errorElement.title = error.text();
-      errorElement.onclick = () => alert(error.text() + '\nat '+(lineNumber+1)+':'+(error.character()+1)+'.');
-
-      editor.setGutterMarker(lineNumber, 'teapo-errors', errorElement);
     }
 
     private _getTeapoErrorsGutterElement() {
