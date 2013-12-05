@@ -803,6 +803,10 @@ var teapo;
             return decodeURI(urlParts[urlParts.length - 1]);
         };
 
+        ApplicationShell.prototype.saveHtml = function () {
+            alert(this.saveFileName());
+        };
+
         ApplicationShell.prototype.saveZip = function () {
         };
 

@@ -71,8 +71,12 @@ module teapo {
       return decodeURI(urlParts[urlParts.length-1]);
     }
 
+    saveHtml() {
+      alert(this.saveFileName());
+    }
+
     saveZip() {
-      
+      alert(2);
     }
 
     attachToHost(host: HTMLElement) {
