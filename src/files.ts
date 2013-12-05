@@ -4,12 +4,58 @@
 module teapo {
 
   /**
-   * File list or tree ViewModel.
+   * Folder entry in file list or tree.
+   */
+  export interface FolderEntry {
+
+    fullPath(): string;
+    name(): string;
+    parent(): FolderEntry;
+
+    nestLevel(): number;
+
+    folders: KnockoutObservableArray<FolderEntry>;
+    files: KnockoutObservableArray<FileEntry>;
+
+    containsSelectedFile: KnockoutObservable<boolean>;
+
+    handleClick(): void;
+  }
+
+  /**
+   * File entry in file list or tree.
+   */
+  export interface FileEntry {
+
+    fullPath(): string;
+    name(): string;
+    parent(): FolderEntry;
+
+    nestLevel(): number;
+
+    isSelected: KnockoutObservable<boolean>;
+
+    handleClick(): void;
+  }
+
+  /**
+   * File list/tree ViewModel.
    */
   export class FileList {
 
+    /**
+     * Top level folders.
+     */
     folders = ko.observableArray<FolderEntry>();
+
+    /**
+     * Files directly in the root folder.
+     */
     files = ko.observableArray<FileEntry>();
+
+    /**
+     * Currently selected file. Should not be modified externally.
+     */
     selectedFile = ko.observable<FileEntry>(null);
 
     private _filesByFullPath: { [fullPath: string]: FileEntry; } = {};
@@ -25,6 +71,9 @@ module teapo {
       }
     }
 
+    /**
+     * Find a file from its path.
+     */
     getFileEntry(fullPath: string): FileEntry {
       if (fullPath.charAt(0)!=='/')
         return null; // ignore hidden files
@@ -32,10 +81,20 @@ module teapo {
       return this._filesByFullPath[fullPath];
     }
 
+    /**
+     * Create a file entry (throwing an exception if one already exists).
+     * Note that only the list/tree structures are created,
+     * not touching editor nor persistence part of cocerns.
+     */
     createFileEntry(fullPath: string): FileEntry {
       return this._addFileEntry(fullPath);
     }
 
+    /**
+     * Deletes a file entry (returning deleted entry or null if none exists).
+     * Note that only the list/tree structures are deleted,
+     * not touching editor nor persistence part of concerns.
+     */
     removeFileEntry(fullPath: string): FileEntry {
       var fileEntry = this.getFileEntry(fullPath);
       if (!fileEntry) return null;
@@ -60,6 +119,8 @@ module teapo {
 
       this.selectedFile(null);
     }
+
+
 
     private _addFileEntry(fullPath: string) {
       var pathParts = normalizePath(fullPath);
@@ -130,6 +191,9 @@ module teapo {
     }
 
     private _handleFileClick(file: RuntimeFileEntry) {
+      if (this.selectedFile()===file)
+        return;
+
       this._updateSelectionProperties(file);
     }
 
@@ -161,40 +225,7 @@ module teapo {
     }
   }
 
-  /**
-   * Folder entry in file list or tree.
-   */
-  export interface FolderEntry {
 
-    fullPath(): string;
-    name(): string;
-    parent(): FolderEntry;
-
-    nestLevel(): number;
-
-    folders: KnockoutObservableArray<FolderEntry>;
-    files: KnockoutObservableArray<FileEntry>;
-
-    containsSelectedFile: KnockoutObservable<boolean>;
-
-    handleClick(): void;
-  }
-
-  /**
-   * File entry in file list or tree.
-   */
-  export interface FileEntry {
-
-    fullPath(): string;
-    name(): string;
-    parent(): FolderEntry;
-
-    nestLevel(): number;
-
-    isSelected: KnockoutObservable<boolean>;
-
-    handleClick(): void;
-  }
 
   class RuntimeFolderEntry implements teapo.FolderEntry {
 
