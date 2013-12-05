@@ -156,6 +156,10 @@ module teapo {
       // TODO: when file icons introduced, populate errors here early
     }
 
+    handleRemove() {
+      delete this._typescript.scripts[this.docState.fullPath()];
+    }
+
     private _handleCursorActivity() {
       // TODO: display syntactic information about the current cursor position in the status bar
     }

@@ -56,13 +56,11 @@ var teapo;
 
                 while (fo.parent()) {
                     var pa = fo.parent();
-                    pa.folders.remove(fo);
                     fo.containsSelectedFile(false);
                     fo = pa;
                 }
 
                 fo.containsSelectedFile(false);
-                this.folders.remove(fo);
             } else {
                 this.files.remove(fileEntry);
             }
@@ -1457,6 +1455,10 @@ var teapo;
                 return _this._handleCursorActivity();
             });
             // TODO: when file icons introduced, populate errors here early
+        };
+
+        TypeScriptEditor.prototype.handleRemove = function () {
+            delete this._typescript.scripts[this.docState.fullPath()];
         };
 
         TypeScriptEditor.prototype._handleCursorActivity = function () {

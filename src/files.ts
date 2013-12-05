@@ -48,13 +48,11 @@ module teapo {
 
         while (fo.parent()) {
           var pa = fo.parent();
-          pa.folders.remove(fo);
           fo.containsSelectedFile(false);
           fo = pa;
         }
 
         fo.containsSelectedFile(false);
-        this.folders.remove(fo);
       }
       else {
         this.files.remove(fileEntry);
