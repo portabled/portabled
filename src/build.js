@@ -58,20 +58,27 @@ function inline(htmlFile, htmlOutput) {
     console.log('Inlining '+htmlFile+'...');
     while (match = srcRegex.exec(html)) {
       if (!fs.existsSync(match[1])) {
+        console.log(match[1]+' inline reference is missing, skipping');
         offset = srcRegex.lastIndex;
         continue;
       }
 
       convertedOutput.push(html.slice(offset, match.index));
-      convertedOutput.push(fs.readFileSync(match[1])+'');
+      var embedContent = fs.readFileSync(match[1])+'';
+      convertedOutput.push(embedContent);
       offset = match.index+match[0].length;
 
-      console.log('  '+htmlFile+' -> '+match[1]);
+      console.log('  '+htmlFile+' -> '+match[1]+' inlined '+embedContent.length+' bytes at '+offset);
       watchFileNames.push(match[1]);
     }
+
     if (offset<html.length)
       convertedOutput.push(html.slice(offset));
-    fs.writeFileSync(htmlOutput, convertedOutput.join(''));
+
+    var combinedConvertedOutput = convertedOutput.join('');
+
+    fs.writeFileSync(htmlOutput, combinedConvertedOutput);
+    console.log(' written '+combinedConvertedOutput.length+'.');
 
     for (var i = 0; i < watchFileNames.length; i++) {
       var stopWatching = onFileChanged(
@@ -292,6 +299,8 @@ function copyFile(source, target, cb) {
   rd.pipe(wr);
 
   function done(err) {
+    rd.close();
+    wr.close();
     if (!cbCalled) {
       if (cb) {
         cb(err);
