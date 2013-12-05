@@ -14,14 +14,27 @@ var teapo;
 /// <reference path='persistence.ts' />
 var teapo;
 (function (teapo) {
+    
+
+    
+
     /**
-    * File list or tree ViewModel.
+    * File list/tree ViewModel.
     */
     var FileList = (function () {
         function FileList(_storage) {
             this._storage = _storage;
+            /**
+            * Top level folders.
+            */
             this.folders = ko.observableArray();
+            /**
+            * Files directly in the root folder.
+            */
             this.files = ko.observableArray();
+            /**
+            * Currently selected file. Should not be modified externally.
+            */
             this.selectedFile = ko.observable(null);
             this._filesByFullPath = {};
             var fileNames = this._storage.documentNames();
@@ -32,6 +45,9 @@ var teapo;
                 this._addFileEntry(fileNames[i]);
             }
         }
+        /**
+        * Find a file from its path.
+        */
         FileList.prototype.getFileEntry = function (fullPath) {
             if (fullPath.charAt(0) !== '/')
                 return null;
@@ -39,10 +55,20 @@ var teapo;
             return this._filesByFullPath[fullPath];
         };
 
+        /**
+        * Create a file entry (throwing an exception if one already exists).
+        * Note that only the list/tree structures are created,
+        * not touching editor nor persistence part of cocerns.
+        */
         FileList.prototype.createFileEntry = function (fullPath) {
             return this._addFileEntry(fullPath);
         };
 
+        /**
+        * Deletes a file entry (returning deleted entry or null if none exists).
+        * Note that only the list/tree structures are deleted,
+        * not touching editor nor persistence part of concerns.
+        */
         FileList.prototype.removeFileEntry = function (fullPath) {
             var fileEntry = this.getFileEntry(fullPath);
             if (!fileEntry)
@@ -129,6 +155,9 @@ var teapo;
         };
 
         FileList.prototype._handleFileClick = function (file) {
+            if (this.selectedFile() === file)
+                return;
+
             this._updateSelectionProperties(file);
         };
 
@@ -160,10 +189,6 @@ var teapo;
         return FileList;
     })();
     teapo.FileList = FileList;
-
-    
-
-    
 
     var RuntimeFolderEntry = (function () {
         function RuntimeFolderEntry(_fullPath, _name, _parent, _owner, _handleClick) {
@@ -411,7 +436,7 @@ var teapo;
             if (name)
                 this._metadataElement.setAttribute(name, value);
             else
-                this._metadataElement.innerHTML = value;
+                this._metadataElement.innerHTML = encodeForInnerHTML(value);
 
             if (this._executeSql) {
                 if (existingProperty)
@@ -604,7 +629,7 @@ var teapo;
             if (name)
                 this._storeElement.setAttribute(name, value);
             else
-                this._storeElement.innerHTML = value;
+                this._storeElement.innerHTML = encodeForInnerHTML(value);
 
             if (this._executeSql) {
                 if (existingProperty)
@@ -684,9 +709,11 @@ var teapo;
                 executeSql(insertSQL, [a.name, a.value]);
         }
 
-        properties[''] = script.innerHTML;
+        // restore HTML-safe conversions
+        var contentStr = decodeFromInnerHTML(script.innerHTML);
+        properties[''] = contentStr;
         if (executeSql)
-            executeSql(insertSQL, ['', script.innerHTML]);
+            executeSql(insertSQL, ['', contentStr]);
     }
 
     function loadPropertiesFromWebSql(tableName, script, properties, executeSql, completed) {
@@ -698,11 +725,25 @@ var teapo;
                 if (row.name)
                     script.setAttribute(row.name, row.value || '');
                 else
-                    script.innerHTML = row.value;
+                    script.innerHTML = encodeForInnerHTML(row.value);
             }
 
             completed();
         });
+    }
+
+    /**
+    * Escape unsafe character sequences like a closing script tag.
+    */
+    function encodeForInnerHTML(content) {
+        return content.replace(/<\/script/g, '<//script');
+    }
+
+    /**
+    * Unescape character sequences wrapped with encodeForInnerHTML for safety.
+    */
+    function decodeFromInnerHTML(innerHTML) {
+        return innerHTML.replace(/<\/\/script/g, '</script');
     }
 })(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
@@ -745,7 +786,7 @@ var teapo;
     * creates and holds DocumentStorage and FileList,
     * that in turn manage persistence and file list/tree.
     *
-    * Note that ApplicationShell serves as the top-level
+    * Note that ApplicationShell serves as a top-level
     * ViewModel used in Knockout.js bindings.
     */
     var ApplicationShell = (function () {
@@ -756,13 +797,11 @@ var teapo;
             this.fileList = null;
             this._selectedDocState = null;
             this._editorElement = null;
-            this._host = null;
+            this._editorHost = null;
             this._saveTimeout = 0;
             this._saveSelectedFileClosure = function () {
                 return _this._invokeSaveSelectedFile();
             };
-            //      this._storage.entryResolver = this.fileList;
-            //      this._storage.typeResolver = EditorType;
             this.fileList = new teapo.FileList(this._storage);
 
             this.fileList.selectedFile.subscribe(function (fileEntry) {
@@ -776,6 +815,10 @@ var teapo;
                 docState.editor();
             }
         }
+        /**
+        * Prompts user for a name, creates a new file and opens it in the editor.
+        * Exposed as a button bound using Knockout.
+        */
         ApplicationShell.prototype.newFileClick = function () {
             var fileName = prompt('New file');
             if (!fileName)
@@ -787,27 +830,39 @@ var teapo;
             fileEntry.handleClick();
         };
 
+        /**
+        * Pops a confirmation dialog up, then deletes the currently selected file.
+        * Exposed as a button bound using Knockout.
+        */
         ApplicationShell.prototype.deleteSelectedFile = function () {
             var selectedFileEntry = this.fileList.selectedFile();
             if (!selectedFileEntry)
                 return;
 
-            if (!confirm('Are you sure dleting ' + selectedFileEntry.name()))
+            if (!confirm('Are you sure deleting ' + selectedFileEntry.name()))
                 return;
 
             this._storage.removeDocument(selectedFileEntry.fullPath());
             this.fileList.removeFileEntry(selectedFileEntry.fullPath());
 
-            if (this._host) {
-                this._host.innerHTML = '';
+            if (this._editorHost) {
+                this._editorHost.innerHTML = '';
             }
         };
 
+        /**
+        * Suggested name for file save operation.
+        */
         ApplicationShell.prototype.saveFileName = function () {
             var urlParts = window.location.pathname.split('/');
             return decodeURI(urlParts[urlParts.length - 1]);
         };
 
+        /**
+        * Triggers a download of the whole current HTML, which contains the filesystem state and all the necessary code.
+        * Relies on blob URLs, doesn't work in old browsers.
+        * Exposed as a button bound using Knockout.
+        */
         ApplicationShell.prototype.saveHtml = function () {
             var filename = this.saveFileName();
             var blob = new Blob([document.documentElement.outerHTML], { type: 'application/octet-stream' });
@@ -818,6 +873,11 @@ var teapo;
             a.click();
         };
 
+        /**
+        * Packs the current filesystem content in a zip, then triggers a download.
+        * Relies on blob URLs and Zip.js, doesn't work in old browsers.
+        * Exposed as a button bound using Knockout.
+        */
         ApplicationShell.prototype.saveZip = function () {
             var _this = this;
             zip.useWebWorkers = false;
@@ -836,7 +896,9 @@ var teapo;
                     var docState = _this._storage.getDocument(files[i]);
                     var content = docState.getProperty(null);
 
-                    zipWriter.add(files[i], new zip.TextReader(content), function () {
+                    var zipRelativePath = files[i].slice(1);
+
+                    zipWriter.add(zipRelativePath, new zip.TextReader(content), function () {
                         completedCount++;
                         if (completedCount === files.length) {
                             zipWriter.close(function (blob) {
@@ -852,11 +914,15 @@ var teapo;
             });
         };
 
-        ApplicationShell.prototype.attachToHost = function (host) {
-            this._host = host;
+        /**
+        * Invoked from the Knockout/view side to pass the editor host DIV
+        * to ApplicationShell.
+        */
+        ApplicationShell.prototype.attachToHost = function (editorHost) {
+            this._editorHost = editorHost;
             if (this._editorElement) {
-                this._host.innerHTML = '';
-                this._host.appendChild(this._editorElement);
+                this._editorHost.innerHTML = '';
+                this._editorHost.appendChild(this._editorElement);
             }
         };
 
@@ -890,14 +956,14 @@ var teapo;
 
                 this._editorElement = newEditorElement;
 
-                if (oldEditorElement && this._host) {
-                    this._host.removeChild(oldEditorElement);
+                if (oldEditorElement && this._editorHost) {
+                    this._editorHost.removeChild(oldEditorElement);
                 }
 
-                this._host.innerHTML = ''; // removing the initial startup decoration
+                this._editorHost.innerHTML = ''; // removing the initial startup decoration
 
-                if (newEditorElement && this._host)
-                    this._host.appendChild(newEditorElement);
+                if (newEditorElement && this._editorHost)
+                    this._editorHost.appendChild(newEditorElement);
             }
         };
 
@@ -1148,24 +1214,29 @@ var teapo;
 (function (teapo) {
     /**
     * Pubic API exposing access to TypeScript language  services
-    * (see service member)
+    * (see its service property)
     * and handling the interfaces TypeScript requires
     * to access to the source code and the changes.
     */
     var TypeScriptService = (function () {
         function TypeScriptService() {
+            /** Set of booleans for each log severity level. */
             this.logLevels = {
-                information: true,
-                debug: true,
-                warning: true,
+                information: false,
+                debug: false,
+                warning: false,
                 error: true,
                 fatal: true
             };
+            /** TypeScript custom settings. */
             this.compilationSettings = new TypeScript.CompilationSettings();
+            /** Files added to the compiler/parser scope, by full path. */
             this.scripts = {};
             var factory = new TypeScript.Services.TypeScriptServicesFactory();
             this.service = factory.createPullLanguageService(this._createLanguageServiceHost());
         }
+        /**
+        * The main API required by TypeScript for talking to the host environment. */
         TypeScriptService.prototype._createLanguageServiceHost = function () {
             var _this = this;
             return {
@@ -1192,11 +1263,11 @@ var teapo;
                 },
                 getScriptSnapshot: function (fileName) {
                     var script = _this.scripts[fileName];
-                    var snapshot = script.cachedSnapshot;
+                    var snapshot = script._cachedSnapshot;
 
                     // checking if snapshot is out of date
                     if (!snapshot || (script.changes && snapshot.version < script.changes.length)) {
-                        script.cachedSnapshot = snapshot = new TypeScriptDocumentSnapshot(script);
+                        script._cachedSnapshot = snapshot = new TypeScriptDocumentSnapshot(script);
                     }
 
                     return snapshot;
@@ -1372,7 +1443,7 @@ var teapo;
             /** Required as part of interface to TypeScriptService. */
             this.changes = [];
             /** Required as part of interface to TypeScriptService. */
-            this.cachedSnapshot = null;
+            this._cachedSnapshot = null;
             this._syntacticDiagnostics = [];
             this._semanticDiagnostics = [];
             this._updateDiagnosticsTimeout = -1;
@@ -1630,6 +1701,7 @@ var teapo;
             };
         };
 
+        /** More specifially, number or identifier (numbers, letters, underscore and dollar). */
         TypeScriptEditor.prototype._isIdentifierChar = function (ch) {
             if (ch.toLowerCase() !== ch.toUpperCase())
                 return true;
@@ -1694,12 +1766,22 @@ var teapo;
             editor.clearGutter('teapo-errors');
 
             var gutterElement = this._getTeapoErrorsGutterElement();
+
             var gutterClassName = 'teapo-errors';
+            var lineErrors = [];
+
             if (this._syntacticDiagnostics && this._syntacticDiagnostics.length) {
-                gutterClassName += ' teapo-errors-syntactic';
+                gutterClassName += ' teapo-errors-syntax';
 
                 for (var i = 0; i < this._syntacticDiagnostics.length; i++) {
-                    this._markError(this._syntacticDiagnostics[i], 'teapo-gutter-syntax-error', editor);
+                    var err = this._syntacticDiagnostics[i];
+                    var lnerr = lineErrors[err.line()];
+                    if (lnerr) {
+                        lnerr.text += '\n' + err.text();
+                        lnerr.syntax = true;
+                    } else {
+                        lnerr = { text: err.text(), syntax: true, semantic: false };
+                    }
                 }
             }
 
@@ -1707,23 +1789,34 @@ var teapo;
                 gutterClassName += ' teapo-errors-semantic';
 
                 for (var i = 0; i < this._semanticDiagnostics.length; i++) {
-                    this._markError(this._semanticDiagnostics[i], 'teapo-gutter-semantic-error', editor);
+                    var err = this._semanticDiagnostics[i];
+                    var lnerr = lineErrors[err.line()];
+                    if (lnerr) {
+                        lnerr.text += '\n' + err.text();
+                        lnerr.semantic = true;
+                    } else {
+                        lnerr = { text: err.text(), syntax: false, semantic: true };
+                    }
                 }
             }
 
+            for (var i = 0; lineErrors.length; i++) {
+                var lnerr = lineErrors[i];
+                if (!lnerr)
+                    continue;
+
+                var errorElement = document.createElement('div');
+                errorElement.className = lnerr.syntax ? (lnerr.semantic ? 'teapo-syntax-error teapo-semantic-error' : 'teapo-syntax-error') : (lnerr.semantic ? 'teapo-semantic' : '');
+                errorElement.title = lnerr.text;
+
+                errorElement.onclick = function () {
+                    return alert(lnerr.text);
+                };
+
+                editor.setGutterMarker(i, 'teapo-errors', errorElement);
+            }
+
             gutterElement.className = gutterClassName;
-        };
-
-        TypeScriptEditor.prototype._markError = function (error, className, editor) {
-            var lineNumber = error.line();
-            var errorElement = document.createElement('div');
-            errorElement.className = className;
-            errorElement.title = error.text();
-            errorElement.onclick = function () {
-                return alert(error.text() + '\nat ' + (lineNumber + 1) + ':' + (error.character() + 1) + '.');
-            };
-
-            editor.setGutterMarker(lineNumber, 'teapo-errors', errorElement);
         };
 
         TypeScriptEditor.prototype._getTeapoErrorsGutterElement = function () {
@@ -1851,5 +1944,6 @@ function start() {
     });
 }
 
+// TODO: remove this ridiculous timeout (need to insert scripts above teapo.js)
 setTimeout(start, 100);
 //# sourceMappingURL=teapo.js.map
