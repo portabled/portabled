@@ -265,7 +265,7 @@ module teapo {
       if (name)
         this._metadataElement.setAttribute(name, value);
       else
-        this._metadataElement.innerHTML = value;
+        this._metadataElement.innerHTML = encodeForInnerHTML(value);
 
       if (this._executeSql) {
         if (existingProperty)
@@ -504,7 +504,7 @@ module teapo {
       if (name)
         this._storeElement.setAttribute(name, value);
       else
-        this._storeElement.innerHTML = value;
+        this._storeElement.innerHTML = encodeForInnerHTML(value);
 
       if (this._executeSql) {
         if (existingProperty)
@@ -590,9 +590,11 @@ module teapo {
         executeSql(insertSQL, [a.name, a.value]);
     }
 
-    properties[''] = script.innerHTML;
+    // restore HTML-safe conversions
+    var contentStr = decodeFromInnerHTML(script.innerHTML);
+    properties[''] = contentStr;
     if (executeSql)
-      executeSql(insertSQL, ['', script.innerHTML]);
+      executeSql(insertSQL, ['', contentStr]);
   }
 
   function loadPropertiesFromWebSql(
@@ -614,11 +616,24 @@ module teapo {
           if (row.name)
             script.setAttribute(row.name, row.value || '')
           else
-            script.innerHTML = row.value;
+            script.innerHTML = encodeForInnerHTML(row.value);
         }
 
         completed();
       });
   }
 
+  /**
+   * Escape unsafe character sequences like a closing script tag.
+   */
+  function encodeForInnerHTML(content: string): string {
+    return content.replace(/<\/script/g, '<//script');
+  }
+
+  /**
+   * Unescape character sequences wrapped with encodeForInnerHTML for safety.
+   */
+  function decodeFromInnerHTML(innerHTML: string): string {
+    return innerHTML.replace(/<\/\/script/g, '</script');
+  }
 }
