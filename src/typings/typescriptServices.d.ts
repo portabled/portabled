@@ -5844,7 +5844,7 @@ declare module TypeScript {
     function isCallExpression(ast: AST): boolean;
     function isCallExpressionTarget(ast: AST): boolean;
     function isDeclarationASTOrDeclarationNameAST(ast: AST): boolean;
-    function getEnclosingParameter(ast: AST): Parameter;
+    function getEnclosingParameterForInitializer(ast: AST): Parameter;
     function getEnclosingMemberVariableDeclaration(ast: AST): MemberVariableDeclaration;
     function isNameOfFunction(ast: AST): boolean;
     function isNameOfMemberFunction(ast: AST): boolean;
@@ -7315,6 +7315,7 @@ declare module TypeScript {
         private getSomeInnermostFunctionScopeDecl(declPath);
         private isFromFunctionScope(nameSymbol, functionScopeDecl);
         private findConstructorDeclOfEnclosingType(decl);
+        private checkNameAsPartOfInitializerExpressionForInstanceMemberVariable(nameAST);
         private computeNameExpression(nameAST, context, reportDiagnostics);
         private getCurrentParameterIndexForFunction(parameter, funcDecl);
         private resolveMemberAccessExpression(dottedNameAST, context);
