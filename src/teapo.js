@@ -1352,7 +1352,7 @@ var teapo;
         };
 
         TypeScriptEditorType.prototype.editDocument = function (docState) {
-            var editor = new TypeScriptEditor(this._typescript.service, this._shared, docState);
+            var editor = new TypeScriptEditor(this._typescript, this._shared, docState);
 
             // TODO: think how it will be removed.
             this._typescript.scripts[docState.fullPath()] = editor;
@@ -1501,7 +1501,7 @@ var teapo;
             var fullPath = this.docState.fullPath();
             var nh = this._getNeighborhood();
 
-            var completions = this._typescript.getCompletionsAtPosition(fullPath, nh.offset, false);
+            var completions = this._typescript.service.getCompletionsAtPosition(fullPath, nh.offset, false);
 
             var from = {
                 line: nh.pos.line,
@@ -1540,7 +1540,7 @@ var teapo;
 
             // convert from TypeScript details objects to CodeMirror completion API shape
             var list = filteredList.map(function (e, index) {
-                var details = _this._typescript.getCompletionEntryDetails(fullPath, nh.offset, e.name);
+                var details = _this._typescript.service.getCompletionEntryDetails(fullPath, nh.offset, e.name);
                 return new CompletionItem(e, details, index, lead, tail);
             });
 
@@ -1648,8 +1648,8 @@ var teapo;
         TypeScriptEditor.prototype._updateDiagnostics = function () {
             this._updateDiagnosticsTimeout = 0;
 
-            this._syntacticDiagnostics = this._typescript.getSyntacticDiagnostics(this.docState.fullPath());
-            this._semanticDiagnostics = this._typescript.getSemanticDiagnostics(this.docState.fullPath());
+            this._syntacticDiagnostics = this._typescript.service.getSyntacticDiagnostics(this.docState.fullPath());
+            this._semanticDiagnostics = this._typescript.service.getSemanticDiagnostics(this.docState.fullPath());
 
             this._updateGutter();
             this._updateDocDiagnostics();
