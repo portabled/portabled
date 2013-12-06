@@ -1924,7 +1924,8 @@ var teapo;
         };
 
         HtmlEditorType.prototype.canEdit = function (fullPath) {
-            return true;
+            var dotParts = fullPath.split('.');
+            return dotParts.length > 1 && (dotParts[dotParts.length - 1].toLowerCase() === 'html' || dotParts[dotParts.length - 1].toLowerCase() === 'htm');
         };
 
         HtmlEditorType.prototype.editDocument = function (docState) {
