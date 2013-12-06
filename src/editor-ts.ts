@@ -167,7 +167,7 @@ module teapo {
 
       if (this._completionTimeout) {
         clearTimeout(this._completionTimeout);
-        this._comletionTimeout = 0;
+        this._completionTimeout = 0;
       }
     }
 

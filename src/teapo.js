@@ -1536,7 +1536,7 @@ var teapo;
             // TODO: display syntactic information about the current cursor position in the status bar
             if (this._completionTimeout) {
                 clearTimeout(this._completionTimeout);
-                this._comletionTimeout = 0;
+                this._completionTimeout = 0;
             }
         };
 
