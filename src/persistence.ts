@@ -634,6 +634,6 @@ module teapo {
    * Unescape character sequences wrapped with encodeForInnerHTML for safety.
    */
   function decodeFromInnerHTML(innerHTML: string): string {
-    return innerHTML.replace(/<\/\/script/g, '</script');
+    return innerHTML.replace(/<\/\/script/g, '</'+'script');
   }
 }

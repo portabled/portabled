@@ -66,7 +66,9 @@ function inline(htmlFile, htmlOutput) {
 
       convertedOutput.push(html.slice(offset, match.index));
       var embedContent = fs.readFileSync(match[1])+'';
-      embedContent = embedContent.replace(/<\/script/g, '<//script');
+      var dotParts = htmlFile.split('.');
+      if (dotParts.length>1 && dotParts[dotParts.length-1].toLowerCase()==='html')
+        embedContent = embedContent.replace(/<\/script/g, '<//script');
       convertedOutput.push(embedContent);
       offset = match.index+match[0].length;
 
@@ -176,7 +178,7 @@ function checkAndImportLatestCodeMirrorJS(callback) {
       'mode/htmlmixed/htmlmixed.js','mode/htmlembedded/htmlembedded.js',
       'mode/css/css.js',
       'mode/xml/xml.js',
-      'addon/hint/show-hint.js','addon/hint/show-hint.css','addon/hint/javascript-hint.js',
+      'addon/hint/show-hint.js','addon/hint/show-hint.css','addon/hint/javascript-hint.js','addon/hint/html-hint.js','addon/hint/xml-hint.js',
       'addon/comment/comment.js','addon/comment/continuecomment.js',
       'addon/edit/closebrackets.js','addon/edit/matchbrackets.js','addon/edit/trailingspace.js','addon/edit/closetag.js',
       'addon/selection/active-line.js',

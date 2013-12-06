@@ -743,7 +743,7 @@ var teapo;
     * Unescape character sequences wrapped with encodeForInnerHTML for safety.
     */
     function decodeFromInnerHTML(innerHTML) {
-        return innerHTML.replace(/<\/\/script/g, '</script');
+        return innerHTML.replace(/<\/\/script/g, '</' + 'script');
     }
 })(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
@@ -1902,11 +1902,52 @@ var teapo;
     var EditorType = teapo.EditorType;
 })(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
+/// <reference path='persistence.ts' />
+/// <reference path='editor.ts' />
+/// <reference path='editor-std.ts' />
+/// <reference path='TypeScriptService.ts'  />
+var teapo;
+(function (teapo) {
+    /**
+    * Handling detection of .html and .htm files.
+    */
+    var HtmlEditorType = (function () {
+        function HtmlEditorType() {
+            this._shared = {
+                options: HtmlEditorType.editorConfiguration()
+            };
+        }
+        HtmlEditorType.editorConfiguration = function () {
+            var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
+            options.mode = "text/html";
+            return options;
+        };
+
+        HtmlEditorType.prototype.canEdit = function (fullPath) {
+            return true;
+        };
+
+        HtmlEditorType.prototype.editDocument = function (docState) {
+            return new teapo.CodeMirrorEditor(this._shared, docState);
+        };
+        return HtmlEditorType;
+    })();
+
+    (function (EditorType) {
+        /**
+        * Registering HtmlEditorType.
+        */
+        EditorType.Html = new HtmlEditorType();
+    })(teapo.EditorType || (teapo.EditorType = {}));
+    var EditorType = teapo.EditorType;
+})(teapo || (teapo = {}));
+/// <reference path='typings/codemirror.d.ts' />
 /// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='ko.ts' />
 /// <reference path='shell.ts' />
 /// <reference path='editor-std.ts' />
 /// <reference path='editor-ts.ts' />
+/// <reference path='editor-html.ts' />
 function start() {
     var storage = null;
     var viewModel = null;
