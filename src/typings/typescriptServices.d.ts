@@ -88,6 +88,8 @@ declare module TypeScript {
         _0_modifier_cannot_appear_on_a_constructor_declaration: string;
         _0_modifier_cannot_appear_on_a_parameter: string;
         Only_a_single_variable_declaration_is_allowed_in_a_for_in_statement: string;
+        Type_parameters_cannot_appear_on_a_constructor_declaration: string;
+        Type_annotation_cannot_appear_on_a_constructor_declaration: string;
         Duplicate_identifier_0: string;
         The_name_0_does_not_exist_in_the_current_scope: string;
         The_name_0_does_not_refer_to_a_value: string;
@@ -310,6 +312,8 @@ declare module TypeScript {
         Type_parameter_0_cannot_be_a_direct_or_indirect_constraint_for_itself: string;
         Initializer_of_instance_member_variable_0_cannot_reference_identifier_1_declared_in_the_constructor: string;
         Parameter_0_cannot_be_referenced_in_its_initializer: string;
+        Duplicate_string_index_signature: string;
+        Duplicate_number_index_signature: string;
         Type_0_is_missing_property_1_from_type_2: string;
         Types_of_property_0_of_types_1_and_2_are_incompatible: string;
         Types_of_property_0_of_types_1_and_2_are_incompatible_NL_3: string;
@@ -645,6 +649,11 @@ declare module TypeScript {
         newLine: string;
     }
     var Environment: IEnvironment;
+}
+declare module TypeScript {
+    interface IIndexable<T> {
+        [s: string]: T;
+    }
 }
 declare module TypeScript {
     module IntegerUtilities {
@@ -1769,7 +1778,7 @@ declare module TypeScript.Syntax {
         elseClause(elseKeyword: TypeScript.ISyntaxToken, statement: TypeScript.IStatementSyntax): TypeScript.ElseClauseSyntax;
         ifStatement(ifKeyword: TypeScript.ISyntaxToken, openParenToken: TypeScript.ISyntaxToken, condition: TypeScript.IExpressionSyntax, closeParenToken: TypeScript.ISyntaxToken, statement: TypeScript.IStatementSyntax, elseClause: TypeScript.ElseClauseSyntax): TypeScript.IfStatementSyntax;
         expressionStatement(expression: TypeScript.IExpressionSyntax, semicolonToken: TypeScript.ISyntaxToken): TypeScript.ExpressionStatementSyntax;
-        constructorDeclaration(modifiers: TypeScript.ISyntaxList, constructorKeyword: TypeScript.ISyntaxToken, parameterList: TypeScript.ParameterListSyntax, block: TypeScript.BlockSyntax, semicolonToken: TypeScript.ISyntaxToken): TypeScript.ConstructorDeclarationSyntax;
+        constructorDeclaration(modifiers: TypeScript.ISyntaxList, constructorKeyword: TypeScript.ISyntaxToken, callSignature: TypeScript.CallSignatureSyntax, block: TypeScript.BlockSyntax, semicolonToken: TypeScript.ISyntaxToken): TypeScript.ConstructorDeclarationSyntax;
         memberFunctionDeclaration(modifiers: TypeScript.ISyntaxList, propertyName: TypeScript.ISyntaxToken, callSignature: TypeScript.CallSignatureSyntax, block: TypeScript.BlockSyntax, semicolonToken: TypeScript.ISyntaxToken): TypeScript.MemberFunctionDeclarationSyntax;
         getAccessor(modifiers: TypeScript.ISyntaxList, getKeyword: TypeScript.ISyntaxToken, propertyName: TypeScript.ISyntaxToken, parameterList: TypeScript.ParameterListSyntax, typeAnnotation: TypeScript.TypeAnnotationSyntax, block: TypeScript.BlockSyntax): TypeScript.GetAccessorSyntax;
         setAccessor(modifiers: TypeScript.ISyntaxList, setKeyword: TypeScript.ISyntaxToken, propertyName: TypeScript.ISyntaxToken, parameterList: TypeScript.ParameterListSyntax, block: TypeScript.BlockSyntax): TypeScript.SetAccessorSyntax;
@@ -1856,7 +1865,7 @@ declare module TypeScript.Syntax {
         public elseClause(elseKeyword: TypeScript.ISyntaxToken, statement: TypeScript.IStatementSyntax): TypeScript.ElseClauseSyntax;
         public ifStatement(ifKeyword: TypeScript.ISyntaxToken, openParenToken: TypeScript.ISyntaxToken, condition: TypeScript.IExpressionSyntax, closeParenToken: TypeScript.ISyntaxToken, statement: TypeScript.IStatementSyntax, elseClause: TypeScript.ElseClauseSyntax): TypeScript.IfStatementSyntax;
         public expressionStatement(expression: TypeScript.IExpressionSyntax, semicolonToken: TypeScript.ISyntaxToken): TypeScript.ExpressionStatementSyntax;
-        public constructorDeclaration(modifiers: TypeScript.ISyntaxList, constructorKeyword: TypeScript.ISyntaxToken, parameterList: TypeScript.ParameterListSyntax, block: TypeScript.BlockSyntax, semicolonToken: TypeScript.ISyntaxToken): TypeScript.ConstructorDeclarationSyntax;
+        public constructorDeclaration(modifiers: TypeScript.ISyntaxList, constructorKeyword: TypeScript.ISyntaxToken, callSignature: TypeScript.CallSignatureSyntax, block: TypeScript.BlockSyntax, semicolonToken: TypeScript.ISyntaxToken): TypeScript.ConstructorDeclarationSyntax;
         public memberFunctionDeclaration(modifiers: TypeScript.ISyntaxList, propertyName: TypeScript.ISyntaxToken, callSignature: TypeScript.CallSignatureSyntax, block: TypeScript.BlockSyntax, semicolonToken: TypeScript.ISyntaxToken): TypeScript.MemberFunctionDeclarationSyntax;
         public getAccessor(modifiers: TypeScript.ISyntaxList, getKeyword: TypeScript.ISyntaxToken, propertyName: TypeScript.ISyntaxToken, parameterList: TypeScript.ParameterListSyntax, typeAnnotation: TypeScript.TypeAnnotationSyntax, block: TypeScript.BlockSyntax): TypeScript.GetAccessorSyntax;
         public setAccessor(modifiers: TypeScript.ISyntaxList, setKeyword: TypeScript.ISyntaxToken, propertyName: TypeScript.ISyntaxToken, parameterList: TypeScript.ParameterListSyntax, block: TypeScript.BlockSyntax): TypeScript.SetAccessorSyntax;
@@ -1943,7 +1952,7 @@ declare module TypeScript.Syntax {
         public elseClause(elseKeyword: TypeScript.ISyntaxToken, statement: TypeScript.IStatementSyntax): TypeScript.ElseClauseSyntax;
         public ifStatement(ifKeyword: TypeScript.ISyntaxToken, openParenToken: TypeScript.ISyntaxToken, condition: TypeScript.IExpressionSyntax, closeParenToken: TypeScript.ISyntaxToken, statement: TypeScript.IStatementSyntax, elseClause: TypeScript.ElseClauseSyntax): TypeScript.IfStatementSyntax;
         public expressionStatement(expression: TypeScript.IExpressionSyntax, semicolonToken: TypeScript.ISyntaxToken): TypeScript.ExpressionStatementSyntax;
-        public constructorDeclaration(modifiers: TypeScript.ISyntaxList, constructorKeyword: TypeScript.ISyntaxToken, parameterList: TypeScript.ParameterListSyntax, block: TypeScript.BlockSyntax, semicolonToken: TypeScript.ISyntaxToken): TypeScript.ConstructorDeclarationSyntax;
+        public constructorDeclaration(modifiers: TypeScript.ISyntaxList, constructorKeyword: TypeScript.ISyntaxToken, callSignature: TypeScript.CallSignatureSyntax, block: TypeScript.BlockSyntax, semicolonToken: TypeScript.ISyntaxToken): TypeScript.ConstructorDeclarationSyntax;
         public memberFunctionDeclaration(modifiers: TypeScript.ISyntaxList, propertyName: TypeScript.ISyntaxToken, callSignature: TypeScript.CallSignatureSyntax, block: TypeScript.BlockSyntax, semicolonToken: TypeScript.ISyntaxToken): TypeScript.MemberFunctionDeclarationSyntax;
         public getAccessor(modifiers: TypeScript.ISyntaxList, getKeyword: TypeScript.ISyntaxToken, propertyName: TypeScript.ISyntaxToken, parameterList: TypeScript.ParameterListSyntax, typeAnnotation: TypeScript.TypeAnnotationSyntax, block: TypeScript.BlockSyntax): TypeScript.GetAccessorSyntax;
         public setAccessor(modifiers: TypeScript.ISyntaxList, setKeyword: TypeScript.ISyntaxToken, propertyName: TypeScript.ISyntaxToken, parameterList: TypeScript.ParameterListSyntax, block: TypeScript.BlockSyntax): TypeScript.SetAccessorSyntax;
@@ -3142,24 +3151,24 @@ declare module TypeScript {
     class ConstructorDeclarationSyntax extends TypeScript.SyntaxNode implements TypeScript.IClassElementSyntax {
         public modifiers: TypeScript.ISyntaxList;
         public constructorKeyword: TypeScript.ISyntaxToken;
-        public parameterList: ParameterListSyntax;
+        public callSignature: CallSignatureSyntax;
         public block: BlockSyntax;
         public semicolonToken: TypeScript.ISyntaxToken;
-        constructor(modifiers: TypeScript.ISyntaxList, constructorKeyword: TypeScript.ISyntaxToken, parameterList: ParameterListSyntax, block: BlockSyntax, semicolonToken: TypeScript.ISyntaxToken, parsedInStrictMode: boolean);
+        constructor(modifiers: TypeScript.ISyntaxList, constructorKeyword: TypeScript.ISyntaxToken, callSignature: CallSignatureSyntax, block: BlockSyntax, semicolonToken: TypeScript.ISyntaxToken, parsedInStrictMode: boolean);
         public accept(visitor: TypeScript.ISyntaxVisitor): any;
         public kind(): TypeScript.SyntaxKind;
         public childCount(): number;
         public childAt(slot: number): TypeScript.ISyntaxElement;
         public isClassElement(): boolean;
-        public update(modifiers: TypeScript.ISyntaxList, constructorKeyword: TypeScript.ISyntaxToken, parameterList: ParameterListSyntax, block: BlockSyntax, semicolonToken: TypeScript.ISyntaxToken): ConstructorDeclarationSyntax;
-        static create(constructorKeyword: TypeScript.ISyntaxToken, parameterList: ParameterListSyntax): ConstructorDeclarationSyntax;
+        public update(modifiers: TypeScript.ISyntaxList, constructorKeyword: TypeScript.ISyntaxToken, callSignature: CallSignatureSyntax, block: BlockSyntax, semicolonToken: TypeScript.ISyntaxToken): ConstructorDeclarationSyntax;
+        static create(constructorKeyword: TypeScript.ISyntaxToken, callSignature: CallSignatureSyntax): ConstructorDeclarationSyntax;
         static create1(): ConstructorDeclarationSyntax;
         public withLeadingTrivia(trivia: TypeScript.ISyntaxTriviaList): ConstructorDeclarationSyntax;
         public withTrailingTrivia(trivia: TypeScript.ISyntaxTriviaList): ConstructorDeclarationSyntax;
         public withModifiers(modifiers: TypeScript.ISyntaxList): ConstructorDeclarationSyntax;
         public withModifier(modifier: TypeScript.ISyntaxToken): ConstructorDeclarationSyntax;
         public withConstructorKeyword(constructorKeyword: TypeScript.ISyntaxToken): ConstructorDeclarationSyntax;
-        public withParameterList(parameterList: ParameterListSyntax): ConstructorDeclarationSyntax;
+        public withCallSignature(callSignature: CallSignatureSyntax): ConstructorDeclarationSyntax;
         public withBlock(block: BlockSyntax): ConstructorDeclarationSyntax;
         public withSemicolonToken(semicolonToken: TypeScript.ISyntaxToken): ConstructorDeclarationSyntax;
         public isTypeScriptSpecific(): boolean;
@@ -5059,9 +5068,6 @@ declare module TypeScript {
     }
 }
 declare module TypeScript {
-    interface IIndexable<T> {
-        [s: string]: T;
-    }
     function createIntrinsicsObject<T>(): IIndexable<T>;
     interface IHashTable<T> {
         getAllKeys(): string[];
@@ -5585,9 +5591,9 @@ declare module TypeScript {
         public structuralEquals(ast: ExpressionStatement, includingPosition: boolean): boolean;
     }
     class ConstructorDeclaration extends AST {
-        public parameterList: ParameterList;
+        public callSignature: CallSignature;
         public block: Block;
-        constructor(parameterList: ParameterList, block: Block);
+        constructor(callSignature: CallSignature, block: Block);
         public kind(): TypeScript.SyntaxKind;
     }
     class MemberFunctionDeclaration extends AST {
@@ -7163,6 +7169,7 @@ declare module TypeScript {
         private resolveTypeSymbolSignatures(typeSymbol, context);
         private resolveInterfaceDeclaration(interfaceDeclAST, context);
         private typeCheckInterfaceDeclaration(interfaceDeclAST, context);
+        private checkTypeForDuplicateIndexSignatures(enclosingTypeSymbol);
         private filterSymbol(symbol, kind, enclosingDecl, context);
         private getMemberSymbolOfKind(symbolName, kind, pullTypeSymbol, enclosingDecl, context);
         private resolveIdentifierOfInternalModuleReference(importDecl, identifier, moduleSymbol, enclosingDecl, context);
