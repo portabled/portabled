@@ -66,6 +66,7 @@ function inline(htmlFile, htmlOutput) {
 
       convertedOutput.push(html.slice(offset, match.index));
       var embedContent = fs.readFileSync(match[1])+'';
+      embedContent = embedContent.replace(/<\/script/g, '<//script');
       convertedOutput.push(embedContent);
       offset = match.index+match[0].length;
 
