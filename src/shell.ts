@@ -17,7 +17,7 @@ module teapo {
    */
   export class ApplicationShell {
 
-    saveDelay = 600;
+    saveDelay = 1500;
     fileList: FileList = null;
 
     private _selectedDocState: DocumentState = null;

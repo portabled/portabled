@@ -20,7 +20,8 @@ module teapo {
 
     /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
     constructor(private _typescript = new TypeScriptService()) {
-      this._shared.options.extraKeys['Ctrl-Space'] = () => {
+      this._shared.options.extraKeys['Ctrl-Space'] =
+      this._shared.options.extraKeys['Ctrl-J'] = () => {
         var editor = <TypeScriptEditor>this._shared.editor;
         if (!editor) return;
         editor._triggerCompletion();
@@ -61,7 +62,7 @@ module teapo {
     _cachedSnapshot: TypeScript.IScriptSnapshot = null; // needed for TypeScriptService optimization
 
     static updateDiagnosticsDelay = 1000;
-    static completionDelay = 200;
+    static completionDelay = 400;
     static maxCompletions = 20;
 
     private _syntacticDiagnostics: TypeScript.Diagnostic[] = [];
@@ -163,6 +164,11 @@ module teapo {
 
     private _handleCursorActivity() {
       // TODO: display syntactic information about the current cursor position in the status bar
+
+      if (this._completionTimeout) {
+        clearTimeout(this._completionTimeout);
+        this._comletionTimeout = 0;
+      }
     }
 
     _triggerCompletion() {
