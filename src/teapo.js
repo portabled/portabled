@@ -987,6 +987,12 @@ var teapo;
     teapo.ApplicationShell = ApplicationShell;
 })(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
 /// <reference path='persistence.ts' />
 /// <reference path='editor.ts' />
 var teapo;
@@ -1151,6 +1157,74 @@ var teapo;
                 this.docState.setProperty(null, this.text());
         };
 
+        /**
+        * Retrieves parts of the line before and after current cursor,
+        * looking for indentifier and whitespace boundaries.
+        * Needed for correct handling of completion context.
+        */
+        CodeMirrorEditor.prototype.getNeighborhood = function () {
+            var doc = this.doc();
+            var pos = doc.getCursor();
+            var offset = doc.indexFromPos(pos);
+            var line = doc.getLine(pos.line);
+
+            var leadLength = 0;
+            var prefixChar = '';
+            var whitespace = false;
+            for (var i = pos.ch - 1; i >= 0; i--) {
+                var ch = line[i];
+                if (!whitespace && this._isIdentifierChar(ch)) {
+                    leadLength++;
+                    continue;
+                }
+
+                whitespace = /\s/.test(ch);
+                if (!whitespace) {
+                    prefixChar = ch;
+                    break;
+                }
+            }
+
+            var tailLength = 0;
+            var suffixChar = '';
+            whitespace = false;
+            for (var i = pos.ch; i < line.length; i++) {
+                var ch = line[i];
+                if (!whitespace && this._isIdentifierChar(ch)) {
+                    tailLength++;
+                    continue;
+                }
+
+                whitespace = /\s/.test(ch);
+                if (!whitespace) {
+                    suffixChar = ch;
+                    break;
+                }
+            }
+
+            return {
+                pos: pos,
+                offset: offset,
+                line: line,
+                leadLength: leadLength,
+                prefixChar: prefixChar,
+                tailLength: tailLength,
+                suffixChar: suffixChar
+            };
+        };
+
+        /** More specifially, number or identifier (numbers, letters, underscore and dollar). */
+        CodeMirrorEditor.prototype._isIdentifierChar = function (ch) {
+            if (ch.toLowerCase() !== ch.toUpperCase())
+                return true;
+            else if (ch === '_' || ch === '$')
+                return true;
+            else if (ch >= '0' && ch <= '9')
+                return true;
+            else
+                return false;
+        };
+
         CodeMirrorEditor.prototype._initEditor = function () {
             var _this = this;
             var options = this._shared.options || CodeMirrorEditor.standardEditorConfiguration();
@@ -1182,6 +1256,124 @@ var teapo;
         return CodeMirrorEditor;
     })();
     teapo.CodeMirrorEditor = CodeMirrorEditor;
+
+    var CompletionCodeMirrorEditor = (function (_super) {
+        __extends(CompletionCodeMirrorEditor, _super);
+        function CompletionCodeMirrorEditor(shared, docState) {
+            var _this = this;
+            _super.call(this, CompletionCodeMirrorEditor.injectCompletionShortcuts(shared), docState);
+            this._completionTimeout = 0;
+            this._completionClosure = function () {
+                return _this._performCompletion();
+            };
+            this._forcedCompletion = false;
+        }
+        /**
+        * Subscribing to cursor activity.
+        */
+        CompletionCodeMirrorEditor.prototype.handleLoad = function () {
+            var _this = this;
+            _super.prototype.handleLoad.call(this); // fetches the text from docState
+
+            CodeMirror.on(this.doc(), 'cursorActivity', function (instance) {
+                return _this._oncursorActivity();
+            });
+        };
+
+        CompletionCodeMirrorEditor.prototype.handleClose = function () {
+            // completion should be cancelled outright
+            if (this._completionTimeout) {
+                clearTimeout(this._completionTimeout);
+
+                this._completionTimeout = 0;
+            }
+        };
+
+        CompletionCodeMirrorEditor.prototype.handleCursorActivity = function () {
+        };
+
+        CompletionCodeMirrorEditor.prototype.handlePerformCompletion = function (forced) {
+        };
+
+        CompletionCodeMirrorEditor.prototype.handleChange = function (change) {
+            this.triggerCompletion(false);
+        };
+
+        CompletionCodeMirrorEditor.prototype.triggerCompletion = function (forced) {
+            if (this._completionTimeout)
+                clearTimeout(this._completionTimeout);
+
+            if (forced)
+                this._forcedCompletion = true;
+
+            var delay = forced ? 1 : CompletionCodeMirrorEditor.completionDelay;
+
+            this._completionTimeout = setTimeout(this._completionClosure, delay);
+        };
+
+        CompletionCodeMirrorEditor.prototype.cancelCompletion = function () {
+            // completion should be cancelled outright
+            if (this._completionTimeout) {
+                clearTimeout(this._completionTimeout);
+
+                this._completionTimeout = 0;
+            }
+
+            this._forcedCompletion = false;
+        };
+
+        CompletionCodeMirrorEditor.prototype._performCompletion = function () {
+            this._completionTimeout = 0;
+
+            if (!this._forcedCompletion) {
+                // if user didn't ask for completion, only do it within an identifier
+                // or after dot
+                var nh = this.getNeighborhood();
+                if (nh.leadLength === 0 && nh.tailLength === 0 && nh.prefixChar !== '.')
+                    return;
+            }
+
+            var forced = this._forcedCompletion;
+            this._forcedCompletion = false;
+            this.handlePerformCompletion(forced);
+        };
+
+        CompletionCodeMirrorEditor.prototype._oncursorActivity = function () {
+            //      if (this._completionTimeout) {
+            //        clearTimeout(this._completionTimeout);
+            //        this._completionTimeout = 0;
+            //      }
+            this.handleCursorActivity();
+        };
+
+        CompletionCodeMirrorEditor.injectCompletionShortcuts = function (shared) {
+            var triggerEditorCompletion = function () {
+                var editor = shared.editor;
+                if (!editor)
+                    return;
+                editor.triggerCompletion(true);
+            };
+
+            var completionShortcuts = ['Ctrl-Space', 'Ctrl-J', 'Alt-J', 'Cmd-J'];
+            var extraKeys = shared.options.extraKeys;
+            if (!extraKeys)
+                extraKeys = shared.options.extraKeys = {};
+
+            for (var i = 0; i < completionShortcuts.length; i++) {
+                var key = completionShortcuts[i];
+                if (key in extraKeys)
+                    continue;
+                extraKeys[key] = triggerEditorCompletion;
+            }
+
+            return shared;
+        };
+        CompletionCodeMirrorEditor.completionDelay = 400;
+
+        CompletionCodeMirrorEditor._noSingleAutoCompletion = { completeSingle: false };
+        return CompletionCodeMirrorEditor;
+    })(CodeMirrorEditor);
+    teapo.CompletionCodeMirrorEditor = CompletionCodeMirrorEditor;
 
     /**
     * Simple document type using CodeMirrorEditor, usable as a default type for text files.
@@ -1377,12 +1569,6 @@ var teapo;
     })();
 })(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
-var __extends = this.__extends || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
-};
 /// <reference path='persistence.ts' />
 /// <reference path='editor.ts' />
 /// <reference path='editor-std.ts' />
@@ -1397,16 +1583,9 @@ var teapo;
         /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
         function TypeScriptEditorType(_typescript) {
             if (typeof _typescript === "undefined") { _typescript = new teapo.TypeScriptService(); }
-            var _this = this;
             this._typescript = _typescript;
             this._shared = {
                 options: TypeScriptEditorType.editorConfiguration()
-            };
-            this._shared.options.extraKeys['Ctrl-Space'] = this._shared.options.extraKeys['Ctrl-J'] = function () {
-                var editor = _this._shared.editor;
-                if (!editor)
-                    return;
-                editor._triggerCompletion();
             };
         }
         TypeScriptEditorType.editorConfiguration = function () {
@@ -1452,11 +1631,6 @@ var teapo;
             };
             this._teapoErrorsGutterElement = null;
             this._docErrorMarks = [];
-            this._completionTimeout = 0;
-            this._completionClosure = function () {
-                return _this._performCompletion();
-            };
-            this._forcedCompletion = false;
             this._completionActive = false;
         }
         /**
@@ -1477,19 +1651,14 @@ var teapo;
         * Overringin closing of the file, stopping queued requests.
         */
         TypeScriptEditor.prototype.handleClose = function () {
+            _super.prototype.handleClose.call(this);
+
             // if error refresh is queued, cancel it, but keep a special value as a flag
             if (this._updateDiagnosticsTimeout) {
                 if (this._updateDiagnosticsTimeout !== -1)
                     clearTimeout(this._updateDiagnosticsTimeout);
 
                 this._updateDiagnosticsTimeout = -1;
-            }
-
-            // completion should be cancelled outright
-            if (this._completionTimeout) {
-                clearTimeout(this._completionTimeout);
-
-                this._completionTimeout = 0;
             }
         };
 
@@ -1498,6 +1667,8 @@ var teapo;
         * queueing refresh of errors and code completion.
         */
         TypeScriptEditor.prototype.handleChange = function (change) {
+            _super.prototype.handleChange.call(this, change);
+
             // convert change from CodeMirror to TypeScript format
             var doc = this.doc();
             var offset = doc.indexFromPos(change.from);
@@ -1512,58 +1683,16 @@ var teapo;
 
             // trigger error refresh and completion
             this._triggerDiagnosticsUpdate();
-            this._triggerCompletion();
-        };
-
-        /**
-        * Subscribing to cursor activity.
-        */
-        TypeScriptEditor.prototype.handleLoad = function () {
-            var _this = this;
-            _super.prototype.handleLoad.call(this); // fetches the text from docState
-
-            CodeMirror.on(this.doc(), 'cursorActivity', function (instance) {
-                return _this._handleCursorActivity();
-            });
-            // TODO: when file icons introduced, populate errors here early
         };
 
         TypeScriptEditor.prototype.handleRemove = function () {
             delete this._typescript.scripts[this.docState.fullPath()];
         };
 
-        TypeScriptEditor.prototype._handleCursorActivity = function () {
-            // TODO: display syntactic information about the current cursor position in the status bar
-            if (this._completionTimeout) {
-                clearTimeout(this._completionTimeout);
-                this._completionTimeout = 0;
-            }
-        };
-
-        TypeScriptEditor.prototype._triggerCompletion = function () {
-            if (this._completionTimeout)
-                clearTimeout(this._completionTimeout);
-
-            this._completionTimeout = setTimeout(this._completionClosure, TypeScriptEditor.completionDelay);
-        };
-
-        TypeScriptEditor.prototype._performCompletion = function () {
+        TypeScriptEditor.prototype.handlePerformCompletion = function (forced) {
             var _this = this;
-            this._completionTimeout = 0;
-
-            if (this._completionActive)
-                return;
-
-            if (!this._forcedCompletion) {
-                // if user didn't ask for completion, only do it within an identifier
-                // or after dot
-                var nh = this._getNeighborhood();
-                if (nh.leadLength === 0 && nh.tailLength === 0 && nh.prefixChar !== '.')
-                    return;
-            }
-
             CodeMirror.showHint(this.editor(), function () {
-                return _this._continueCompletion();
+                return _this._continueCompletion(forced);
             }, { completeSingle: false });
         };
 
@@ -1572,11 +1701,11 @@ var teapo;
         * either at completion start, or on typing.
         * Expected to return a set of completions plus extra metadata.
         */
-        TypeScriptEditor.prototype._continueCompletion = function () {
+        TypeScriptEditor.prototype._continueCompletion = function (forced) {
             var _this = this;
             var editor = this.editor();
             var fullPath = this.docState.fullPath();
-            var nh = this._getNeighborhood();
+            var nh = this.getNeighborhood();
 
             var completions = this._typescript.service.getCompletionsAtPosition(fullPath, nh.offset, false);
 
@@ -1629,10 +1758,7 @@ var teapo;
                             // clearing _completionActive bit and further completions
                             // (left with delay to settle possible race with change handling)
                             _this._completionActive = false;
-                            if (_this._completionTimeout) {
-                                clearTimeout(_this._completionTimeout);
-                                _this._completionTimeout = 0;
-                            }
+                            _this.cancelCompletion();
                         }, 1);
                     };
 
@@ -1647,74 +1773,6 @@ var teapo;
                 from: from,
                 to: to
             };
-        };
-
-        /**
-        * Retrieves parts of the line before and after current cursor,
-        * looking for indentifier and whitespace boundaries.
-        * Needed for correct handling of completion context.
-        */
-        TypeScriptEditor.prototype._getNeighborhood = function () {
-            var doc = this.doc();
-            var pos = doc.getCursor();
-            var offset = doc.indexFromPos(pos);
-            var line = doc.getLine(pos.line);
-
-            var leadLength = 0;
-            var prefixChar = '';
-            var whitespace = false;
-            for (var i = pos.ch - 1; i >= 0; i--) {
-                var ch = line[i];
-                if (!whitespace && this._isIdentifierChar(ch)) {
-                    leadLength++;
-                    continue;
-                }
-
-                whitespace = /\s/.test(ch);
-                if (!whitespace) {
-                    prefixChar = ch;
-                    break;
-                }
-            }
-
-            var tailLength = 0;
-            var suffixChar = '';
-            whitespace = false;
-            for (var i = pos.ch; i < line.length; i++) {
-                var ch = line[i];
-                if (!whitespace && this._isIdentifierChar(ch)) {
-                    tailLength++;
-                    continue;
-                }
-
-                whitespace = /\s/.test(ch);
-                if (!whitespace) {
-                    suffixChar = ch;
-                    break;
-                }
-            }
-
-            return {
-                pos: pos,
-                offset: offset,
-                line: line,
-                leadLength: leadLength,
-                prefixChar: prefixChar,
-                tailLength: tailLength,
-                suffixChar: suffixChar
-            };
-        };
-
-        /** More specifially, number or identifier (numbers, letters, underscore and dollar). */
-        TypeScriptEditor.prototype._isIdentifierChar = function (ch) {
-            if (ch.toLowerCase() !== ch.toUpperCase())
-                return true;
-            else if (ch === '_' || ch === '$')
-                return true;
-            else if (ch >= '0' && ch <= '9')
-                return true;
-            else
-                return false;
         };
 
         TypeScriptEditor.prototype._triggerDiagnosticsUpdate = function () {
@@ -1853,10 +1911,9 @@ var teapo;
             return length;
         };
         TypeScriptEditor.updateDiagnosticsDelay = 1000;
-        TypeScriptEditor.completionDelay = 400;
         TypeScriptEditor.maxCompletions = 20;
         return TypeScriptEditor;
-    })(teapo.CodeMirrorEditor);
+    })(teapo.CompletionCodeMirrorEditor);
 
     var CompletionItem = (function () {
         function CompletionItem(_completionEntry, _completionEntryDetails, _index, _lead, _tail) {
@@ -1929,10 +1986,21 @@ var teapo;
         };
 
         HtmlEditorType.prototype.editDocument = function (docState) {
-            return new teapo.CodeMirrorEditor(this._shared, docState);
+            return new HtmlEditor(this._shared, docState);
         };
         return HtmlEditorType;
     })();
+
+    var HtmlEditor = (function (_super) {
+        __extends(HtmlEditor, _super);
+        function HtmlEditor(shared, docState) {
+            _super.call(this, shared, docState);
+        }
+        HtmlEditor.prototype.handlePerformCompletion = function () {
+            CodeMirror.showHint(this.editor(), CodeMirror.hint.html);
+        };
+        return HtmlEditor;
+    })(teapo.CompletionCodeMirrorEditor);
 
     (function (EditorType) {
         /**

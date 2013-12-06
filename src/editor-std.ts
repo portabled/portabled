@@ -169,6 +169,76 @@ module teapo {
         this.docState.setProperty(null, this.text());
     }
 
+
+    /**
+     * Retrieves parts of the line before and after current cursor,
+     * looking for indentifier and whitespace boundaries.
+     * Needed for correct handling of completion context.
+     */
+    getNeighborhood() {
+      var doc = this.doc();
+      var pos = doc.getCursor();
+      var offset = doc.indexFromPos(pos);
+      var line = doc.getLine(pos.line);
+
+      var leadLength = 0;
+      var prefixChar = '';
+      var whitespace = false;
+      for (var i = pos.ch-1; i >=0; i--) {
+        var ch = line[i];
+        if (!whitespace && this._isIdentifierChar(ch)) {
+          leadLength++;
+          continue;
+        }
+
+        whitespace = /\s/.test(ch);
+        if (!whitespace) {
+          prefixChar = ch;
+          break;
+        }
+      }
+
+      var tailLength = 0;
+      var suffixChar = '';
+      whitespace = false;
+      for (var i = pos.ch; i <line.length; i++) {
+        var ch = line[i];
+        if (!whitespace && this._isIdentifierChar(ch)) {
+          tailLength++;
+          continue;
+        }
+
+        whitespace = /\s/.test(ch);
+        if (!whitespace) {
+          suffixChar = ch;
+          break;
+        }
+      }
+
+      return {
+        pos: pos,
+        offset: offset,
+        line: line,
+        leadLength: leadLength,
+        prefixChar: prefixChar,
+        tailLength: tailLength,
+        suffixChar: suffixChar
+      };
+    }
+
+    /** More specifially, number or identifier (numbers, letters, underscore and dollar). */
+    private _isIdentifierChar(ch: string): boolean {
+      if (ch.toLowerCase()!==ch.toUpperCase())
+        return true;
+      else if (ch==='_' || ch==='$')
+        return true;
+      else if (ch>='0' && ch<='9')
+        return true;
+      else
+        return false;
+    }
+
+
     private _initEditor() {
       var options = this._shared.options || CodeMirrorEditor.standardEditorConfiguration();
       this._shared.cm = new CodeMirror(
@@ -216,6 +286,124 @@ module teapo {
       cm?: CodeMirror;
       element?: HTMLElement;
       options?: CodeMirror.Options;
+    }
+  }
+
+  export class CompletionCodeMirrorEditor extends CodeMirrorEditor {
+
+    static completionDelay = 400;
+
+    private _completionTimeout = 0;
+    private _completionClosure = () => this._performCompletion();
+    private _forcedCompletion = false;
+    private static _noSingleAutoCompletion = { completeSingle: false };
+
+    constructor(
+      shared: CodeMirrorEditor.SharedState,
+      docState: DocumentState) {
+      super(CompletionCodeMirrorEditor.injectCompletionShortcuts(shared), docState);
+    }
+
+    /**
+     * Subscribing to cursor activity.
+     */
+    handleLoad() {
+      super.handleLoad(); // fetches the text from docState
+
+      CodeMirror.on(
+        this.doc(),
+        'cursorActivity', (instance) => this._oncursorActivity());
+    }
+
+    handleClose() {
+
+      // completion should be cancelled outright
+      if (this._completionTimeout) {
+        clearTimeout(this._completionTimeout);
+
+        this._completionTimeout = 0;
+      }
+    }
+
+    handleCursorActivity() {
+    }
+
+    handlePerformCompletion(forced: boolean) {
+    }
+
+    handleChange(change: CodeMirror.EditorChange) {
+      this.triggerCompletion(false);
+    }
+
+    triggerCompletion(forced: boolean) {
+      if (this._completionTimeout)
+        clearTimeout(this._completionTimeout);
+
+      if (forced)
+        this._forcedCompletion = true;
+
+      var delay = forced ? 1 : CompletionCodeMirrorEditor.completionDelay;
+
+      this._completionTimeout = setTimeout(this._completionClosure, delay);
+    }
+
+    cancelCompletion() {
+      // completion should be cancelled outright
+      if (this._completionTimeout) {
+        clearTimeout(this._completionTimeout);
+
+        this._completionTimeout = 0;
+      }
+
+      this._forcedCompletion = false;
+    }
+
+    private _performCompletion() {
+      this._completionTimeout = 0;
+
+      if (!this._forcedCompletion) {
+        // if user didn't ask for completion, only do it within an identifier
+        // or after dot
+        var nh = this.getNeighborhood();
+        if (nh.leadLength===0 && nh.tailLength===0
+          && nh.prefixChar!=='.')
+          return;
+      }
+
+      var forced = this._forcedCompletion;
+      this._forcedCompletion = false;
+      this.handlePerformCompletion(forced);
+    }
+
+    private _oncursorActivity() {
+//      if (this._completionTimeout) {
+//        clearTimeout(this._completionTimeout);
+//        this._completionTimeout = 0;
+//      }
+
+      this.handleCursorActivity();
+    }
+
+    private static injectCompletionShortcuts(shared: CodeMirrorEditor.SharedState) {
+      var triggerEditorCompletion = () => {
+        var editor = <CompletionCodeMirrorEditor>shared.editor;
+        if (!editor) return;
+        editor.triggerCompletion(true);
+      };
+
+      var completionShortcuts = ['Ctrl-Space','Ctrl-J','Alt-J','Cmd-J'];
+      var extraKeys = shared.options.extraKeys;
+      if (!extraKeys)
+        extraKeys = shared.options.extraKeys = {};
+
+      for (var i = 0; i < completionShortcuts.length; i++) {
+        var key = completionShortcuts[i];
+        if (key in extraKeys)
+          continue;
+        extraKeys[key] = triggerEditorCompletion;
+      }
+
+      return shared;
     }
   }
 

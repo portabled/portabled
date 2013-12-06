@@ -32,7 +32,19 @@ module teapo {
     }
 
     editDocument(docState: DocumentState): Editor {
-      return new CodeMirrorEditor(this._shared, docState);
+      return new HtmlEditor(this._shared, docState);
+    }
+  }
+
+  class HtmlEditor extends CompletionCodeMirrorEditor {
+    constructor(
+      shared: CodeMirrorEditor.SharedState,
+      docState: DocumentState) {
+      super(shared, docState);
+    }
+
+    handlePerformCompletion() {
+      (<any>CodeMirror).showHint(this.editor(), (<any>CodeMirror).hint.html);
     }
   }
 

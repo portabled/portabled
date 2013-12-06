@@ -20,12 +20,6 @@ module teapo {
 
     /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
     constructor(private _typescript = new TypeScriptService()) {
-      this._shared.options.extraKeys['Ctrl-Space'] =
-      this._shared.options.extraKeys['Ctrl-J'] = () => {
-        var editor = <TypeScriptEditor>this._shared.editor;
-        if (!editor) return;
-        editor._triggerCompletion();
-      };
     }
 
     static editorConfiguration() {
@@ -53,7 +47,7 @@ module teapo {
   /**
    * Implements rich code-aware editing for TypeScript files.
    */
-  class TypeScriptEditor extends CodeMirrorEditor {
+  class TypeScriptEditor extends CompletionCodeMirrorEditor {
 
     /** Required as part of interface to TypeScriptService. */
     changes: TypeScript.TextChangeRange[] = [];
@@ -62,7 +56,6 @@ module teapo {
     _cachedSnapshot: TypeScript.IScriptSnapshot = null; // needed for TypeScriptService optimization
 
     static updateDiagnosticsDelay = 1000;
-    static completionDelay = 400;
     static maxCompletions = 20;
 
     private _syntacticDiagnostics: TypeScript.Diagnostic[] = [];
@@ -72,9 +65,6 @@ module teapo {
     private _teapoErrorsGutterElement: HTMLElement = null;
     private _docErrorMarks: CodeMirror.TextMarker[] = [];
 
-    private _completionTimeout = 0;
-    private _completionClosure = () => this._performCompletion();
-    private _forcedCompletion = false;
     private _completionActive = false;
 
     constructor(
@@ -103,6 +93,7 @@ module teapo {
      * Overringin closing of the file, stopping queued requests.
      */
     handleClose() {
+      super.handleClose();
 
       // if error refresh is queued, cancel it, but keep a special value as a flag
       if (this._updateDiagnosticsTimeout) {
@@ -111,13 +102,6 @@ module teapo {
 
         this._updateDiagnosticsTimeout = -1;
       }
-
-      // completion should be cancelled outright
-      if (this._completionTimeout) {
-        clearTimeout(this._completionTimeout);
-
-        this._completionTimeout = 0;
-      }
     }
 
     /**
@@ -125,6 +109,7 @@ module teapo {
      * queueing refresh of errors and code completion.
      */
     handleChange(change: CodeMirror.EditorChange) {
+      super.handleChange(change);
 
       // convert change from CodeMirror to TypeScript format
       var doc = this.doc();
@@ -142,60 +127,16 @@ module teapo {
 
       // trigger error refresh and completion
       this._triggerDiagnosticsUpdate();
-      this._triggerCompletion();
-    }
-
-    /**
-     * Subscribing to cursor activity.
-     */
-    handleLoad() {
-      super.handleLoad(); // fetches the text from docState
-
-      CodeMirror.on(
-        this.doc(),
-        'cursorActivity', (instance) => this._handleCursorActivity());
-
-      // TODO: when file icons introduced, populate errors here early
     }
 
     handleRemove() {
       delete this._typescript.scripts[this.docState.fullPath()];
     }
 
-    private _handleCursorActivity() {
-      // TODO: display syntactic information about the current cursor position in the status bar
-
-      if (this._completionTimeout) {
-        clearTimeout(this._completionTimeout);
-        this._completionTimeout = 0;
-      }
-    }
-
-    _triggerCompletion() {
-      if (this._completionTimeout)
-        clearTimeout(this._completionTimeout);
-
-      this._completionTimeout = setTimeout(this._completionClosure, TypeScriptEditor.completionDelay);
-    }
-
-    private _performCompletion() {
-      this._completionTimeout = 0;
-
-      if (this._completionActive)
-        return;
-
-      if (!this._forcedCompletion) {
-        // if user didn't ask for completion, only do it within an identifier
-        // or after dot
-        var nh = this._getNeighborhood();
-        if (nh.leadLength===0 && nh.tailLength===0
-          && nh.prefixChar!=='.')
-          return;
-      }
-
+    handlePerformCompletion(forced: boolean) {
       (<any>CodeMirror).showHint(
         this.editor(),
-        () => this._continueCompletion(),
+        () => this._continueCompletion(forced),
         { completeSingle: false });
     }
 
@@ -204,10 +145,10 @@ module teapo {
      * either at completion start, or on typing.
      * Expected to return a set of completions plus extra metadata.
      */
-    private _continueCompletion() {
+    private _continueCompletion(forced: boolean) {
       var editor = this.editor();
       var fullPath = this.docState.fullPath();
-      var nh = this._getNeighborhood();
+      var nh = this.getNeighborhood();
 
       var completions = this._typescript.service.getCompletionsAtPosition(fullPath, nh.offset, false);
 
@@ -257,10 +198,7 @@ module teapo {
                 // clearing _completionActive bit and further completions
                 // (left with delay to settle possible race with change handling)
                 this._completionActive = false;
-                if (this._completionTimeout) {
-                  clearTimeout(this._completionTimeout);
-                  this._completionTimeout = 0;
-                }
+                this.cancelCompletion();
             }, 1);
           };
 
@@ -277,73 +215,6 @@ module teapo {
       };
     }
 
-    /**
-     * Retrieves parts of the line before and after current cursor,
-     * looking for indentifier and whitespace boundaries.
-     * Needed for correct handling of completion context.
-     */
-    private _getNeighborhood() {
-      var doc = this.doc();
-      var pos = doc.getCursor();
-      var offset = doc.indexFromPos(pos);
-      var line = doc.getLine(pos.line);
-
-      var leadLength = 0;
-      var prefixChar = '';
-      var whitespace = false;
-      for (var i = pos.ch-1; i >=0; i--) {
-        var ch = line[i];
-        if (!whitespace && this._isIdentifierChar(ch)) {
-          leadLength++;
-          continue;
-        }
-
-        whitespace = /\s/.test(ch);
-        if (!whitespace) {
-          prefixChar = ch;
-          break;
-        }
-      }
-
-      var tailLength = 0;
-      var suffixChar = '';
-      whitespace = false;
-      for (var i = pos.ch; i <line.length; i++) {
-        var ch = line[i];
-        if (!whitespace && this._isIdentifierChar(ch)) {
-          tailLength++;
-          continue;
-        }
-
-        whitespace = /\s/.test(ch);
-        if (!whitespace) {
-          suffixChar = ch;
-          break;
-        }
-      }
-
-      return {
-        pos: pos,
-        offset: offset,
-        line: line,
-        leadLength: leadLength,
-        prefixChar: prefixChar,
-        tailLength: tailLength,
-        suffixChar: suffixChar
-      };
-    }
-
-    /** More specifially, number or identifier (numbers, letters, underscore and dollar). */
-    private _isIdentifierChar(ch: string): boolean {
-      if (ch.toLowerCase()!==ch.toUpperCase())
-        return true;
-      else if (ch==='_' || ch==='$')
-        return true;
-      else if (ch>='0' && ch<='9')
-        return true;
-      else
-        return false;
-    }
 
     private _triggerDiagnosticsUpdate() {
       if (this._updateDiagnosticsTimeout)
