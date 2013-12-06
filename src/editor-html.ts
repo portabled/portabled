@@ -4,8 +4,6 @@
 /// <reference path='editor.ts' />
 /// <reference path='editor-std.ts' />
 
-/// <reference path='TypeScriptService.ts'  />
-
 module teapo {
 
   /**

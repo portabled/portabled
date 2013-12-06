@@ -1962,7 +1962,6 @@ var teapo;
 /// <reference path='persistence.ts' />
 /// <reference path='editor.ts' />
 /// <reference path='editor-std.ts' />
-/// <reference path='TypeScriptService.ts'  />
 var teapo;
 (function (teapo) {
     /**
@@ -2011,12 +2010,64 @@ var teapo;
     var EditorType = teapo.EditorType;
 })(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
+/// <reference path='persistence.ts' />
+/// <reference path='editor.ts' />
+/// <reference path='editor-std.ts' />
+var teapo;
+(function (teapo) {
+    /**
+    * Handling detection of .js files.
+    */
+    var JavaScriptEditorType = (function () {
+        function JavaScriptEditorType() {
+            this._shared = {
+                options: JavaScriptEditorType.editorConfiguration()
+            };
+        }
+        JavaScriptEditorType.editorConfiguration = function () {
+            var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
+            options.mode = "text/javascript";
+            return options;
+        };
+
+        JavaScriptEditorType.prototype.canEdit = function (fullPath) {
+            var dotParts = fullPath.split('.');
+            return dotParts.length > 1 && dotParts[dotParts.length - 1].toLowerCase() === 'js';
+        };
+
+        JavaScriptEditorType.prototype.editDocument = function (docState) {
+            return new JavaScriptEditor(this._shared, docState);
+        };
+        return JavaScriptEditorType;
+    })();
+
+    var JavaScriptEditor = (function (_super) {
+        __extends(JavaScriptEditor, _super);
+        function JavaScriptEditor(shared, docState) {
+            _super.call(this, shared, docState);
+        }
+        JavaScriptEditor.prototype.handlePerformCompletion = function () {
+            CodeMirror.showHint(this.editor(), CodeMirror.hint.javascript);
+        };
+        return JavaScriptEditor;
+    })(teapo.CompletionCodeMirrorEditor);
+
+    (function (EditorType) {
+        /**
+        * Registering HtmlEditorType.
+        */
+        EditorType.JavaScript = new JavaScriptEditorType();
+    })(teapo.EditorType || (teapo.EditorType = {}));
+    var EditorType = teapo.EditorType;
+})(teapo || (teapo = {}));
+/// <reference path='typings/codemirror.d.ts' />
 /// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='ko.ts' />
 /// <reference path='shell.ts' />
 /// <reference path='editor-std.ts' />
 /// <reference path='editor-ts.ts' />
 /// <reference path='editor-html.ts' />
+/// <reference path='editor-js.ts' />
 function start() {
     var storage = null;
     var viewModel = null;

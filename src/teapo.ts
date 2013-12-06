@@ -7,6 +7,7 @@
 /// <reference path='editor-std.ts' />
 /// <reference path='editor-ts.ts' />
 /// <reference path='editor-html.ts' />
+/// <reference path='editor-js.ts' />
 
 function start() {
 
