@@ -502,6 +502,7 @@ var teapo;
                     var s = pathElements[fullPath];
                     if (s) {
                         removeAttributes(s);
+                        delete pathElements[fullPath]; // all remaining elements will be destroyed
                     } else {
                         appendScriptElement(_this.document);
                         s.setAttribute('data-path', fullPath);
@@ -2156,4 +2157,3 @@ function start() {
 
 // TODO: remove this ridiculous timeout (need to insert scripts above teapo.js)
 setTimeout(start, 100);
-//# sourceMappingURL=teapo.js.map

@@ -105,7 +105,7 @@ function compileMain() {
     function(txt) {
       console.log('teapo.js: '+txt+'...');
     },
-    ['--sourcemap'/*,'--module','amd',*/]);
+    [/*'--sourcemap','--module','amd',*/]);
 }
 
 function checkAndImportLatestTypeScript(callback) {

@@ -13,39 +13,39 @@
   </div>
 
 <!-- Knockout HTML templates -->
-<script id=page-template type='text/html'>###layout/page.html###</script>
+<script id=page-template type='text/html' data-path='/layout/page.js'>###layout/page.html###</script>
 <script id=folder-template type='text/html'>###layout/folder.html###</script>
 <script id=file-template type='text/html'>###layout/file.html###</script>
 
 <!-- External JS libraries: CodeMirror and Knockout --->
 <!--CodeMirror-->
-<script data-path='imports/codemirror/codemirror.js'>###imports/codemirror/codemirror.js###</script>
-<script data-path='imports/codemirror/javascript.js'>###imports/codemirror/javascript.js###</script>
-<script data-path='imports/codemirror/css.js'>###imports/codemirror/css.js###</script>
-<script data-path='imports/codemirror/xml.js'>###imports/codemirror/xml.js###</script>
-<script data-path='imports/codemirror/htmlmixed.js'>###imports/codemirror/htmlmixed.js###</script>
-<script data-path='imports/codemirror/htmlembedded.js'>###imports/codemirror/htmlembedded.js###</script>
-<script data-path='imports/codemirror/show-hint.js'>###imports/codemirror/show-hint.js###</script>
-<script data-path='imports/codemirror/javascript-hint.js'>###imports/codemirror/javascript-hint.js###</script>
-<script data-path='imports/codemirror/xml-hint.js'>###imports/codemirror/xml-hint.js###</script>
-<script>###imports/codemirror/html-hint.js###</script>
-<script>###imports/codemirror/comment.js###</script>
-<script>###imports/codemirror/continuecomment.js###</script>
-<script>###imports/codemirror/matchbrackets.js###</script>
-<script>###imports/codemirror/closebrackets.js###</script>
-<script>###imports/codemirror/trailingspace.js###</script>
-<script>###imports/codemirror/closetag.js###</script>
-<script>###imports/codemirror/active-line.js###</script>
-<script>###imports/codemirror/dialog.js###</script>
-<script>###imports/codemirror/searchcursor.js###</script>
-<script>###imports/codemirror/search.js###</script>
-<script>###imports/codemirror/match-highlighter.js###</script>
+<script data-path='/imports/codemirror/codemirror.js'>###imports/codemirror/codemirror.js###</script>
+<script data-path='/imports/codemirror/javascript.js'>###imports/codemirror/javascript.js###</script>
+<script data-path='/imports/codemirror/css.js'>###imports/codemirror/css.js###</script>
+<script data-path='/imports/codemirror/xml.js'>###imports/codemirror/xml.js###</script>
+<script data-path='/imports/codemirror/htmlmixed.js'>###imports/codemirror/htmlmixed.js###</script>
+<script data-path='/imports/codemirror/htmlembedded.js'>###imports/codemirror/htmlembedded.js###</script>
+<script data-path='/imports/codemirror/show-hint.js'>###imports/codemirror/show-hint.js###</script>
+<script data-path='/imports/codemirror/javascript-hint.js'>###imports/codemirror/javascript-hint.js###</script>
+<script data-path='/imports/codemirror/xml-hint.js'>###imports/codemirror/xml-hint.js###</script>
+<script data-path='/imports/codemirror/html-hint.js'>###imports/codemirror/html-hint.js###</script>
+<script data-path='/imports/codemirror/comment.js'>###imports/codemirror/comment.js###</script>
+<script data-path='/imports/codemirror/continuecomment.js'>###imports/codemirror/continuecomment.js###</script>
+<script data-path='/imports/codemirror/matchbrackets.js'>###imports/codemirror/matchbrackets.js###</script>
+<script data-path='/imports/codemirror/closebrackets.js'>###imports/codemirror/closebrackets.js###</script>
+<script data-path='/imports/codemirror/trailingspace.js'>###imports/codemirror/trailingspace.js###</script>
+<script data-path='/imports/codemirror/closetag.js'>###imports/codemirror/closetag.js###</script>
+<script data-path='/imports/codemirror/active-line.js'>###imports/codemirror/active-line.js###</script>
+<script data-path='/imports/codemirror/dialog.js'>###imports/codemirror/dialog.js###</script>
+<script data-path='/imports/codemirror/searchcursor.js'>###imports/codemirror/searchcursor.js###</script>
+<script data-path='/imports/codemirror/xml-hint.js'>###imports/codemirror/search.js###</script>
+<script data-path='/imports/codemirror/match-highlighter.js'>###imports/codemirror/match-highlighter.js###</script>
 <!--Knockout-->
-<script>###imports/knockout/knockout-3.0.0.js###</script>
+<script data-path='/imports/knockout/knockout-3.0.0.js'>###imports/knockout/knockout-3.0.0.js###</script>
 <!--Zip.js-->
-<script>###imports/zip.js/zip.js###</script>
-<script>###imports/zip.js/deflate.js###</script>
-<script>###imports/zip.js/inflate.js###</script>
+<script data-path='/imports/zip.js/zip.js'>###imports/zip.js/zip.js###</script>
+<script data-path='/imports/zip.js/deflate.js'>###imports/zip.js/deflate.js###</script>
+<script data-path='/imports/zip.js/inflate.js'>###imports/zip.js/inflate.js###</script>
 
 
 <!-- TypeScript definitions lib.d.ts, taken from TS bin directory verbatim ---> 
@@ -70,15 +70,12 @@
 <script data-path='/TypeScriptService.ts' type='text/html'>###TypeScriptService.ts###</script>
 
 <script data-path='/teapo.html' type='text/html'>###teapo.html###</script>
-<script data-path='/layout/file.html' type='text/html'>###layout/file.html###</script>
-<script data-path='/layout/folder.html' type='text/html'>###layout/folder.html###</script>
-<script data-path='/layout/page.html' type='text/html'>###layout/page.html###</script>
 <script data-path='/layout/teapo.css' type='text/html'>###layout/teapo.css###</script>
 
 <script data-path='/build.js' type='text/html'>###build.js###</script>
 
 <!-- TypeScript services, taken from TS bin directory verbatim --->
-<script>###imports/typescript/typescriptServices.js###</script>
+<script data-path='/imports/typescript/typescriptServices.js' >###imports/typescript/typescriptServices.js###</script>
 
 <!-- Teapo code (this will actually execute stuff straight away) -->
 <script>###teapo.js###</script>

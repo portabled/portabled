@@ -349,6 +349,7 @@ module teapo {
           var s = pathElements[fullPath];
           if (s) {
             removeAttributes(s);
+            delete pathElements[fullPath]; // all remaining elements will be destroyed
           }
           else {
             appendScriptElement(this.document);
