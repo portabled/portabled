@@ -1603,7 +1603,7 @@ var teapo;
             };
 
             var extraKeys = options.extraKeys || (options.extraKeys = {});
-            var shortcuts = ['Ctrl-K', 'Alt-K', 'Cmd-K', 'Ctrl-Shift-K', 'Ctrl-Alt-K', 'Alt-Shift-K', 'Cmd-Shift-K', 'Cmd-Alt-K'];
+            var shortcuts = ['Ctrl-K', 'Alt-K', 'Cmd-K', 'Shift-Ctrl-K', 'Ctrl-Alt-K', 'Shift-Alt-K', 'Shift-Cmd-K', 'Cmd-Alt-K'];
             for (var i = 0; i < shortcuts.length; i++) {
                 var k = shortcuts[i];
                 if (!(k in extraKeys))
