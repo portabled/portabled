@@ -1586,10 +1586,11 @@ var teapo;
             if (typeof _typescript === "undefined") { _typescript = new teapo.TypeScriptService(); }
             this._typescript = _typescript;
             this._shared = TypeScriptEditorType.createShared();
+            this._typescript.compilationSettings.outFileOption = '/out.ts';
         }
         TypeScriptEditorType.createShared = function () {
             var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
-            var shared = { options: options, extraKeys: {} };
+            var shared = { options: options };
 
             options.mode = "text/typescript";
             options.gutters = ['teapo-errors'];
@@ -1606,7 +1607,7 @@ var teapo;
             var shortcuts = ['Ctrl-K', 'Alt-K', 'Cmd-K', 'Shift-Ctrl-K', 'Ctrl-Alt-K', 'Shift-Alt-K', 'Shift-Cmd-K', 'Cmd-Alt-K'];
             for (var i = 0; i < shortcuts.length; i++) {
                 var k = shortcuts[i];
-                if (!(k in extraKeys))
+                if (k in extraKeys)
                     continue;
 
                 extraKeys[k] = debugClosure;

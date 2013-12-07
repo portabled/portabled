@@ -18,11 +18,12 @@ module teapo {
 
     /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
     constructor(private _typescript = new TypeScriptService()) {
+      this._typescript.compilationSettings.outFileOption = '/out.ts';
     }
 
     static createShared() {
       var options = CodeMirrorEditor.standardEditorConfiguration();
-      var shared: CodeMirrorEditor.SharedState = { options: options, extraKeys: {} };
+      var shared: CodeMirrorEditor.SharedState = { options: options };
 
       options.mode = "text/typescript";
       options.gutters = [ 'teapo-errors' ];
@@ -38,7 +39,7 @@ module teapo {
       var shortcuts = ['Ctrl-K','Alt-K','Cmd-K','Shift-Ctrl-K','Ctrl-Alt-K','Shift-Alt-K','Shift-Cmd-K','Cmd-Alt-K'];
       for (var i = 0; i<shortcuts.length; i++) {
         var k = shortcuts[i];
-        if (!(k in extraKeys))
+        if (k in extraKeys)
           continue;
 
         extraKeys[k] = debugClosure;
