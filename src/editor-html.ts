@@ -10,17 +10,38 @@ module teapo {
    * Handling detection of .html and .htm files.
    */
   class HtmlEditorType implements EditorType {
-    private _shared: CodeMirrorEditor.SharedState = {
-      options: HtmlEditorType.editorConfiguration()
-    };
+    private _shared: CodeMirrorEditor.SharedState = HtmlEditorType.createShared();
 
-    constructor() {
+    /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
+    constructor(private _typescript = new TypeScriptService()) {
+      this._typescript.compilationSettings.outFileOption = '/out.ts';
     }
 
-    static editorConfiguration() {
+    static createShared() {
       var options = CodeMirrorEditor.standardEditorConfiguration();
-      options.mode = "text/html";
-      return options;
+      var shared: CodeMirrorEditor.SharedState = { options: options };
+
+      options.mode = "text/typescript";
+      options.gutters = [ 'teapo-errors' ];
+
+      var debugClosure = () => {
+        var editor = <HtmlEditor>shared.editor;
+        if (!editor) return;
+
+        editor.build();
+      };
+
+      var extraKeys = options.extraKeys || (options.extraKeys = {});
+      var shortcuts = ['Ctrl-B','Alt-B','Cmd-B','Shift-Ctrl-B','Ctrl-Alt-B','Shift-Alt-B','Shift-Cmd-B','Cmd-Alt-B'];
+      for (var i = 0; i<shortcuts.length; i++) {
+        var k = shortcuts[i];
+        if (k in extraKeys)
+          continue;
+
+        extraKeys[k] = debugClosure;
+      }
+
+      return shared;
     }
 
     canEdit(fullPath: string): boolean {
@@ -43,6 +64,10 @@ module teapo {
 
     handlePerformCompletion() {
       (<any>CodeMirror).showHint(this.editor(), (<any>CodeMirror).hint.html);
+    }
+
+    build() {
+      alert('build');
     }
   }
 

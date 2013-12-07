@@ -2026,15 +2026,39 @@ var teapo;
     * Handling detection of .html and .htm files.
     */
     var HtmlEditorType = (function () {
-        function HtmlEditorType() {
-            this._shared = {
-                options: HtmlEditorType.editorConfiguration()
-            };
+        /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
+        function HtmlEditorType(_typescript) {
+            if (typeof _typescript === "undefined") { _typescript = new teapo.TypeScriptService(); }
+            this._typescript = _typescript;
+            this._shared = HtmlEditorType.createShared();
+            this._typescript.compilationSettings.outFileOption = '/out.ts';
         }
-        HtmlEditorType.editorConfiguration = function () {
+        HtmlEditorType.createShared = function () {
             var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
-            options.mode = "text/html";
-            return options;
+            var shared = { options: options };
+
+            options.mode = "text/typescript";
+            options.gutters = ['teapo-errors'];
+
+            var debugClosure = function () {
+                var editor = shared.editor;
+                if (!editor)
+                    return;
+
+                editor.build();
+            };
+
+            var extraKeys = options.extraKeys || (options.extraKeys = {});
+            var shortcuts = ['Ctrl-B', 'Alt-B', 'Cmd-B', 'Shift-Ctrl-B', 'Ctrl-Alt-B', 'Shift-Alt-B', 'Shift-Cmd-B', 'Cmd-Alt-B'];
+            for (var i = 0; i < shortcuts.length; i++) {
+                var k = shortcuts[i];
+                if (k in extraKeys)
+                    continue;
+
+                extraKeys[k] = debugClosure;
+            }
+
+            return shared;
         };
 
         HtmlEditorType.prototype.canEdit = function (fullPath) {
@@ -2055,6 +2079,10 @@ var teapo;
         }
         HtmlEditor.prototype.handlePerformCompletion = function () {
             CodeMirror.showHint(this.editor(), CodeMirror.hint.html);
+        };
+
+        HtmlEditor.prototype.build = function () {
+            alert('build');
         };
         return HtmlEditor;
     })(teapo.CompletionCodeMirrorEditor);
