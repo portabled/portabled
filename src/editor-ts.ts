@@ -144,6 +144,9 @@ module teapo {
       // store the change in an array
       this.changes.push(ch);
 
+      if (change.text.length===1 && change.text[0]==='.')
+        this.triggerCompletion(true);
+
       // trigger error refresh and completion
       this._triggerDiagnosticsUpdate();
     }

@@ -399,11 +399,11 @@ module teapo {
       }
 
       for (var i = 0; i < document.styleSheets.length; i++) {
-        var s = document.styleSheets.item(i).ownerNode;
-        var path = s.getAttribute('data-path');
+        var sty = <HTMLStyleElement>document.styleSheets.item(i).ownerNode;
+        var path = sty.getAttribute('data-path');
         if (path) {
           if (path.charAt(0)==='/' || path.charAt(0)==='#') {
-            pathElements[path] = <any>s;
+            pathElements[path] = <any>sty;
           }
         }
       }

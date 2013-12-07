@@ -543,11 +543,11 @@ var teapo;
             }
 
             for (var i = 0; i < document.styleSheets.length; i++) {
-                var s = document.styleSheets.item(i).ownerNode;
-                var path = s.getAttribute('data-path');
+                var sty = document.styleSheets.item(i).ownerNode;
+                var path = sty.getAttribute('data-path');
                 if (path) {
                     if (path.charAt(0) === '/' || path.charAt(0) === '#') {
-                        pathElements[path] = s;
+                        pathElements[path] = sty;
                     }
                 }
             }
@@ -1727,6 +1727,9 @@ var teapo;
 
             // store the change in an array
             this.changes.push(ch);
+
+            if (change.text.length === 1 && change.text[0] === '.')
+                this.triggerCompletion(true);
 
             // trigger error refresh and completion
             this._triggerDiagnosticsUpdate();
