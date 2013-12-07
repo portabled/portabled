@@ -3,10 +3,10 @@
 <head>
 <title>Teapo</title>
 <meta name="viewport" content="width=600, user-scalable=no">
-<style>###imports/codemirror/codemirror.css###</style>
-<style>###imports/codemirror/show-hint.css###</style>
-<style>###imports/codemirror/dialog.css###</style>
-<style>###layout/teapo.css###</style>
+<style data-path='/imports/codemirror/codemirror.css'>###imports/codemirror/codemirror.css###</style>
+<style data-path='/imports/codemirror/show-hint.css'>###imports/codemirror/show-hint.css###</style>
+<style data-path='/imports/codemirror/dialog.css'>###imports/codemirror/dialog.css###</style>
+<style data-path='/layout/teapo.css'>###layout/teapo.css###</style>
 </head>
 <body>
   <div class=teapo-page>
@@ -14,8 +14,8 @@
 
 <!-- Knockout HTML templates -->
 <script id=page-template type='text/html' data-path='/layout/page.js'>###layout/page.html###</script>
-<script id=folder-template type='text/html'>###layout/folder.html###</script>
-<script id=file-template type='text/html'>###layout/file.html###</script>
+<script id=folder-template type='text/html'  data-path='/layout/folder.html'>###layout/folder.html###</script>
+<script id=file-template type='text/html'  data-path='/layout/file.html'>###layout/file.html###</script>
 
 <!-- External JS libraries: CodeMirror and Knockout --->
 <!--CodeMirror-->
@@ -70,7 +70,6 @@
 <script data-path='/TypeScriptService.ts' type='text/html'>###TypeScriptService.ts###</script>
 
 <script data-path='/teapo.html' type='text/html'>###teapo.html###</script>
-<script data-path='/layout/teapo.css' type='text/html'>###layout/teapo.css###</script>
 
 <script data-path='/build.js' type='text/html'>###build.js###</script>
 
