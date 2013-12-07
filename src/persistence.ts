@@ -337,12 +337,6 @@ module teapo {
     private _loadInitialStateFromWebSql(
       pathElements: { [fullPath: string]: HTMLScriptElement; }) {
 
-      // removing HTML DOM - easier to recreate than to merge
-      for (var k in pathElements) if (pathElements.hasOwnProperty(k)) {
-        var s = pathElements[k];
-        s.parentElement.removeChild(s);
-      }
-
       // retrieving data from WebSQL and creating documents
       this._loadTableListFromWebsql((tables) => {
 
@@ -352,8 +346,14 @@ module teapo {
 
           var fullPath = files[i];
           
-          var s = appendScriptElement(this.document);
-          s.setAttribute('data-path', fullPath);
+          var s = pathElements[fullPath];
+          if (s) {
+            removeAttributes(s);
+          }
+          else {
+            appendScriptElement(this.document);
+            s.setAttribute('data-path', fullPath);
+          }
           
           var docState = new RuntimeDocumentState(
             fullPath,
@@ -370,6 +370,12 @@ module teapo {
             });
           
           this._docByPath[fullPath] = docState;
+        }
+
+        // removing HTML DOM - easier to recreate than to merge
+        for (var k in pathElements) if (pathElements.hasOwnProperty(k)) {
+          var s = pathElements[k];
+          s.parentElement.removeChild(s);
         }
       });
     }
@@ -562,7 +568,7 @@ module teapo {
   function appendScriptElement(doc: typeof document): HTMLScriptElement {
     var s = doc.createElement('script');
     s.setAttribute('type', 'text/data');
-    doc.body.appendChild(s);
+    doc.body.insertBefore(s, doc.body.children[0]);
     return s;
   }
 
@@ -622,6 +628,16 @@ module teapo {
 
         completed();
       });
+  }
+
+  function removeAttributes(element: HTMLElement) {
+    for (var i = 0; i < element.attributes.length; i++) {
+      var a = element.attributes[i];
+      if (a.name==='id' || a.name==='type' || a.name==='data-path')
+        continue;
+      element.removeAttribute(a.name);
+      i--;
+    }
   }
 
   /**

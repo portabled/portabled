@@ -490,12 +490,6 @@ var teapo;
 
         RuntimeDocumentStorage.prototype._loadInitialStateFromWebSql = function (pathElements) {
             var _this = this;
-            for (var k in pathElements)
-                if (pathElements.hasOwnProperty(k)) {
-                    var s = pathElements[k];
-                    s.parentElement.removeChild(s);
-                }
-
             // retrieving data from WebSQL and creating documents
             this._loadTableListFromWebsql(function (tables) {
                 var files = tables.filter(function (tab) {
@@ -505,8 +499,13 @@ var teapo;
                 for (var i = 0; i < files.length; i++) {
                     var fullPath = files[i];
 
-                    var s = appendScriptElement(_this.document);
-                    s.setAttribute('data-path', fullPath);
+                    var s = pathElements[fullPath];
+                    if (s) {
+                        removeAttributes(s);
+                    } else {
+                        appendScriptElement(_this.document);
+                        s.setAttribute('data-path', fullPath);
+                    }
 
                     var docState = new RuntimeDocumentState(fullPath, s, _this._executeSql, _this, function () {
                         completedFileCount++;
@@ -518,6 +517,12 @@ var teapo;
 
                     _this._docByPath[fullPath] = docState;
                 }
+
+                for (var k in pathElements)
+                    if (pathElements.hasOwnProperty(k)) {
+                        var s = pathElements[k];
+                        s.parentElement.removeChild(s);
+                    }
             });
         };
 
@@ -687,7 +692,7 @@ var teapo;
     function appendScriptElement(doc) {
         var s = doc.createElement('script');
         s.setAttribute('type', 'text/data');
-        doc.body.appendChild(s);
+        doc.body.insertBefore(s, doc.body.children[0]);
         return s;
     }
 
@@ -731,6 +736,16 @@ var teapo;
 
             completed();
         });
+    }
+
+    function removeAttributes(element) {
+        for (var i = 0; i < element.attributes.length; i++) {
+            var a = element.attributes[i];
+            if (a.name === 'id' || a.name === 'type' || a.name === 'data-path')
+                continue;
+            element.removeAttribute(a.name);
+            i--;
+        }
     }
 
     /**
