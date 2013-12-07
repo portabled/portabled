@@ -14,19 +14,37 @@ module teapo {
    */
   class TypeScriptEditorType implements EditorType {
 
-    private _shared: CodeMirrorEditor.SharedState = {
-      options: TypeScriptEditorType.editorConfiguration()
-    };
+    private _shared: CodeMirrorEditor.SharedState = TypeScriptEditorType.createShared();
 
     /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
     constructor(private _typescript = new TypeScriptService()) {
     }
 
-    static editorConfiguration() {
+    static createShared() {
       var options = CodeMirrorEditor.standardEditorConfiguration();
+      var shared: CodeMirrorEditor.SharedState = { options: options, extraKeys: {} };
+
       options.mode = "text/typescript";
       options.gutters = [ 'teapo-errors' ];
-      return options;
+
+      var debugClosure = () => {
+        var editor = <TypeScriptEditor>shared.editor;
+        if (!editor) return;
+
+        editor.debug();
+      };
+
+      var extraKeys = options.extraKeys || (options.extraKeys = {});
+      var shortcuts = ['Ctrl-K','Alt-K','Cmd-K','Ctrl-Shift-K'];
+      for (var i = 0; i<shortcuts.length; i++) {
+        var k = shortcuts[i];
+        if (!(k in extraKeys))
+          continue;
+
+        extraKeys[k] = debugClosure;
+      }
+
+      return shared;
     }
 
     canEdit(fullPath: string): boolean {
@@ -138,6 +156,17 @@ module teapo {
         this.editor(),
         () => this._continueCompletion(forced),
         { completeSingle: false });
+    }
+
+
+    debug() {
+      var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
+      for (var i = 0; i < emits.outputFiles.length; i++) {
+        var e = emits.outputFiles[i];
+        alert(
+          e.name+'\n\n'+
+          e.text);
+      }
     }
 
     /**

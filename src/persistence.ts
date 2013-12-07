@@ -13,9 +13,9 @@ module teapo {
    * @param handler All necessary parameters and overrides
    * for instantiating DocumentStorage.
    */
-  export function openStorage(handler: DocumentStorageHandler): void {
+  export function openStorage(handler: DocumentStorageHandler, forceLoadFromDom = false): void {
 
-    var storage = new RuntimeDocumentStorage(handler);
+    var storage = new RuntimeDocumentStorage(handler, forceLoadFromDom);
   }
 
   /**
@@ -146,7 +146,8 @@ module teapo {
     private _updateMetadataSql = '';
 
     constructor(
-      public handler: DocumentStorageHandler) {
+      public handler: DocumentStorageHandler,
+      forceLoadFromDom: boolean) {
 
       this.document = this.handler.document ? this.handler.document : document;
 
@@ -184,7 +185,7 @@ module teapo {
               break;
             }
           }
-          if (!metadataTableExists) {
+          if (!metadataTableExists || forceLoadFromDom) {
             this._loadInitialStateFromDom(pathElements);
             return;
           }

@@ -115,8 +115,15 @@ html {
   background: #f8f8f8;
   border: solid 1px #f0f0f0;
 }
+.CodeMirror-hints {
+  font-family: inherit;
+}
 .CodeMirror-hint {
   max-width: 52em;
+  max-height: 4.5em;
+  overflow-x: inherit;
+  overflow-y: hidden;
+  white-space: normal;
 }
 
 .cm-tab {

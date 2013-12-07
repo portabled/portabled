@@ -37,6 +37,7 @@ function start() {
     ko.renderTemplate('page-template', viewModel, null, pageElement);
   };
 
+  var forceLoadFromDom = window.location.hash && window.location.hash.toLowerCase()==='#resettodom';
   teapo.openStorage(
     {
       documentStorageCreated: (error,s) => {
@@ -45,7 +46,8 @@ function start() {
       },
       getType: (fullPath) => teapo.EditorType.getType(fullPath),
       getFileEntry: (fullPath) => viewModel.fileList.getFileEntry(fullPath)
-    });
+    },
+    forceLoadFromDom);
 }
 
 // TODO: remove this ridiculous timeout (need to insert scripts above teapo.js)

@@ -313,8 +313,9 @@ var teapo;
     * @param handler All necessary parameters and overrides
     * for instantiating DocumentStorage.
     */
-    function openStorage(handler) {
-        var storage = new RuntimeDocumentStorage(handler);
+    function openStorage(handler, forceLoadFromDom) {
+        if (typeof forceLoadFromDom === "undefined") { forceLoadFromDom = false; }
+        var storage = new RuntimeDocumentStorage(handler, forceLoadFromDom);
     }
     teapo.openStorage = openStorage;
 
@@ -325,7 +326,7 @@ var teapo;
     
 
     var RuntimeDocumentStorage = (function () {
-        function RuntimeDocumentStorage(handler) {
+        function RuntimeDocumentStorage(handler, forceLoadFromDom) {
             var _this = this;
             this.handler = handler;
             this.document = null;
@@ -370,7 +371,7 @@ var teapo;
                             break;
                         }
                     }
-                    if (!metadataTableExists) {
+                    if (!metadataTableExists || forceLoadFromDom) {
                         _this._loadInitialStateFromDom(pathElements);
                         return;
                     }
@@ -1584,15 +1585,34 @@ var teapo;
         function TypeScriptEditorType(_typescript) {
             if (typeof _typescript === "undefined") { _typescript = new teapo.TypeScriptService(); }
             this._typescript = _typescript;
-            this._shared = {
-                options: TypeScriptEditorType.editorConfiguration()
-            };
+            this._shared = TypeScriptEditorType.createShared();
         }
-        TypeScriptEditorType.editorConfiguration = function () {
+        TypeScriptEditorType.createShared = function () {
             var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
+            var shared = { options: options, extraKeys: {} };
+
             options.mode = "text/typescript";
             options.gutters = ['teapo-errors'];
-            return options;
+
+            var debugClosure = function () {
+                var editor = shared.editor;
+                if (!editor)
+                    return;
+
+                editor.debug();
+            };
+
+            var extraKeys = options.extraKeys || (options.extraKeys = {});
+            var shortcuts = ['Ctrl-K', 'Alt-K', 'Cmd-K', 'Ctrl-Shift-K'];
+            for (var i = 0; i < shortcuts.length; i++) {
+                var k = shortcuts[i];
+                if (!(k in extraKeys))
+                    continue;
+
+                extraKeys[k] = debugClosure;
+            }
+
+            return shared;
         };
 
         TypeScriptEditorType.prototype.canEdit = function (fullPath) {
@@ -1694,6 +1714,14 @@ var teapo;
             CodeMirror.showHint(this.editor(), function () {
                 return _this._continueCompletion(forced);
             }, { completeSingle: false });
+        };
+
+        TypeScriptEditor.prototype.debug = function () {
+            var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
+            for (var i = 0; i < emits.outputFiles.length; i++) {
+                var e = emits.outputFiles[i];
+                alert(e.name + '\n\n' + e.text);
+            }
         };
 
         /**
@@ -2095,6 +2123,7 @@ function start() {
         ko.renderTemplate('page-template', viewModel, null, pageElement);
     };
 
+    var forceLoadFromDom = window.location.hash && window.location.hash.toLowerCase() === '#resettodom';
     teapo.openStorage({
         documentStorageCreated: function (error, s) {
             storage = s;
@@ -2106,7 +2135,7 @@ function start() {
         getFileEntry: function (fullPath) {
             return viewModel.fileList.getFileEntry(fullPath);
         }
-    });
+    }, forceLoadFromDom);
 }
 
 // TODO: remove this ridiculous timeout (need to insert scripts above teapo.js)
