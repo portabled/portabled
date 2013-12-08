@@ -2046,7 +2046,7 @@ var teapo;
             var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
             var shared = { options: options };
 
-            options.mode = "text/typescript";
+            options.mode = "text/html";
             options.gutters = ['teapo-errors'];
 
             var debugClosure = function () {
@@ -2211,6 +2211,46 @@ var teapo;
     var EditorType = teapo.EditorType;
 })(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
+/// <reference path='persistence.ts' />
+/// <reference path='editor.ts' />
+/// <reference path='editor-std.ts' />
+var teapo;
+(function (teapo) {
+    /**
+    * Handling detection of .js files.
+    */
+    var CSSEditorType = (function () {
+        function CSSEditorType() {
+            this._shared = {
+                options: CSSEditorType.editorConfiguration()
+            };
+        }
+        CSSEditorType.editorConfiguration = function () {
+            var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
+            options.mode = "text/css";
+            return options;
+        };
+
+        CSSEditorType.prototype.canEdit = function (fullPath) {
+            var dotParts = fullPath.split('.');
+            return dotParts.length > 1 && dotParts[dotParts.length - 1].toLowerCase() === 'css';
+        };
+
+        CSSEditorType.prototype.editDocument = function (docState) {
+            return new teapo.CodeMirrorEditor(this._shared, docState);
+        };
+        return CSSEditorType;
+    })();
+
+    (function (EditorType) {
+        /**
+        * Registering HtmlEditorType.
+        */
+        EditorType.CodeMirror = new CSSEditorType();
+    })(teapo.EditorType || (teapo.EditorType = {}));
+    var EditorType = teapo.EditorType;
+})(teapo || (teapo = {}));
+/// <reference path='typings/codemirror.d.ts' />
 /// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='ko.ts' />
 /// <reference path='shell.ts' />
@@ -2218,6 +2258,7 @@ var teapo;
 /// <reference path='editor-ts.ts' />
 /// <reference path='editor-html.ts' />
 /// <reference path='editor-js.ts' />
+/// <reference path='editor-css.ts' />
 function start() {
     var storage = null;
     var viewModel = null;

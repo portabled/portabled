@@ -23,7 +23,7 @@ module teapo {
       var options = CodeMirrorEditor.standardEditorConfiguration();
       var shared: CodeMirrorEditor.SharedState = { options: options };
 
-      options.mode = "text/typescript";
+      options.mode = "text/html";
       options.gutters = [ 'teapo-errors' ];
 
       var debugClosure = () => {
