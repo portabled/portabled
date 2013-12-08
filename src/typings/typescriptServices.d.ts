@@ -518,7 +518,7 @@ declare module TypeScript {
         private _diagnosticKey;
         private _arguments;
         private _additionalLocations;
-        constructor(fileName: string, lineMap: TypeScript.LineMap, start: number, length: number, diagnosticKey: string, arguments?: any[], additionalLocations?: Location[]);
+        constructor(fileName: string, lineMap: TypeScript.LineMap, start: number, length: number, diagnosticKey: string, _arguments?: any[], additionalLocations?: Location[]);
         public toJSON(key: any): any;
         public diagnosticKey(): string;
         public arguments(): any[];
@@ -2853,9 +2853,9 @@ declare module TypeScript {
     class ArgumentListSyntax extends TypeScript.SyntaxNode {
         public typeArgumentList: TypeArgumentListSyntax;
         public openParenToken: TypeScript.ISyntaxToken;
-        public arguments: TypeScript.ISeparatedSyntaxList;
         public closeParenToken: TypeScript.ISyntaxToken;
-        constructor(typeArgumentList: TypeArgumentListSyntax, openParenToken: TypeScript.ISyntaxToken, arguments: TypeScript.ISeparatedSyntaxList, closeParenToken: TypeScript.ISyntaxToken, parsedInStrictMode: boolean);
+        public arguments: TypeScript.ISeparatedSyntaxList;
+        constructor(typeArgumentList: TypeArgumentListSyntax, openParenToken: TypeScript.ISyntaxToken, _arguments: TypeScript.ISeparatedSyntaxList, closeParenToken: TypeScript.ISyntaxToken, parsedInStrictMode: boolean);
         public accept(visitor: TypeScript.ISyntaxVisitor): any;
         public kind(): TypeScript.SyntaxKind;
         public childCount(): number;
@@ -5505,9 +5505,9 @@ declare module TypeScript {
     }
     class ArgumentList extends AST {
         public typeArgumentList: TypeArgumentList;
-        public arguments: ISeparatedSyntaxList2;
         public closeParenToken: ASTSpan;
-        constructor(typeArgumentList: TypeArgumentList, arguments: ISeparatedSyntaxList2, closeParenToken: ASTSpan);
+        public arguments: ISeparatedSyntaxList2;
+        constructor(typeArgumentList: TypeArgumentList, _arguments: ISeparatedSyntaxList2, closeParenToken: ASTSpan);
         public kind(): TypeScript.SyntaxKind;
     }
     class BinaryExpression extends AST {
@@ -5837,7 +5837,7 @@ declare module TypeScript {
         public kind(): TypeScript.SyntaxKind;
         public structuralEquals(ast: Comment, includingPosition: boolean): boolean;
     }
-    function diagnosticFromDecl(decl: PullDecl, diagnosticKey: string, arguments?: any[], additionalLocations?: Location[]): Diagnostic;
+    function diagnosticFromDecl(decl: PullDecl, diagnosticKey: string, _arguments?: any[], additionalLocations?: Location[]): Diagnostic;
 }
 declare module TypeScript {
     function scriptIsElided(sourceUnit: SourceUnit): boolean;
@@ -6880,7 +6880,7 @@ declare module TypeScript {
         public getScopedName(scopeSymbol?: PullSymbol, skipTypeParametersInName?: boolean, useConstraintInName?: boolean, skipInternalAliasName?: boolean): string;
         public isNamedTypeSymbol(): boolean;
         public toString(scopeSymbol?: PullSymbol, useConstraintInName?: boolean): string;
-        public getScopedNameEx(scopeSymbol?: PullSymbol, skipTypeParametersInName?: boolean, useConstraintInName?: boolean, getPrettyTypeName?: boolean, getTypeParamMarkerInfo?: boolean, skipInternalAliasName?: boolean): TypeScript.MemberName;
+        public getScopedNameEx(scopeSymbol?: PullSymbol, skipTypeParametersInName?: boolean, useConstraintInName?: boolean, getPrettyTypeName?: boolean, getTypeParamMarkerInfo?: boolean, skipInternalAliasName?: boolean, shouldAllowArrayType?: boolean): TypeScript.MemberName;
         public hasOnlyOverloadCallSignatures(): boolean;
         public getTypeOfSymbol(): PullSymbol;
         private getMemberTypeNameEx(topLevel, scopeSymbol?, getPrettyTypeName?);
@@ -7599,8 +7599,8 @@ declare module TypeScript {
         public setASTForDecl(decl: TypeScript.PullDecl, ast: TypeScript.AST): void;
         public topLevelDecl(fileName: string): TypeScript.PullDecl;
         public topLevelDecls(): TypeScript.PullDecl[];
-        public addDiagnosticFromAST(ast: TypeScript.AST, diagnosticKey: string, arguments?: any[], additionalLocations?: TypeScript.Location[]): void;
-        public diagnosticFromAST(ast: TypeScript.AST, diagnosticKey: string, arguments?: any[], additionalLocations?: TypeScript.Location[]): TypeScript.Diagnostic;
+        public addDiagnosticFromAST(ast: TypeScript.AST, diagnosticKey: string, _arguments?: any[], additionalLocations?: TypeScript.Location[]): void;
+        public diagnosticFromAST(ast: TypeScript.AST, diagnosticKey: string, _arguments?: any[], additionalLocations?: TypeScript.Location[]): TypeScript.Diagnostic;
         public locationFromAST(ast: TypeScript.AST): TypeScript.Location;
         public duplicateIdentifierDiagnosticFromAST(ast: TypeScript.AST, identifier: string, additionalLocationAST: TypeScript.AST): TypeScript.Diagnostic;
         public addDuplicateIdentifierDiagnosticFromAST(ast: TypeScript.AST, identifier: string, additionalLocationAST: TypeScript.AST): void;
