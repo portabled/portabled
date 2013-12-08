@@ -111,7 +111,7 @@ function compileMain() {
 function checkAndImportLatestTypeScript(callback) {
   checkAndImportExternal(
     typescriptRepository+'/bin/',
-    ['tsc.js', 'typescriptServices.js', 'jquery.d.ts', 'lib.d.ts'],
+    ['tsc.js', 'typescriptServices.js', 'lib.d.ts'],
     'imports/typescript',
     function(detected) {
       if (detected)
