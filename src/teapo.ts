@@ -16,9 +16,10 @@ function start() {
 
   var storageLoaded = () => {
     teapo.registerKnockoutBindings(ko);
+    (<any>teapo.EditorType).Html.storageForBuild = storage;
   
     viewModel = new teapo.ApplicationShell(storage);
-  
+
     var pageElement: HTMLElement = null;
   
     for (var i = 0; i < document.body.childNodes.length; i++) {

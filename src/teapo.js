@@ -1754,6 +1754,14 @@ var teapo;
             }
         };
 
+        TypeScriptEditor.prototype.build = function () {
+            var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
+            for (var i = 0; i < emits.outputFiles.length; i++) {
+                var e = emits.outputFiles[i];
+                return e.text;
+            }
+        };
+
         /**
         * Invoked from CodeMirror's completion logic
         * either at completion start, or on typing.
@@ -2031,6 +2039,7 @@ var teapo;
             if (typeof _typescript === "undefined") { _typescript = new teapo.TypeScriptService(); }
             this._typescript = _typescript;
             this._shared = HtmlEditorType.createShared();
+            this.storageForBuild = null;
             this._typescript.compilationSettings.outFileOption = '/out.ts';
         }
         HtmlEditorType.createShared = function () {
@@ -2045,7 +2054,7 @@ var teapo;
                 if (!editor)
                     return;
 
-                editor.build();
+                editor.assembleBuild();
             };
 
             var extraKeys = options.extraKeys || (options.extraKeys = {});
@@ -2067,22 +2076,77 @@ var teapo;
         };
 
         HtmlEditorType.prototype.editDocument = function (docState) {
-            return new HtmlEditor(this._shared, docState);
+            return new HtmlEditor(this._shared, docState, this.storageForBuild);
         };
         return HtmlEditorType;
     })();
 
     var HtmlEditor = (function (_super) {
         __extends(HtmlEditor, _super);
-        function HtmlEditor(shared, docState) {
+        function HtmlEditor(shared, docState, _storageForBuild) {
             _super.call(this, shared, docState);
+            this._storageForBuild = _storageForBuild;
         }
         HtmlEditor.prototype.handlePerformCompletion = function () {
             CodeMirror.showHint(this.editor(), CodeMirror.hint.html);
         };
 
-        HtmlEditor.prototype.build = function () {
-            alert('build');
+        HtmlEditor.prototype.assembleBuild = function () {
+            if (!this._storageForBuild)
+                return;
+
+            var html = this.text();
+            var convertedOutput = [];
+            var offset = 0;
+            var srcRegex = /###(.*)###/g;
+            var match;
+
+            while (match = srcRegex.exec(html)) {
+                var inlineFullPath = match[1];
+                var verb = null;
+
+                if (inlineFullPath.lastIndexOf(':') >= 0) {
+                    verb = inlineFullPath.slice(inlineFullPath.lastIndexOf(':') + 1);
+                    inlineFullPath = inlineFullPath.slice(0, inlineFullPath.length - verb.length - 1);
+                }
+
+                if (inlineFullPath.charAt(0) !== '/' && inlineFullPath.charAt(0) !== '#')
+                    inlineFullPath = '/' + inlineFullPath;
+
+                var inlineDocState = this._storageForBuild.getDocument(inlineFullPath);
+                if (!inlineDocState) {
+                    continue;
+                }
+
+                convertedOutput.push(html.slice(offset, match.index));
+
+                var embedContent;
+                if (verb && verb in inlineDocState.editor()) {
+                    embedContent = inlineDocState.editor()[verb]();
+                } else {
+                    embedContent = inlineDocState.getProperty(null);
+                }
+
+                embedContent = embedContent.replace(/<\/script/g, '<//script');
+                convertedOutput.push(embedContent);
+                offset = match.index + match[0].length;
+
+                var shortName = match[1];
+                shortName = shortName.slice(shortName.lastIndexOf('/') + 1);
+            }
+
+            if (offset < html.length)
+                convertedOutput.push(html.slice(offset));
+
+            var combinedConvertedOutput = convertedOutput.join('');
+
+            var filename = this.docState.fullPath();
+            var blob = new Blob([combinedConvertedOutput], { type: 'application/octet-stream' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.setAttribute('download', filename);
+            a.click();
         };
         return HtmlEditor;
     })(teapo.CompletionCodeMirrorEditor);
@@ -2160,6 +2224,7 @@ function start() {
 
     var storageLoaded = function () {
         teapo.registerKnockoutBindings(ko);
+        teapo.EditorType.Html.storageForBuild = storage;
 
         viewModel = new teapo.ApplicationShell(storage);
 

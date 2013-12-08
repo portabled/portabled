@@ -173,6 +173,14 @@ module teapo {
       }
     }
 
+    build() {
+      var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
+      for (var i = 0; i < emits.outputFiles.length; i++) {
+        var e = emits.outputFiles[i];
+        return e.text;
+      }
+    }
+
     /**
      * Invoked from CodeMirror's completion logic
      * either at completion start, or on typing.

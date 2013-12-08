@@ -12,6 +12,8 @@ module teapo {
   class HtmlEditorType implements EditorType {
     private _shared: CodeMirrorEditor.SharedState = HtmlEditorType.createShared();
 
+    storageForBuild: DocumentStorage = null;
+
     /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
     constructor(private _typescript = new TypeScriptService()) {
       this._typescript.compilationSettings.outFileOption = '/out.ts';
@@ -28,7 +30,7 @@ module teapo {
         var editor = <HtmlEditor>shared.editor;
         if (!editor) return;
 
-        editor.build();
+        editor.assembleBuild();
       };
 
       var extraKeys = options.extraKeys || (options.extraKeys = {});
@@ -51,14 +53,15 @@ module teapo {
     }
 
     editDocument(docState: DocumentState): Editor {
-      return new HtmlEditor(this._shared, docState);
+      return new HtmlEditor(this._shared, docState, this.storageForBuild);
     }
   }
 
   class HtmlEditor extends CompletionCodeMirrorEditor {
     constructor(
       shared: CodeMirrorEditor.SharedState,
-      docState: DocumentState) {
+      docState: DocumentState,
+      private _storageForBuild: DocumentStorage) {
       super(shared, docState);
     }
 
@@ -66,8 +69,63 @@ module teapo {
       (<any>CodeMirror).showHint(this.editor(), (<any>CodeMirror).hint.html);
     }
 
-    build() {
-      alert('build');
+    assembleBuild() {
+      if (!this._storageForBuild)
+        return;
+
+      var html = this.text();
+      var convertedOutput = [];
+      var offset = 0;
+      var srcRegex = /###(.*)###/g;
+      var match;
+
+      while (match = srcRegex.exec(html)) {
+        var inlineFullPath = match[1];
+        var verb: string = null;
+
+        if (inlineFullPath.lastIndexOf(':')>=0) {
+          verb = inlineFullPath.slice(inlineFullPath.lastIndexOf(':')+1);
+          inlineFullPath = inlineFullPath.slice(0,inlineFullPath.length-verb.length-1);
+        }
+
+        if (inlineFullPath.charAt(0)!=='/' && inlineFullPath.charAt(0)!=='#')
+          inlineFullPath = '/'+inlineFullPath;
+
+        var inlineDocState = this._storageForBuild.getDocument(inlineFullPath);
+        if (!inlineDocState) {
+          continue;
+        }
+  
+        convertedOutput.push(html.slice(offset, match.index));
+  
+        var embedContent: string;
+        if (verb && verb in inlineDocState.editor()) {
+          embedContent = (<any>inlineDocState.editor())[verb]();
+        }
+        else {
+          embedContent = inlineDocState.getProperty(null);
+        }
+  
+        embedContent = embedContent.replace(/<\/script/g, '<//script');
+        convertedOutput.push(embedContent);
+        offset = match.index+match[0].length;
+  
+        var shortName = match[1];
+        shortName = shortName.slice(shortName.lastIndexOf('/')+1);
+      }
+  
+      if (offset<html.length)
+        convertedOutput.push(html.slice(offset));
+  
+      var combinedConvertedOutput = convertedOutput.join('');
+  
+      var filename = this.docState.fullPath();
+      var blob = new Blob([combinedConvertedOutput], {type: 'application/octet-stream'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.setAttribute('download', filename);
+      a.click();
     }
   }
 
