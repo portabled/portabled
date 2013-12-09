@@ -5,10 +5,10 @@
 /// <reference path='shell.ts' />
 
 /// <reference path='editor-std.ts' />
-/// <reference path='editor-ts.ts' />
-/// <reference path='editor-html.ts' />
-/// <reference path='editor-js.ts' />
-/// <reference path='editor-css.ts' />
+/// <reference path='editor-x-ts.ts' />
+/// <reference path='editor-x-html.ts' />
+/// <reference path='editor-x-js.ts' />
+/// <reference path='editor-x-css.ts' />
 
 function start() {
 
