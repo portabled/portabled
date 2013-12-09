@@ -127,7 +127,7 @@ module teapo {
   
       var combinedConvertedOutput = convertedOutput.join('');
   
-      var filename = this.docState.fullPath();
+      var filename = this.docState.fileEntry().name();
       var blob = new Blob([combinedConvertedOutput], {type: 'application/octet-stream'});
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
