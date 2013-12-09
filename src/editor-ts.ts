@@ -157,11 +157,12 @@ module teapo {
       delete this._typescript.scripts[this.docState.fullPath()];
     }
 
-    handlePerformCompletion(forced: boolean) {
+    handlePerformCompletion(forced: boolean, acceptSingle: boolean) {
+
       (<any>CodeMirror).showHint(
         this.editor(),
         () => this._continueCompletion(forced),
-        { completeSingle: false });
+        { completeSingle: acceptSingle });
     }
 
 
@@ -176,10 +177,25 @@ module teapo {
     }
 
     build() {
+
       var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
+
+      var errors: string[] = [];
+      for (var i = 0; i < emits.diagnostics.length; i++) {
+        var e = emits.diagnostics[i];
+        var info = e.info();
+        if (info.category===TypeScript.DiagnosticCategory.Error) {
+          errors.push(
+            e.fileName()+' ['+e.line()+':'+e.character+'] '+info.message);
+        }
+      }
+
+      if (errors.length)
+        alert(errors.join('\n')); 
+
       for (var i = 0; i < emits.outputFiles.length; i++) {
-        var e = emits.outputFiles[i];
-        return e.text;
+        var ou = emits.outputFiles[i];
+        return ou.text;
       }
     }
 
@@ -233,6 +249,7 @@ module teapo {
       });
 
       if (list.length) {
+
         if (!this._completionActive) {
 
           var onendcompletion = () => {
@@ -262,6 +279,7 @@ module teapo {
     private _triggerDiagnosticsUpdate() {
       if (this._updateDiagnosticsTimeout)
         clearTimeout(this._updateDiagnosticsTimeout);
+
       this._updateDiagnosticsTimeout = setTimeout(
         this._updateDiagnosticsClosure,
         TypeScriptEditor.updateDiagnosticsDelay);
@@ -318,51 +336,50 @@ module teapo {
       var gutterElement = this._getTeapoErrorsGutterElement();
 
       var gutterClassName = 'teapo-errors';
-      var lineErrors: { text: string; syntax: boolean; semantic: boolean; }[] = [];
+      var lineErrors: { text: string; classNames: any; }[] = [];
 
-      if (this._syntacticDiagnostics && this._syntacticDiagnostics.length) {
-        gutterClassName += ' teapo-errors-syntax';
+      var sources = [
+        {kind: 'syntax', errors: this._syntacticDiagnostics},
+        {kind: 'semantic', errors: this._semanticDiagnostics}
+      ];
 
-        for (var i = 0; i < this._syntacticDiagnostics.length; i++) {
-          var err = this._syntacticDiagnostics[i];
+      for (var iSrc=0; iSrc<sources.length; iSrc++) {
+        var src = sources[iSrc];
+
+        if (src.errors.length)
+          gutterClassName += ' teapo-errors-'+src.kind;
+
+        for (var i = 0; i < src.errors.length; i++) {
+          var err = src.errors[i];
+          var info = err.info();
+  
           var lnerr = lineErrors[err.line()];
+          var text = '['+TypeScript.DiagnosticCategory[info.category]+'] '+err.text();
           if (lnerr) {
-            lnerr.text += '\n'+err.text();
-            lnerr.syntax = true;
+            lnerr.text += '\n'+text;
           }
           else {
-            lnerr = { text: err.text(), syntax: true, semantic: false };
+            lnerr = { text: text, classNames: {}};
+            lineErrors[err.line()] = lnerr;
           }
+
+          lnerr.classNames['teapo-gutter-'+src.kind+'-error'] = '';
         }
       }
 
-      if (this._semanticDiagnostics && this._semanticDiagnostics.length) {
-        gutterClassName += ' teapo-errors-semantic';
-
-        for (var i = 0; i < this._semanticDiagnostics.length; i++) {
-          var err = this._semanticDiagnostics[i];
-          var lnerr = lineErrors[err.line()];
-          if (lnerr) {
-            lnerr.text += '\n'+err.text();
-            lnerr.semantic = true;
-          }
-          else {
-            lnerr = { text: err.text(), syntax: false, semantic: true };
-          }
-        }
+      function createClickHandler(text: string) {
+        return () => alert(text);
       }
 
-      for (var i=0; lineErrors.length; i++) {
+      for (var i=0; i<lineErrors.length; i++) {
         var lnerr = lineErrors[i];
         if (!lnerr) continue;
 
         var errorElement = document.createElement('div');
-        errorElement.className = lnerr.syntax ?
-          (lnerr.semantic ? 'teapo-syntax-error teapo-semantic-error' : 'teapo-syntax-error'):
-          (lnerr.semantic ? 'teapo-semantic' : '');
+        errorElement.className = Object.keys(lnerr.classNames).join(' ');
         errorElement.title = lnerr.text;
 
-        errorElement.onclick = () => alert(lnerr.text);
+        errorElement.onclick = createClickHandler(lnerr.text);
   
         editor.setGutterMarker(i, 'teapo-errors', errorElement);
       }

@@ -73,7 +73,7 @@ module teapo {
         this.triggerCompletion(true);
     }
 
-    handlePerformCompletion() {
+    handlePerformCompletion(force: boolean, acceptSingle: boolean) {
       (<any>CodeMirror).showHint(this.editor(), (<any>CodeMirror).hint.html);
     }
 
@@ -114,7 +114,7 @@ module teapo {
           embedContent = inlineDocState.getProperty(null);
         }
   
-        embedContent = embedContent.replace(/<\/script/g, '<//script');
+        embedContent = embedContent.replace(/<\/script/g, '</script');
         convertedOutput.push(embedContent);
         offset = match.index+match[0].length;
   

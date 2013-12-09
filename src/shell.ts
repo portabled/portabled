@@ -78,7 +78,8 @@ module teapo {
      */
     saveFileName() {
       var urlParts = window.location.pathname.split('/');
-      return decodeURI(urlParts[urlParts.length-1]);
+      var currentFileName = decodeURI(urlParts[urlParts.length-1]);
+      return currentFileName;
     }
 
     /**

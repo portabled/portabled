@@ -298,6 +298,7 @@ module teapo {
     private _completionTimeout = 0;
     private _completionClosure = () => this._performCompletion();
     private _forcedCompletion = false;
+    private _acceptSingleCompletion = false;
     private static _noSingleAutoCompletion = { completeSingle: false };
 
     constructor(
@@ -330,19 +331,21 @@ module teapo {
     handleCursorActivity() {
     }
 
-    handlePerformCompletion(forced: boolean) {
+    handlePerformCompletion(forced: boolean, acceptSingle: boolean) {
     }
 
     handleChange(change: CodeMirror.EditorChange) {
       this.triggerCompletion(false);
     }
 
-    triggerCompletion(forced: boolean) {
+    triggerCompletion(forced: boolean, acceptSingle = false) {
       if (this._completionTimeout)
         clearTimeout(this._completionTimeout);
 
       if (forced)
         this._forcedCompletion = true;
+      if (acceptSingle)
+        this._acceptSingleCompletion = true;
 
       var delay = forced ? 1 : CompletionCodeMirrorEditor.completionDelay;
 
@@ -358,6 +361,7 @@ module teapo {
       }
 
       this._forcedCompletion = false;
+      this._acceptSingleCompletion = false;
     }
 
     private _performCompletion() {
@@ -373,8 +377,10 @@ module teapo {
       }
 
       var forced = this._forcedCompletion;
+      var acceptSingle = this._acceptSingleCompletion;
       this._forcedCompletion = false;
-      this.handlePerformCompletion(forced);
+      this._acceptSingleCompletion = false;
+      this.handlePerformCompletion(forced, acceptSingle);
     }
 
     private _oncursorActivity() {

@@ -882,7 +882,8 @@ var teapo;
         */
         ApplicationShell.prototype.saveFileName = function () {
             var urlParts = window.location.pathname.split('/');
-            return decodeURI(urlParts[urlParts.length - 1]);
+            var currentFileName = decodeURI(urlParts[urlParts.length - 1]);
+            return currentFileName;
         };
 
         /**
@@ -1295,6 +1296,7 @@ var teapo;
                 return _this._performCompletion();
             };
             this._forcedCompletion = false;
+            this._acceptSingleCompletion = false;
         }
         /**
         * Subscribing to cursor activity.
@@ -1320,19 +1322,22 @@ var teapo;
         CompletionCodeMirrorEditor.prototype.handleCursorActivity = function () {
         };
 
-        CompletionCodeMirrorEditor.prototype.handlePerformCompletion = function (forced) {
+        CompletionCodeMirrorEditor.prototype.handlePerformCompletion = function (forced, acceptSingle) {
         };
 
         CompletionCodeMirrorEditor.prototype.handleChange = function (change) {
             this.triggerCompletion(false);
         };
 
-        CompletionCodeMirrorEditor.prototype.triggerCompletion = function (forced) {
+        CompletionCodeMirrorEditor.prototype.triggerCompletion = function (forced, acceptSingle) {
+            if (typeof acceptSingle === "undefined") { acceptSingle = false; }
             if (this._completionTimeout)
                 clearTimeout(this._completionTimeout);
 
             if (forced)
                 this._forcedCompletion = true;
+            if (acceptSingle)
+                this._acceptSingleCompletion = true;
 
             var delay = forced ? 1 : CompletionCodeMirrorEditor.completionDelay;
 
@@ -1348,6 +1353,7 @@ var teapo;
             }
 
             this._forcedCompletion = false;
+            this._acceptSingleCompletion = false;
         };
 
         CompletionCodeMirrorEditor.prototype._performCompletion = function () {
@@ -1362,8 +1368,10 @@ var teapo;
             }
 
             var forced = this._forcedCompletion;
+            var acceptSingle = this._acceptSingleCompletion;
             this._forcedCompletion = false;
-            this.handlePerformCompletion(forced);
+            this._acceptSingleCompletion = false;
+            this.handlePerformCompletion(forced, acceptSingle);
         };
 
         CompletionCodeMirrorEditor.prototype._oncursorActivity = function () {
@@ -1742,11 +1750,11 @@ var teapo;
             delete this._typescript.scripts[this.docState.fullPath()];
         };
 
-        TypeScriptEditor.prototype.handlePerformCompletion = function (forced) {
+        TypeScriptEditor.prototype.handlePerformCompletion = function (forced, acceptSingle) {
             var _this = this;
             CodeMirror.showHint(this.editor(), function () {
                 return _this._continueCompletion(forced);
-            }, { completeSingle: false });
+            }, { completeSingle: acceptSingle });
         };
 
         TypeScriptEditor.prototype.debug = function () {
@@ -1759,9 +1767,22 @@ var teapo;
 
         TypeScriptEditor.prototype.build = function () {
             var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
+
+            var errors = [];
+            for (var i = 0; i < emits.diagnostics.length; i++) {
+                var e = emits.diagnostics[i];
+                var info = e.info();
+                if (info.category === 1 /* Error */) {
+                    errors.push(e.fileName() + ' [' + e.line() + ':' + e.character + '] ' + info.message);
+                }
+            }
+
+            if (errors.length)
+                alert(errors.join('\n'));
+
             for (var i = 0; i < emits.outputFiles.length; i++) {
-                var e = emits.outputFiles[i];
-                return e.text;
+                var ou = emits.outputFiles[i];
+                return ou.text;
             }
         };
 
@@ -1847,6 +1868,7 @@ var teapo;
         TypeScriptEditor.prototype._triggerDiagnosticsUpdate = function () {
             if (this._updateDiagnosticsTimeout)
                 clearTimeout(this._updateDiagnosticsTimeout);
+
             this._updateDiagnosticsTimeout = setTimeout(this._updateDiagnosticsClosure, TypeScriptEditor.updateDiagnosticsDelay);
         };
 
@@ -1901,48 +1923,50 @@ var teapo;
             var gutterClassName = 'teapo-errors';
             var lineErrors = [];
 
-            if (this._syntacticDiagnostics && this._syntacticDiagnostics.length) {
-                gutterClassName += ' teapo-errors-syntax';
+            var sources = [
+                { kind: 'syntax', errors: this._syntacticDiagnostics },
+                { kind: 'semantic', errors: this._semanticDiagnostics }
+            ];
 
-                for (var i = 0; i < this._syntacticDiagnostics.length; i++) {
-                    var err = this._syntacticDiagnostics[i];
+            for (var iSrc = 0; iSrc < sources.length; iSrc++) {
+                var src = sources[iSrc];
+
+                if (src.errors.length)
+                    gutterClassName += ' teapo-errors-' + src.kind;
+
+                for (var i = 0; i < src.errors.length; i++) {
+                    var err = src.errors[i];
+                    var info = err.info();
+
                     var lnerr = lineErrors[err.line()];
+                    var text = '[' + TypeScript.DiagnosticCategory[info.category] + '] ' + err.text();
                     if (lnerr) {
-                        lnerr.text += '\n' + err.text();
-                        lnerr.syntax = true;
+                        lnerr.text += '\n' + text;
                     } else {
-                        lnerr = { text: err.text(), syntax: true, semantic: false };
+                        lnerr = { text: text, classNames: {} };
+                        lineErrors[err.line()] = lnerr;
                     }
+
+                    lnerr.classNames['teapo-gutter-' + src.kind + '-error'] = '';
                 }
             }
 
-            if (this._semanticDiagnostics && this._semanticDiagnostics.length) {
-                gutterClassName += ' teapo-errors-semantic';
-
-                for (var i = 0; i < this._semanticDiagnostics.length; i++) {
-                    var err = this._semanticDiagnostics[i];
-                    var lnerr = lineErrors[err.line()];
-                    if (lnerr) {
-                        lnerr.text += '\n' + err.text();
-                        lnerr.semantic = true;
-                    } else {
-                        lnerr = { text: err.text(), syntax: false, semantic: true };
-                    }
-                }
+            function createClickHandler(text) {
+                return function () {
+                    return alert(text);
+                };
             }
 
-            for (var i = 0; lineErrors.length; i++) {
+            for (var i = 0; i < lineErrors.length; i++) {
                 var lnerr = lineErrors[i];
                 if (!lnerr)
                     continue;
 
                 var errorElement = document.createElement('div');
-                errorElement.className = lnerr.syntax ? (lnerr.semantic ? 'teapo-syntax-error teapo-semantic-error' : 'teapo-syntax-error') : (lnerr.semantic ? 'teapo-semantic' : '');
+                errorElement.className = Object.keys(lnerr.classNames).join(' ');
                 errorElement.title = lnerr.text;
 
-                errorElement.onclick = function () {
-                    return alert(lnerr.text);
-                };
+                errorElement.onclick = createClickHandler(lnerr.text);
 
                 editor.setGutterMarker(i, 'teapo-errors', errorElement);
             }
@@ -2097,7 +2121,7 @@ var teapo;
                 this.triggerCompletion(true);
         };
 
-        HtmlEditor.prototype.handlePerformCompletion = function () {
+        HtmlEditor.prototype.handlePerformCompletion = function (force, acceptSingle) {
             CodeMirror.showHint(this.editor(), CodeMirror.hint.html);
         };
 
@@ -2137,7 +2161,7 @@ var teapo;
                     embedContent = inlineDocState.getProperty(null);
                 }
 
-                embedContent = embedContent.replace(/<\/script/g, '<//script');
+                embedContent = embedContent.replace(/<\/script/g, '</script');
                 convertedOutput.push(embedContent);
                 offset = match.index + match[0].length;
 

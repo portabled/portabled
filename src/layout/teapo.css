@@ -61,7 +61,7 @@ html {
 }
 
 .teapo-syntax-error {
-  background: rgba(255, 205, 162, 0.62);
+  background: rgba(255, 205, 162, 0.42);
 }
 .teapo-semantic-error {
   background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3QUXCToH00Y1UgAAACFJREFUCNdjPMDBUc/AwNDAAAFMTAwMDA0OP34wQgX/AQBYgwYEx4f9lQAAAABJRU5ErkJggg==);
@@ -88,10 +88,12 @@ html {
 .teapo-errors-semantic {
   width: 0.5em;
   background: goldenrod;
+  opacity: 0.5;
 }
 .teapo-errors-syntactic {
   width: 0.5em;
   background: tomato;
+  opacity: 0.5;
 }
 
 .teapo-content {
