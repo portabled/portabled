@@ -352,7 +352,7 @@ module teapo {
             delete pathElements[fullPath]; // all remaining elements will be destroyed
           }
           else {
-            appendScriptElement(this.document);
+            s = appendScriptElement(this.document);
             s.setAttribute('data-path', fullPath);
           }
           

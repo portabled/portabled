@@ -504,7 +504,7 @@ var teapo;
                         removeAttributes(s);
                         delete pathElements[fullPath]; // all remaining elements will be destroyed
                     } else {
-                        appendScriptElement(_this.document);
+                        s = appendScriptElement(_this.document);
                         s.setAttribute('data-path', fullPath);
                     }
 
