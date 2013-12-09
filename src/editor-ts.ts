@@ -6,6 +6,8 @@
 
 /// <reference path='TypeScriptService.ts'  />
 
+// anchor-3
+
 module teapo {
 
   /**

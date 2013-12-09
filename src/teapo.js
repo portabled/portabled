@@ -1022,6 +1022,7 @@ var __extends = this.__extends || function (d, b) {
 };
 /// <reference path='persistence.ts' />
 /// <reference path='editor.ts' />
+// anchor-2
 var teapo;
 (function (teapo) {
     /**
@@ -1464,6 +1465,7 @@ var teapo;
                 },
                 getScriptFileNames: function () {
                     var result = Object.keys(_this.scripts);
+                    result = result.sort();
 
                     //console.log('...getScriptFileNames():',result);
                     return result;
@@ -1600,6 +1602,7 @@ var teapo;
 /// <reference path='editor.ts' />
 /// <reference path='editor-std.ts' />
 /// <reference path='TypeScriptService.ts'  />
+// anchor-3
 var teapo;
 (function (teapo) {
     /**
@@ -2087,6 +2090,13 @@ var teapo;
             _super.call(this, shared, docState);
             this._storageForBuild = _storageForBuild;
         }
+        HtmlEditor.prototype.handleChange = function (change) {
+            _super.prototype.handleChange.call(this, change);
+
+            if (change.text.length === 1 && (change.text[0] === '<' || change.text[0] === '/'))
+                this.triggerCompletion(true);
+        };
+
         HtmlEditor.prototype.handlePerformCompletion = function () {
             CodeMirror.showHint(this.editor(), CodeMirror.hint.html);
         };

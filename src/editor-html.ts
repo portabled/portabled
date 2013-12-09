@@ -65,6 +65,14 @@ module teapo {
       super(shared, docState);
     }
 
+    handleChange(change: CodeMirror.EditorChange) {
+      super.handleChange(change);
+
+      if (change.text.length===1
+          && (change.text[0]==='<' || change.text[0]==='/'))
+        this.triggerCompletion(true);
+    }
+
     handlePerformCompletion() {
       (<any>CodeMirror).showHint(this.editor(), (<any>CodeMirror).hint.html);
     }

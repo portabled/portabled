@@ -107,6 +107,15 @@ html {
   background: white;
 }
 
+.teapo-content-inner {
+  font-size: 150%;
+  padding: 2em;
+  background: #e6e6e6;
+  color: gray;
+  height: 100%;
+  overflow: none;
+}
+
 .CodeMirror {
   height: 100%;
   font-family: inherit;

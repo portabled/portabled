@@ -3,6 +3,8 @@
 /// <reference path='persistence.ts' />
 /// <reference path='editor.ts' />
 
+// anchor-2
+
 module teapo {
 
   /**
