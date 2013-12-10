@@ -6772,6 +6772,7 @@ declare module TypeScript {
         private _constructSignatures;
         private _indexSignatures;
         private _allIndexSignatures;
+        private _allIndexSignaturesOfAugmentedType;
         private _memberNameCache;
         private _enclosedTypeNameCache;
         private _enclosedContainerCache;
@@ -6808,6 +6809,7 @@ declare module TypeScript {
         public isEnum(): boolean;
         public getTypeParameterArgumentMap(): PullTypeSymbol[];
         public isObject(): boolean;
+        public isFunctionType(): boolean;
         public getKnownBaseTypeCount(): number;
         public resetKnownBaseTypeCount(): void;
         public incrementKnownBaseCount(): void;
@@ -6852,7 +6854,6 @@ declare module TypeScript {
         public addCallSignature(callSignature: PullSignatureSymbol): void;
         public addConstructSignature(constructSignature: PullSignatureSymbol): void;
         public addIndexSignature(indexSignature: PullSignatureSymbol): void;
-        private addUnhiddenSignaturesFromBaseType(derivedTypeSignatures, baseTypeSignatures, signaturesBeingAggregated);
         public hasOwnCallSignatures(): boolean;
         public getCallSignatures(): PullSignatureSymbol[];
         public hasOwnConstructSignatures(): boolean;
@@ -6860,6 +6861,7 @@ declare module TypeScript {
         public hasOwnIndexSignatures(): boolean;
         public getOwnIndexSignatures(): PullSignatureSymbol[];
         public getIndexSignatures(): PullSignatureSymbol[];
+        public getIndexSignaturesOfAugmentedType(resolver: TypeScript.PullTypeResolver, globalFunctionInterface: PullTypeSymbol, globalObjectInterface: PullTypeSymbol): PullSignatureSymbol[];
         public addImplementedType(implementedType: PullTypeSymbol): void;
         public getImplementedTypes(): PullTypeSymbol[];
         public addExtendedType(extendedType: PullTypeSymbol): void;
@@ -7134,7 +7136,8 @@ declare module TypeScript {
         public getNewErrorTypeSymbol(name?: string): TypeScript.PullErrorTypeSymbol;
         public getEnclosingDecl(decl: TypeScript.PullDecl): TypeScript.PullDecl;
         private getExportedMemberSymbol(symbol, parent);
-        private getMemberSymbol(symbolName, declSearchKind, parent);
+        private getNamedPropertySymbolOfAugmentedType(symbolName, parent);
+        private getNamedPropertySymbol(symbolName, declSearchKind, parent);
         private getSymbolFromDeclPath(symbolName, declPath, declSearchKind);
         private getVisibleDeclsFromDeclPath(declPath, declSearchKind);
         private addFilteredDecls(decls, declSearchKind, result);
@@ -7148,6 +7151,7 @@ declare module TypeScript {
         private resolveOtherDeclarations(astName, context);
         private resolveSourceUnit(sourceUnit, context);
         private typeCheckSourceUnit(sourceUnit, context);
+        private verifyUniquenessOfImportNamesInSourceUnit(sourceUnit);
         private resolveEnumDeclaration(ast, context);
         private typeCheckEnumDeclaration(ast, context);
         private postTypeCheckEnumDeclaration(ast, context);
@@ -7158,6 +7162,9 @@ declare module TypeScript {
         private resolveSingleModuleDeclaration(ast, astName, context);
         private typeCheckModuleDeclaration(ast, context);
         private typeCheckSingleModuleDeclaration(ast, astName, context);
+        private verifyUniquenessOfImportNamesInModule(decl);
+        private checkUniquenessOfImportNames(decls, doesNameExistOutside?);
+        private scanVariableDeclarationGroups(enclosingDecl, firstDeclHandler, subsequentDeclHandler?);
         private postTypeCheckModuleDeclaration(ast, context);
         private isTypeRefWithoutTypeArgs(term);
         public createInstantiatedType(type: TypeScript.PullTypeSymbol, typeArguments: TypeScript.PullTypeSymbol[]): TypeScript.PullTypeSymbol;
@@ -7370,7 +7377,10 @@ declare module TypeScript {
         private resolveElementAccessExpression(callEx, context);
         private typeCheckElementAccessExpression(callEx, context, symbolAndDiagnostic);
         private computeElementAccessExpressionSymbolAndDiagnostic(callEx, context);
-        private getBothKindsOfIndexSignatures(enclosingType, context);
+        private getBothKindsOfIndexSignaturesIncludingAugmentedType(enclosingType, context);
+        private getBothKindsOfIndexSignaturesExcludingAugmentedType(enclosingType, context);
+        private getBothKindsOfIndexSignatures(enclosingType, context, includeAugmentedType);
+        public _addUnhiddenSignaturesFromBaseType(derivedTypeSignatures: TypeScript.PullSignatureSymbol[], baseTypeSignatures: TypeScript.PullSignatureSymbol[], signaturesBeingAggregated: TypeScript.PullSignatureSymbol[]): void;
         private resolveBinaryAdditionOperation(binaryExpression, context);
         private bestCommonTypeOfTwoTypes(type1, type2, context);
         private bestCommonTypeOfThreeTypes(type1, type2, type3, context);
