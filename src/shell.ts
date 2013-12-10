@@ -119,29 +119,41 @@ module teapo {
         filename = filename.slice(0,filename.length-'.htm'.length);
       filename+='.zip';
 
-      zip.createWriter(new zip.BlobWriter(), (zipWriter) => {
+      var blobWriter = new zip.BlobWriter();
+      zip.createWriter(blobWriter, (zipWriter) => {
+
         var files = this._storage.documentNames();
         var completedCount = 0;
 
-        for (var i=0; i<files.length; i++) {
-          var docState = this._storage.getDocument(files[i]);
+        var zipwritingCompleted = () => {
+          zipWriter.close((blob) => {
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.setAttribute('download', filename);
+            a.click();
+          });
+        };
+
+        var continueWriter = () => {
+          if (completedCount===files.length) {
+            zipwritingCompleted();
+            return;
+          }
+
+          var docState = this._storage.getDocument(files[completedCount]);
           var content = docState.getProperty(null);
 
-          var zipRelativePath = files[i].slice(1);
+          var zipRelativePath = files[completedCount].slice(1);
 
           zipWriter.add(zipRelativePath, new zip.TextReader(content), () => {
             completedCount++;
-            if (completedCount===files.length) {
-              zipWriter.close((blob) => {
-                var url = URL.createObjectURL(blob);
-                var a = document.createElement('a');
-                a.href = url;
-                a.setAttribute('download', filename);
-                a.click();
-              });
-            }
+
+            setTimeout(continueWriter, 1);
           });
-        }
+        };
+
+        continueWriter();
       });
     }
 
