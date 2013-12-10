@@ -396,7 +396,7 @@ module teapo {
       var triggerEditorCompletion = () => {
         var editor = <CompletionCodeMirrorEditor>shared.editor;
         if (!editor) return;
-        editor.triggerCompletion(true);
+        editor.triggerCompletion(true, true);
       };
 
       var completionShortcuts = ['Ctrl-Space','Ctrl-J','Alt-J','Cmd-J'];

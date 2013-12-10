@@ -1426,7 +1426,7 @@ var teapo;
                 var editor = shared.editor;
                 if (!editor)
                     return;
-                editor.triggerCompletion(true);
+                editor.triggerCompletion(true, true);
             };
 
             var completionShortcuts = ['Ctrl-Space', 'Ctrl-J', 'Alt-J', 'Cmd-J'];
@@ -2048,7 +2048,7 @@ var teapo;
             }
             return length;
         };
-        TypeScriptEditor.updateDiagnosticsDelay = 1000;
+        TypeScriptEditor.updateDiagnosticsDelay = 2000;
         TypeScriptEditor.maxCompletions = 20;
         return TypeScriptEditor;
     })(teapo.CompletionCodeMirrorEditor);

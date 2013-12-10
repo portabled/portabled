@@ -82,7 +82,7 @@ module teapo {
     /** Required as part of interface to TypeScriptService. */
     _cachedSnapshot: TypeScript.IScriptSnapshot = null; // needed for TypeScriptService optimization
 
-    static updateDiagnosticsDelay = 1000;
+    static updateDiagnosticsDelay = 2000;
     static maxCompletions = 20;
 
     private _syntacticDiagnostics: TypeScript.Diagnostic[] = [];
