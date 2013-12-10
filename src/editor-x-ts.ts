@@ -58,8 +58,14 @@ module teapo {
     editDocument(docState: DocumentState): Editor {
       var editor = new TypeScriptEditor(this._typescript, this._shared, docState);
 
-      // TODO: think how it will be removed.
-      this._typescript.scripts[docState.fullPath()] = editor;
+      setTimeout(() => {
+          this._typescript.scripts[docState.fullPath()] = editor;
+          this._typescript.service.getSyntacticDiagnostics(docState.fullPath());
+          setTimeout(() => {
+            this._typescript.service.getSignatureAtPosition(docState.fullPath(), 0);
+          },1);
+        },
+        1);
 
       return editor;
     }

@@ -1697,10 +1697,16 @@ var teapo;
         };
 
         TypeScriptEditorType.prototype.editDocument = function (docState) {
+            var _this = this;
             var editor = new TypeScriptEditor(this._typescript, this._shared, docState);
 
-            // TODO: think how it will be removed.
-            this._typescript.scripts[docState.fullPath()] = editor;
+            setTimeout(function () {
+                _this._typescript.scripts[docState.fullPath()] = editor;
+                _this._typescript.service.getSyntacticDiagnostics(docState.fullPath());
+                setTimeout(function () {
+                    _this._typescript.service.getSignatureAtPosition(docState.fullPath(), 0);
+                }, 1);
+            }, 1);
 
             return editor;
         };
