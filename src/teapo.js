@@ -2346,27 +2346,31 @@ var teapo;
 function start() {
     var storage = null;
     var viewModel = null;
+    var pageElement = null;
+
+    for (var i = 0; i < document.body.childNodes.length; i++) {
+        var e = document.body.childNodes.item(i);
+        if (e && e.tagName && e.tagName.toLowerCase() !== 'script') {
+            if (e.className && e.className.indexOf('teapo-page') >= 0) {
+                pageElement = e;
+                continue;
+            }
+
+            document.body.removeChild(e);
+            i--;
+        }
+    }
+
+    var loadingDiv = document.createElement('div');
+    loadingDiv.className = 'teapo-boot';
+    loadingDiv.textContent = loadingDiv.innerText = 'Loading...';
+    pageElement.appendChild(loadingDiv);
 
     var storageLoaded = function () {
         teapo.registerKnockoutBindings(ko);
         teapo.EditorType.Html.storageForBuild = storage;
 
         viewModel = new teapo.ApplicationShell(storage);
-
-        var pageElement = null;
-
-        for (var i = 0; i < document.body.childNodes.length; i++) {
-            var e = document.body.childNodes.item(i);
-            if (e && e.tagName && e.tagName.toLowerCase() !== 'script') {
-                if (e.className && e.className.indexOf('teapo-page') >= 0) {
-                    pageElement = e;
-                    continue;
-                }
-
-                document.body.removeChild(e);
-                i--;
-            }
-        }
 
         ko.renderTemplate('page-template', viewModel, null, pageElement);
     };
