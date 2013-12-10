@@ -763,14 +763,14 @@ var teapo;
     * Escape unsafe character sequences like a closing script tag.
     */
     function encodeForInnerHTML(content) {
-        return content.replace(/<\/script/g, '<//script');
+        return content.replace(/\/script/g, '//script');
     }
 
     /**
     * Unescape character sequences wrapped with encodeForInnerHTML for safety.
     */
     function decodeFromInnerHTML(innerHTML) {
-        return innerHTML.replace(/<\/\/script/g, '</' + 'script');
+        return innerHTML.replace(/\/\/script/g, '/script');
     }
 })(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
