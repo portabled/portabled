@@ -898,7 +898,14 @@ var teapo;
             var a = document.createElement('a');
             a.href = url;
             a.setAttribute('download', filename);
-            a.click();
+            try  {
+                // safer save method, supposed to work with FireFox
+                var evt = document.createEvent("MouseEvents");
+                evt.initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+                a.dispatchEvent(evt);
+            } catch (e) {
+                a.click();
+            }
         };
 
         /**
@@ -2172,15 +2179,20 @@ var teapo;
             if (offset < html.length)
                 convertedOutput.push(html.slice(offset));
 
-            var combinedConvertedOutput = convertedOutput.join('');
-
             var filename = this.docState.fileEntry().name();
-            var blob = new Blob([combinedConvertedOutput], { type: 'application/octet-stream' });
+            var blob = new Blob([convertedOutput], { type: 'application/octet-stream' });
             var url = URL.createObjectURL(blob);
             var a = document.createElement('a');
             a.href = url;
             a.setAttribute('download', filename);
-            a.click();
+            try  {
+                // safer save method, supposed to work with FireFox
+                var evt = document.createEvent("MouseEvents");
+                evt.initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+                a.dispatchEvent(evt);
+            } catch (e) {
+                a.click();
+            }
         };
         return HtmlEditor;
     })(teapo.CompletionCodeMirrorEditor);
