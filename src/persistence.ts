@@ -655,13 +655,13 @@ module teapo {
    * Escape unsafe character sequences like a closing script tag.
    */
   function encodeForInnerHTML(content: string): string {
-    return content.replace(/<\/script/g, '<//script');
+    return content.replace(/\/script/g, '//script');
   }
 
   /**
    * Unescape character sequences wrapped with encodeForInnerHTML for safety.
    */
   function decodeFromInnerHTML(innerHTML: string): string {
-    return innerHTML.replace(/<\/\/script/g, '</'+'script');
+    return innerHTML.replace(/\/\/script/g, '/script');
   }
 }
