@@ -19,8 +19,7 @@ module teapo {
     private _shared: CodeMirrorEditor.SharedState = TypeScriptEditorType.createShared();
 
     /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
-    constructor(private _typescript = new TypeScriptService()) {
-      this._typescript.compilationSettings.outFileOption = '/out.ts';
+    constructor(private _typescript: TypeScriptService = null) {
     }
 
     static createShared() {
@@ -56,6 +55,10 @@ module teapo {
     }
 
     editDocument(docState: DocumentState): Editor {
+
+      if (!this._typescript)
+        this._initTypescript();
+
       var editor = new TypeScriptEditor(this._typescript, this._shared, docState);
 
       setTimeout(() => {
@@ -68,6 +71,11 @@ module teapo {
         1);
 
       return editor;
+    }
+
+    private _initTypescript() {
+      this._typescript = new TypeScriptService();
+      this._typescript.compilationSettings.outFileOption = '/out.ts';
     }
   }
 

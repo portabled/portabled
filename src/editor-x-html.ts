@@ -15,8 +15,7 @@ module teapo {
     storageForBuild: DocumentStorage = null;
 
     /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
-    constructor(private _typescript = new TypeScriptService()) {
-      this._typescript.compilationSettings.outFileOption = '/out.ts';
+    constructor() {
     }
 
     static createShared() {
@@ -126,7 +125,7 @@ module teapo {
         convertedOutput.push(html.slice(offset));
   
       var filename = this.docState.fileEntry().name();
-      var blob = new Blob([convertedOutput], {type: 'application/octet-stream'});
+      var blob = new Blob(convertedOutput, {type: 'application/octet-stream'});
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;

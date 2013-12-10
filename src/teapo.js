@@ -784,14 +784,20 @@ var teapo;
     * Escape unsafe character sequences like a closing script tag.
     */
     function encodeForInnerHTML(content) {
-        return content.replace(/\/script/g, '/script');
+        // matching script closing tag with *one* or more consequtive slashes
+        return content.replace(/<\/+script/g, function (match) {
+            return '</' + match.slice(1);
+        });
     }
 
     /**
     * Unescape character sequences wrapped with encodeForInnerHTML for safety.
     */
     function decodeFromInnerHTML(innerHTML) {
-        return innerHTML.replace(/\/\/script/g, '/script');
+        // matching script closing tag with *t*wo or more consequtive slashes
+        return innerHTML.replace(/<\/\/+script/g, function (match) {
+            return '<' + match.slice(2);
+        });
     }
 })(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
@@ -1659,10 +1665,9 @@ var teapo;
     var TypeScriptEditorType = (function () {
         /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
         function TypeScriptEditorType(_typescript) {
-            if (typeof _typescript === "undefined") { _typescript = new teapo.TypeScriptService(); }
+            if (typeof _typescript === "undefined") { _typescript = null; }
             this._typescript = _typescript;
             this._shared = TypeScriptEditorType.createShared();
-            this._typescript.compilationSettings.outFileOption = '/out.ts';
         }
         TypeScriptEditorType.createShared = function () {
             var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
@@ -1698,6 +1703,9 @@ var teapo;
 
         TypeScriptEditorType.prototype.editDocument = function (docState) {
             var _this = this;
+            if (!this._typescript)
+                this._initTypescript();
+
             var editor = new TypeScriptEditor(this._typescript, this._shared, docState);
 
             setTimeout(function () {
@@ -1709,6 +1717,11 @@ var teapo;
             }, 1);
 
             return editor;
+        };
+
+        TypeScriptEditorType.prototype._initTypescript = function () {
+            this._typescript = new teapo.TypeScriptService();
+            this._typescript.compilationSettings.outFileOption = '/out.ts';
         };
         return TypeScriptEditorType;
     })();
@@ -2107,12 +2120,9 @@ var teapo;
     */
     var HtmlEditorType = (function () {
         /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
-        function HtmlEditorType(_typescript) {
-            if (typeof _typescript === "undefined") { _typescript = new teapo.TypeScriptService(); }
-            this._typescript = _typescript;
+        function HtmlEditorType() {
             this._shared = HtmlEditorType.createShared();
             this.storageForBuild = null;
-            this._typescript.compilationSettings.outFileOption = '/out.ts';
         }
         HtmlEditorType.createShared = function () {
             var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
@@ -2218,7 +2228,7 @@ var teapo;
                 convertedOutput.push(html.slice(offset));
 
             var filename = this.docState.fileEntry().name();
-            var blob = new Blob([convertedOutput], { type: 'application/octet-stream' });
+            var blob = new Blob(convertedOutput, { type: 'application/octet-stream' });
             var url = URL.createObjectURL(blob);
             var a = document.createElement('a');
             a.href = url;
