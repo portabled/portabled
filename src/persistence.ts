@@ -286,9 +286,30 @@ module teapo {
 
       /** pull from DOM assuming webSQL state is clean of any tables */
       var loadInClearState = () => {
-        
-        for (var fullPath in pathElements) if (pathElements.hasOwnProperty(fullPath)) {
+
+        var fullPathList = Object.keys(pathElements);
+        var addedFileCount = 0;
+
+        var completedAdding = () => {
+          if (this._executeSql) {
+            this._executeSql(
+              'CREATE TABLE "*metadata" (name TEXT, value TEXT)',
+              [],
+              null, null);
   
+          }
+    
+          this.handler.documentStorageCreated(null, this);
+        };
+
+        var continueAdding = () => {
+          if (addedFileCount===fullPathList.length) {
+            completedAdding();
+            return;
+          }
+
+          
+          var fullPath = fullPathList[addedFileCount];
           var s = pathElements[fullPath];
   
           var docState = new RuntimeDocumentState(
@@ -299,17 +320,13 @@ module teapo {
             null);
 
           this._docByPath[fullPath] = docState;
-        }
 
-        if (this._executeSql) {
-          this._executeSql(
-            'CREATE TABLE "*metadata" (name TEXT, value TEXT)',
-            [],
-            null, null);
+          addedFileCount++;
 
-        }
-  
-        this.handler.documentStorageCreated(null, this);
+          setTimeout(continueAdding, 1);
+        };
+
+        continueAdding();
       };
 
       if (this._executeSql) {
@@ -342,9 +359,9 @@ module teapo {
 
         var files = tables.filter((tab) => tab.charAt(0) === '/' || tab.charAt(0)==='#');
         var completedFileCount = 0;
-        for (var i = 0; i < files.length; i++) {
 
-          var fullPath = files[i];
+        var continueAdding = () => {
+          var fullPath = files[completedFileCount];
           
           var s = pathElements[fullPath];
           if (s) {
@@ -366,18 +383,23 @@ module teapo {
               completedFileCount++;
           
               if (completedFileCount===files.length) {
+                // removing remaining HTML DOM
+                for (var k in pathElements) if (pathElements.hasOwnProperty(k)) {
+                  var s = pathElements[k];
+                  s.parentElement.removeChild(s);
+                }
+
                 this.handler.documentStorageCreated(null, this);
+              }
+              else {
+                setTimeout(continueAdding, 1);
               }
             });
           
           this._docByPath[fullPath] = docState;
-        }
+        };
 
-        // removing HTML DOM - easier to recreate than to merge
-        for (var k in pathElements) if (pathElements.hasOwnProperty(k)) {
-          var s = pathElements[k];
-          s.parentElement.removeChild(s);
-        }
+        continueAdding();
       });
     }
 
@@ -655,7 +677,7 @@ module teapo {
    * Escape unsafe character sequences like a closing script tag.
    */
   function encodeForInnerHTML(content: string): string {
-    return content.replace(/\/script/g, '//script');
+    return content.replace(/\/script/g, '/script');
   }
 
   /**

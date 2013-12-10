@@ -454,20 +454,36 @@ var teapo;
             var _this = this;
             /** pull from DOM assuming webSQL state is clean of any tables */
             var loadInClearState = function () {
-                for (var fullPath in pathElements)
-                    if (pathElements.hasOwnProperty(fullPath)) {
-                        var s = pathElements[fullPath];
+                var fullPathList = Object.keys(pathElements);
+                var addedFileCount = 0;
 
-                        var docState = new RuntimeDocumentState(fullPath, s, _this._executeSql, _this, null);
-
-                        _this._docByPath[fullPath] = docState;
+                var completedAdding = function () {
+                    if (_this._executeSql) {
+                        _this._executeSql('CREATE TABLE "*metadata" (name TEXT, value TEXT)', [], null, null);
                     }
 
-                if (_this._executeSql) {
-                    _this._executeSql('CREATE TABLE "*metadata" (name TEXT, value TEXT)', [], null, null);
-                }
+                    _this.handler.documentStorageCreated(null, _this);
+                };
 
-                _this.handler.documentStorageCreated(null, _this);
+                var continueAdding = function () {
+                    if (addedFileCount === fullPathList.length) {
+                        completedAdding();
+                        return;
+                    }
+
+                    var fullPath = fullPathList[addedFileCount];
+                    var s = pathElements[fullPath];
+
+                    var docState = new RuntimeDocumentState(fullPath, s, _this._executeSql, _this, null);
+
+                    _this._docByPath[fullPath] = docState;
+
+                    addedFileCount++;
+
+                    setTimeout(continueAdding, 1);
+                };
+
+                continueAdding();
             };
 
             if (this._executeSql) {
@@ -496,8 +512,9 @@ var teapo;
                     return tab.charAt(0) === '/' || tab.charAt(0) === '#';
                 });
                 var completedFileCount = 0;
-                for (var i = 0; i < files.length; i++) {
-                    var fullPath = files[i];
+
+                var continueAdding = function () {
+                    var fullPath = files[completedFileCount];
 
                     var s = pathElements[fullPath];
                     if (s) {
@@ -512,18 +529,22 @@ var teapo;
                         completedFileCount++;
 
                         if (completedFileCount === files.length) {
+                            for (var k in pathElements)
+                                if (pathElements.hasOwnProperty(k)) {
+                                    var s = pathElements[k];
+                                    s.parentElement.removeChild(s);
+                                }
+
                             _this.handler.documentStorageCreated(null, _this);
+                        } else {
+                            setTimeout(continueAdding, 1);
                         }
                     });
 
                     _this._docByPath[fullPath] = docState;
-                }
+                };
 
-                for (var k in pathElements)
-                    if (pathElements.hasOwnProperty(k)) {
-                        var s = pathElements[k];
-                        s.parentElement.removeChild(s);
-                    }
+                continueAdding();
             });
         };
 
@@ -763,7 +784,7 @@ var teapo;
     * Escape unsafe character sequences like a closing script tag.
     */
     function encodeForInnerHTML(content) {
-        return content.replace(/\/script/g, '//script');
+        return content.replace(/\/script/g, '/script');
     }
 
     /**
