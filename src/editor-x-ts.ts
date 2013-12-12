@@ -262,6 +262,12 @@ module teapo {
         return new CompletionItem(e, details, index, lead, tail);
       });
 
+      if (list.length===1
+         && list[0].text===lead
+         && !forced
+         && nh.tailLength==0)
+        list.length=0; // no need to complete stuff that's already done
+
       if (list.length) {
 
         if (!this._completionActive) {

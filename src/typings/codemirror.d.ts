@@ -246,7 +246,7 @@ declare class CodeMirror {
   off(eventName: 'cursorActivity', handler: (instance: CodeMirror) => void );
 
   /** This event is fired before the selection is moved. Its handler may modify the resulting selection head and anchor.
-  Handlers for this event have the same restriction as "beforeChange" handlers ï¿½ they should not do anything to directly update the state of the editor. */
+  Handlers for this event have the same restriction as "beforeChange" handlers ÃƒÂ¯Ã‚Â¿Ã‚Â½ they should not do anything to directly update the state of the editor. */
   on(eventName: 'beforeSelectionChange', handler: (instance: CodeMirror, selection: { head: CodeMirror.Pos; anchor: CodeMirror.Pos; }) => void );
   off(eventName: 'beforeSelectionChange', handler: (instance: CodeMirror, selection: { head: CodeMirror.Pos; anchor: CodeMirror.Pos; }) => void );
 
@@ -429,7 +429,7 @@ declare module CodeMirror {
         getSelection(): string;
 
         /** Replace the selection with the given string. By default, the new selection will span the inserted text.
-        The optional collapse argument can be used to change this ï¿½ passing "start" or "end" will collapse the selection to the start or end of the inserted text. */
+        The optional collapse argument can be used to change this ÃƒÂ¯Ã‚Â¿Ã‚Â½ passing "start" or "end" will collapse the selection to the start or end of the inserted text. */
         replaceSelection(replacement: string, collapse?: string)
 
         /** start is a an optional string indicating which end of the selection to return.
@@ -752,8 +752,8 @@ declare module CodeMirror {
         /** Like inclusiveLeft , but for the right side. */
         inclusiveRight?: boolean;
         
-        /** Atomic ranges act as a single unit when cursor movement is concerned ï¿½ i.e. it is impossible to place the cursor inside of them.
-        In atomic ranges, inclusiveLeft and inclusiveRight have a different meaning ï¿½ they will prevent the cursor from being placed
+        /** Atomic ranges act as a single unit when cursor movement is concerned ÃƒÂ¯Ã‚Â¿Ã‚Â½ i.e. it is impossible to place the cursor inside of them.
+        In atomic ranges, inclusiveLeft and inclusiveRight have a different meaning ÃƒÂ¯Ã‚Â¿Ã‚Â½ they will prevent the cursor from being placed
         respectively directly before and directly after the range. */
         atomic?: boolean;
         
