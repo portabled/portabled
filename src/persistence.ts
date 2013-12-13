@@ -389,7 +389,7 @@ module teapo {
                 // removing remaining HTML DOM
                 for (var k in pathElements) if (pathElements.hasOwnProperty(k)) {
                   var s = pathElements[k];
-                  s.parentElement.removeChild(s);
+                  removeScriptElement(s);
                 }
 
                 this.handler.documentStorageCreated(null, this);
@@ -563,7 +563,8 @@ module teapo {
       if (this._editor)
         this._editor.remove();
 
-      this._storeElement.parentElement.removeChild(this._storeElement);
+      removeScriptElement(this._storeElement);
+
       if (this._executeSql) {
         this._executeSql('DROP TABLE "'+this._fullPath+'"');
       }
@@ -607,6 +608,19 @@ module teapo {
     doc.body.insertBefore(s, doc.body.children[0]);
     return s;
   }
+
+function removeScriptElement(script: HTMLElement) {
+  var keepElement = script.tagName.toLowerCase()==='style' ||
+      (script.tagName.toLowerCase()==='script' &&
+        (!script.getAttribute('type') || script.getAttribute('type').indexOf('javascript')>0));
+
+  if (keepElement) {
+    script.removeAttribute('data-path');
+  }
+  else {
+    script.parentElement.removeChild(script);
+  }
+}
 
   function loadPropertiesFromDom(
     tableName: string,

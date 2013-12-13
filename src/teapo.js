@@ -1683,7 +1683,7 @@ var teapo;
                             for (var k in pathElements)
                                 if (pathElements.hasOwnProperty(k)) {
                                     var s = pathElements[k];
-                                    s.parentElement.removeChild(s);
+                                    removeScriptElement(s);
                                 }
 
                             _this.handler.documentStorageCreated(null, _this);
@@ -1834,7 +1834,8 @@ var teapo;
             if (this._editor)
                 this._editor.remove();
 
-            this._storeElement.parentElement.removeChild(this._storeElement);
+            removeScriptElement(this._storeElement);
+
             if (this._executeSql) {
                 this._executeSql('DROP TABLE "' + this._fullPath + '"');
             }
@@ -1877,6 +1878,16 @@ var teapo;
         s.setAttribute('type', 'text/data');
         doc.body.insertBefore(s, doc.body.children[0]);
         return s;
+    }
+
+    function removeScriptElement(script) {
+        var keepElement = script.tagName.toLowerCase() === 'style' || (script.tagName.toLowerCase() === 'script' && (!script.getAttribute('type') || script.getAttribute('type').indexOf('javascript') > 0));
+
+        if (keepElement) {
+            script.removeAttribute('data-path');
+        } else {
+            script.parentElement.removeChild(script);
+        }
     }
 
     function loadPropertiesFromDom(tableName, script, properties, executeSql) {
