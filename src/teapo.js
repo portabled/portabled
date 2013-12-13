@@ -347,7 +347,7 @@ var teapo;
                 // if user didn't ask for completion, only do it within an identifier
                 // or after dot
                 var nh = this.getNeighborhood();
-                if (nh.leadLength === 0 && nh.tailLength === 0 && nh.prefixChar !== '.')
+                if (nh.leadLength === 0 && nh.prefixChar !== '.')
                     return;
             }
 
@@ -862,6 +862,9 @@ var teapo;
                 var details = _this._typescript.service.getCompletionEntryDetails(fullPath, nh.offset, e.name);
                 return new CompletionItem(e, details, index, lead, tail);
             });
+
+            if (list.length === 1 && list[0].text === lead && !forced && nh.tailLength == 0)
+                list.length = 0; // no need to complete stuff that's already done
 
             if (list.length) {
                 if (!this._completionActive) {
@@ -1459,6 +1462,10 @@ var teapo;
     */
     function openStorage(handler, forceLoadFromDom) {
         if (typeof forceLoadFromDom === "undefined") { forceLoadFromDom = false; }
+        try  {
+            throw null;
+        } catch (e) {
+        }
         var storage = new RuntimeDocumentStorage(handler, forceLoadFromDom);
     }
     teapo.openStorage = openStorage;

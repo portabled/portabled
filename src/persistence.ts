@@ -15,6 +15,10 @@ module teapo {
    */
   export function openStorage(handler: DocumentStorageHandler, forceLoadFromDom = false): void {
 
+    try {
+      throw null;
+    }
+    catch (e) { }
     var storage = new RuntimeDocumentStorage(handler, forceLoadFromDom);
   }
 

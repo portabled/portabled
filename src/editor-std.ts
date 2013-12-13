@@ -371,8 +371,7 @@ module teapo {
         // if user didn't ask for completion, only do it within an identifier
         // or after dot
         var nh = this.getNeighborhood();
-        if (nh.leadLength===0 && nh.tailLength===0
-          && nh.prefixChar!=='.')
+        if (nh.leadLength===0 && nh.prefixChar!=='.')
           return;
       }
 
