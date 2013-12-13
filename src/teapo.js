@@ -1610,10 +1610,10 @@ var teapo;
 
                 var completedAdding = function () {
                     if (_this._executeSql) {
-                        _this._executeSql('CREATE TABLE "*metadata" (name TEXT, value TEXT)', [], null, null);
+                        _this._executeSql('CREATE TABLE "*metadata" (name TEXT, value TEXT)', [], function (tr, r) {
+                            _this.handler.documentStorageCreated(null, _this);
+                        }, null);
                     }
-
-                    _this.handler.documentStorageCreated(null, _this);
                 };
 
                 var continueAdding = function () {
@@ -1880,29 +1880,37 @@ var teapo;
     }
 
     function loadPropertiesFromDom(tableName, script, properties, executeSql) {
-        if (executeSql) {
-            executeSql('CREATE TABLE "' + tableName + '" ( name TEXT, value TEXT)');
+        function afterCreateTable(after) {
+            if (executeSql) {
+                executeSql('CREATE TABLE "' + tableName + '" ( name TEXT, value TEXT)', [], function (tr, r) {
+                    after();
+                }, null);
+            } else {
+                after();
+            }
         }
 
-        var insertSQL = 'INSERT INTO "' + tableName + '" (name, value) VALUES(?,?)';
+        afterCreateTable(function () {
+            var insertSQL = 'INSERT INTO "' + tableName + '" (name, value) VALUES(?,?)';
 
-        for (var i = 0; i < script.attributes.length; i++) {
-            var a = script.attributes.item(i);
+            for (var i = 0; i < script.attributes.length; i++) {
+                var a = script.attributes.item(i);
 
-            if (a.name === 'id' || a.name === 'data-path' || a.name === 'type')
-                continue;
+                if (a.name === 'id' || a.name === 'data-path' || a.name === 'type')
+                    continue;
 
-            properties[a.name] = a.value;
+                properties[a.name] = a.value;
 
+                if (executeSql)
+                    executeSql(insertSQL, [a.name, a.value]);
+            }
+
+            // restore HTML-safe conversions
+            var contentStr = decodeFromInnerHTML(script.innerHTML);
+            properties[''] = contentStr;
             if (executeSql)
-                executeSql(insertSQL, [a.name, a.value]);
-        }
-
-        // restore HTML-safe conversions
-        var contentStr = decodeFromInnerHTML(script.innerHTML);
-        properties[''] = contentStr;
-        if (executeSql)
-            executeSql(insertSQL, ['', contentStr]);
+                executeSql(insertSQL, ['', contentStr]);
+        });
     }
 
     function loadPropertiesFromWebSql(tableName, script, properties, executeSql, completed) {

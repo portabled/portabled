@@ -299,11 +299,10 @@ module teapo {
             this._executeSql(
               'CREATE TABLE "*metadata" (name TEXT, value TEXT)',
               [],
-              null, null);
-  
+              (tr,r) => {
+                this.handler.documentStorageCreated(null, this);
+              }, null);
           }
-    
-          this.handler.documentStorageCreated(null, this);
         };
 
         var continueAdding = () => {
@@ -615,30 +614,41 @@ module teapo {
     properties: any,
     executeSql: ExecuteSqlDelegate) {
 
-    if (executeSql) {
-      executeSql(
-        'CREATE TABLE "'+tableName+'" ( name TEXT, value TEXT)');
+    function afterCreateTable(after: () => void) {
+      if (executeSql) {
+        executeSql(
+          'CREATE TABLE "'+tableName+'" ( name TEXT, value TEXT)', [],
+          (tr,r) => {
+            after();
+          },
+          null);
+      }
+      else {
+        after();
+      }
     }
 
-    var insertSQL = 'INSERT INTO "'+tableName+'" (name, value) VALUES(?,?)';
-
-    for (var i = 0; i < script.attributes.length; i++) {
-      var a = script.attributes.item(i);
-
-      if (a.name==='id' || a.name==='data-path' || a.name==='type')
-        continue;
-
-      properties[a.name] = a.value;
-
+    afterCreateTable(() => {
+      var insertSQL = 'INSERT INTO "'+tableName+'" (name, value) VALUES(?,?)';
+  
+      for (var i = 0; i < script.attributes.length; i++) {
+        var a = script.attributes.item(i);
+  
+        if (a.name==='id' || a.name==='data-path' || a.name==='type')
+          continue;
+  
+        properties[a.name] = a.value;
+  
+        if (executeSql)
+          executeSql(insertSQL, [a.name, a.value]);
+      }
+  
+      // restore HTML-safe conversions
+      var contentStr = decodeFromInnerHTML(script.innerHTML);
+      properties[''] = contentStr;
       if (executeSql)
-        executeSql(insertSQL, [a.name, a.value]);
-    }
-
-    // restore HTML-safe conversions
-    var contentStr = decodeFromInnerHTML(script.innerHTML);
-    properties[''] = contentStr;
-    if (executeSql)
-      executeSql(insertSQL, ['', contentStr]);
+        executeSql(insertSQL, ['', contentStr]);
+    });
   }
 
   function loadPropertiesFromWebSql(
