@@ -28,7 +28,7 @@ var teapo;
                 matchTags: true,
                 showTrailingSpace: true,
                 autoCloseTags: true,
-                highlightSelectionMatches: { showToken: /\w/ },
+                //highlightSelectionMatches: {showToken: /\w/},
                 styleActiveLine: true,
                 tabSize: 2,
                 extraKeys: { "Tab": "indentMore", "Shift-Tab": "indentLess" }
