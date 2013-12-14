@@ -610,9 +610,22 @@ module teapo {
   }
 
 function removeScriptElement(script: HTMLElement) {
-  var keepElement = script.tagName.toLowerCase()==='style' ||
-      (script.tagName.toLowerCase()==='script' &&
-        (!script.getAttribute('type') || script.getAttribute('type').indexOf('javascript')>0));
+  var keepElement: boolean;
+  if (script.tagName.toLowerCase()==='style') {
+    keepElement = true;
+  }
+  else if (script.tagName.toLowerCase()==='script') {
+    var type = script.getAttribute('type');
+    if (!type || type.indexOf('javascript')>0) {
+      keepElement = true;
+    }
+    else {
+      if (script.id==='page-template'
+         || script.id==='folder-template'
+         || script.id==='file-template')
+        keepElement = true;
+    }
+  }
 
   if (keepElement) {
     script.removeAttribute('data-path');
