@@ -104,6 +104,8 @@ module teapo {
      */
     documentStorageCreated(error: Error, storage: DocumentStorage);
 
+    setStatus(text: string);
+
     /**
      * Returns EditorType object handling editor behavior for a given file.
      */
@@ -288,6 +290,14 @@ module teapo {
     private _loadInitialStateFromDom(
       pathElements: { [fullPath: string]: HTMLScriptElement; }) {
 
+      this.handler.setStatus('Loading files from HTML...');
+      setTimeout(() => this._loadInitialStateFromDomCore(pathElements), 1);
+
+    }
+
+    private _loadInitialStateFromDomCore(
+      pathElements: { [fullPath: string]: HTMLScriptElement; }) {
+
       /** pull from DOM assuming webSQL state is clean of any tables */
       var loadInClearState = () => {
 
@@ -302,6 +312,9 @@ module teapo {
               (tr,r) => {
                 this.handler.documentStorageCreated(null, this);
               }, null);
+          }
+          else {
+            this.handler.documentStorageCreated(null, this);
           }
         };
 
@@ -325,6 +338,7 @@ module teapo {
           this._docByPath[fullPath] = docState;
 
           addedFileCount++;
+          this.handler.setStatus('Loading files from HTML: '+addedFileCount+' of '+fullPathList.length+'...');
 
           setTimeout(continueAdding, 1);
         };
@@ -357,6 +371,14 @@ module teapo {
     private _loadInitialStateFromWebSql(
       pathElements: { [fullPath: string]: HTMLScriptElement; }) {
 
+      this.handler.setStatus('Loading files from temporary storage...');
+
+      setTimeout(() => this._loadInitialStateFromWebSqlCore(pathElements), 1);
+    }
+
+    private _loadInitialStateFromWebSqlCore(
+      pathElements: { [fullPath: string]: HTMLScriptElement; }) {
+
       // retrieving data from WebSQL and creating documents
       this._loadTableListFromWebsql((tables) => {
 
@@ -384,6 +406,7 @@ module teapo {
             () => {
           
               completedFileCount++;
+              this.handler.setStatus('Loading files from temporary storage: '+completedFileCount+' of '+files.length+'...');
           
               if (completedFileCount===files.length) {
                 // removing remaining HTML DOM
@@ -413,7 +436,7 @@ module teapo {
       for (var i = 0; i < document.scripts.length; i++) {
         var s = <HTMLScriptElement>document.scripts[i];
         var path = s.getAttribute('data-path');
-        if (path) {
+        if (typeof path==='string' && path.length>0) {
           if (path.charAt(0)==='/' || path.charAt(0)==='#') {
             pathElements[path] = s;
           }
@@ -426,7 +449,7 @@ module teapo {
       for (var i = 0; i < document.styleSheets.length; i++) {
         var sty = <HTMLStyleElement>document.styleSheets.item(i).ownerNode;
         var path = sty.getAttribute('data-path');
-        if (path) {
+        if (typeof path==='string' && path.length>0) {
           if (path.charAt(0)==='/' || path.charAt(0)==='#') {
             pathElements[path] = <any>sty;
           }

@@ -14,6 +14,9 @@ module teapo {
     private _doc: CodeMirror.Doc = null;
     private _invokeonchange: () => void;
     private _text: string = null;
+    private _positionOnOpen = false;
+
+    static positionSaveDelay = 400;
 
     constructor(
       private _shared: CodeMirrorEditor.SharedState,
@@ -48,15 +51,38 @@ module teapo {
 
       // this may actually create CodeMirror instance
       var editor = this.editor();
+      var doc = this.doc();
 
-      editor.swapDoc(this.doc());
+      editor.swapDoc(doc);
 
       // invoking overridable logic
       this.handleOpen();
 
       var element = this._shared.element;
-      if (element && !element.parentElement)
-        setTimeout(() => editor.refresh(), 1);
+      if (element && !element.parentElement) {
+        setTimeout(() => {
+          editor.refresh();
+          editor.focus();
+
+          if (this._positionOnOpen) {
+
+            this._positionOnOpen = false;
+            var posStr = this.docState.getProperty('pos');
+            if (typeof posStr==='string' && posStr) {
+              try {
+                var pos = JSON.parse(posStr);
+                this._doc.setCursor(pos);
+                editor.scrollIntoView(doc.getCursor());
+              }
+              catch (parsePosError) { }
+            }
+          }
+
+        }, 1);
+      }
+      else {
+        setTimeout(() => editor.focus(), 1);
+      }
       return element;
     }
 
@@ -256,6 +282,8 @@ module teapo {
         options.mode ? new CodeMirror.Doc('', options.mode) :
         new CodeMirror.Doc('');
 
+      this._positionOnOpen = true;
+
       // invoke overridable handleLoad()
       this.handleLoad();
 
@@ -274,6 +302,7 @@ module teapo {
           this.handleChange(change);
         });
     }
+
   }
 
   export module CodeMirrorEditor {
@@ -300,6 +329,8 @@ module teapo {
     private _forcedCompletion = false;
     private _acceptSingleCompletion = false;
     private static _noSingleAutoCompletion = { completeSingle: false };
+    private _positionSaveTimeout = 0;
+    private _positionSaveClosure = () => this._performPositionSave();
 
     constructor(
       shared: CodeMirrorEditor.SharedState,
@@ -389,6 +420,22 @@ module teapo {
 //      }
 
       this.handleCursorActivity();
+
+      if (this._positionSaveTimeout)
+        clearTimeout(this._positionSaveTimeout);
+      this._positionSaveTimeout = setTimeout(this._positionSaveClosure, CodeMirrorEditor.positionSaveDelay);
+    }
+
+    private _performPositionSave() {
+      if (this._positionSaveTimeout) {
+        clearTimeout(this._positionSaveTimeout);
+        this._positionSaveTimeout = 0;
+      }
+
+      // save current position
+      var pos = this.editor().getDoc().getCursor();
+      var posStr = JSON.stringify(pos);
+      this.docState.setProperty('pos', posStr);
     }
 
     private static injectCompletionShortcuts(shared: CodeMirrorEditor.SharedState) {

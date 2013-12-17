@@ -92,6 +92,7 @@ module teapo {
 
     static updateDiagnosticsDelay = 2000;
     static maxCompletions = 20;
+    static symbolUpdateDelay = 3000;
 
     private _syntacticDiagnostics: TypeScript.Diagnostic[] = [];
     private _semanticDiagnostics: TypeScript.Diagnostic[] = [];
@@ -99,6 +100,9 @@ module teapo {
     private _updateDiagnosticsClosure = () => this._updateDiagnostics();
     private _teapoErrorsGutterElement: HTMLElement = null;
     private _docErrorMarks: CodeMirror.TextMarker[] = [];
+    private _docSymbolMarks: CodeMirror.TextMarker[] = [];
+    private _updateSymbolMarksTimeout = 0;
+    private _updateSymbolMarksClosure = () => this._updateSymbolMarks();
 
     private _completionActive = false;
 
@@ -179,6 +183,22 @@ module teapo {
         { completeSingle: acceptSingle });
     }
 
+    handleCursorActivity() {
+      if (this._docSymbolMarks.length) {
+        var doc = this.doc();
+        for (var i = 0; i < this._docSymbolMarks.length; i++) {
+          this._docSymbolMarks[i].clear();
+        }
+        this._docSymbolMarks = [];
+      }
+
+      if (this._updateSymbolMarksTimeout)
+        clearTimeout(this._updateDiagnosticsTimeout);
+
+      this._updateDiagnosticsTimeout = setTimeout(
+        this._updateSymbolMarksClosure,
+        TypeScriptEditor.symbolUpdateDelay);
+    }
 
     debug() {
       var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
@@ -309,7 +329,11 @@ module teapo {
       this._updateDiagnosticsTimeout = 0;
 
       this._syntacticDiagnostics = this._typescript.service.getSyntacticDiagnostics(this.docState.fullPath());
-      this._semanticDiagnostics = this._typescript.service.getSemanticDiagnostics(this.docState.fullPath());
+
+      setTimeout(()=> {
+        if (this._updateDiagnosticsTimeout) return;
+        this._semanticDiagnostics = this._typescript.service.getSemanticDiagnostics(this.docState.fullPath());
+      }, 10);
 
       this._updateGutter();
       this._updateDocDiagnostics();
@@ -332,6 +356,39 @@ module teapo {
         for (var i = 0; i < this._semanticDiagnostics.length; i++) {
           this._markDocError(this._semanticDiagnostics[i], 'teapo-semantic-error', doc);
         }
+      }
+    }
+
+    private _updateSymbolMarks() {
+      this._updateSymbolMarksTimeout = 0;
+
+      var doc = this.doc();
+      var cursorPos = doc.getCursor();
+      var cursorOffset = doc.indexFromPos(cursorPos);
+
+      var fullPath = this.docState.fullPath();
+      var symbols = this._typescript.service.getOccurrencesAtPosition(
+        fullPath,
+        cursorOffset);
+
+      if (!symbols) return;
+      for (var i=0; i<symbols.length; i++) {
+        var s = symbols[i];
+        if (fullPath!==s.fileName) continue;
+
+        var from = doc.posFromIndex(s.minChar);
+        var to = doc.posFromIndex(s.limChar);
+
+        var cls = 'teapo-symbol';
+        if (s.minChar<=cursorOffset && s.limChar>=cursorOffset)
+          cls += ' teapo-symbol-cursor';
+
+        var m = doc.markText(
+        from, to,
+        {
+          className: 'teapo-symbol'
+        });
+        this._docSymbolMarks.push(m);
       }
     }
 

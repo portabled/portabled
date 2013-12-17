@@ -125,20 +125,9 @@ module teapo {
         convertedOutput.push(html.slice(offset));
   
       var filename = this.docState.fileEntry().name();
-      var blob = new Blob(convertedOutput, {type: 'application/octet-stream'});
+      var blob = new Blob(convertedOutput, {type: 'text/html'});
       var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.setAttribute('download', filename);
-      try {
-        // safer save method, supposed to work with FireFox
-        var evt = document.createEvent("MouseEvents");
-        (<any>evt).initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-        a.dispatchEvent(evt);
-      }
-      catch (e) {
-        a.click();
-      }
+      window.open(url, '_blank'+Date.now());
 
     }
   }

@@ -3,16 +3,34 @@
   <div data-bind='template: { name: "file-template", foreach: fileList.files }'></div>
 </div>
 
-<div class=teapo-navigator-toolbar>
-  <button title='add new file' data-bind='click: newFileClick'> + </button>
-  <button data-bind='attr: { title: "remove "+(fileList.selectedFile() ? fileList.selectedFile().name() : " selected document") }, click: deleteSelectedFile'> &ndash; </button>
 
-  <button data-bind='click: saveHtml'>
-    <div class=teapo-small-button>html</div>
-  </button>
-  <button data-bind='click: saveZip'>
-    <div class=teapo-small-button>zip</div>
-  </button>
+<div class=teapo-navigator-expandable-toolbar>
+  <div class=teapo-navigator-expand-area
+     data-bind='visible: toolbarExpanded'>
+
+    <button data-bind='attr: { title: "remove "+(fileList.selectedFile() ? fileList.selectedFile().name() : " selected document") }, click: deleteSelectedFile'
+      class=teapo-action-button>
+      delete
+    </button>
+    <br>
+
+    <button data-bind='click: saveHtml' class=teapo-action-button>
+      html
+    </button>
+    <br>
+
+    <button data-bind='click: saveZip' class=teapo-action-button>
+      zip
+    </button>
+
+    <hr>
+    <button class=teapo-action-button>Compile</button>
+  </div>
+
+  <button title='add new file' data-bind='click: newFileClick' class=teapo-new-file-button> + </button>
+
+  <button title='show actions' data-bind='click: toggleToolbar' class=teapo-show-actions-button> &nbsp; &gt;&gt; &nbsp; </button>
+
 </div>
 
 <div data-bind='attach: attachToHost($element)' class=teapo-content>

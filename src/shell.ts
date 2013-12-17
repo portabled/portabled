@@ -20,6 +20,8 @@ module teapo {
     saveDelay = 1500;
     fileList: FileList = null;
 
+    toolbarExpanded = ko.observable(false);
+
     private _selectedDocState: DocumentState = null;
     private _editorElement: HTMLElement = null;
     private _editorHost: HTMLElement = null;
@@ -39,11 +41,18 @@ module teapo {
       }
     }
 
+    toggleToolbar() {
+      this.toolbarExpanded(this.toolbarExpanded() ? false : true);
+    }
+
     /**
      * Prompts user for a name, creates a new file and opens it in the editor.
      * Exposed as a button bound using Knockout.
      */
     newFileClick() {
+
+      this.toolbarExpanded(false);
+
       var fileName = prompt('New file');
       if (!fileName)
         return;
@@ -59,6 +68,9 @@ module teapo {
      * Exposed as a button bound using Knockout.
      */
     deleteSelectedFile() {
+
+      this.toolbarExpanded(false);
+
       var selectedFileEntry = this.fileList.selectedFile();
       if (!selectedFileEntry) return;
 
@@ -88,6 +100,9 @@ module teapo {
      * Exposed as a button bound using Knockout.
      */
     saveHtml() {
+
+      this.toolbarExpanded(false);
+
       var filename = this.saveFileName();
       var blob = new Blob([document.documentElement.outerHTML], {type: 'application/octet-stream'});
       var url = URL.createObjectURL(blob);
@@ -111,6 +126,9 @@ module teapo {
      * Exposed as a button bound using Knockout.
      */
     saveZip() {
+
+      this.toolbarExpanded(false);
+
       zip.useWebWorkers = false;
       var filename = this.saveFileName();
       if (filename.length>'.html'.length && filename.slice(filename.length-'.html'.length).toLowerCase()==='.html')

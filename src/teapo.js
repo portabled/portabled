@@ -19,6 +19,7 @@ var teapo;
             this.docState = docState;
             this._doc = null;
             this._text = null;
+            this._positionOnOpen = false;
         }
         CodeMirrorEditor.standardEditorConfiguration = function () {
             return {
@@ -39,6 +40,7 @@ var teapo;
         * Invoked when a file is selected in the file list/tree and brought open.
         */
         CodeMirrorEditor.prototype.open = function (onchange) {
+            var _this = this;
             this._shared.editor = this;
 
             // storing passed function
@@ -47,17 +49,37 @@ var teapo;
 
             // this may actually create CodeMirror instance
             var editor = this.editor();
+            var doc = this.doc();
 
-            editor.swapDoc(this.doc());
+            editor.swapDoc(doc);
 
             // invoking overridable logic
             this.handleOpen();
 
             var element = this._shared.element;
-            if (element && !element.parentElement)
+            if (element && !element.parentElement) {
                 setTimeout(function () {
-                    return editor.refresh();
+                    editor.refresh();
+                    editor.focus();
+
+                    if (_this._positionOnOpen) {
+                        _this._positionOnOpen = false;
+                        var posStr = _this.docState.getProperty('pos');
+                        if (typeof posStr === 'string' && posStr) {
+                            try  {
+                                var pos = JSON.parse(posStr);
+                                _this._doc.setCursor(pos);
+                                editor.scrollIntoView(doc.getCursor());
+                            } catch (parsePosError) {
+                            }
+                        }
+                    }
                 }, 1);
+            } else {
+                setTimeout(function () {
+                    return editor.focus();
+                }, 1);
+            }
             return element;
         };
 
@@ -252,6 +274,8 @@ var teapo;
             var options = this._shared.options || CodeMirrorEditor.standardEditorConfiguration();
             this._doc = options.mode ? new CodeMirror.Doc('', options.mode) : new CodeMirror.Doc('');
 
+            this._positionOnOpen = true;
+
             // invoke overridable handleLoad()
             this.handleLoad();
 
@@ -266,6 +290,7 @@ var teapo;
                 _this.handleChange(change);
             });
         };
+        CodeMirrorEditor.positionSaveDelay = 400;
         return CodeMirrorEditor;
     })();
     teapo.CodeMirrorEditor = CodeMirrorEditor;
@@ -281,6 +306,10 @@ var teapo;
             };
             this._forcedCompletion = false;
             this._acceptSingleCompletion = false;
+            this._positionSaveTimeout = 0;
+            this._positionSaveClosure = function () {
+                return _this._performPositionSave();
+            };
         }
         /**
         * Subscribing to cursor activity.
@@ -364,6 +393,22 @@ var teapo;
             //        this._completionTimeout = 0;
             //      }
             this.handleCursorActivity();
+
+            if (this._positionSaveTimeout)
+                clearTimeout(this._positionSaveTimeout);
+            this._positionSaveTimeout = setTimeout(this._positionSaveClosure, CodeMirrorEditor.positionSaveDelay);
+        };
+
+        CompletionCodeMirrorEditor.prototype._performPositionSave = function () {
+            if (this._positionSaveTimeout) {
+                clearTimeout(this._positionSaveTimeout);
+                this._positionSaveTimeout = 0;
+            }
+
+            // save current position
+            var pos = this.editor().getDoc().getCursor();
+            var posStr = JSON.stringify(pos);
+            this.docState.setProperty('pos', posStr);
         };
 
         CompletionCodeMirrorEditor.injectCompletionShortcuts = function (shared) {
@@ -590,19 +635,9 @@ var teapo;
                 convertedOutput.push(html.slice(offset));
 
             var filename = this.docState.fileEntry().name();
-            var blob = new Blob(convertedOutput, { type: 'application/octet-stream' });
+            var blob = new Blob(convertedOutput, { type: 'text/html' });
             var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.setAttribute('download', filename);
-            try  {
-                // safer save method, supposed to work with FireFox
-                var evt = document.createEvent("MouseEvents");
-                evt.initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-                a.dispatchEvent(evt);
-            } catch (e) {
-                a.click();
-            }
+            window.open(url, '_blank' + Date.now());
         };
         return HtmlEditor;
     })(teapo.CompletionCodeMirrorEditor);
@@ -712,6 +747,11 @@ var teapo;
             };
             this._teapoErrorsGutterElement = null;
             this._docErrorMarks = [];
+            this._docSymbolMarks = [];
+            this._updateSymbolMarksTimeout = 0;
+            this._updateSymbolMarksClosure = function () {
+                return _this._updateSymbolMarks();
+            };
             this._completionActive = false;
         }
         /**
@@ -778,6 +818,21 @@ var teapo;
             CodeMirror.showHint(this.editor(), function () {
                 return _this._continueCompletion(forced);
             }, { completeSingle: acceptSingle });
+        };
+
+        TypeScriptEditor.prototype.handleCursorActivity = function () {
+            if (this._docSymbolMarks.length) {
+                var doc = this.doc();
+                for (var i = 0; i < this._docSymbolMarks.length; i++) {
+                    this._docSymbolMarks[i].clear();
+                }
+                this._docSymbolMarks = [];
+            }
+
+            if (this._updateSymbolMarksTimeout)
+                clearTimeout(this._updateDiagnosticsTimeout);
+
+            this._updateDiagnosticsTimeout = setTimeout(this._updateSymbolMarksClosure, TypeScriptEditor.symbolUpdateDelay);
         };
 
         TypeScriptEditor.prototype.debug = function () {
@@ -899,10 +954,16 @@ var teapo;
         };
 
         TypeScriptEditor.prototype._updateDiagnostics = function () {
+            var _this = this;
             this._updateDiagnosticsTimeout = 0;
 
             this._syntacticDiagnostics = this._typescript.service.getSyntacticDiagnostics(this.docState.fullPath());
-            this._semanticDiagnostics = this._typescript.service.getSemanticDiagnostics(this.docState.fullPath());
+
+            setTimeout(function () {
+                if (_this._updateDiagnosticsTimeout)
+                    return;
+                _this._semanticDiagnostics = _this._typescript.service.getSemanticDiagnostics(_this.docState.fullPath());
+            }, 10);
 
             this._updateGutter();
             this._updateDocDiagnostics();
@@ -925,6 +986,37 @@ var teapo;
                 for (var i = 0; i < this._semanticDiagnostics.length; i++) {
                     this._markDocError(this._semanticDiagnostics[i], 'teapo-semantic-error', doc);
                 }
+            }
+        };
+
+        TypeScriptEditor.prototype._updateSymbolMarks = function () {
+            this._updateSymbolMarksTimeout = 0;
+
+            var doc = this.doc();
+            var cursorPos = doc.getCursor();
+            var cursorOffset = doc.indexFromPos(cursorPos);
+
+            var fullPath = this.docState.fullPath();
+            var symbols = this._typescript.service.getOccurrencesAtPosition(fullPath, cursorOffset);
+
+            if (!symbols)
+                return;
+            for (var i = 0; i < symbols.length; i++) {
+                var s = symbols[i];
+                if (fullPath !== s.fileName)
+                    continue;
+
+                var from = doc.posFromIndex(s.minChar);
+                var to = doc.posFromIndex(s.limChar);
+
+                var cls = 'teapo-symbol';
+                if (s.minChar <= cursorOffset && s.limChar >= cursorOffset)
+                    cls += ' teapo-symbol-cursor';
+
+                var m = doc.markText(from, to, {
+                    className: 'teapo-symbol'
+                });
+                this._docSymbolMarks.push(m);
             }
         };
 
@@ -1031,6 +1123,7 @@ var teapo;
         };
         TypeScriptEditor.updateDiagnosticsDelay = 2000;
         TypeScriptEditor.maxCompletions = 20;
+        TypeScriptEditor.symbolUpdateDelay = 3000;
         return TypeScriptEditor;
     })(teapo.CompletionCodeMirrorEditor);
 
@@ -1603,6 +1696,14 @@ var teapo;
 
         RuntimeDocumentStorage.prototype._loadInitialStateFromDom = function (pathElements) {
             var _this = this;
+            this.handler.setStatus('Loading files from HTML...');
+            setTimeout(function () {
+                return _this._loadInitialStateFromDomCore(pathElements);
+            }, 1);
+        };
+
+        RuntimeDocumentStorage.prototype._loadInitialStateFromDomCore = function (pathElements) {
+            var _this = this;
             /** pull from DOM assuming webSQL state is clean of any tables */
             var loadInClearState = function () {
                 var fullPathList = Object.keys(pathElements);
@@ -1613,6 +1714,8 @@ var teapo;
                         _this._executeSql('CREATE TABLE "*metadata" (name TEXT, value TEXT)', [], function (tr, r) {
                             _this.handler.documentStorageCreated(null, _this);
                         }, null);
+                    } else {
+                        _this.handler.documentStorageCreated(null, _this);
                     }
                 };
 
@@ -1630,6 +1733,7 @@ var teapo;
                     _this._docByPath[fullPath] = docState;
 
                     addedFileCount++;
+                    _this.handler.setStatus('Loading files from HTML: ' + addedFileCount + ' of ' + fullPathList.length + '...');
 
                     setTimeout(continueAdding, 1);
                 };
@@ -1657,6 +1761,15 @@ var teapo;
 
         RuntimeDocumentStorage.prototype._loadInitialStateFromWebSql = function (pathElements) {
             var _this = this;
+            this.handler.setStatus('Loading files from temporary storage...');
+
+            setTimeout(function () {
+                return _this._loadInitialStateFromWebSqlCore(pathElements);
+            }, 1);
+        };
+
+        RuntimeDocumentStorage.prototype._loadInitialStateFromWebSqlCore = function (pathElements) {
+            var _this = this;
             // retrieving data from WebSQL and creating documents
             this._loadTableListFromWebsql(function (tables) {
                 var files = tables.filter(function (tab) {
@@ -1678,6 +1791,7 @@ var teapo;
 
                     var docState = new RuntimeDocumentState(fullPath, s, _this._executeSql, _this, function () {
                         completedFileCount++;
+                        _this.handler.setStatus('Loading files from temporary storage: ' + completedFileCount + ' of ' + files.length + '...');
 
                         if (completedFileCount === files.length) {
                             for (var k in pathElements)
@@ -1705,7 +1819,7 @@ var teapo;
             for (var i = 0; i < document.scripts.length; i++) {
                 var s = document.scripts[i];
                 var path = s.getAttribute('data-path');
-                if (path) {
+                if (typeof path === 'string' && path.length > 0) {
                     if (path.charAt(0) === '/' || path.charAt(0) === '#') {
                         pathElements[path] = s;
                     }
@@ -1717,7 +1831,7 @@ var teapo;
             for (var i = 0; i < document.styleSheets.length; i++) {
                 var sty = document.styleSheets.item(i).ownerNode;
                 var path = sty.getAttribute('data-path');
-                if (path) {
+                if (typeof path === 'string' && path.length > 0) {
                     if (path.charAt(0) === '/' || path.charAt(0) === '#') {
                         pathElements[path] = sty;
                     }
@@ -1881,7 +1995,18 @@ var teapo;
     }
 
     function removeScriptElement(script) {
-        var keepElement = script.tagName.toLowerCase() === 'style' || (script.tagName.toLowerCase() === 'script' && (!script.getAttribute('type') || script.getAttribute('type').indexOf('javascript') > 0));
+        var keepElement;
+        if (script.tagName.toLowerCase() === 'style') {
+            keepElement = true;
+        } else if (script.tagName.toLowerCase() === 'script') {
+            var type = script.getAttribute('type');
+            if (!type || type.indexOf('javascript') > 0) {
+                keepElement = true;
+            } else {
+                if (script.id === 'page-template' || script.id === 'folder-template' || script.id === 'file-template')
+                    keepElement = true;
+            }
+        }
 
         if (keepElement) {
             script.removeAttribute('data-path');
@@ -1991,6 +2116,7 @@ var teapo;
             this._storage = _storage;
             this.saveDelay = 1500;
             this.fileList = null;
+            this.toolbarExpanded = ko.observable(false);
             this._selectedDocState = null;
             this._editorElement = null;
             this._editorHost = null;
@@ -2011,11 +2137,17 @@ var teapo;
                 docState.editor();
             }
         }
+        ApplicationShell.prototype.toggleToolbar = function () {
+            this.toolbarExpanded(this.toolbarExpanded() ? false : true);
+        };
+
         /**
         * Prompts user for a name, creates a new file and opens it in the editor.
         * Exposed as a button bound using Knockout.
         */
         ApplicationShell.prototype.newFileClick = function () {
+            this.toolbarExpanded(false);
+
             var fileName = prompt('New file');
             if (!fileName)
                 return;
@@ -2031,6 +2163,8 @@ var teapo;
         * Exposed as a button bound using Knockout.
         */
         ApplicationShell.prototype.deleteSelectedFile = function () {
+            this.toolbarExpanded(false);
+
             var selectedFileEntry = this.fileList.selectedFile();
             if (!selectedFileEntry)
                 return;
@@ -2061,6 +2195,8 @@ var teapo;
         * Exposed as a button bound using Knockout.
         */
         ApplicationShell.prototype.saveHtml = function () {
+            this.toolbarExpanded(false);
+
             var filename = this.saveFileName();
             var blob = new Blob([document.documentElement.outerHTML], { type: 'application/octet-stream' });
             var url = URL.createObjectURL(blob);
@@ -2084,6 +2220,8 @@ var teapo;
         */
         ApplicationShell.prototype.saveZip = function () {
             var _this = this;
+            this.toolbarExpanded(false);
+
             zip.useWebWorkers = false;
             var filename = this.saveFileName();
             if (filename.length > '.html'.length && filename.slice(filename.length - '.html'.length).toLowerCase() === '.html')
@@ -2210,55 +2348,68 @@ var teapo;
 /// <reference path='editor-x-html.ts' />
 /// <reference path='editor-x-js.ts' />
 /// <reference path='editor-x-css.ts' />
-function start() {
-    var storage = null;
-    var viewModel = null;
+(function () {
+    var loadingDiv = document.createElement('div');
+    loadingDiv.className = 'teapo-boot';
+    loadingDiv.textContent = loadingDiv.innerText = 'Loading...';
+
     var pageElement = null;
 
     for (var i = 0; i < document.body.childNodes.length; i++) {
         var e = document.body.childNodes.item(i);
-        if (e && e.tagName && e.tagName.toLowerCase() !== 'script') {
-            if (e.className && e.className.indexOf('teapo-page') >= 0) {
-                pageElement = e;
-                continue;
-            }
-
-            document.body.removeChild(e);
-            i--;
+        if (e && e.tagName && e.tagName.toLowerCase() && e.className && e.className.indexOf('teapo-page') >= 0) {
+            pageElement = e;
+            pageElement.appendChild(loadingDiv);
+            break;
         }
     }
 
-    var loadingDiv = document.createElement('div');
-    loadingDiv.className = 'teapo-boot';
-    loadingDiv.textContent = loadingDiv.innerText = 'Loading...';
-    pageElement.appendChild(loadingDiv);
+    function start() {
+        loadingDiv.textContent = 'Loading storage...';
 
-    var storageLoaded = function () {
-        teapo.registerKnockoutBindings(ko);
-        teapo.EditorType.Html.storageForBuild = storage;
+        var storage = null;
+        var viewModel = null;
 
-        viewModel = new teapo.ApplicationShell(storage);
+        pageElement.appendChild(loadingDiv);
 
-        ko.renderTemplate('page-template', viewModel, null, pageElement);
-    };
+        function storageLoaded() {
+            loadingDiv.textContent += ' rendering...';
 
-    var forceLoadFromDom = window.location.hash && window.location.hash.toLowerCase() === '#resettodom';
-    teapo.openStorage({
-        documentStorageCreated: function (error, s) {
-            storage = s;
-            storageLoaded();
-        },
-        getType: function (fullPath) {
-            return teapo.EditorType.getType(fullPath);
-        },
-        getFileEntry: function (fullPath) {
-            return viewModel.fileList.getFileEntry(fullPath);
+            setTimeout(function () {
+                teapo.registerKnockoutBindings(ko);
+                teapo.EditorType.Html.storageForBuild = storage;
+
+                viewModel = new teapo.ApplicationShell(storage);
+
+                ko.renderTemplate('page-template', viewModel, null, pageElement);
+            }, 1);
         }
-    }, forceLoadFromDom);
-}
 
-// TODO: remove this ridiculous timeout (need to insert scripts above teapo.js)
-setTimeout(start, 100);
+        var forceLoadFromDom = window.location.hash && window.location.hash.toLowerCase() === '#resettodom';
+
+        teapo.openStorage({
+            documentStorageCreated: function (error, s) {
+                storage = s;
+                storageLoaded();
+            },
+            getType: function (fullPath) {
+                return teapo.EditorType.getType(fullPath);
+            },
+            getFileEntry: function (fullPath) {
+                return viewModel.fileList.getFileEntry(fullPath);
+            },
+            setStatus: function (text) {
+                return loadingDiv.textContent = text;
+            }
+        }, forceLoadFromDom);
+    }
+
+    if (window.addEventListener) {
+        window.addEventListener('load', start, true);
+    } else {
+        window.onload = start;
+    }
+})();
 /// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='typings/codemirror.d.ts' />
 var teapo;
