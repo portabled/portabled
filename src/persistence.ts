@@ -196,6 +196,10 @@ module teapo {
             return;
           }
 
+          var domEdited = this._metadataElement ?
+            safeParseInt(this._metadataElement.getAttribute('edited')) :
+            null;
+
           loadPropertiesFromWebSql(
             '*metadata',
              this._metadataElement,
@@ -204,9 +208,6 @@ module teapo {
              () => {
   
               var wsEdited = safeParseInt(this._metadataProperties.edited);
-              var domEdited = this._metadataElement ?
-                safeParseInt(this._metadataElement.getAttribute('edited')) :
-                null;
               if (!wsEdited || domEdited && domEdited > wsEdited)
                 this._loadInitialStateFromDom(pathElements);
               else

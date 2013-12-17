@@ -1494,7 +1494,7 @@ var teapo;
             this._parent = _parent;
             this._owner = _owner;
             this._handleClick = _handleClick;
-            this.isExpanded = ko.observable(true);
+            this.isExpanded = ko.observable(false);
             this.folders = ko.observableArray();
             this.files = ko.observableArray();
             this.containsSelectedFile = ko.observable(false);
@@ -1694,9 +1694,10 @@ var teapo;
                         return;
                     }
 
+                    var domEdited = _this._metadataElement ? safeParseInt(_this._metadataElement.getAttribute('edited')) : null;
+
                     loadPropertiesFromWebSql('*metadata', _this._metadataElement, _this._metadataProperties, _this._executeSql, function () {
                         var wsEdited = safeParseInt(_this._metadataProperties.edited);
-                        var domEdited = _this._metadataElement ? safeParseInt(_this._metadataElement.getAttribute('edited')) : null;
                         if (!wsEdited || domEdited && domEdited > wsEdited)
                             _this._loadInitialStateFromDom(pathElements);
                         else

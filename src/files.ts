@@ -232,7 +232,7 @@ module teapo {
 
   class RuntimeFolderEntry implements teapo.FolderEntry {
 
-    isExpanded = ko.observable(true);
+    isExpanded = ko.observable(false);
     folders = ko.observableArray<teapo.FolderEntry>();
     files = ko.observableArray<teapo.FileEntry>();
     containsSelectedFile = ko.observable<boolean>(false);
