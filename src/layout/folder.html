@@ -1,11 +1,13 @@
-<div class=teapo-file-item data-bind='attr: { title: fullPath()+"." }, click: toggleExpand'>
-  <div data-bind='style: { marginLeft: (nestLevel()-1)/2+"em" }'>
-    <b data-bind='visible: isExpanded'>/</b><b data-bind='visible: !isExpanded()'>-</b><b data-bind='text: fullPath().slice(1)'></b>
-    <span data-bind='if: containsSelectedFile'>...</span>
+<div class=teapo-folder-withchildren>
+  <div class=teapo-file-item data-bind='attr: { title: fullPath()+"." }, click: toggleExpand'>
+    <div data-bind='style: { marginLeft: (nestLevel()-1)/2+"em" }'>
+      <b data-bind='visible: isExpanded'>/</b><b data-bind='visible: !isExpanded()'>-</b><b data-bind='text: fullPath().slice(1)'></b>
+      <span data-bind='if: containsSelectedFile'>...</span>
+    </div>
   </div>
-</div>
 
-<div data-bind='visible: isExpanded'>
-  <div data-bind='template: { name: "folder-template", foreach: folders }'></div>
-  <div data-bind='template: { name: "file-template", foreach: files }'></div>
+  <div data-bind='visible: isExpanded' class=teapo-folder-children>
+    <div data-bind='template: { name: "folder-template", foreach: folders }'></div>
+    <div data-bind='template: { name: "file-template", foreach: files }'></div>
+  </div>
 </div>

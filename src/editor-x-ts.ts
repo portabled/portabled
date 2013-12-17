@@ -186,6 +186,18 @@ module teapo {
     handleCursorActivity() {
       if (this._docSymbolMarks.length) {
         var doc = this.doc();
+        var cursorPos = doc.getCursor();
+
+        for (var i = 0; i < this._docSymbolMarks.length; i++) {
+          var mpos = this._docSymbolMarks[i].find();
+
+          if ((mpos.from.line<cursorPos.line
+              || (mpos.from.line==cursorPos.line && mpos.from.ch<=cursorPos.ch))
+              && (mpos.to.line>cursorPos.line
+              || (mpos.to.line==cursorPos.line && mpos.to.ch>=cursorPos.ch)))
+            return; // moving within a symbol - no update needed
+        }
+
         for (var i = 0; i < this._docSymbolMarks.length; i++) {
           this._docSymbolMarks[i].clear();
         }
