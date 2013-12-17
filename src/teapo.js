@@ -31,6 +31,8 @@ var teapo;
                 autoCloseTags: true,
                 //highlightSelectionMatches: {showToken: /\w/},
                 styleActiveLine: true,
+                foldGutter: true,
+                gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
                 tabSize: 2,
                 extraKeys: { "Tab": "indentMore", "Shift-Tab": "indentLess" }
             };
@@ -419,7 +421,7 @@ var teapo;
                 editor.triggerCompletion(true, true);
             };
 
-            var completionShortcuts = ['Ctrl-Space', 'Ctrl-J', 'Alt-J', 'Cmd-J'];
+            var completionShortcuts = ['Ctrl-Space', 'Cmd-Space', 'Alt-Space', 'Ctrl-J', 'Alt-J', 'Cmd-J'];
             var extraKeys = shared.options.extraKeys;
             if (!extraKeys)
                 extraKeys = shared.options.extraKeys = {};
@@ -723,7 +725,11 @@ var teapo;
             var shared = { options: options };
 
             options.mode = "text/typescript";
-            options.gutters = ['teapo-errors'];
+            if (options.gutters) {
+                options.gutters = options.gutters.concat(['teapo-errors']);
+            } else {
+                options.gutters = ['teapo-errors'];
+            }
 
             var debugClosure = function () {
                 var editor = shared.editor;
@@ -872,6 +878,15 @@ var teapo;
         TypeScriptEditor.prototype.handleCursorActivity = function () {
             if (this._docSymbolMarks.length) {
                 var doc = this.doc();
+                var cursorPos = doc.getCursor();
+
+                for (var i = 0; i < this._docSymbolMarks.length; i++) {
+                    var mpos = this._docSymbolMarks[i].find();
+
+                    if ((mpos.from.line < cursorPos.line || (mpos.from.line == cursorPos.line && mpos.from.ch <= cursorPos.ch)) && (mpos.to.line > cursorPos.line || (mpos.to.line == cursorPos.line && mpos.to.ch >= cursorPos.ch)))
+                        return;
+                }
+
                 for (var i = 0; i < this._docSymbolMarks.length; i++) {
                     this._docSymbolMarks[i].clear();
                 }

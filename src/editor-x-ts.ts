@@ -27,7 +27,12 @@ module teapo {
       var shared: CodeMirrorEditor.SharedState = { options: options };
 
       options.mode = "text/typescript";
-      options.gutters = [ 'teapo-errors' ];
+      if (options.gutters) {
+        options.gutters = options.gutters.concat(['teapo-errors']);
+      }
+      else {
+        options.gutters = [ 'teapo-errors' ];
+      }
 
       var debugClosure = () => {
         var editor = <TypeScriptEditor>shared.editor;

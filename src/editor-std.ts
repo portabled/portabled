@@ -33,6 +33,8 @@ module teapo {
         autoCloseTags: true,
         //highlightSelectionMatches: {showToken: /\w/},
         styleActiveLine: true,
+        foldGutter: true,
+        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
         tabSize: 2,
         extraKeys: {"Tab": "indentMore", "Shift-Tab": "indentLess"}
       };
@@ -445,7 +447,7 @@ module teapo {
         editor.triggerCompletion(true, true);
       };
 
-      var completionShortcuts = ['Ctrl-Space','Ctrl-J','Alt-J','Cmd-J'];
+      var completionShortcuts = ['Ctrl-Space','Cmd-Space','Alt-Space','Ctrl-J','Alt-J','Cmd-J'];
       var extraKeys = shared.options.extraKeys;
       if (!extraKeys)
         extraKeys = shared.options.extraKeys = {};
