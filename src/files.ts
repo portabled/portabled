@@ -14,12 +14,15 @@ module teapo {
 
     nestLevel(): number;
 
+    isExpanded: KnockoutObservable<boolean>;
+
     folders: KnockoutObservableArray<FolderEntry>;
     files: KnockoutObservableArray<FileEntry>;
 
     containsSelectedFile: KnockoutObservable<boolean>;
 
     handleClick(): void;
+    toggleExpand(): void;
   }
 
   /**
@@ -229,6 +232,7 @@ module teapo {
 
   class RuntimeFolderEntry implements teapo.FolderEntry {
 
+    isExpanded = ko.observable(true);
     folders = ko.observableArray<teapo.FolderEntry>();
     files = ko.observableArray<teapo.FileEntry>();
     containsSelectedFile = ko.observable<boolean>(false);
@@ -252,6 +256,10 @@ module teapo {
 
     handleClick(): void {
       this._handleClick();
+    }
+
+    toggleExpand() {
+      this.isExpanded(this.isExpanded() ? false : true);
     }
  }
 

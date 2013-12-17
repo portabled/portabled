@@ -332,11 +332,15 @@ module teapo {
 
       setTimeout(()=> {
         if (this._updateDiagnosticsTimeout) return;
-        this._semanticDiagnostics = this._typescript.service.getSemanticDiagnostics(this.docState.fullPath());
-      }, 10);
 
-      this._updateGutter();
-      this._updateDocDiagnostics();
+        this._semanticDiagnostics = this._typescript.service.getSemanticDiagnostics(this.docState.fullPath());
+        setTimeout(()=> {
+          if (this._updateDiagnosticsTimeout) return;
+
+          this._updateGutter();
+          this._updateDocDiagnostics();
+         }, 10);
+      }, 10);
     }
 
     private _updateDocDiagnostics() {

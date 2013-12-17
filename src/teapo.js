@@ -475,15 +475,37 @@ var teapo;
     * Handling detection of .js files.
     */
     var JavaScriptEditorType = (function () {
-        function JavaScriptEditorType() {
-            this._shared = {
-                options: JavaScriptEditorType.editorConfiguration()
-            };
+        function JavaScriptEditorType(tern) {
+            if (typeof tern === "undefined") { tern = new CodeMirror.TernServer(); }
+            this._shared = JavaScriptEditorType.createShared();
+            this._shared.tern = tern;
         }
-        JavaScriptEditorType.editorConfiguration = function () {
+        JavaScriptEditorType.createShared = function () {
             var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
+            var shared = { options: options, tern: null };
+
             options.mode = "text/javascript";
-            return options;
+            options.gutters = ['teapo-errors'];
+
+            var debugClosure = function () {
+                var editor = shared.editor;
+                if (!editor)
+                    return;
+
+                editor.run();
+            };
+
+            var extraKeys = options.extraKeys || (options.extraKeys = {});
+            var shortcuts = ['Ctrl-B', 'Alt-B', 'Cmd-B', 'Shift-Ctrl-B', 'Ctrl-Alt-B', 'Shift-Alt-B', 'Shift-Cmd-B', 'Cmd-Alt-B'];
+            for (var i = 0; i < shortcuts.length; i++) {
+                var k = shortcuts[i];
+                if (k in extraKeys)
+                    continue;
+
+                extraKeys[k] = debugClosure;
+            }
+
+            return shared;
         };
 
         JavaScriptEditorType.prototype.canEdit = function (fullPath) {
@@ -501,10 +523,37 @@ var teapo;
         __extends(JavaScriptEditor, _super);
         function JavaScriptEditor(shared, docState) {
             _super.call(this, shared, docState);
+            this._tern = null;
+            this._tern = shared.tern;
+
+            this._tern.server.addFile(this.docState.fullPath(), this.text());
         }
-        JavaScriptEditor.prototype.handlePerformCompletion = function () {
-            CodeMirror.showHint(this.editor(), CodeMirror.hint.javascript);
+        JavaScriptEditor.prototype.run = function () {
+            var editor = this;
+            eval(this.text());
         };
+
+        JavaScriptEditor.prototype.handleLoad = function () {
+            _super.prototype.handleLoad.call(this);
+
+            this._tern.delDoc(this.docState.fullPath());
+            this._tern.addDoc(this.docState.fullPath(), this.doc());
+        };
+
+        JavaScriptEditor.prototype.handlePerformCompletion = function (forced, acceptSingle) {
+            var _this = this;
+            CodeMirror.showHint(this.editor(), function (cm, c) {
+                try  {
+                    return _this._tern.getHint(cm, c);
+                } catch (error) {
+                    alert('getHint ' + error + '\n' + error.stack);
+                }
+            }, {
+                async: true,
+                completeSingle: acceptSingle
+            });
+        };
+        JavaScriptEditor._ternInitFailure = false;
         return JavaScriptEditor;
     })(teapo.CompletionCodeMirrorEditor);
 
@@ -962,11 +1011,16 @@ var teapo;
             setTimeout(function () {
                 if (_this._updateDiagnosticsTimeout)
                     return;
-                _this._semanticDiagnostics = _this._typescript.service.getSemanticDiagnostics(_this.docState.fullPath());
-            }, 10);
 
-            this._updateGutter();
-            this._updateDocDiagnostics();
+                _this._semanticDiagnostics = _this._typescript.service.getSemanticDiagnostics(_this.docState.fullPath());
+                setTimeout(function () {
+                    if (_this._updateDiagnosticsTimeout)
+                        return;
+
+                    _this._updateGutter();
+                    _this._updateDocDiagnostics();
+                }, 10);
+            }, 10);
         };
 
         TypeScriptEditor.prototype._updateDocDiagnostics = function () {
@@ -1425,6 +1479,7 @@ var teapo;
             this._parent = _parent;
             this._owner = _owner;
             this._handleClick = _handleClick;
+            this.isExpanded = ko.observable(true);
             this.folders = ko.observableArray();
             this.files = ko.observableArray();
             this.containsSelectedFile = ko.observable(false);
@@ -1446,6 +1501,10 @@ var teapo;
 
         RuntimeFolderEntry.prototype.handleClick = function () {
             this._handleClick();
+        };
+
+        RuntimeFolderEntry.prototype.toggleExpand = function () {
+            this.isExpanded(this.isExpanded() ? false : true);
         };
         return RuntimeFolderEntry;
     })();
@@ -2084,6 +2143,7 @@ var teapo;
             return '</' + match.slice(1);
         });
     }
+    teapo.encodeForInnerHTML = encodeForInnerHTML;
 
     /**
     * Unescape character sequences wrapped with encodeForInnerHTML for safety.
@@ -2094,6 +2154,7 @@ var teapo;
             return '<' + match.slice(2);
         });
     }
+    teapo.decodeFromInnerHTML = decodeFromInnerHTML;
 })(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
 /// <reference path='typings/zip.js.d.ts' />
@@ -2380,6 +2441,7 @@ var teapo;
                 teapo.EditorType.Html.storageForBuild = storage;
 
                 viewModel = new teapo.ApplicationShell(storage);
+                window.debugShell = viewModel;
 
                 ko.renderTemplate('page-template', viewModel, null, pageElement);
             }, 1);

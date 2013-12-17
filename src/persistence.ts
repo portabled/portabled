@@ -740,7 +740,7 @@ function removeScriptElement(script: HTMLElement) {
   /**
    * Escape unsafe character sequences like a closing script tag.
    */
-  function encodeForInnerHTML(content: string): string {
+  export function encodeForInnerHTML(content: string): string {
     // matching script closing tag with *one* or more consequtive slashes
     return content.replace(/<\/+script/g, (match) => {
       return '</'+match.slice(1); // skip angle bracket, inject bracket and extra slash
@@ -750,7 +750,7 @@ function removeScriptElement(script: HTMLElement) {
   /**
    * Unescape character sequences wrapped with encodeForInnerHTML for safety.
    */
-  function decodeFromInnerHTML(innerHTML: string): string {
+  export function decodeFromInnerHTML(innerHTML: string): string {
     // matching script closing tag with *t*wo or more consequtive slashes
     return innerHTML.replace(/<\/\/+script/g, (match) => {
       return '<'+match.slice(2); // skip angle bracket and one slash, inject bracket

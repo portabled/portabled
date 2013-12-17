@@ -65,6 +65,7 @@ html {
 .teapo-navigator-expand-area .teapo-action-button {
   font-size: inherit;
   width: 100%;
+  padding: 3px;
 }
 .teapo-new-file-button {
   font-size: inherit;
@@ -100,25 +101,32 @@ html {
   background-repeat: repeat-x;
 }
 .teapo-gutter-syntax-error {
-  background: brown;
-  width: 100%;
+  background: tomato;
+  width: 120%;
   height: 0.8em;
   cursor: pointer;
+  margin-left: -1px;
+  border-radius: 4px;
 }
 .teapo-gutter-semantic-error {
-  border: solid 2px gold;
-  width: 90%;
+  border: solid 2px gray;
+  width: 120%;
   height: 0.8em;
   cursor: pointer;
+  margin-left: -1px;
+  border-radius: 4px;
 }
 .teapo-errors {
+  top: 0px;
   width: 0.5em;
   background: silver;
+  position: absolute;
+  height: inherit;
 }
 .teapo-errors-semantic {
   width: 0.5em;
   background: goldenrod;
-  opacity: 0.5;
+  opacity: 0.3;
 }
 .teapo-errors-syntactic {
   width: 0.5em;

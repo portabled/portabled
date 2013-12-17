@@ -49,6 +49,7 @@
         (<any>teapo.EditorType).Html.storageForBuild = storage;
 
         viewModel = new teapo.ApplicationShell(storage);
+        (<any>window).debugShell = viewModel;
 
         ko.renderTemplate('page-template', viewModel, null, pageElement);
        }, 1);

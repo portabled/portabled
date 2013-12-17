@@ -10,17 +10,37 @@ module teapo {
    * Handling detection of .js files.
    */
   class JavaScriptEditorType implements EditorType {
-    private _shared: CodeMirrorEditor.SharedState = {
-      options: JavaScriptEditorType.editorConfiguration()
-    };
+    private _shared: JavaScriptEditor.SharedState = JavaScriptEditorType.createShared();
 
-    constructor() {
+    constructor(tern = new(<any>CodeMirror).TernServer()) {
+      this._shared.tern = tern;
     }
 
-    static editorConfiguration() {
+    static createShared() {
       var options = CodeMirrorEditor.standardEditorConfiguration();
+      var shared: JavaScriptEditor.SharedState = { options: options, tern: null };
+
       options.mode = "text/javascript";
-      return options;
+      options.gutters = [ 'teapo-errors' ];
+
+      var debugClosure = () => {
+        var editor = <JavaScriptEditor>shared.editor;
+        if (!editor) return;
+
+        editor.run();
+      };
+
+      var extraKeys = options.extraKeys || (options.extraKeys = {});
+      var shortcuts = ['Ctrl-B','Alt-B','Cmd-B','Shift-Ctrl-B','Ctrl-Alt-B','Shift-Alt-B','Shift-Cmd-B','Cmd-Alt-B'];
+      for (var i = 0; i<shortcuts.length; i++) {
+        var k = shortcuts[i];
+        if (k in extraKeys)
+          continue;
+
+        extraKeys[k] = debugClosure;
+      }
+
+      return shared;
     }
 
     canEdit(fullPath: string): boolean {
@@ -35,14 +55,53 @@ module teapo {
   }
 
   class JavaScriptEditor extends CompletionCodeMirrorEditor {
+
+    private _tern = null;
+    private static _ternInitFailure = false;
+
     constructor(
-      shared: CodeMirrorEditor.SharedState,
+      shared: JavaScriptEditor.SharedState,
       docState: DocumentState) {
       super(shared, docState);
+      this._tern = shared.tern;
+
+      this._tern.server.addFile(this.docState.fullPath(), this.text());
     }
 
-    handlePerformCompletion() {
-      (<any>CodeMirror).showHint(this.editor(), (<any>CodeMirror).hint.javascript);
+    run() {
+      var editor = this;
+      eval(this.text());
+      
+    }
+
+    handleLoad() {
+      super.handleLoad();
+
+      this._tern.delDoc(this.docState.fullPath());
+      this._tern.addDoc(this.docState.fullPath(), this.doc());
+    }
+
+    handlePerformCompletion(forced: boolean, acceptSingle: boolean) {
+      (<any>CodeMirror).showHint(
+        this.editor(),
+        (cm,c) => {
+          try {
+            return this._tern.getHint(cm, c);
+          }
+          catch (error) {
+            alert('getHint '+error+'\n'+error.stack);
+          }
+        },
+        {
+          async: true,
+          completeSingle: acceptSingle
+        });
+    }
+  }
+
+  module JavaScriptEditor {
+    export interface SharedState extends CodeMirrorEditor.SharedState {
+      tern: any;
     }
   }
 
