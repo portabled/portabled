@@ -895,8 +895,10 @@ var teapo;
             if (addedText === '.') {
                 this.triggerCompletion(true);
             } else if (addedText.length === 1) {
-                if (addedText === ';' || addedText === '}')
+                if (addedText === ';' || addedText === '}' || addedText === '\n')
                     this._formatOnKey(addedText, removedText, change);
+            } else if (addedText.length > 3) {
+                this._formatOnPaste(addedText, removedText, change);
             }
 
             // trigger error refresh and completion
@@ -981,6 +983,24 @@ var teapo;
             options.NewLineCharacter = '\n';
 
             var edits = this._typescript.service.getFormattingEditsAfterKeystroke(fullPath, offset, key, options);
+
+            this._applyEdits(edits);
+        };
+
+        TypeScriptEditor.prototype.__formatOnPaste = function (addedText, removedText, change) {
+            var doc = this.doc();
+            var offset = doc.indexFromPos(change.from);
+
+            var fullPath = this.docState.fullPath();
+            var key = addedText.charAt(addedText.length - 1);
+
+            var options = new TypeScript.Services.FormatCodeOptions();
+            options.IndentSize = 2;
+            options.TabSize = 2;
+            options.ConvertTabsToSpaces = true;
+            options.NewLineCharacter = '\n';
+
+            var edits = this._typescript.service.getFormattingEditsOnPaste(fullPath, offset, offset + addedText, options);
 
             this._applyEdits(edits);
         };
