@@ -1,13 +1,3 @@
-/// <reference path='typings/codemirror.d.ts' />
-var __extends = this.__extends || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
-};
-/// <reference path='persistence.ts' />
-/// <reference path='editor.ts' />
-// anchor-2
 var teapo;
 (function (teapo) {
     /**
@@ -296,7 +286,15 @@ var teapo;
         return CodeMirrorEditor;
     })();
     teapo.CodeMirrorEditor = CodeMirrorEditor;
-
+})(teapo || (teapo = {}));
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
+var teapo;
+(function (teapo) {
     var CompletionCodeMirrorEditor = (function (_super) {
         __extends(CompletionCodeMirrorEditor, _super);
         function CompletionCodeMirrorEditor(shared, docState) {
@@ -398,7 +396,7 @@ var teapo;
 
             if (this._positionSaveTimeout)
                 clearTimeout(this._positionSaveTimeout);
-            this._positionSaveTimeout = setTimeout(this._positionSaveClosure, CodeMirrorEditor.positionSaveDelay);
+            this._positionSaveTimeout = setTimeout(this._positionSaveClosure, teapo.CodeMirrorEditor.positionSaveDelay);
         };
 
         CompletionCodeMirrorEditor.prototype._performPositionSave = function () {
@@ -439,138 +437,69 @@ var teapo;
 
         CompletionCodeMirrorEditor._noSingleAutoCompletion = { completeSingle: false };
         return CompletionCodeMirrorEditor;
-    })(CodeMirrorEditor);
+    })(teapo.CodeMirrorEditor);
     teapo.CompletionCodeMirrorEditor = CompletionCodeMirrorEditor;
-
-    /**
-    * Simple document type using CodeMirrorEditor, usable as a default type for text files.
-    */
-    var PlainTextEditorType = (function () {
-        function PlainTextEditorType() {
-            this._shared = {};
-        }
-        PlainTextEditorType.prototype.canEdit = function (fullPath) {
-            return true;
-        };
-
-        PlainTextEditorType.prototype.editDocument = function (docState) {
-            return new CodeMirrorEditor(this._shared, docState);
-        };
-        return PlainTextEditorType;
-    })();
-
-    (function (EditorType) {
-        /**
-        * Registering PlainTextEditorType.
-        */
-        EditorType.PlainText = new PlainTextEditorType();
-    })(teapo.EditorType || (teapo.EditorType = {}));
-    var EditorType = teapo.EditorType;
 })(teapo || (teapo = {}));
-/// <reference path='typings/codemirror.d.ts' />
-/// <reference path='persistence.ts' />
-/// <reference path='editor.ts' />
-/// <reference path='editor-std.ts' />
 var teapo;
 (function (teapo) {
     /**
     * Handling detection of .js files.
     */
-    var JavaScriptEditorType = (function () {
-        function JavaScriptEditorType(tern) {
-            if (typeof tern === "undefined") { tern = new CodeMirror.TernServer(); }
-            this._shared = JavaScriptEditorType.createShared();
-            this._shared.tern = tern;
-        }
-        JavaScriptEditorType.createShared = function () {
-            var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
-            var shared = { options: options, tern: null };
-
-            options.mode = "text/javascript";
-            options.gutters = ['teapo-errors'];
-
-            var debugClosure = function () {
-                var editor = shared.editor;
-                if (!editor)
-                    return;
-
-                editor.run();
+    var CssEditorType = (function () {
+        function CssEditorType() {
+            this._shared = {
+                options: CssEditorType.editorConfiguration()
             };
-
-            var extraKeys = options.extraKeys || (options.extraKeys = {});
-            var shortcuts = ['Ctrl-B', 'Alt-B', 'Cmd-B', 'Shift-Ctrl-B', 'Ctrl-Alt-B', 'Shift-Alt-B', 'Shift-Cmd-B', 'Cmd-Alt-B'];
-            for (var i = 0; i < shortcuts.length; i++) {
-                var k = shortcuts[i];
-                if (k in extraKeys)
-                    continue;
-
-                extraKeys[k] = debugClosure;
-            }
-
-            return shared;
-        };
-
-        JavaScriptEditorType.prototype.canEdit = function (fullPath) {
-            var dotParts = fullPath.split('.');
-            return dotParts.length > 1 && dotParts[dotParts.length - 1].toLowerCase() === 'js';
-        };
-
-        JavaScriptEditorType.prototype.editDocument = function (docState) {
-            return new JavaScriptEditor(this._shared, docState);
-        };
-        return JavaScriptEditorType;
-    })();
-
-    var JavaScriptEditor = (function (_super) {
-        __extends(JavaScriptEditor, _super);
-        function JavaScriptEditor(shared, docState) {
-            _super.call(this, shared, docState);
-            this._tern = null;
-            this._tern = shared.tern;
-
-            this._tern.server.addFile(this.docState.fullPath(), this.text());
         }
-        JavaScriptEditor.prototype.run = function () {
-            var editor = this;
-            eval(this.text());
+        CssEditorType.editorConfiguration = function () {
+            var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
+            options.mode = "text/css";
+            return options;
         };
 
-        JavaScriptEditor.prototype.handleLoad = function () {
-            _super.prototype.handleLoad.call(this);
-
-            this._tern.delDoc(this.docState.fullPath());
-            this._tern.addDoc(this.docState.fullPath(), this.doc());
+        CssEditorType.prototype.canEdit = function (fullPath) {
+            var dotParts = fullPath.split('.');
+            return dotParts.length > 1 && dotParts[dotParts.length - 1].toLowerCase() === 'css';
         };
 
-        JavaScriptEditor.prototype.handlePerformCompletion = function (forced, acceptSingle) {
-            var _this = this;
-            CodeMirror.showHint(this.editor(), function (cm, c) {
-                try  {
-                    return _this._tern.getHint(cm, c);
-                } catch (error) {
-                    alert('getHint ' + error + '\n' + error.stack);
-                }
-            }, {
-                async: true,
-                completeSingle: acceptSingle
-            });
+        CssEditorType.prototype.editDocument = function (docState) {
+            return new teapo.CodeMirrorEditor(this._shared, docState);
         };
-        JavaScriptEditor._ternInitFailure = false;
-        return JavaScriptEditor;
-    })(teapo.CompletionCodeMirrorEditor);
+        return CssEditorType;
+    })();
 
     (function (EditorType) {
         /**
         * Registering HtmlEditorType.
         */
-        EditorType.JavaScript = new JavaScriptEditorType();
+        EditorType.CodeMirror = new CssEditorType();
     })(teapo.EditorType || (teapo.EditorType = {}));
     var EditorType = teapo.EditorType;
 })(teapo || (teapo = {}));
-/// <reference path='typings/codemirror.d.ts' />
-/// <reference path='persistence.ts' />
-/// <reference path='editor.ts' />
-/// <reference path='editor-std.ts' />
+var teapo;
+(function (teapo) {
+    
+
+    // types are registered by adding variables/properties to this module
+    (function (EditorType) {
+        /**
+        * Resolve to a type that accepts this file.
+        */
+        function getType(fullPath) {
+            // must iterate in reverse, so more generic types get used last
+            var keys = Object.keys(teapo.EditorType);
+            for (var i = 0; i < keys.length; i++) {
+                var t = this[keys[i]];
+                if (t.canEdit && t.canEdit(fullPath))
+                    return t;
+            }
+
+            return null;
+        }
+        EditorType.getType = getType;
+    })(teapo.EditorType || (teapo.EditorType = {}));
+    var EditorType = teapo.EditorType;
+})(teapo || (teapo = {}));
 var teapo;
 (function (teapo) {
     /**
@@ -701,12 +630,102 @@ var teapo;
     })(teapo.EditorType || (teapo.EditorType = {}));
     var EditorType = teapo.EditorType;
 })(teapo || (teapo = {}));
-/// <reference path='typings/codemirror.d.ts' />
-/// <reference path='persistence.ts' />
-/// <reference path='editor.ts' />
-/// <reference path='editor-std.ts' />
-/// <reference path='TypeScriptService.ts'  />
-// anchor-3
+var teapo;
+(function (teapo) {
+    /**
+    * Handling detection of .js files.
+    */
+    var JavaScriptEditorType = (function () {
+        function JavaScriptEditorType(tern) {
+            if (typeof tern === "undefined") { tern = new CodeMirror.TernServer(); }
+            this._shared = JavaScriptEditorType.createShared();
+            this._shared.tern = tern;
+        }
+        JavaScriptEditorType.createShared = function () {
+            var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
+            var shared = { options: options, tern: null };
+
+            options.mode = "text/javascript";
+            options.gutters = ['teapo-errors'];
+
+            var debugClosure = function () {
+                var editor = shared.editor;
+                if (!editor)
+                    return;
+
+                editor.run();
+            };
+
+            var extraKeys = options.extraKeys || (options.extraKeys = {});
+            var shortcuts = ['Ctrl-B', 'Alt-B', 'Cmd-B', 'Shift-Ctrl-B', 'Ctrl-Alt-B', 'Shift-Alt-B', 'Shift-Cmd-B', 'Cmd-Alt-B'];
+            for (var i = 0; i < shortcuts.length; i++) {
+                var k = shortcuts[i];
+                if (k in extraKeys)
+                    continue;
+
+                extraKeys[k] = debugClosure;
+            }
+
+            return shared;
+        };
+
+        JavaScriptEditorType.prototype.canEdit = function (fullPath) {
+            var dotParts = fullPath.split('.');
+            return dotParts.length > 1 && dotParts[dotParts.length - 1].toLowerCase() === 'js';
+        };
+
+        JavaScriptEditorType.prototype.editDocument = function (docState) {
+            return new JavaScriptEditor(this._shared, docState);
+        };
+        return JavaScriptEditorType;
+    })();
+
+    var JavaScriptEditor = (function (_super) {
+        __extends(JavaScriptEditor, _super);
+        function JavaScriptEditor(shared, docState) {
+            _super.call(this, shared, docState);
+            this._tern = null;
+            this._tern = shared.tern;
+
+            this._tern.server.addFile(this.docState.fullPath(), this.text());
+        }
+        JavaScriptEditor.prototype.run = function () {
+            var editor = this;
+            eval(this.text());
+        };
+
+        JavaScriptEditor.prototype.handleLoad = function () {
+            _super.prototype.handleLoad.call(this);
+
+            this._tern.delDoc(this.docState.fullPath());
+            this._tern.addDoc(this.docState.fullPath(), this.doc());
+        };
+
+        JavaScriptEditor.prototype.handlePerformCompletion = function (forced, acceptSingle) {
+            var _this = this;
+            CodeMirror.showHint(this.editor(), function (cm, c) {
+                try  {
+                    return _this._tern.getHint(cm, c);
+                } catch (error) {
+                    alert('getHint ' + error + '\n' + error.stack);
+                }
+            }, {
+                async: true,
+                completeSingle: acceptSingle
+            });
+        };
+        JavaScriptEditor._ternInitFailure = false;
+        return JavaScriptEditor;
+    })(teapo.CompletionCodeMirrorEditor);
+
+    (function (EditorType) {
+        /**
+        * Registering HtmlEditorType.
+        */
+        EditorType.JavaScript = new JavaScriptEditorType();
+    })(teapo.EditorType || (teapo.EditorType = {}));
+    var EditorType = teapo.EditorType;
+})(teapo || (teapo = {}));
 var teapo;
 (function (teapo) {
     /**
@@ -731,23 +750,34 @@ var teapo;
                 options.gutters = ['teapo-errors'];
             }
 
-            var debugClosure = function () {
-                var editor = shared.editor;
-                if (!editor)
-                    return;
+            function addShortcuts(shortcuts, handler) {
+                var debugClosure = function () {
+                    var editor = shared.editor;
+                    if (!editor)
+                        return;
 
-                editor.debug();
-            };
+                    handler(editor);
+                };
 
-            var extraKeys = options.extraKeys || (options.extraKeys = {});
-            var shortcuts = ['Ctrl-K', 'Alt-K', 'Cmd-K', 'Shift-Ctrl-K', 'Ctrl-Alt-K', 'Shift-Alt-K', 'Shift-Cmd-K', 'Cmd-Alt-K'];
-            for (var i = 0; i < shortcuts.length; i++) {
-                var k = shortcuts[i];
-                if (k in extraKeys)
-                    continue;
+                var extraKeys = options.extraKeys || (options.extraKeys = {});
+                for (var i = 0; i < shortcuts.length; i++) {
+                    var k = shortcuts[i];
+                    if (k in extraKeys)
+                        continue;
 
-                extraKeys[k] = debugClosure;
+                    extraKeys[k] = debugClosure;
+                }
             }
+
+            addShortcuts(['Ctrl-K', 'Alt-K', 'Cmd-K', 'Shift-Ctrl-K', 'Ctrl-Alt-K', 'Shift-Alt-K', 'Shift-Cmd-K', 'Cmd-Alt-K'], function (editor) {
+                return editor.debug();
+            });
+            addShortcuts(['Ctrl-,', 'Alt-,', 'Cmd-,', 'Shift-Ctrl-Up', 'Ctrl-Alt-Up', 'Shift-Alt-Up', 'Shift-Cmd-Up', 'Cmd-Alt-Up'], function (editor) {
+                return editor.jumpSymbol(-1);
+            });
+            addShortcuts(['Ctrl-.', 'Alt-.', 'Cmd-.', 'Shift-Ctrl-Down', 'Ctrl-Alt-Down', 'Shift-Alt-Down', 'Shift-Cmd-Down', 'Cmd-Alt-Down'], function (editor) {
+                return editor.jumpSymbol(+1);
+            });
 
             return shared;
         };
@@ -803,6 +833,7 @@ var teapo;
             this._teapoErrorsGutterElement = null;
             this._docErrorMarks = [];
             this._docSymbolMarks = [];
+            this._currentSymbolMarkIndex = -1;
             this._updateSymbolMarksTimeout = 0;
             this._updateSymbolMarksClosure = function () {
                 return _this._updateSymbolMarks();
@@ -857,6 +888,8 @@ var teapo;
             // store the change in an array
             this.changes.push(ch);
 
+            this._clearSymbolMarks();
+
             if (change.text.length === 1 && change.text[0] === '.')
                 this.triggerCompletion(true);
 
@@ -882,15 +915,14 @@ var teapo;
 
                 for (var i = 0; i < this._docSymbolMarks.length; i++) {
                     var mpos = this._docSymbolMarks[i].find();
+                    if (!mpos)
+                        continue;
 
                     if ((mpos.from.line < cursorPos.line || (mpos.from.line == cursorPos.line && mpos.from.ch <= cursorPos.ch)) && (mpos.to.line > cursorPos.line || (mpos.to.line == cursorPos.line && mpos.to.ch >= cursorPos.ch)))
                         return;
                 }
 
-                for (var i = 0; i < this._docSymbolMarks.length; i++) {
-                    this._docSymbolMarks[i].clear();
-                }
-                this._docSymbolMarks = [];
+                this._clearSymbolMarks();
             }
 
             if (this._updateSymbolMarksTimeout)
@@ -1058,6 +1090,14 @@ var teapo;
             }
         };
 
+        TypeScriptEditor.prototype._clearSymbolMarks = function () {
+            for (var i = 0; i < this._docSymbolMarks.length; i++) {
+                this._docSymbolMarks[i].clear();
+            }
+            this._docSymbolMarks = [];
+            this._currentSymbolMarkIndex = -1;
+        };
+
         TypeScriptEditor.prototype._updateSymbolMarks = function () {
             this._updateSymbolMarksTimeout = 0;
 
@@ -1070,23 +1110,76 @@ var teapo;
 
             if (!symbols)
                 return;
-            for (var i = 0; i < symbols.length; i++) {
+            var existingMarks = [];
+            var orderedSymbols = symbols.sort(function (s1, s2) {
+                return s1.minChar < s2.minChar ? -1 : s1.minChar > s2.minChar ? 1 : 0;
+            });
+            for (var i = 0; i < orderedSymbols.length; i++) {
                 var s = symbols[i];
                 if (fullPath !== s.fileName)
                     continue;
 
+                if (existingMarks[s.minChar])
+                    continue;
+                existingMarks[s.minChar] = true;
+
                 var from = doc.posFromIndex(s.minChar);
                 var to = doc.posFromIndex(s.limChar);
 
-                var cls = 'teapo-symbol';
-                if (s.minChar <= cursorOffset && s.limChar >= cursorOffset)
-                    cls += ' teapo-symbol-cursor';
+                var cls = 'teapo-symbol teapo-symbol-nocursor';
+                if (s.minChar <= cursorOffset && s.limChar >= cursorOffset) {
+                    cls = 'teapo-symbol teapo-symbol-cursor';
+                    this._currentSymbolMarkIndex = i;
+                }
 
                 var m = doc.markText(from, to, {
-                    className: 'teapo-symbol'
+                    className: cls
                 });
+
                 this._docSymbolMarks.push(m);
             }
+        };
+
+        TypeScriptEditor.prototype.jumpSymbol = function (direction) {
+            if (this._updateSymbolMarksTimeout) {
+                clearTimeout(this._updateSymbolMarksTimeout);
+                this._updateSymbolMarksTimeout = 0;
+
+                this._updateSymbolMarks();
+            }
+
+            if (!this._docSymbolMarks.length || this._currentSymbolMarkIndex < 0)
+                return;
+
+            var doc = this.doc();
+            var cursorPos = doc.getCursor();
+            var currentMark = this._docSymbolMarks[this._currentSymbolMarkIndex];
+            var currentMarkPos = currentMark.find();
+            var innerOffset = doc.indexFromPos(cursorPos) - doc.indexFromPos(currentMarkPos.from);
+
+            var newMarkIndex = this._currentSymbolMarkIndex + direction;
+            if (newMarkIndex >= this._docSymbolMarks.length)
+                newMarkIndex = 0;
+            else if (newMarkIndex < 0)
+                newMarkIndex = this._docSymbolMarks.length - 1;
+
+            var newMark = this._docSymbolMarks[newMarkIndex];
+            var newMarkPos = newMark.find();
+
+            var newCursorPos = doc.posFromIndex(doc.indexFromPos(newMarkPos.from) + innerOffset);
+
+            currentMark.clear();
+            newMark.clear();
+
+            var updatedCurrentMark = doc.markText(currentMarkPos.from, currentMarkPos.to, { className: 'teapo-symbol teapo-symbol-nocursor' });
+            var updatedNewMark = doc.markText(newMarkPos.from, newMarkPos.to, { className: 'teapo-symbol teapo-symbol-cursor' });
+
+            this._docSymbolMarks[this._currentSymbolMarkIndex] = updatedCurrentMark;
+            this._docSymbolMarks[newMarkIndex] = updatedNewMark;
+
+            this._currentSymbolMarkIndex = newMarkIndex;
+
+            doc.setCursor(newCursorPos);
         };
 
         TypeScriptEditor.prototype._markDocError = function (error, className, doc) {
@@ -1234,87 +1327,54 @@ var teapo;
         return CompletionItem;
     })();
 
+    function comparePos(a, b) {
+        if (a.line < b.line)
+            return -1;
+        if (a.line === b.line && a.ch < b.ch)
+            return -1;
+        if (a.line === b.line && a.ch === b.ch)
+            return 0;
+        return 1;
+    }
+
+    function rangeContains(range, pos) {
+        return comparePos(pos, range.from) <= 0 && comparePos(pos, range.to) >= 0;
+    }
+
     (function (EditorType) {
         EditorType.TypeScript = new TypeScriptEditorType();
     })(teapo.EditorType || (teapo.EditorType = {}));
     var EditorType = teapo.EditorType;
 })(teapo || (teapo = {}));
-/// <reference path='typings/codemirror.d.ts' />
-/// <reference path='persistence.ts' />
-/// <reference path='editor.ts' />
-/// <reference path='editor-std.ts' />
 var teapo;
 (function (teapo) {
     /**
-    * Handling detection of .js files.
+    * Simple document type using CodeMirrorEditor, usable as a default type for text files.
     */
-    var CSSEditorType = (function () {
-        function CSSEditorType() {
-            this._shared = {
-                options: CSSEditorType.editorConfiguration()
-            };
+    var PlainTextEditorType = (function () {
+        function PlainTextEditorType() {
+            this._shared = {};
         }
-        CSSEditorType.editorConfiguration = function () {
-            var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
-            options.mode = "text/css";
-            return options;
+        PlainTextEditorType.prototype.canEdit = function (fullPath) {
+            return true;
         };
 
-        CSSEditorType.prototype.canEdit = function (fullPath) {
-            var dotParts = fullPath.split('.');
-            return dotParts.length > 1 && dotParts[dotParts.length - 1].toLowerCase() === 'css';
-        };
-
-        CSSEditorType.prototype.editDocument = function (docState) {
+        PlainTextEditorType.prototype.editDocument = function (docState) {
             return new teapo.CodeMirrorEditor(this._shared, docState);
         };
-        return CSSEditorType;
+        return PlainTextEditorType;
     })();
 
     (function (EditorType) {
         /**
-        * Registering HtmlEditorType.
+        * Registering PlainTextEditorType.
         */
-        EditorType.CodeMirror = new CSSEditorType();
+        EditorType.PlainText = new PlainTextEditorType();
     })(teapo.EditorType || (teapo.EditorType = {}));
     var EditorType = teapo.EditorType;
 })(teapo || (teapo = {}));
-/// <reference path='typings/codemirror.d.ts' />
-/// <reference path='persistence.ts' />
 var teapo;
 (function (teapo) {
-    
-
-    
-
-    // types are registered by adding variables/properties to this module
-    (function (EditorType) {
-        /**
-        * Resolve to a type that accepts this file.
-        */
-        function getType(fullPath) {
-            // must iterate in reverse, so more generic types get used last
-            var reverse = Object.keys(teapo.EditorType);
-            for (var i = reverse.length - 1; i >= 0; i--) {
-                var t = this[reverse[i]];
-                if (t.canEdit && t.canEdit(fullPath))
-                    return t;
-            }
-
-            return null;
-        }
-        EditorType.getType = getType;
-    })(teapo.EditorType || (teapo.EditorType = {}));
-    var EditorType = teapo.EditorType;
-})(teapo || (teapo = {}));
-/// <reference path='typings/knockout.d.ts' />
-/// <reference path='persistence.ts' />
-var teapo;
-(function (teapo) {
-    
-
-    
-
     /**
     * File list/tree ViewModel.
     */

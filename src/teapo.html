@@ -20,7 +20,8 @@
 <script id=folder-template type='text/html'  data-path='/layout/folder.html'>###layout/folder.html###</script>
 <script id=file-template type='text/html'  data-path='/layout/file.html'>###layout/file.html###</script>
 
-  <!-- External JS libraries: CodeMirror, Acorn/Tern, Knockout and Zip.js --->
+
+<!-- External JS libraries: CodeMirror, Acorn/Tern, Knockout and Zip.js --->
 <!--CodeMirror-->
 <script data-path='/imports/codemirror/codemirror.js'>###imports/codemirror/codemirror.js###</script>
 <script data-path='/imports/codemirror/javascript.js'>###imports/codemirror/javascript.js###</script>
@@ -84,13 +85,20 @@
 
 
 <!-- Embedded files, using teapo's sources --->
-<script data-path='/editor-std.ts' type='text/html'>###editor-std.ts###</script>
-<script data-path='/editor-x-js.ts' type='text/html'>###editor-x-js.ts###</script>
-<script data-path='/editor-x-html.ts' type='text/html'>###editor-x-html.ts###</script>
-<script data-path='/editor-x-ts.ts' type='text/html'>###editor-x-ts.ts###</script>
-<script data-path='/editor-x-css.ts' type='text/html'>###editor-x-css.ts###</script>
-<script data-path='/editor.ts' type='text/html'>###editor.ts###</script>
-<script data-path='/files.ts' type='text/html'>###files.ts###</script>
+<script data-path='/editor/CodeMirrorEditor.ts' type='text/html'>###editor/CodeMirrorEditor.ts###</script>
+<script data-path='/editor/CompletionCodeMirrorEditor.ts' type='text/html'>###editor/CompletionCodeMirrorEditor.ts###</script>
+<script data-path='/editor/CssEditorType.ts' type='text/html'>###editor/CssEditorType.ts###</script>
+<script data-path='/editor/Editor.ts' type='text/html'>###editor/Editor.ts###</script>
+<script data-path='/editor/EditorType.ts' type='text/html'>###editor/EditorType.ts###</script>
+<script data-path='/editor/HtmlEditorType.ts' type='text/html'>###editor/HtmlEditorType.ts###</script>
+<script data-path='/editor/JavaScriptEditorType.ts' type='text/html'>###editor/JavaScriptEditorType.ts###</script>
+<script data-path='/editor/TypeScriptEditorType.ts' type='text/html'>###editor/TypeScriptEditorType.ts###</script>
+<script data-path='/editor/x-last-PlainTextEditorType.ts' type='text/html'>###editor/x-last-PlainTextEditorType.ts###</script>
+
+<script data-path='/files/FileEntry.ts' type='text/html'>###files/FileEntry.ts###</script>
+<script data-path='/files/FolderEntry.ts' type='text/html'>###files/FolderEntry.ts###</script>
+<script data-path='/files/impl.ts' type='text/html'>###files/impl.ts###</script>
+
 <script data-path='/ko.ts' type='text/html'>###ko.ts###</script>
 <script data-path='/persistence.ts' type='text/html'>###persistence.ts###</script>
 <script data-path='/shell.ts' type='text/html'>###shell.ts###</script>

@@ -39,7 +39,7 @@ html {
   padding-right:4px;
 }
 .teapo-file-item:hover {
-  background: #ffe244;
+  background: #fff074;
 }
 .teapo-file-item-selected {
   border: solid 2px silver;
@@ -134,13 +134,13 @@ html {
   opacity: 0.5;
 }
 
-.teapo-symbol {
+.teapo-symbol-cursor {
   border: solid 1px rgba(100, 149, 237, 0.44);
   margin: -1px;
 }
-.teapo-symbol-cursor {
+.teapo-symbol-nocursor {
   border: solid 1px rgba(100, 149, 237, 0.44);
-  background: rgba(100, 149, 237, 0.1);
+  background: rgba(100, 149, 237, 0.4);
   margin: -1px;
 }
 
