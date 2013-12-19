@@ -890,8 +890,14 @@ var teapo;
 
             this._clearSymbolMarks();
 
-            if (change.text.length === 1 && change.text[0] === '.')
+            var removedText = change.removed.join('\n');
+            var addedText = change.text.join('\n');
+            if (addedText === '.') {
                 this.triggerCompletion(true);
+            } else if (addedText.length === 1) {
+                if (addedText === ';' || addedText === '}')
+                    this._formatOnKey(addedText, removedText, change);
+            }
 
             // trigger error refresh and completion
             this._triggerDiagnosticsUpdate();
@@ -957,6 +963,36 @@ var teapo;
             for (var i = 0; i < emits.outputFiles.length; i++) {
                 var ou = emits.outputFiles[i];
                 return ou.text;
+            }
+        };
+
+        TypeScriptEditor.prototype._formatOnKey = function (addedText, removedText, change) {
+            var doc = this.doc();
+            var offset = doc.indexFromPos(change.from);
+            offset += addedText.length;
+
+            var fullPath = this.docState.fullPath();
+            var key = addedText.charAt(addedText.length - 1);
+
+            var options = new TypeScript.Services.FormatCodeOptions();
+            options.IndentSize = 2;
+            options.TabSize = 2;
+            options.ConvertTabsToSpaces = true;
+            options.NewLineCharacter = '\n';
+
+            var edits = this._typescript.service.getFormattingEditsAfterKeystroke(fullPath, offset, key, options);
+
+            this._applyEdits(edits);
+        };
+
+        TypeScriptEditor.prototype._applyEdits = function (edits) {
+            var doc = this.doc();
+            var orderedEdits = edits.sort(function (e1, e2) {
+                return e1.minChar < e2.minChar ? +1 : e1.minChar == e2.minChar ? 0 : -1;
+            });
+            for (var i = 0; i < orderedEdits.length; i++) {
+                var e = orderedEdits[i];
+                doc.replaceRange(e.text, doc.posFromIndex(e.minChar), doc.posFromIndex(e.limChar));
             }
         };
 

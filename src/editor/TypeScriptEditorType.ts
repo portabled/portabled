@@ -21,7 +21,7 @@ module teapo {
         options.gutters = options.gutters.concat(['teapo-errors']);
       }
       else {
-        options.gutters = [ 'teapo-errors' ];
+        options.gutters = ['teapo-errors'];
       }
 
       function addShortcuts(shortcuts: string[], handler: (editor: TypeScriptEditor) => void) {
@@ -33,7 +33,7 @@ module teapo {
         };
 
         var extraKeys = options.extraKeys || (options.extraKeys = {});
-        for (var i = 0; i<shortcuts.length; i++) {
+        for (var i = 0; i < shortcuts.length; i++) {
           var k = shortcuts[i];
           if (k in extraKeys)
             continue;
@@ -42,16 +42,16 @@ module teapo {
         }
       }
 
-      addShortcuts(['Ctrl-K','Alt-K','Cmd-K','Shift-Ctrl-K','Ctrl-Alt-K','Shift-Alt-K','Shift-Cmd-K','Cmd-Alt-K'], editor => editor.debug());
-      addShortcuts(['Ctrl-,','Alt-,','Cmd-,','Shift-Ctrl-Up','Ctrl-Alt-Up','Shift-Alt-Up','Shift-Cmd-Up','Cmd-Alt-Up'], editor => editor.jumpSymbol(-1));
-      addShortcuts(['Ctrl-.','Alt-.','Cmd-.','Shift-Ctrl-Down','Ctrl-Alt-Down','Shift-Alt-Down','Shift-Cmd-Down','Cmd-Alt-Down'], editor => editor.jumpSymbol(+1));
+      addShortcuts(['Ctrl-K', 'Alt-K', 'Cmd-K', 'Shift-Ctrl-K', 'Ctrl-Alt-K', 'Shift-Alt-K', 'Shift-Cmd-K', 'Cmd-Alt-K'], editor => editor.debug());
+      addShortcuts(['Ctrl-,', 'Alt-,', 'Cmd-,', 'Shift-Ctrl-Up', 'Ctrl-Alt-Up', 'Shift-Alt-Up', 'Shift-Cmd-Up', 'Cmd-Alt-Up'], editor => editor.jumpSymbol(-1));
+      addShortcuts(['Ctrl-.', 'Alt-.', 'Cmd-.', 'Shift-Ctrl-Down', 'Ctrl-Alt-Down', 'Shift-Alt-Down', 'Shift-Cmd-Down', 'Cmd-Alt-Down'], editor => editor.jumpSymbol(+1));
 
       return shared;
     }
 
     canEdit(fullPath: string): boolean {
       return fullPath && fullPath.length > 3 &&
-        fullPath.slice(fullPath.length-3).toLowerCase()==='.ts';
+        fullPath.slice(fullPath.length - 3).toLowerCase() === '.ts';
     }
 
     editDocument(docState: DocumentState): Editor {
@@ -62,12 +62,12 @@ module teapo {
       var editor = new TypeScriptEditor(this._typescript, this._shared, docState);
 
       setTimeout(() => {
-          this._typescript.scripts[docState.fullPath()] = editor;
-          this._typescript.service.getSyntacticDiagnostics(docState.fullPath());
-          setTimeout(() => {
-            this._typescript.service.getSignatureAtPosition(docState.fullPath(), 0);
-          },1);
-        },
+        this._typescript.scripts[docState.fullPath()] = editor;
+        this._typescript.service.getSyntacticDiagnostics(docState.fullPath());
+        setTimeout(() => {
+          this._typescript.service.getSignatureAtPosition(docState.fullPath(), 0);
+        }, 1);
+      },
         1);
 
       return editor;
@@ -137,7 +137,7 @@ module teapo {
 
       // if error refresh is queued, cancel it, but keep a special value as a flag
       if (this._updateDiagnosticsTimeout) {
-        if (this._updateDiagnosticsTimeout!==-1)
+        if (this._updateDiagnosticsTimeout !== -1)
           clearTimeout(this._updateDiagnosticsTimeout);
 
         this._updateDiagnosticsTimeout = -1;
@@ -157,18 +157,25 @@ module teapo {
 
       var oldLength = this._totalLengthOfLines(<string[]><any>change.removed); // it's an array not a string
       var newLength = this._totalLengthOfLines(change.text);
-  
+
       var ch = new TypeScript.TextChangeRange(
-          TypeScript.TextSpan.fromBounds(offset, offset+oldLength),
-          newLength);
+        TypeScript.TextSpan.fromBounds(offset, offset + oldLength),
+        newLength);
 
       // store the change in an array
       this.changes.push(ch);
 
       this._clearSymbolMarks();
 
-      if (change.text.length===1 && change.text[0]==='.')
+      var removedText = change.removed.join('\n');
+      var addedText = change.text.join('\n');
+      if (addedText === '.') {
         this.triggerCompletion(true);
+      }
+      else if (addedText.length === 1) {
+        if (addedText === ';' || addedText === '}')
+          this._formatOnKey(addedText, removedText, change);
+      }
 
       // trigger error refresh and completion
       this._triggerDiagnosticsUpdate();
@@ -195,10 +202,10 @@ module teapo {
           var mpos = this._docSymbolMarks[i].find();
           if (!mpos) continue;
 
-          if ((mpos.from.line<cursorPos.line
-              || (mpos.from.line==cursorPos.line && mpos.from.ch<=cursorPos.ch))
-              && (mpos.to.line>cursorPos.line
-              || (mpos.to.line==cursorPos.line && mpos.to.ch>=cursorPos.ch)))
+          if ((mpos.from.line < cursorPos.line
+            || (mpos.from.line == cursorPos.line && mpos.from.ch <= cursorPos.ch))
+            && (mpos.to.line > cursorPos.line
+            || (mpos.to.line == cursorPos.line && mpos.to.ch >= cursorPos.ch)))
             return; // moving within a symbol - no update needed
         }
 
@@ -218,7 +225,7 @@ module teapo {
       for (var i = 0; i < emits.outputFiles.length; i++) {
         var e = emits.outputFiles[i];
         alert(
-          e.name+'\n\n'+
+          e.name + '\n\n' +
           e.text);
       }
     }
@@ -231,18 +238,54 @@ module teapo {
       for (var i = 0; i < emits.diagnostics.length; i++) {
         var e = emits.diagnostics[i];
         var info = e.info();
-        if (info.category===TypeScript.DiagnosticCategory.Error) {
+        if (info.category === TypeScript.DiagnosticCategory.Error) {
           errors.push(
-            e.fileName()+' ['+e.line()+':'+e.character+'] '+info.message);
+            e.fileName() + ' [' + e.line() + ':' + e.character + '] ' + info.message);
         }
       }
 
       if (errors.length)
-        alert(errors.join('\n')); 
+        alert(errors.join('\n'));
 
       for (var i = 0; i < emits.outputFiles.length; i++) {
         var ou = emits.outputFiles[i];
         return ou.text;
+      }
+    }
+
+    private _formatOnKey(addedText: string, removedText: string, change: CodeMirror.EditorChange) {
+      var doc = this.doc();
+      var offset = doc.indexFromPos(change.from);
+      offset += addedText.length;
+
+      var fullPath = this.docState.fullPath();
+      var key = addedText.charAt(addedText.length - 1);
+
+      var options = new TypeScript.Services.FormatCodeOptions();
+      options.IndentSize = 2;
+      options.TabSize = 2;
+      options.ConvertTabsToSpaces = true;
+      options.NewLineCharacter = '\n';
+
+      var edits = this._typescript.service.getFormattingEditsAfterKeystroke(
+        fullPath,
+        offset,
+        key,
+        options);
+
+
+      this._applyEdits(edits);
+    }
+
+    private _applyEdits(edits: TypeScript.Services.TextEdit[]) {
+      var doc = this.doc();
+      var orderedEdits = edits.sort((e1, e2) => e1.minChar < e2.minChar ? +1 : e1.minChar == e2.minChar ? 0 : -1);
+      for (var i = 0; i < orderedEdits.length; i++) {
+        var e = orderedEdits[i];
+        doc.replaceRange(
+          e.text,
+          doc.posFromIndex(e.minChar),
+          doc.posFromIndex(e.limChar));
       }
     }
 
@@ -275,18 +318,18 @@ module teapo {
 
       // filter by lead/prefix (case-insensitive)
       var filteredList = (completions ? completions.entries : []).filter((e) => {
-        if (leadLower.length===0) return true;
+        if (leadLower.length === 0) return true;
         if (!e.name) return false;
-        if (e.name.length<leadLower.length) return false;
+        if (e.name.length < leadLower.length) return false;
         if (e.name[0].toLowerCase() !== leadFirstChar) return false;
-        if (e.name.slice(0,leadLower.length).toLowerCase()!==leadLower) return false;
+        if (e.name.slice(0, leadLower.length).toLowerCase() !== leadLower) return false;
         return true;
       });
 
       // TODO: consider maxCompletions while filtering, to avoid excessive processing of long lists
 
       // limit the size of the completion list
-      if (filteredList.length>TypeScriptEditor.maxCompletions)
+      if (filteredList.length > TypeScriptEditor.maxCompletions)
         filteredList.length = TypeScriptEditor.maxCompletions;
 
       // convert from TypeScript details objects to CodeMirror completion API shape
@@ -295,28 +338,28 @@ module teapo {
         return new CompletionItem(e, details, index, lead, tail);
       });
 
-      if (list.length===1
-         && list[0].text===lead
-         && !forced
-         && nh.tailLength==0)
-        list.length=0; // no need to complete stuff that's already done
+      if (list.length === 1
+        && list[0].text === lead
+        && !forced
+        && nh.tailLength == 0)
+        list.length = 0; // no need to complete stuff that's already done
 
       if (list.length) {
 
         if (!this._completionActive) {
 
           var onendcompletion = () => {
-            CodeMirror.off(editor,'endCompletion', onendcompletion);
+            CodeMirror.off(editor, 'endCompletion', onendcompletion);
             setTimeout(() => {
-                // clearing _completionActive bit and further completions
-                // (left with delay to settle possible race with change handling)
-                this._completionActive = false;
-                this.cancelCompletion();
+              // clearing _completionActive bit and further completions
+              // (left with delay to settle possible race with change handling)
+              this._completionActive = false;
+              this.cancelCompletion();
             }, 1);
           };
 
           // first completion result: set _completionActive bit
-          CodeMirror.on(editor,'endCompletion', onendcompletion);
+          CodeMirror.on(editor, 'endCompletion', onendcompletion);
           this._completionActive = true;
         }
       }
@@ -343,16 +386,16 @@ module teapo {
 
       this._syntacticDiagnostics = this._typescript.service.getSyntacticDiagnostics(this.docState.fullPath());
 
-      setTimeout(()=> {
+      setTimeout(() => {
         if (this._updateDiagnosticsTimeout) return;
 
         this._semanticDiagnostics = this._typescript.service.getSemanticDiagnostics(this.docState.fullPath());
-        setTimeout(()=> {
+        setTimeout(() => {
           if (this._updateDiagnosticsTimeout) return;
 
           this._updateGutter();
           this._updateDocDiagnostics();
-         }, 10);
+        }, 10);
       }, 10);
     }
 
@@ -398,10 +441,10 @@ module teapo {
 
       if (!symbols) return;
       var existingMarks: boolean[] = [];
-      var orderedSymbols = symbols.sort((s1, s2) => s1.minChar < s2.minChar ? -1 : s1.minChar>s2.minChar ? 1 : 0);
-      for (var i=0; i<orderedSymbols.length; i++) {
+      var orderedSymbols = symbols.sort((s1, s2) => s1.minChar < s2.minChar ? -1 : s1.minChar > s2.minChar ? 1 : 0);
+      for (var i = 0; i < orderedSymbols.length; i++) {
         var s = symbols[i];
-        if (fullPath!==s.fileName) continue;
+        if (fullPath !== s.fileName) continue;
 
         if (existingMarks[s.minChar])
           continue;
@@ -411,7 +454,7 @@ module teapo {
         var to = doc.posFromIndex(s.limChar);
 
         var cls = 'teapo-symbol teapo-symbol-nocursor';
-        if (s.minChar<=cursorOffset && s.limChar>=cursorOffset) {
+        if (s.minChar <= cursorOffset && s.limChar >= cursorOffset) {
           cls = 'teapo-symbol teapo-symbol-cursor';
           this._currentSymbolMarkIndex = i;
         }
@@ -436,7 +479,7 @@ module teapo {
       }
 
       if (!this._docSymbolMarks.length
-         || this._currentSymbolMarkIndex<0) return;
+        || this._currentSymbolMarkIndex < 0) return;
 
       var doc = this.doc();
       var cursorPos = doc.getCursor();
@@ -444,17 +487,17 @@ module teapo {
       var currentMarkPos = currentMark.find();
       var innerOffset = doc.indexFromPos(cursorPos) - doc.indexFromPos(currentMarkPos.from);
 
-      var newMarkIndex = this._currentSymbolMarkIndex+direction;
-      if (newMarkIndex>=this._docSymbolMarks.length)
+      var newMarkIndex = this._currentSymbolMarkIndex + direction;
+      if (newMarkIndex >= this._docSymbolMarks.length)
         newMarkIndex = 0;
-      else if (newMarkIndex<0)
-        newMarkIndex = this._docSymbolMarks.length-1;
+      else if (newMarkIndex < 0)
+        newMarkIndex = this._docSymbolMarks.length - 1;
 
       var newMark = this._docSymbolMarks[newMarkIndex];
       var newMarkPos = newMark.find();
 
       var newCursorPos = doc.posFromIndex(
-        doc.indexFromPos(newMarkPos.from)+innerOffset);
+        doc.indexFromPos(newMarkPos.from) + innerOffset);
 
       currentMark.clear();
       newMark.clear();
@@ -494,31 +537,31 @@ module teapo {
       var lineErrors: { text: string; classNames: any; }[] = [];
 
       var sources = [
-        {kind: 'syntax', errors: this._syntacticDiagnostics},
-        {kind: 'semantic', errors: this._semanticDiagnostics}
+        { kind: 'syntax', errors: this._syntacticDiagnostics },
+        { kind: 'semantic', errors: this._semanticDiagnostics }
       ];
 
-      for (var iSrc=0; iSrc<sources.length; iSrc++) {
+      for (var iSrc = 0; iSrc < sources.length; iSrc++) {
         var src = sources[iSrc];
 
         if (src.errors.length)
-          gutterClassName += ' teapo-errors-'+src.kind;
+          gutterClassName += ' teapo-errors-' + src.kind;
 
         for (var i = 0; i < src.errors.length; i++) {
           var err = src.errors[i];
           var info = err.info();
-  
+
           var lnerr = lineErrors[err.line()];
-          var text = '['+TypeScript.DiagnosticCategory[info.category]+'] '+err.text();
+          var text = '[' + TypeScript.DiagnosticCategory[info.category] + '] ' + err.text();
           if (lnerr) {
-            lnerr.text += '\n'+text;
+            lnerr.text += '\n' + text;
           }
           else {
-            lnerr = { text: text, classNames: {}};
+            lnerr = { text: text, classNames: {} };
             lineErrors[err.line()] = lnerr;
           }
 
-          lnerr.classNames['teapo-gutter-'+src.kind+'-error'] = '';
+          lnerr.classNames['teapo-gutter-' + src.kind + '-error'] = '';
         }
       }
 
@@ -526,7 +569,7 @@ module teapo {
         return () => alert(text);
       }
 
-      for (var i=0; i<lineErrors.length; i++) {
+      for (var i = 0; i < lineErrors.length; i++) {
         var lnerr = lineErrors[i];
         if (!lnerr) continue;
 
@@ -535,7 +578,7 @@ module teapo {
         errorElement.title = lnerr.text;
 
         errorElement.onclick = createClickHandler(lnerr.text);
-  
+
         editor.setGutterMarker(i, 'teapo-errors', errorElement);
       }
 
@@ -554,7 +597,7 @@ module teapo {
 
       for (var i = 0; i < gutterElement.children.length; i++) {
         var candidate = <HTMLElement>gutterElement.children[i];
-        if (candidate.className && candidate.className.indexOf(className)>=0)
+        if (candidate.className && candidate.className.indexOf(className) >= 0)
           return candidate;
       }
 
@@ -564,9 +607,9 @@ module teapo {
     private _totalLengthOfLines(lines: string[]): number {
       var length = 0;
       for (var i = 0; i < lines.length; i++) {
-        if (i>0)
+        if (i > 0)
           length++; // '\n'
-    
+
         length += lines[i].length;
       }
       return length;
@@ -575,7 +618,7 @@ module teapo {
 
   class CompletionItem {
     text: string;
-  
+
     constructor(
       private _completionEntry: TypeScript.Services.CompletionEntry,
       private _completionEntryDetails: TypeScript.Services.CompletionEntryDetails,
@@ -583,24 +626,24 @@ module teapo {
       private _lead: string, private _tail: string) {
       this.text = this._completionEntry.name;
     }
-  
+
     render(element: HTMLElement) {
       var kindSpan = document.createElement('span');
-      kindSpan.textContent = this._completionEntry.kind+' ';
+      kindSpan.textContent = this._completionEntry.kind + ' ';
       kindSpan.style.opacity = '0.6';
       element.appendChild(kindSpan);
-  
+
       var nameSpan = document.createElement('span');
       nameSpan.textContent = this.text;
       element.appendChild(nameSpan);
-  
+
       if (this._completionEntryDetails && this._completionEntryDetails.type) {
         var typeSpan = document.createElement('span');
-        typeSpan.textContent = ' : '+this._completionEntryDetails.type;
+        typeSpan.textContent = ' : ' + this._completionEntryDetails.type;
         typeSpan.style.opacity = '0.7';
         element.appendChild(typeSpan);
       }
-  
+
       if (this._completionEntryDetails && this._completionEntryDetails.docComment) {
         var commentDiv = document.createElement('div');
         commentDiv.textContent = this._completionEntryDetails.docComment;
@@ -613,14 +656,14 @@ module teapo {
   }
 
   function comparePos(a: CodeMirror.Pos, b: CodeMirror.Pos): number {
-    if (a.line<b.line) return -1;
-    if (a.line===b.line && a.ch<b.ch) return -1;
-    if (a.line===b.line && a.ch===b.ch) return 0;
+    if (a.line < b.line) return -1;
+    if (a.line === b.line && a.ch < b.ch) return -1;
+    if (a.line === b.line && a.ch === b.ch) return 0;
     return 1;
   }
 
-  function rangeContains(range: {from:CodeMirror.Pos; to: CodeMirror.Pos;}, pos: CodeMirror.Pos): boolean {
-    return comparePos(pos, range.from)<=0 && comparePos(pos, range.to)>=0;
+  function rangeContains(range: { from: CodeMirror.Pos; to: CodeMirror.Pos; }, pos: CodeMirror.Pos): boolean {
+    return comparePos(pos, range.from) <= 0 && comparePos(pos, range.to) >= 0;
   }
 
   export module EditorType {
