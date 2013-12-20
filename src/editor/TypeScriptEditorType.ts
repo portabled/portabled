@@ -84,8 +84,8 @@ module teapo {
    */
   class TypeScriptEditor extends CompletionCodeMirrorEditor {
 
-    /** Required as part of interface to TypeScriptService. */
-    changes: TypeScript.TextChangeRange[] = [];
+    private _changes: TypeScript.TextChangeRange[] = [];
+    private _bufferChanges: TypeScript.TextChangeRange[] = [];
 
     /** Required as part of interface to TypeScriptService. */
     _cachedSnapshot: TypeScript.IScriptSnapshot = null; // needed for TypeScriptService optimization
@@ -105,13 +105,29 @@ module teapo {
     private _updateSymbolMarksTimeout = 0;
     private _updateSymbolMarksClosure = () => this._updateSymbolMarks();
 
+    private _applyingEdits = false;
     private _completionActive = false;
+
+    private _delayedHandleChangeClosure = () => this._delayedHandleChanges();
+    private _delayedHandleChangeTimeout = 0;
+    private _delayedHandleChangeArg: CodeMirror.EditorChange = null;
 
     constructor(
       private _typescript: TypeScriptService,
       shared: CodeMirrorEditor.SharedState,
       docState: DocumentState) {
       super(shared, docState);
+    }
+
+    changes() {
+      if (this._bufferChanges.length) {
+        var collapsedBuffer = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(this._bufferChanges);
+        this._changes.push(collapsedBuffer);
+        //console.log('collapse ',this._bufferChanges,' into ',this._changes);
+
+        this._bufferChanges = [];
+      }
+      return this._changes;
     }
 
     /**
@@ -155,28 +171,47 @@ module teapo {
       var doc = this.doc();
       var offset = doc.indexFromPos(change.from);
 
-      var oldLength = this._totalLengthOfLines(<string[]><any>change.removed); // it's an array not a string
+      var oldLength = this._totalLengthOfLines(change.removed); // it's an array not a string
       var newLength = this._totalLengthOfLines(change.text);
 
       var ch = new TypeScript.TextChangeRange(
         TypeScript.TextSpan.fromBounds(offset, offset + oldLength),
         newLength);
 
-      // store the change in an array
-      this.changes.push(ch);
+      // store the change for TypeScript
+      this._bufferChanges.push(ch);
+
+      this._delayedHandleChangeArg = change;
+      if (this._delayedHandleChangeTimeout)
+        clearTimeout(this._delayedHandleChangeTimeout);
+      this._delayedHandleChangeTimeout = setTimeout(this._delayedHandleChangeClosure, 1);
+    }
+
+    private _delayedHandleChanges() {
+      this._delayedHandleChangeTimeout = 0;
+      var change = this._delayedHandleChangeArg;
+      this._delayedHandleChangeArg = null;
+
+      var doc = this.doc();
+      var offset = doc.indexFromPos(change.from);
 
       this._clearSymbolMarks();
 
       var removedText = change.removed.join('\n');
       var addedText = change.text.join('\n');
+      //console.log('[' + removedText.replace(/\n/g, '\\n') + '] -> [' + addedText.replace(/\n/g, '\\n') + '] - TextChangeRange:', this._bufferChanges[this._bufferChanges.length-1]);
       if (addedText === '.') {
+        var codbg = this._typescript.service.getCompletionsAtPosition(this.docState.fullPath(), offset + addedText.length, true);
         this.triggerCompletion(true);
       }
-      else if (addedText.length === 1) {
-        if (addedText === ';' || addedText === '}' || addedText === '\n')
-          this._formatOnKey(addedText, removedText, change);
+      else if (addedText === ';' || addedText === '}' || addedText === '{}') {
+        var codbg = this._typescript.service.getCompletionsAtPosition(this.docState.fullPath(), offset + addedText.length, true);
+        //console.log('_formatOnKey');
+        this._formatOnKey(addedText, removedText, change);
       }
-      else if (addedText.length > 3) {
+      else if (addedText.length > 3 || addedText === '\n') {
+        var codbg = this._typescript.service.getCompletionsAtPosition(this.docState.fullPath(), offset, true);
+        //console.log('_formatOnPaste');
         this._formatOnPaste(addedText, removedText, change);
       }
 
@@ -257,6 +292,7 @@ module teapo {
     }
 
     private _formatOnKey(addedText: string, removedText: string, change: CodeMirror.EditorChange) {
+      if (this._applyingEdits) return;
       var doc = this.doc();
       var offset = doc.indexFromPos(change.from);
       offset += addedText.length;
@@ -280,7 +316,8 @@ module teapo {
       this._applyEdits(edits);
     }
 
-    private __formatOnPaste(addedText: string, removedText: string, change: CodeMirror.EditorChange) {
+    private _formatOnPaste(addedText: string, removedText: string, change: CodeMirror.EditorChange) {
+      if (this._applyingEdits) return;
       var doc = this.doc();
       var offset = doc.indexFromPos(change.from);
 
@@ -295,7 +332,7 @@ module teapo {
 
       var edits = this._typescript.service.getFormattingEditsOnPaste(
         fullPath,
-        offset, offset + addedText,
+        offset, offset + addedText.length,
         options);
 
 
@@ -303,6 +340,10 @@ module teapo {
     }
 
     private _applyEdits(edits: TypeScript.Services.TextEdit[]) {
+      if (!edits.length) return;
+
+      //console.log('_applyEdits('+edits.length+')...');
+      this._applyingEdits = true;
       var doc = this.doc();
       var orderedEdits = edits.sort((e1, e2) => e1.minChar < e2.minChar ? +1 : e1.minChar == e2.minChar ? 0 : -1);
       for (var i = 0; i < orderedEdits.length; i++) {
@@ -312,6 +353,8 @@ module teapo {
           doc.posFromIndex(e.minChar),
           doc.posFromIndex(e.limChar));
       }
+      this._applyingEdits = false;
+      //console.log('_applyEdits('+edits.length+') - complete.');
     }
 
     /**

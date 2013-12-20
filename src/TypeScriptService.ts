@@ -22,10 +22,10 @@ module teapo {
 
     /** TypeScript custom settings. */
     compilationSettings = new TypeScript.CompilationSettings();
-  
+
     /** Main public API of TypeScript compiler/parser engine. */
     service: TypeScript.Services.ILanguageService;
-  
+
     /** Files added to the compiler/parser scope, by full path. */
     scripts: { [fullPath: string]: TypeScriptService.Script; } = {};
 
@@ -50,7 +50,7 @@ module teapo {
         getScriptVersion: (fileName: string) => {
           var script = this.scripts[fileName];
           if (script.changes)
-            return script.changes.length;
+            return script.changes().length;
           return 0;
         },
         getScriptIsOpen: (fileName: string) => {
@@ -62,15 +62,15 @@ module teapo {
           var snapshot = <TypeScriptDocumentSnapshot>script._cachedSnapshot;
 
           // checking if snapshot is out of date
-          if (!snapshot || (script.changes && snapshot.version<script.changes.length)) {
+          if (!snapshot || (script.changes && snapshot.version < script.changes().length)) {
             script._cachedSnapshot =
-              snapshot = new TypeScriptDocumentSnapshot(script);
+            snapshot = new TypeScriptDocumentSnapshot(script);
           }
 
           return snapshot;
         },
         getDiagnosticsObject: () => {
-          return { log: (text:string) => this._log(text) };
+          return { log: (text: string) => this._log(text) };
         },
         getLocalizedDiagnosticMessages: () => null,
         information: () => this.logLevels.information,
@@ -93,16 +93,16 @@ module teapo {
         getParentDirectory: (path: string) => {
           path = TypeScript.switchToForwardSlashes(path);
           var slashPos = path.lastIndexOf('/');
-          if (slashPos===path.length-1)
-            slashPos = path.lastIndexOf('/', path.length-2);
-          if (slashPos>0)
-            return path.slice(0,slashPos);
+          if (slashPos === path.length - 1)
+            slashPos = path.lastIndexOf('/', path.length - 2);
+          if (slashPos > 0)
+            return path.slice(0, slashPos);
           else
             return '/';
         }
       }
     }
-  
+
     private _log(text) {
       // console.log(text);
     }
@@ -124,7 +124,7 @@ module teapo {
        * History of changes to the file, in a form of objects expected by TypeScript
        * (basically, offset, old length, new length).
        */
-      changes: TypeScript.TextChangeRange[];
+      changes(): TypeScript.TextChangeRange[];
 
       /**
        * Used internally, don't ever change.
@@ -132,40 +132,40 @@ module teapo {
       _cachedSnapshot: TypeScript.IScriptSnapshot;
     }
   }
- 
+
   class TypeScriptDocumentSnapshot implements TypeScript.IScriptSnapshot {
     version = 0;
     private _text: string = null;
 
     constructor(public scriptData: TypeScriptService.Script) {
       if (this.scriptData.changes)
-        this.version = this.scriptData.changes.length;
+        this.version = this.scriptData.changes().length;
     }
 
     getText(start: number, end: number): string {
       var text = this._getText();
-      var result = text.slice(start,end);
+      var result = text.slice(start, end);
       return result;
     }
-  
+
     getLength(): number {
       var text = this._getText();
       return text.length;
     }
-  
+
     getLineStartPositions(): number[] {
       var text = this._getText();
       var result = TypeScript.TextUtilities.parseLineStarts(text);
       return result;
     }
-  
+
     getTextChangeRangeSinceVersion(scriptVersion: number): TypeScript.TextChangeRange {
       if (!this.scriptData.changes)
         return TypeScript.TextChangeRange.unchanged;
 
       // TODO: check that we are not called for changes on old snapshots
 
-      var chunk = this.scriptData.changes.slice(scriptVersion);
+      var chunk = this.scriptData.changes().slice(scriptVersion);
 
       var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(chunk);
       return result;

@@ -820,8 +820,8 @@ var teapo;
             var _this = this;
             _super.call(this, shared, docState);
             this._typescript = _typescript;
-            /** Required as part of interface to TypeScriptService. */
-            this.changes = [];
+            this._changes = [];
+            this._bufferChanges = [];
             /** Required as part of interface to TypeScriptService. */
             this._cachedSnapshot = null;
             this._syntacticDiagnostics = [];
@@ -838,8 +838,25 @@ var teapo;
             this._updateSymbolMarksClosure = function () {
                 return _this._updateSymbolMarks();
             };
+            this._applyingEdits = false;
             this._completionActive = false;
+            this._delayedHandleChangeClosure = function () {
+                return _this._delayedHandleChanges();
+            };
+            this._delayedHandleChangeTimeout = 0;
+            this._delayedHandleChangeArg = null;
         }
+        TypeScriptEditor.prototype.changes = function () {
+            if (this._bufferChanges.length) {
+                var collapsedBuffer = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(this._bufferChanges);
+                this._changes.push(collapsedBuffer);
+
+                //console.log('collapse ',this._bufferChanges,' into ',this._changes);
+                this._bufferChanges = [];
+            }
+            return this._changes;
+        };
+
         /**
         * Overriding opening of the file, refreshing error marks.
         */
@@ -885,19 +902,41 @@ var teapo;
 
             var ch = new TypeScript.TextChangeRange(TypeScript.TextSpan.fromBounds(offset, offset + oldLength), newLength);
 
-            // store the change in an array
-            this.changes.push(ch);
+            // store the change for TypeScript
+            this._bufferChanges.push(ch);
+
+            this._delayedHandleChangeArg = change;
+            if (this._delayedHandleChangeTimeout)
+                clearTimeout(this._delayedHandleChangeTimeout);
+            this._delayedHandleChangeTimeout = setTimeout(this._delayedHandleChangeClosure, 1);
+        };
+
+        TypeScriptEditor.prototype._delayedHandleChanges = function () {
+            this._delayedHandleChangeTimeout = 0;
+            var change = this._delayedHandleChangeArg;
+            this._delayedHandleChangeArg = null;
+
+            var doc = this.doc();
+            var offset = doc.indexFromPos(change.from);
 
             this._clearSymbolMarks();
 
             var removedText = change.removed.join('\n');
             var addedText = change.text.join('\n');
+
+            //console.log('[' + removedText.replace(/\n/g, '\\n') + '] -> [' + addedText.replace(/\n/g, '\\n') + '] - TextChangeRange:', this._bufferChanges[this._bufferChanges.length-1]);
             if (addedText === '.') {
+                var codbg = this._typescript.service.getCompletionsAtPosition(this.docState.fullPath(), offset + addedText.length, true);
                 this.triggerCompletion(true);
-            } else if (addedText.length === 1) {
-                if (addedText === ';' || addedText === '}' || addedText === '\n')
-                    this._formatOnKey(addedText, removedText, change);
-            } else if (addedText.length > 3) {
+            } else if (addedText === ';' || addedText === '}' || addedText === '{}') {
+                var codbg = this._typescript.service.getCompletionsAtPosition(this.docState.fullPath(), offset + addedText.length, true);
+
+                //console.log('_formatOnKey');
+                this._formatOnKey(addedText, removedText, change);
+            } else if (addedText.length > 3 || addedText === '\n') {
+                var codbg = this._typescript.service.getCompletionsAtPosition(this.docState.fullPath(), offset, true);
+
+                //console.log('_formatOnPaste');
                 this._formatOnPaste(addedText, removedText, change);
             }
 
@@ -969,6 +1008,8 @@ var teapo;
         };
 
         TypeScriptEditor.prototype._formatOnKey = function (addedText, removedText, change) {
+            if (this._applyingEdits)
+                return;
             var doc = this.doc();
             var offset = doc.indexFromPos(change.from);
             offset += addedText.length;
@@ -987,7 +1028,9 @@ var teapo;
             this._applyEdits(edits);
         };
 
-        TypeScriptEditor.prototype.__formatOnPaste = function (addedText, removedText, change) {
+        TypeScriptEditor.prototype._formatOnPaste = function (addedText, removedText, change) {
+            if (this._applyingEdits)
+                return;
             var doc = this.doc();
             var offset = doc.indexFromPos(change.from);
 
@@ -1000,12 +1043,17 @@ var teapo;
             options.ConvertTabsToSpaces = true;
             options.NewLineCharacter = '\n';
 
-            var edits = this._typescript.service.getFormattingEditsOnPaste(fullPath, offset, offset + addedText, options);
+            var edits = this._typescript.service.getFormattingEditsOnPaste(fullPath, offset, offset + addedText.length, options);
 
             this._applyEdits(edits);
         };
 
         TypeScriptEditor.prototype._applyEdits = function (edits) {
+            if (!edits.length)
+                return;
+
+            //console.log('_applyEdits('+edits.length+')...');
+            this._applyingEdits = true;
             var doc = this.doc();
             var orderedEdits = edits.sort(function (e1, e2) {
                 return e1.minChar < e2.minChar ? +1 : e1.minChar == e2.minChar ? 0 : -1;
@@ -1014,6 +1062,8 @@ var teapo;
                 var e = orderedEdits[i];
                 doc.replaceRange(e.text, doc.posFromIndex(e.minChar), doc.posFromIndex(e.limChar));
             }
+            this._applyingEdits = false;
+            //console.log('_applyEdits('+edits.length+') - complete.');
         };
 
         /**
@@ -2649,7 +2699,7 @@ var teapo;
                 getScriptVersion: function (fileName) {
                     var script = _this.scripts[fileName];
                     if (script.changes)
-                        return script.changes.length;
+                        return script.changes().length;
                     return 0;
                 },
                 getScriptIsOpen: function (fileName) {
@@ -2663,7 +2713,7 @@ var teapo;
                     var snapshot = script._cachedSnapshot;
 
                     // checking if snapshot is out of date
-                    if (!snapshot || (script.changes && snapshot.version < script.changes.length)) {
+                    if (!snapshot || (script.changes && snapshot.version < script.changes().length)) {
                         script._cachedSnapshot = snapshot = new TypeScriptDocumentSnapshot(script);
                     }
 
@@ -2735,7 +2785,7 @@ var teapo;
             this.version = 0;
             this._text = null;
             if (this.scriptData.changes)
-                this.version = this.scriptData.changes.length;
+                this.version = this.scriptData.changes().length;
         }
         TypeScriptDocumentSnapshot.prototype.getText = function (start, end) {
             var text = this._getText();
@@ -2759,7 +2809,7 @@ var teapo;
                 return TypeScript.TextChangeRange.unchanged;
 
             // TODO: check that we are not called for changes on old snapshots
-            var chunk = this.scriptData.changes.slice(scriptVersion);
+            var chunk = this.scriptData.changes().slice(scriptVersion);
 
             var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(chunk);
             return result;
@@ -2773,3 +2823,11 @@ var teapo;
         return TypeScriptDocumentSnapshot;
     })();
 })(teapo || (teapo = {}));
+var Apple = (function () {
+    function Apple() {
+    }
+    Apple.prototype.method = function () {
+        this.method();
+    };
+    return Apple;
+})();

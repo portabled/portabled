@@ -160,12 +160,17 @@ html {
 }
 
 .teapo-content-inner {
-  font-size: 150%;
   padding: 2em;
   background: #F8F8F8;
   color: gray;
   height: 100%;
   overflow: none;
+}
+.teapo-content-inner-title {
+  font-size: 150%;
+}
+.teapo-content-inner-technical {
+  width: 50%;
 }
 
 .CodeMirror {

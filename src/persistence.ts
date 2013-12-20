@@ -55,7 +55,7 @@ module teapo {
   /**
    * Allows reading, writing properties of the document,
    * and also exposes runtime features like editor and entry in the file list.
-   */  
+   */
   export interface DocumentState {
 
     fullPath(): string;
@@ -134,9 +134,9 @@ module teapo {
 
   interface ExecuteSqlDelegate {
     (sqlStatement: string,
-    arguments?: any[],
-    callback?: (transaction: SQLTransaction, result: SQLResultSet) => void,
-    errorCallback?: (transaction: SQLTransaction, resultSet: SQLResultSet) => void): void;
+      arguments?: any[],
+      callback?: (transaction: SQLTransaction, result: SQLResultSet) => void,
+      errorCallback?: (transaction: SQLTransaction, resultSet: SQLResultSet) => void): void;
   }
 
   class RuntimeDocumentStorage implements DocumentStorage {
@@ -164,9 +164,9 @@ module teapo {
       }
 
       var openDatabase = this.handler.openDatabase || getOpenDatabase();
-      if (typeof openDatabase==='function') {
+      if (typeof openDatabase === 'function') {
         var dbName = this.handler.uniqueKey ? this.handler.uniqueKey : getUniqueKey();
-        var db = openDatabase(dbName, 1, null, 1024*1024*5);
+        var db = openDatabase(dbName, 1, null, 1024 * 1024 * 5);
 
         this._executeSql = (
           sqlStatement: string,
@@ -176,7 +176,7 @@ module teapo {
 
           var errorCallbackSafe = errorCallback;
           if (!errorCallbackSafe)
-            errorCallbackSafe = (t: SQLTransaction, e: SQLError) => alert(e+' '+e.message+'\n'+sqlStatement+'\n'+args);
+            errorCallbackSafe = (t: SQLTransaction, e: SQLError) => alert(e + ' ' + e.message + '\n' + sqlStatement + '\n' + args);
           db.transaction((t) => t.executeSql(sqlStatement, args, callback, errorCallbackSafe));
         };
         this._insertMetadataSql = 'INSERT INTO "*metadata" (name, value) VALUES(?,?)';
@@ -186,7 +186,7 @@ module teapo {
         this._loadTableListFromWebsql((tableList) => {
           var metadataTableExists = false;
           for (var i = 0; i < tableList.length; i++) {
-            if (tableList[i]==='*metadata') {
+            if (tableList[i] === '*metadata') {
               metadataTableExists = true;
               break;
             }
@@ -202,17 +202,17 @@ module teapo {
 
           loadPropertiesFromWebSql(
             '*metadata',
-             this._metadataElement,
-             this._metadataProperties,
-             this._executeSql,
-             () => {
-  
+            this._metadataElement,
+            this._metadataProperties,
+            this._executeSql,
+            () => {
+
               var wsEdited = safeParseInt(this._metadataProperties.edited);
               if (!wsEdited || domEdited && domEdited > wsEdited)
                 this._loadInitialStateFromDom(pathElements);
               else
                 this._loadInitialStateFromWebSql(pathElements);
-             });
+            });
         });
       }
       else {
@@ -230,7 +230,7 @@ module teapo {
 
     createDocument(fullPath: string): DocumentState {
       if (this._docByPath[fullPath])
-        throw new Error('File already exists: '+fullPath+'.');
+        throw new Error('File already exists: ' + fullPath + '.');
 
       var s = appendScriptElement(document);
       s.setAttribute('data-path', fullPath);
@@ -259,12 +259,12 @@ module teapo {
     }
 
     getProperty(name: string): string {
-      return this._metadataProperties[name||''];
+      return this._metadataProperties[name || ''];
     }
 
     setProperty(name: string, value: string): void {
-      name = name||'';
-      if (value===this._metadataProperties[name])
+      name = name || '';
+      if (value === this._metadataProperties[name])
         return;
 
       var existingProperty = this._metadataProperties.hasOwnProperty(name);
@@ -277,12 +277,12 @@ module teapo {
 
       if (this._executeSql) {
         if (existingProperty)
-          this._executeSql(this._updateMetadataSql, [value,name]);
+          this._executeSql(this._updateMetadataSql, [value, name]);
         else
           this._executeSql(this._insertMetadataSql, [name, value]);
       }
 
-      if (name!=='edited')
+      if (name !== 'edited')
         this.setProperty('edited', <any>Date.now());
     }
 
@@ -310,7 +310,7 @@ module teapo {
             this._executeSql(
               'CREATE TABLE "*metadata" (name TEXT, value TEXT)',
               [],
-              (tr,r) => {
+              (tr, r) => {
                 this.handler.documentStorageCreated(null, this);
               }, null);
           }
@@ -320,15 +320,15 @@ module teapo {
         };
 
         var continueAdding = () => {
-          if (addedFileCount===fullPathList.length) {
+          if (addedFileCount === fullPathList.length) {
             completedAdding();
             return;
           }
 
-          
+
           var fullPath = fullPathList[addedFileCount];
           var s = pathElements[fullPath];
-  
+
           var docState = new RuntimeDocumentState(
             fullPath,
             s,
@@ -339,7 +339,7 @@ module teapo {
           this._docByPath[fullPath] = docState;
 
           addedFileCount++;
-          this.handler.setStatus('Loading files from HTML: '+addedFileCount+' of '+fullPathList.length+'...');
+          this.handler.setStatus('Loading files from HTML: ' + addedFileCount + ' of ' + fullPathList.length + '...');
 
           setTimeout(continueAdding, 1);
         };
@@ -360,7 +360,7 @@ module teapo {
         (tableList) => {
           for (var i = 0; i < tableList.length; i++) {
             this._executeSql(
-              'DROP TABLE "'+tableList[i]+'"',
+              'DROP TABLE "' + tableList[i] + '"',
               [],
               null, null);
           }
@@ -383,12 +383,12 @@ module teapo {
       // retrieving data from WebSQL and creating documents
       this._loadTableListFromWebsql((tables) => {
 
-        var files = tables.filter((tab) => tab.charAt(0) === '/' || tab.charAt(0)==='#');
+        var files = tables.filter((tab) => tab.charAt(0) === '/' || tab.charAt(0) === '#');
         var completedFileCount = 0;
 
         var continueAdding = () => {
           var fullPath = files[completedFileCount];
-          
+
           var s = pathElements[fullPath];
           if (s) {
             removeAttributes(s);
@@ -398,18 +398,18 @@ module teapo {
             s = appendScriptElement(this.document);
             s.setAttribute('data-path', fullPath);
           }
-          
+
           var docState = new RuntimeDocumentState(
             fullPath,
             s,
             this._executeSql,
             this,
             () => {
-          
+
               completedFileCount++;
-              this.handler.setStatus('Loading files from temporary storage: '+completedFileCount+' of '+files.length+'...');
-          
-              if (completedFileCount===files.length) {
+              this.handler.setStatus('Loading files from temporary storage: ' + completedFileCount + ' of ' + files.length + '...');
+
+              if (completedFileCount === files.length) {
                 // removing remaining HTML DOM
                 for (var k in pathElements) if (pathElements.hasOwnProperty(k)) {
                   var s = pathElements[k];
@@ -422,7 +422,7 @@ module teapo {
                 setTimeout(continueAdding, 1);
               }
             });
-          
+
           this._docByPath[fullPath] = docState;
         };
 
@@ -437,12 +437,12 @@ module teapo {
       for (var i = 0; i < document.scripts.length; i++) {
         var s = <HTMLScriptElement>document.scripts[i];
         var path = s.getAttribute('data-path');
-        if (typeof path==='string' && path.length>0) {
-          if (path.charAt(0)==='/' || path.charAt(0)==='#') {
+        if (typeof path === 'string' && path.length > 0) {
+          if (path.charAt(0) === '/' || path.charAt(0) === '#') {
             pathElements[path] = s;
           }
         }
-        else if (s.id==='storageMetadata') {
+        else if (s.id === 'storageMetadata') {
           this._metadataElement = s;
         }
       }
@@ -450,8 +450,8 @@ module teapo {
       for (var i = 0; i < document.styleSheets.length; i++) {
         var sty = <HTMLStyleElement>document.styleSheets.item(i).ownerNode;
         var path = sty.getAttribute('data-path');
-        if (typeof path==='string' && path.length>0) {
-          if (path.charAt(0)==='/' || path.charAt(0)==='#') {
+        if (typeof path === 'string' && path.length > 0) {
+          if (path.charAt(0) === '/' || path.charAt(0) === '#') {
             pathElements[path] = <any>sty;
           }
         }
@@ -469,9 +469,9 @@ module teapo {
           var files: string[] = [];
           for (var i = 0; i < result.rows.length; i++) {
             var tableName = result.rows.item(i).name;
-            if (tableName.charAt(0)==='/'
-                 || tableName.charAt(0)==='#'
-                 || tableName.charAt(0)==='*') {
+            if (tableName.charAt(0) === '/'
+              || tableName.charAt(0) === '#'
+              || tableName.charAt(0) === '*') {
               files.push(tableName);
             }
           }
@@ -504,8 +504,8 @@ module teapo {
 
       var tableName = this._fullPath;
       if (this._executeSql) {
-        this._insertSql = 'INSERT INTO "'+tableName+'" (name, value) VALUES(?,?)';
-        this._updateSql = 'UPDATE "'+tableName+'" SET value=? WHERE name=?';
+        this._insertSql = 'INSERT INTO "' + tableName + '" (name, value) VALUES(?,?)';
+        this._updateSql = 'UPDATE "' + tableName + '" SET value=? WHERE name=?';
       }
 
       if (loadFromWebsqlCallback) {
@@ -526,11 +526,11 @@ module teapo {
           this._executeSql);
       }
     }
-    
+
     fullPath() {
       return this._fullPath;
     }
-   
+
     type() {
       if (!this._type)
         this._type = this._storage.handler.getType(this._fullPath);
@@ -557,12 +557,12 @@ module teapo {
     }
 
     getProperty(name: string): string {
-      return this._properties[name||''];
+      return this._properties[name || ''];
     }
 
     setProperty(name: string, value: string) {
-      var name = name||'';
-      if (value===this._properties[name])
+      var name = name || '';
+      if (value === this._properties[name])
         return;
 
       var existingProperty = this._properties.hasOwnProperty(name);
@@ -575,7 +575,7 @@ module teapo {
 
       if (this._executeSql) {
         if (existingProperty)
-          this._executeSql(this._updateSql, [value,name]);
+          this._executeSql(this._updateSql, [value, name]);
         else
           this._executeSql(this._insertSql, [name, value]);
       }
@@ -590,7 +590,7 @@ module teapo {
       removeScriptElement(this._storeElement);
 
       if (this._executeSql) {
-        this._executeSql('DROP TABLE "'+this._fullPath+'"');
+        this._executeSql('DROP TABLE "' + this._fullPath + '"');
       }
     }
 
@@ -603,8 +603,8 @@ module teapo {
     key = key.split('#')[0];
 
     if (key.length > 'index.html'.length
-       && key.slice(key.length-'index.html'.length).toLowerCase()==='index.html')
-      key = key.slice(0, key.length-'index.html'.length);
+      && key.slice(key.length - 'index.html'.length).toLowerCase() === 'index.html')
+      key = key.slice(0, key.length - 'index.html'.length);
 
     key += '*';
 
@@ -617,7 +617,7 @@ module teapo {
 
   function safeParseInt(str: string): number {
     if (!str) return null;
-    if (typeof str==='number') return <number><any>str;
+    if (typeof str === 'number') return <number><any>str;
     try {
       return parseInt(str);
     }
@@ -633,31 +633,31 @@ module teapo {
     return s;
   }
 
-function removeScriptElement(script: HTMLElement) {
-  var keepElement: boolean;
-  if (script.tagName.toLowerCase()==='style') {
-    keepElement = true;
-  }
-  else if (script.tagName.toLowerCase()==='script') {
-    var type = script.getAttribute('type');
-    if (!type || type.indexOf('javascript')>0) {
+  function removeScriptElement(script: HTMLElement) {
+    var keepElement: boolean;
+    if (script.tagName.toLowerCase() === 'style') {
       keepElement = true;
     }
-    else {
-      if (script.id==='page-template'
-         || script.id==='folder-template'
-         || script.id==='file-template')
+    else if (script.tagName.toLowerCase() === 'script') {
+      var type = script.getAttribute('type');
+      if (!type || type.indexOf('javascript') > 0) {
         keepElement = true;
+      }
+      else {
+        if (script.id === 'page-template'
+          || script.id === 'folder-template'
+          || script.id === 'file-template')
+          keepElement = true;
+      }
+    }
+
+    if (keepElement) {
+      script.removeAttribute('data-path');
+    }
+    else {
+      script.parentElement.removeChild(script);
     }
   }
-
-  if (keepElement) {
-    script.removeAttribute('data-path');
-  }
-  else {
-    script.parentElement.removeChild(script);
-  }
-}
 
   function loadPropertiesFromDom(
     tableName: string,
@@ -668,8 +668,8 @@ function removeScriptElement(script: HTMLElement) {
     function afterCreateTable(after: () => void) {
       if (executeSql) {
         executeSql(
-          'CREATE TABLE "'+tableName+'" ( name TEXT, value TEXT)', [],
-          (tr,r) => {
+          'CREATE TABLE "' + tableName + '" ( name TEXT, value TEXT)', [],
+          (tr, r) => {
             after();
           },
           null);
@@ -680,20 +680,20 @@ function removeScriptElement(script: HTMLElement) {
     }
 
     afterCreateTable(() => {
-      var insertSQL = 'INSERT INTO "'+tableName+'" (name, value) VALUES(?,?)';
-  
+      var insertSQL = 'INSERT INTO "' + tableName + '" (name, value) VALUES(?,?)';
+
       for (var i = 0; i < script.attributes.length; i++) {
         var a = script.attributes.item(i);
-  
-        if (a.name==='id' || a.name==='data-path' || a.name==='type')
+
+        if (a.name === 'id' || a.name === 'data-path' || a.name === 'type')
           continue;
-  
+
         properties[a.name] = a.value;
-  
+
         if (executeSql)
           executeSql(insertSQL, [a.name, a.value]);
       }
-  
+
       // restore HTML-safe conversions
       var contentStr = decodeFromInnerHTML(script.innerHTML);
       properties[''] = contentStr;
@@ -710,12 +710,12 @@ function removeScriptElement(script: HTMLElement) {
     completed: () => void) {
 
     executeSql(
-      'SELECT name, value from "'+tableName+'"',
-       [],
+      'SELECT name, value from "' + tableName + '"',
+      [],
       (t, results) => {
 
         var rowCount = results.rows.length; // TODO: check if this is necessary
-        for (var i=0; i < rowCount; i++) {
+        for (var i = 0; i < rowCount; i++) {
           var row: { name: string; value: string; } = results.rows.item(i);
           properties[row.name] = row.value || '';
           if (row.name)
@@ -731,7 +731,7 @@ function removeScriptElement(script: HTMLElement) {
   function removeAttributes(element: HTMLElement) {
     for (var i = 0; i < element.attributes.length; i++) {
       var a = element.attributes[i];
-      if (a.name==='id' || a.name==='type' || a.name==='data-path')
+      if (a.name === 'id' || a.name === 'type' || a.name === 'data-path')
         continue;
       element.removeAttribute(a.name);
       i--;
@@ -744,7 +744,7 @@ function removeScriptElement(script: HTMLElement) {
   export function encodeForInnerHTML(content: string): string {
     // matching script closing tag with *one* or more consequtive slashes
     return content.replace(/<\/+script/g, (match) => {
-      return '</'+match.slice(1); // skip angle bracket, inject bracket and extra slash
+      return '</' + match.slice(1); // skip angle bracket, inject bracket and extra slash
     });
   }
 
@@ -754,7 +754,7 @@ function removeScriptElement(script: HTMLElement) {
   export function decodeFromInnerHTML(innerHTML: string): string {
     // matching script closing tag with *t*wo or more consequtive slashes
     return innerHTML.replace(/<\/\/+script/g, (match) => {
-      return '<'+match.slice(2); // skip angle bracket and one slash, inject bracket
+      return '<' + match.slice(2); // skip angle bracket and one slash, inject bracket
     });
   }
 }
