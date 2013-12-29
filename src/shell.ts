@@ -34,16 +34,104 @@ module teapo {
       this.fileList.selectedFile.subscribe((fileEntry) => this._fileSelected(fileEntry));
 
       // loading editors for all the files
-      var allFiles = this._storage.documentNames();
-      for (var i = 0; i < allFiles.length; i++) {
-        var docState = this._storage.getDocument(allFiles[i]);
+      var allFilenames = this._storage.documentNames();
+      allFilenames.sort();
+      for (var i = 0; i < allFilenames.length; i++) {
+        var docState = this._storage.getDocument(allFilenames[i]);
         docState.editor();
       }
+    }
+
+    keyDown(self, e: KeyboardEvent) {
+      switch (e.keyCode) {
+        case 78:
+          if ((<any>e).cmdKey || e.ctrlKey || e.altKey) {
+            this.newFileClick();
+
+            if (e.preventDefault)
+              e.preventDefault();
+            if ('cancelBubble' in e)
+              e.cancelBubble = true;
+            return false;
+          }
+          break;          
+      }
+      return true;
     }
 
     toggleToolbar() {
       this.toolbarExpanded(this.toolbarExpanded() ? false : true);
     }
+
+    loadText() {
+      this._load(
+        (fileReader, file) => fileReader.readAsText(file),
+        (data, docState) => docState.setProperty(null, data));
+    }
+
+    loadBase64() {
+      this._load(
+        (fileReader, file) => fileReader.readAsArrayBuffer(file),
+        (data, docState) => {
+          var binary: string[] = [];
+          var bytes = new Uint8Array(data);
+          var len = bytes.byteLength;
+          for (var i = 0; i < len; i++) {
+            binary.push(String.fromCharCode(bytes[i]));
+          }
+          var text = window.btoa(binary.join(''));
+          
+          docState.setProperty(null, text);
+        });
+    }
+
+    private _load(requestLoad: (fileReader: FileReader, file: File) => void, applyData: (data, docState: DocumentState) => void) {
+
+      this.toolbarExpanded(false);
+
+      var input = document.createElement('input');
+      input.type = 'file';
+
+      input.onchange = () => {
+        if (!input.files || !input.files.length) return;
+
+        var fileReader = new FileReader();
+        fileReader.onerror = (error) => {
+          alert('read ' + error.message);
+        };
+        fileReader.onloadend = () => {
+          if (fileReader.readyState !== 2) {
+            alert('read ' + fileReader.readyState + fileReader.error);
+            return;
+          }
+
+          try {
+
+            var filename = prompt(
+              'Suggested filename:',
+              input.files[0].name);
+
+            if (!filename)
+              return;
+
+            var fileEntry = this.fileList.createFileEntry(filename);
+            var docStorage = this._storage.createDocument(fileEntry.fullPath());
+
+            applyData(fileReader.result, docStorage);
+
+          }
+          catch (error) {
+            alert('parsing ' + error.message + ' ' + error.stack);
+          }
+        };
+
+        requestLoad(fileReader, input.files[0]);
+      };
+      
+      input.click();
+
+    }
+
 
     /**
      * Prompts user for a name, creates a new file and opens it in the editor.
@@ -59,6 +147,13 @@ module teapo {
 
       var fileEntry = this.fileList.createFileEntry(fileName);
       this._storage.createDocument(fileEntry.fullPath());
+
+      // expand to newly created
+      var folder = fileEntry.parent();
+      while (folder) {
+        folder.isExpanded(true);
+        folder = folder.parent();
+      }
 
       fileEntry.handleClick();
     }

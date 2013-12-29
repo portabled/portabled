@@ -7,6 +7,7 @@ module teapo {
   class TypeScriptEditorType implements EditorType {
 
     private _shared: CodeMirrorEditor.SharedState = TypeScriptEditorType.createShared();
+    private _initDocQueue: DocumentState[] = [];
 
     /** Optional argument can be used to mock TypeScriptService in testing scenarios. */
     constructor(private _typescript: TypeScriptService = null) {
@@ -61,16 +62,47 @@ module teapo {
 
       var editor = new TypeScriptEditor(this._typescript, this._shared, docState);
 
-      setTimeout(() => {
-        this._typescript.scripts[docState.fullPath()] = editor;
-        this._typescript.service.getSyntacticDiagnostics(docState.fullPath());
-        setTimeout(() => {
-          this._typescript.service.getSignatureAtPosition(docState.fullPath(), 0);
-        }, 1);
-      },
-        1);
+      this._initDocStateWithTypeScript(docState);
+      this._typescript.scripts[docState.fullPath()] = editor;
 
       return editor;
+    }
+
+    /**
+     * Invoke some basic functions on a script, to make TS compiler read the file once.
+     * The logic here makes sure the documents are processed in the deterministic sequential order.
+     */
+    private _initDocStateWithTypeScript(docState: DocumentState) {
+      if (this._initDocQueue.length > 0) {
+        this._initDocQueue.push(docState);
+      }
+      else { 
+        this._initDocQueue.push(docState);
+        setTimeout(() => this._processDocQueue(),5);
+      }
+    }
+
+    private _processDocQueue() {
+      var dequeueDocState: DocumentState = null;
+      for (var i = 0; i < this._initDocQueue.length; i++) { 
+        dequeueDocState = this._initDocQueue[i];
+        if (dequeueDocState)
+          break;
+      }
+
+      if (dequeueDocState) { 
+        this._initDocQueue = [];
+        return;
+      }
+      
+      this._typescript.service.getSyntacticDiagnostics(dequeueDocState.fullPath());
+      setTimeout(() => {
+        this._typescript.service.getSignatureAtPosition(dequeueDocState.fullPath(), 0);
+
+        this._initDocQueue[i] = null;
+
+        setTimeout(() => this._processDocQueue(), 5);
+      }, 5);
     }
 
     private _initTypescript() {

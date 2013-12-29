@@ -42,8 +42,7 @@ module teapo {
       return {
         getCompilationSettings: () => this.compilationSettings,
         getScriptFileNames: () => {
-          var result = Object.keys(this.scripts);
-          result = result.sort();
+          var result = Object.keys(this.scripts).filter(k => this.scripts.hasOwnProperty(k)).sort();
           //console.log('...getScriptFileNames():',result);
           return result;
         },

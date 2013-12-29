@@ -1,10 +1,12 @@
-<div class=teapo-file-list>
+<div class=teapo-file-list
+   data-bind='event: { keydown: keyDown }'>
   <div data-bind='template: { name: "folder-template", foreach: fileList.folders }'></div>
   <div data-bind='template: { name: "file-template", foreach: fileList.files }'></div>
 </div>
 
 
-<div class=teapo-navigator-expandable-toolbar>
+<div class=teapo-navigator-expandable-toolbar
+   data-bind='event: { keydown: keyDown }'>
   <div class=teapo-navigator-expand-area
      data-bind='visible: toolbarExpanded'>
 
@@ -24,7 +26,8 @@
     </button>
 
     <hr>
-    <button class=teapo-action-button>Compile</button>
+    <button data-bind='click: loadText' class=teapo-action-button>Load text...</button>
+    <button data-bind='click: loadBase64' class=teapo-action-button>Load base64...</button>
   </div>
 
   <button title='add new file' data-bind='click: newFileClick' class=teapo-new-file-button> + </button>
@@ -33,7 +36,7 @@
 
 </div>
 
-<div data-bind='attach: attachToHost($element)' class=teapo-content>
+<div data-bind='attach: attachToHost($element), event: { keydown: keyDown }' class=teapo-content>
   <div class=teapo-content-inner>
     <div class=teapo-content-inner-title>
       Teapo: an integrated development environment in a bottle.
@@ -69,4 +72,4 @@
 </div>
 
 
-<div class=teapo-status data-sbind='text: statusText'></div>
+<div class=teapo-status data-sbind='text: statusText, event: { keydown: keyDown }'></div>

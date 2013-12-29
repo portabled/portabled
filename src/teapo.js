@@ -738,6 +738,7 @@ var teapo;
             if (typeof _typescript === "undefined") { _typescript = null; }
             this._typescript = _typescript;
             this._shared = TypeScriptEditorType.createShared();
+            this._initDocQueue = [];
         }
         TypeScriptEditorType.createShared = function () {
             var options = teapo.CodeMirrorEditor.standardEditorConfiguration();
@@ -787,21 +788,57 @@ var teapo;
         };
 
         TypeScriptEditorType.prototype.editDocument = function (docState) {
-            var _this = this;
             if (!this._typescript)
                 this._initTypescript();
 
             var editor = new TypeScriptEditor(this._typescript, this._shared, docState);
 
-            setTimeout(function () {
-                _this._typescript.scripts[docState.fullPath()] = editor;
-                _this._typescript.service.getSyntacticDiagnostics(docState.fullPath());
-                setTimeout(function () {
-                    _this._typescript.service.getSignatureAtPosition(docState.fullPath(), 0);
-                }, 1);
-            }, 1);
+            this._initDocStateWithTypeScript(docState);
+            this._typescript.scripts[docState.fullPath()] = editor;
 
             return editor;
+        };
+
+        /**
+        * Invoke some basic functions on a script, to make TS compiler read the file once.
+        * The logic here makes sure the documents are processed in the deterministic sequential order.
+        */
+        TypeScriptEditorType.prototype._initDocStateWithTypeScript = function (docState) {
+            var _this = this;
+            if (this._initDocQueue.length > 0) {
+                this._initDocQueue.push(docState);
+            } else {
+                this._initDocQueue.push(docState);
+                setTimeout(function () {
+                    return _this._processDocQueue();
+                }, 5);
+            }
+        };
+
+        TypeScriptEditorType.prototype._processDocQueue = function () {
+            var _this = this;
+            var dequeueDocState = null;
+            for (var i = 0; i < this._initDocQueue.length; i++) {
+                dequeueDocState = this._initDocQueue[i];
+                if (dequeueDocState)
+                    break;
+            }
+
+            if (dequeueDocState) {
+                this._initDocQueue = [];
+                return;
+            }
+
+            this._typescript.service.getSyntacticDiagnostics(dequeueDocState.fullPath());
+            setTimeout(function () {
+                _this._typescript.service.getSignatureAtPosition(dequeueDocState.fullPath(), 0);
+
+                _this._initDocQueue[i] = null;
+
+                setTimeout(function () {
+                    return _this._processDocQueue();
+                }, 5);
+            }, 5);
         };
 
         TypeScriptEditorType.prototype._initTypescript = function () {
@@ -2374,14 +2411,98 @@ var teapo;
             });
 
             // loading editors for all the files
-            var allFiles = this._storage.documentNames();
-            for (var i = 0; i < allFiles.length; i++) {
-                var docState = this._storage.getDocument(allFiles[i]);
+            var allFilenames = this._storage.documentNames();
+            allFilenames.sort();
+            for (var i = 0; i < allFilenames.length; i++) {
+                var docState = this._storage.getDocument(allFilenames[i]);
                 docState.editor();
             }
         }
+        ApplicationShell.prototype.keyDown = function (self, e) {
+            switch (e.keyCode) {
+                case 78:
+                    if (e.cmdKey || e.ctrlKey || e.altKey) {
+                        this.newFileClick();
+
+                        if (e.preventDefault)
+                            e.preventDefault();
+                        if ('cancelBubble' in e)
+                            e.cancelBubble = true;
+                        return false;
+                    }
+                    break;
+            }
+            return true;
+        };
+
         ApplicationShell.prototype.toggleToolbar = function () {
             this.toolbarExpanded(this.toolbarExpanded() ? false : true);
+        };
+
+        ApplicationShell.prototype.loadText = function () {
+            this._load(function (fileReader, file) {
+                return fileReader.readAsText(file);
+            }, function (data, docState) {
+                return docState.setProperty(null, data);
+            });
+        };
+
+        ApplicationShell.prototype.loadBase64 = function () {
+            this._load(function (fileReader, file) {
+                return fileReader.readAsArrayBuffer(file);
+            }, function (data, docState) {
+                var binary = [];
+                var bytes = new Uint8Array(data);
+                var len = bytes.byteLength;
+                for (var i = 0; i < len; i++) {
+                    binary.push(String.fromCharCode(bytes[i]));
+                }
+                var text = window.btoa(binary.join(''));
+
+                docState.setProperty(null, text);
+            });
+        };
+
+        ApplicationShell.prototype._load = function (requestLoad, applyData) {
+            var _this = this;
+            this.toolbarExpanded(false);
+
+            var input = document.createElement('input');
+            input.type = 'file';
+
+            input.onchange = function () {
+                if (!input.files || !input.files.length)
+                    return;
+
+                var fileReader = new FileReader();
+                fileReader.onerror = function (error) {
+                    alert('read ' + error.message);
+                };
+                fileReader.onloadend = function () {
+                    if (fileReader.readyState !== 2) {
+                        alert('read ' + fileReader.readyState + fileReader.error);
+                        return;
+                    }
+
+                    try  {
+                        var filename = prompt('Suggested filename:', input.files[0].name);
+
+                        if (!filename)
+                            return;
+
+                        var fileEntry = _this.fileList.createFileEntry(filename);
+                        var docStorage = _this._storage.createDocument(fileEntry.fullPath());
+
+                        applyData(fileReader.result, docStorage);
+                    } catch (error) {
+                        alert('parsing ' + error.message + ' ' + error.stack);
+                    }
+                };
+
+                requestLoad(fileReader, input.files[0]);
+            };
+
+            input.click();
         };
 
         /**
@@ -2397,6 +2518,13 @@ var teapo;
 
             var fileEntry = this.fileList.createFileEntry(fileName);
             this._storage.createDocument(fileEntry.fullPath());
+
+            // expand to newly created
+            var folder = fileEntry.parent();
+            while (folder) {
+                folder.isExpanded(true);
+                folder = folder.parent();
+            }
 
             fileEntry.handleClick();
         };
@@ -2690,8 +2818,9 @@ var teapo;
                     return _this.compilationSettings;
                 },
                 getScriptFileNames: function () {
-                    var result = Object.keys(_this.scripts);
-                    result = result.sort();
+                    var result = Object.keys(_this.scripts).filter(function (k) {
+                        return _this.scripts.hasOwnProperty(k);
+                    }).sort();
 
                     //console.log('...getScriptFileNames():',result);
                     return result;
@@ -2823,11 +2952,3 @@ var teapo;
         return TypeScriptDocumentSnapshot;
     })();
 })(teapo || (teapo = {}));
-var Apple = (function () {
-    function Apple() {
-    }
-    Apple.prototype.method = function () {
-        this.method();
-    };
-    return Apple;
-})();
