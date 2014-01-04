@@ -1,3 +1,173 @@
+/// <reference path='typings/typescriptServices.d.ts' />
+/// <reference path='typings/codemirror.d.ts' />
+var teapo;
+(function (teapo) {
+    /**
+    * Pubic API exposing access to TypeScript language  services
+    * (see its service property)
+    * and handling the interfaces TypeScript requires
+    * to access to the source code and the changes.
+    */
+    var TypeScriptService = (function () {
+        function TypeScriptService() {
+            /** Set of booleans for each log severity level. */
+            this.logLevels = {
+                information: false,
+                debug: false,
+                warning: false,
+                error: true,
+                fatal: true
+            };
+            /** TypeScript custom settings. */
+            this.compilationSettings = new TypeScript.CompilationSettings();
+            /** Files added to the compiler/parser scope, by full path. */
+            this.scripts = {};
+            var factory = new TypeScript.Services.TypeScriptServicesFactory();
+            this.service = factory.createPullLanguageService(this._createLanguageServiceHost());
+        }
+        /**
+        * The main API required by TypeScript for talking to the host environment. */
+        TypeScriptService.prototype._createLanguageServiceHost = function () {
+            var _this = this;
+            return {
+                getCompilationSettings: function () {
+                    return _this.compilationSettings;
+                },
+                getScriptFileNames: function () {
+                    var result = Object.keys(_this.scripts).filter(function (k) {
+                        return _this.scripts.hasOwnProperty(k);
+                    }).sort();
+
+                    //console.log('...getScriptFileNames():',result);
+                    return result;
+                },
+                getScriptVersion: function (fileName) {
+                    var script = _this.scripts[fileName];
+                    if (script.changes)
+                        return script.changes().length;
+                    return 0;
+                },
+                getScriptIsOpen: function (fileName) {
+                    return true;
+                },
+                getScriptByteOrderMark: function (fileName) {
+                    return 0 /* None */;
+                },
+                getScriptSnapshot: function (fileName) {
+                    var script = _this.scripts[fileName];
+                    var snapshot = script._cachedSnapshot;
+
+                    // checking if snapshot is out of date
+                    if (!snapshot || (script.changes && snapshot.version < script.changes().length)) {
+                        script._cachedSnapshot = snapshot = new TypeScriptDocumentSnapshot(script);
+                    }
+
+                    return snapshot;
+                },
+                getDiagnosticsObject: function () {
+                    return { log: function (text) {
+                            return _this._log(text);
+                        } };
+                },
+                getLocalizedDiagnosticMessages: function () {
+                    return null;
+                },
+                information: function () {
+                    return _this.logLevels.information;
+                },
+                debug: function () {
+                    return _this.logLevels.debug;
+                },
+                warning: function () {
+                    return _this.logLevels.warning;
+                },
+                error: function () {
+                    return _this.logLevels.error;
+                },
+                fatal: function () {
+                    return _this.logLevels.fatal;
+                },
+                log: function (text) {
+                    return _this._log(text);
+                },
+                resolveRelativePath: function (path) {
+                    var result = path;
+
+                    //console.log('...resolveRelativePath('+path+'):', result);
+                    return result;
+                },
+                fileExists: function (path) {
+                    // don't issue a full resolve,
+                    // this might be a mere probe for a file
+                    return _this.scripts[path] ? true : false;
+                },
+                directoryExists: function (path) {
+                    return true;
+                },
+                getParentDirectory: function (path) {
+                    path = TypeScript.switchToForwardSlashes(path);
+                    var slashPos = path.lastIndexOf('/');
+                    if (slashPos === path.length - 1)
+                        slashPos = path.lastIndexOf('/', path.length - 2);
+                    if (slashPos > 0)
+                        return path.slice(0, slashPos);
+                    else
+                        return '/';
+                }
+            };
+        };
+
+        TypeScriptService.prototype._log = function (text) {
+            // console.log(text);
+        };
+        return TypeScriptService;
+    })();
+    teapo.TypeScriptService = TypeScriptService;
+
+    var TypeScriptDocumentSnapshot = (function () {
+        function TypeScriptDocumentSnapshot(scriptData) {
+            this.scriptData = scriptData;
+            this.version = 0;
+            this._text = null;
+            if (this.scriptData.changes)
+                this.version = this.scriptData.changes().length;
+        }
+        TypeScriptDocumentSnapshot.prototype.getText = function (start, end) {
+            var text = this._getText();
+            var result = text.slice(start, end);
+            return result;
+        };
+
+        TypeScriptDocumentSnapshot.prototype.getLength = function () {
+            var text = this._getText();
+            return text.length;
+        };
+
+        TypeScriptDocumentSnapshot.prototype.getLineStartPositions = function () {
+            var text = this._getText();
+            var result = TypeScript.TextUtilities.parseLineStarts(text);
+            return result;
+        };
+
+        TypeScriptDocumentSnapshot.prototype.getTextChangeRangeSinceVersion = function (scriptVersion) {
+            if (!this.scriptData.changes)
+                return TypeScript.TextChangeRange.unchanged;
+
+            // TODO: check that we are not called for changes on old snapshots
+            var chunk = this.scriptData.changes().slice(scriptVersion);
+
+            var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(chunk);
+            return result;
+        };
+
+        TypeScriptDocumentSnapshot.prototype._getText = function () {
+            if (!this._text)
+                this._text = this.scriptData.text ? this.scriptData.text() : this.scriptData;
+            return this._text;
+        };
+        return TypeScriptDocumentSnapshot;
+    })();
+})(teapo || (teapo = {}));
 var teapo;
 (function (teapo) {
     /**
@@ -258,6 +428,7 @@ var teapo;
             this._shared.cm = new CodeMirror(function (element) {
                 return _this._shared.element = element;
             }, options);
+            this._shared.cm.getWrapperElement().style.fontSize = '16px';
         };
 
         CodeMirrorEditor.prototype._initDoc = function () {
@@ -2557,6 +2728,12 @@ var teapo;
         ApplicationShell.prototype.saveFileName = function () {
             var urlParts = window.location.pathname.split('/');
             var currentFileName = decodeURI(urlParts[urlParts.length - 1]);
+            var lastDot = currentFileName.indexOf('.');
+            if (lastDot > 0) {
+                currentFileName = currentFileName.slice(0, lastDot) + '.html';
+            } else {
+                currentFileName += '.html';
+            }
             return currentFileName;
         };
 
@@ -2569,7 +2746,7 @@ var teapo;
             this.toolbarExpanded(false);
 
             var filename = this.saveFileName();
-            var blob = new Blob([document.documentElement.outerHTML], { type: 'application/octet-stream' });
+            var blob = new Blob(['<!doctype html>\n', document.documentElement.outerHTML], { type: 'application/octet-stream' });
             var url = URL.createObjectURL(blob);
             var a = document.createElement('a');
             a.href = url;
@@ -2782,173 +2959,3 @@ var teapo;
         window.onload = start;
     }
 })();
-/// <reference path='typings/typescriptServices.d.ts' />
-/// <reference path='typings/codemirror.d.ts' />
-var teapo;
-(function (teapo) {
-    /**
-    * Pubic API exposing access to TypeScript language  services
-    * (see its service property)
-    * and handling the interfaces TypeScript requires
-    * to access to the source code and the changes.
-    */
-    var TypeScriptService = (function () {
-        function TypeScriptService() {
-            /** Set of booleans for each log severity level. */
-            this.logLevels = {
-                information: false,
-                debug: false,
-                warning: false,
-                error: true,
-                fatal: true
-            };
-            /** TypeScript custom settings. */
-            this.compilationSettings = new TypeScript.CompilationSettings();
-            /** Files added to the compiler/parser scope, by full path. */
-            this.scripts = {};
-            var factory = new TypeScript.Services.TypeScriptServicesFactory();
-            this.service = factory.createPullLanguageService(this._createLanguageServiceHost());
-        }
-        /**
-        * The main API required by TypeScript for talking to the host environment. */
-        TypeScriptService.prototype._createLanguageServiceHost = function () {
-            var _this = this;
-            return {
-                getCompilationSettings: function () {
-                    return _this.compilationSettings;
-                },
-                getScriptFileNames: function () {
-                    var result = Object.keys(_this.scripts).filter(function (k) {
-                        return _this.scripts.hasOwnProperty(k);
-                    }).sort();
-
-                    //console.log('...getScriptFileNames():',result);
-                    return result;
-                },
-                getScriptVersion: function (fileName) {
-                    var script = _this.scripts[fileName];
-                    if (script.changes)
-                        return script.changes().length;
-                    return 0;
-                },
-                getScriptIsOpen: function (fileName) {
-                    return true;
-                },
-                getScriptByteOrderMark: function (fileName) {
-                    return 0 /* None */;
-                },
-                getScriptSnapshot: function (fileName) {
-                    var script = _this.scripts[fileName];
-                    var snapshot = script._cachedSnapshot;
-
-                    // checking if snapshot is out of date
-                    if (!snapshot || (script.changes && snapshot.version < script.changes().length)) {
-                        script._cachedSnapshot = snapshot = new TypeScriptDocumentSnapshot(script);
-                    }
-
-                    return snapshot;
-                },
-                getDiagnosticsObject: function () {
-                    return { log: function (text) {
-                            return _this._log(text);
-                        } };
-                },
-                getLocalizedDiagnosticMessages: function () {
-                    return null;
-                },
-                information: function () {
-                    return _this.logLevels.information;
-                },
-                debug: function () {
-                    return _this.logLevels.debug;
-                },
-                warning: function () {
-                    return _this.logLevels.warning;
-                },
-                error: function () {
-                    return _this.logLevels.error;
-                },
-                fatal: function () {
-                    return _this.logLevels.fatal;
-                },
-                log: function (text) {
-                    return _this._log(text);
-                },
-                resolveRelativePath: function (path) {
-                    var result = path;
-
-                    //console.log('...resolveRelativePath('+path+'):', result);
-                    return result;
-                },
-                fileExists: function (path) {
-                    // don't issue a full resolve,
-                    // this might be a mere probe for a file
-                    return _this.scripts[path] ? true : false;
-                },
-                directoryExists: function (path) {
-                    return true;
-                },
-                getParentDirectory: function (path) {
-                    path = TypeScript.switchToForwardSlashes(path);
-                    var slashPos = path.lastIndexOf('/');
-                    if (slashPos === path.length - 1)
-                        slashPos = path.lastIndexOf('/', path.length - 2);
-                    if (slashPos > 0)
-                        return path.slice(0, slashPos);
-                    else
-                        return '/';
-                }
-            };
-        };
-
-        TypeScriptService.prototype._log = function (text) {
-            // console.log(text);
-        };
-        return TypeScriptService;
-    })();
-    teapo.TypeScriptService = TypeScriptService;
-
-    var TypeScriptDocumentSnapshot = (function () {
-        function TypeScriptDocumentSnapshot(scriptData) {
-            this.scriptData = scriptData;
-            this.version = 0;
-            this._text = null;
-            if (this.scriptData.changes)
-                this.version = this.scriptData.changes().length;
-        }
-        TypeScriptDocumentSnapshot.prototype.getText = function (start, end) {
-            var text = this._getText();
-            var result = text.slice(start, end);
-            return result;
-        };
-
-        TypeScriptDocumentSnapshot.prototype.getLength = function () {
-            var text = this._getText();
-            return text.length;
-        };
-
-        TypeScriptDocumentSnapshot.prototype.getLineStartPositions = function () {
-            var text = this._getText();
-            var result = TypeScript.TextUtilities.parseLineStarts(text);
-            return result;
-        };
-
-        TypeScriptDocumentSnapshot.prototype.getTextChangeRangeSinceVersion = function (scriptVersion) {
-            if (!this.scriptData.changes)
-                return TypeScript.TextChangeRange.unchanged;
-
-            // TODO: check that we are not called for changes on old snapshots
-            var chunk = this.scriptData.changes().slice(scriptVersion);
-
-            var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(chunk);
-            return result;
-        };
-
-        TypeScriptDocumentSnapshot.prototype._getText = function () {
-            if (!this._text)
-                this._text = this.scriptData.text ? this.scriptData.text() : this.scriptData;
-            return this._text;
-        };
-        return TypeScriptDocumentSnapshot;
-    })();
-})(teapo || (teapo = {}));
