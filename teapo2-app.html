@@ -1,4 +1,3 @@
-<!doctype html>
 <html><head>
 <title>Teapo v0.5j</title>
  
@@ -16,12 +15,7 @@
   padding: 2em;
   text-align: center;
 }</style> 
-<style>.teapo-test-failure {
-  font-size: 90%;
-  margin-left: 3em;
-}
-
-.teapo-tests-failed {
+<style>.teapo-tests-failed {
   color: brown;
 }
 
@@ -32,6 +26,20 @@
 .teapo-tests-running {
   color: cornflowerblue;
   font-weight: bold;
+}
+
+
+.teapo-test-runtime {
+  opacity: 0.7;
+}
+
+.teapo-test-failure {
+  font-size: 90%;
+  margin-left: 3em;
+}
+
+.teapo-test-failure-stack {
+  font-family: inherit;
 }</style> 
 
 </head>
@@ -182,6 +190,19 @@ new a.w;var b=new a.Ba;0<b.Rb&&a.La(b);a.b("jqueryTmplTemplateEngine",a.Ba)})()}
 <script id="TestPage" type="text/html"><div class=teapo-tests>
 
   
+<!-- ko if: running().length -->
+  <div class=teapo-tests-running>
+    <div>
+      Running:
+      <span data-bind="text: running().length"></span>
+    </div>
+    
+<!-- ko template: { name: 'TestCase', foreach: running() } -->
+<!-- /ko -->
+
+  </div>
+<!-- /ko -->
+
   
 <!-- ko if: failed().length -->
   <div class=teapo-tests-failed>
@@ -213,18 +234,6 @@ new a.w;var b=new a.Ba;0<b.Rb&&a.La(b);a.b("jqueryTmplTemplateEngine",a.Ba)})()}
 
   
   
-<!-- ko if: running().length -->
-  <div class=teapo-tests-running>
-    <div>
-      Running:
-      <span data-bind="text: running().length"></span>
-    </div>
-    
-<!-- ko template: { name: 'TestCase', foreach: running() } -->
-<!-- /ko -->
-
-  </div>
-<!-- /ko -->
 
   
   
@@ -251,11 +260,11 @@ new a.w;var b=new a.Ba;0<b.Rb&&a.La(b);a.b("jqueryTmplTemplateEngine",a.Ba)})()}
   
 </div></script>
 <script id="TestCase" type="text/html"><div class=teapo-test>
-  <span data-bind="text: name"></span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'"></span><!-- /ko --><!-- ko if:failure -->
+  <span data-bind="text: name" class=teapo-test-name></span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class=teapo-test-runtime></span><!-- /ko --><!-- ko if:failure -->
   <div class=teapo-test-failure>
-    <span data-bind="text: failure().message"></span><!-- ko if: failure().stack -->
-    <pre data-bind="text: failure().stack"></pre>
+    <span data-bind="text: failure().message" class=teapo-test-failure-message></span><!-- ko if: failure().stack -->
+    <pre data-bind="text: failure().stack" class=teapo-test-failure-stack></pre>
     <!-- /ko -->
   </div>
   <!-- /ko -->
@@ -650,7 +659,8 @@ var teapo;
                         recipient.completed(new teapo.storage.attached.localStorage.UpdateStorage(this._prefix, this._localStorage, this._prefix + '#edited'));
                     };
 
-                    LoadStorage.prototype.migrate = function (filesByName, callback) {
+                    LoadStorage.prototype.migrate = function (editedUTC, filesByName, callback) {
+                        var _this = this;
                         // will remove all unneeded entries after collecting
                         var validKeys = {};
 
@@ -675,7 +685,14 @@ var teapo;
                                 removeKeys.push(key);
                         }
 
-                        callback(null, new teapo.storage.attached.localStorage.UpdateStorage(this._prefix, this._localStorage, this._prefix + '#edited'));
+                        removeKeys.forEach(function (rk) {
+                            return _this._localStorage.removeItem(rk);
+                        });
+
+                        var editedKey = this._prefix + '#edited';
+                        this._localStorage.setItem(editedKey, editedUTC.toString());
+
+                        callback(null, new teapo.storage.attached.localStorage.UpdateStorage(this._prefix, this._localStorage, editedKey));
                     };
                     return LoadStorage;
                 })();
@@ -704,8 +721,7 @@ var teapo;
                         var key = cacheLine[propertyName] || (cacheLine[propertyName] = this._prefix + file + '*' + propertyName);
                         this._localStorage.setItem(key, value);
 
-                        var edited = Date.now().toString();
-                        this._localStorage.setItem(this._editedKey, edited);
+                        this._updateEdited(Date.now());
 
                         if (callback)
                             callback(null);
@@ -726,8 +742,14 @@ var teapo;
                         });
                         delete this._nameCache[file];
 
+                        this._updateEdited(Date.now());
+
                         if (callback)
                             callback(null);
+                    };
+
+                    UpdateStorage.prototype._updateEdited = function (editedUTC) {
+                        this._localStorage.setItem(this._editedKey, editedUTC.toString());
                     };
                     return UpdateStorage;
                 })();
@@ -784,7 +806,7 @@ var teapo;
                                 callback(null, new teapo.storage.attached.webSQL.LoadStorage(null, db, false));
                             });
                         }, function (sqlError) {
-                            callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError), null);
+                            callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError, 'SELECT FROM *metadata'), null);
                         });
                     };
                     return DetectStorage;
@@ -821,58 +843,74 @@ var teapo;
                         }
 
                         this._db.readTransaction(function (transaction) {
-                            transaction.executeSql('SELECT tbl_name  from sqlite_master WHERE type=\'table\'', [], function (transaction, result) {
-                                _this._processTableNames(transaction, result, recipient);
-                            }, function (transaction, sqlError) {
-                                return recipient.failed(teapo.storage.attached.webSQL.wrapSQLError(sqlError));
+                            teapo.storage.attached.webSQL.listAllTables(transaction, function (tableNames) {
+                                return _this._processTableNames(transaction, tableNames, recipient);
+                            }, function (sqlError) {
+                                return recipient.failed(teapo.storage.attached.webSQL.wrapSQLError(sqlError, 'load: listAllTables'));
                             });
                         }, function (sqlError) {
-                            return recipient.failed(teapo.storage.attached.webSQL.wrapSQLError(sqlError));
+                            return recipient.failed(teapo.storage.attached.webSQL.wrapSQLError(sqlError, 'load: readTransaction'));
                         });
                     };
 
-                    LoadStorage.prototype.migrate = function (filesByName, callback) {
+                    LoadStorage.prototype.migrate = function (editedUTC, filesByName, callback) {
                         var _this = this;
                         this._db.transaction(function (transaction) {
                             _this._dropAllTables(transaction, function (error) {
                                 if (error) {
-                                    callback(teapo.storage.attached.webSQL.wrapSQLError(error), null);
+                                    callback(teapo.storage.attached.webSQL.wrapSQLError(error, 'migrate:dropAllTables'), null);
                                     return;
                                 }
 
-                                var tablesToMigrate = 0;
                                 var migratedTables = 0;
-                                var cycleCompleted = false;
                                 var anyError = false;
                                 var filenames = [];
 
                                 for (var file in filesByName)
                                     if (filesByName.hasOwnProperty(file)) {
-                                        tablesToMigrate++;
                                         filenames.push(file);
-
-                                        _this._migrateTable(transaction, name, filesByName[name], function (sqlError) {
-                                            if (error) {
-                                                if (!anyError) {
-                                                    anyError = true;
-                                                    callback(teapo.storage.attached.webSQL.wrapSQLError(error), null);
-                                                }
-                                                return;
-                                            }
-
-                                            migratedTables++;
-
-                                            if (!anyError && migratedTables === tablesToMigrate && cycleCompleted)
-                                                _this._createUpdateStorage(filenames, callback);
-                                        });
                                     }
 
-                                cycleCompleted = true;
-                                if (!anyError && migratedTables === tablesToMigrate)
-                                    _this._createUpdateStorage(filenames, callback);
+                                var completeMigration = function () {
+                                    // all tables deleted, so metadata does not exist
+                                    _this._createMetadata(transaction, function () {
+                                        return teapo.storage.attached.webSQL.updateEdited(editedUTC, transaction, function (sqlError) {
+                                            if (sqlError) {
+                                                callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError, 'migrate: updateEdited(' + editedUTC + ')'), null);
+                                            } else {
+                                                _this._createUpdateStorage(filenames, callback);
+                                            }
+                                        });
+                                    }, function (sqlError) {
+                                        return callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError, 'migrate: _createMetadata'), null);
+                                    });
+                                };
+
+                                if (!filenames.length) {
+                                    completeMigration();
+                                    return;
+                                }
+
+                                filenames.forEach(function (file) {
+                                    _this._migrateTable(transaction, file, filesByName[file], function (sqlError) {
+                                        if (error) {
+                                            if (!anyError) {
+                                                anyError = true;
+                                                callback(teapo.storage.attached.webSQL.wrapSQLError(error, 'migrate: _migrateTable(' + file + ')'), null);
+                                            }
+                                            return;
+                                        }
+
+                                        migratedTables++;
+
+                                        if (!anyError && migratedTables === filenames.length) {
+                                            completeMigration();
+                                        }
+                                    });
+                                });
                             });
                         }, function (sqlError) {
-                            return callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError), null);
+                            return callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError, 'migrate: transaction'), null);
                         });
                     };
 
@@ -884,18 +922,56 @@ var teapo;
                         }
 
                         this._db.transaction(function (transaction) {
-                            return transaction.executeSql('CREATE TABLE "*metadata" (name PRIMARY KEY, value)', [], function (transaction, result) {
+                            return _this._createMetadata(transaction, function () {
                                 return callback(null, new teapo.storage.attached.webSQL.UpdateStorage(_this._db, fileNames));
-                            }, function (transaction, sqlError) {
-                                return callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError), null);
+                            }, function (sqlError) {
+                                return callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError, '_createUpdateStorage: _createMetadata'), null);
                             });
                         }, function (sqlError) {
-                            return callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError), null);
+                            return callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError, '_createUpdateStorage: transaction'), null);
+                        });
+                    };
+
+                    LoadStorage.prototype._createMetadata = function (transaction, callback, errorCallback) {
+                        var _this = this;
+                        transaction.executeSql('CREATE TABLE "*metadata" (name PRIMARY KEY, value)', [], function (transaction, result) {
+                            _this._metadataTableExists = true;
+                            callback();
+                        }, function (tranaction, sqlError) {
+                            return errorCallback(sqlError);
                         });
                     };
 
                     LoadStorage.prototype._dropAllTables = function (transaction, callback) {
-                        throw null;
+                        var _this = this;
+                        teapo.storage.attached.webSQL.listAllTables(transaction, function (allTableNames) {
+                            var tableNames = allTableNames;
+
+                            if (!tableNames.length) {
+                                _this._metadataTableExists = false;
+                                callback(null);
+                                return;
+                            }
+
+                            var anyError = false;
+                            var dropped = 0;
+                            tableNames.forEach(function (table) {
+                                return transaction.executeSql('DROP TABLE "' + table + '"', [], function (transaction, result) {
+                                    if (anyError)
+                                        return;
+                                    dropped++;
+                                    if (dropped === tableNames.length) {
+                                        _this._metadataTableExists = false;
+                                        callback(null);
+                                    }
+                                }, function (transaction, sqlError) {
+                                    if (anyError)
+                                        return;
+                                    anyError = true;
+                                    callback(sqlError);
+                                });
+                            });
+                        }, callback);
                     };
 
                     LoadStorage.prototype._migrateTable = function (transaction, file, properties, callback) {
@@ -933,11 +1009,17 @@ var teapo;
                         });
                     };
 
-                    LoadStorage.prototype._processTableNames = function (transaction, result, recipient) {
+                    LoadStorage.prototype._processTableNames = function (transaction, tableNames, recipient) {
                         var _this = this;
-                        var length = result && result.rows ? result.rows.length : 0;
+                        var ftab = tableNames.map(function (table) {
+                            return {
+                                table: table,
+                                file: teapo.storage.attached.webSQL.unmangleDatabaseObjectName(table)
+                            };
+                        }).filter(function (ft) {
+                            return ft.file;
+                        });
 
-                        var ftab = this._extractFileNames(result);
                         if (!ftab.length) {
                             recipient.completed(new teapo.storage.attached.webSQL.UpdateStorage(this._db, []));
                             return;
@@ -957,34 +1039,19 @@ var teapo;
                                 reportedFileCount++;
 
                                 if (reportedFileCount === ftab.length)
-                                    recipient.completed(new teapo.storage.attached.webSQL.UpdateStorage(_this._db, ftab.map(function (ft) {
+                                    _this._createUpdateStorage(ftab.map(function (ft) {
                                         return ft.file;
-                                    })));
+                                    }), function (error, update) {
+                                        if (error)
+                                            recipient.failed(error);
+                                        else
+                                            recipient.completed(update);
+                                    });
                             }, function (transaction, sqlError) {
                                 anyError = true;
-                                recipient.failed(teapo.storage.attached.webSQL.wrapSQLError(sqlError));
+                                recipient.failed(teapo.storage.attached.webSQL.wrapSQLError(sqlError, '_processTableNames: SELECT FROM ' + ft.table));
                             });
                         });
-                    };
-
-                    LoadStorage.prototype._extractFileNames = function (result) {
-                        var ftab = [];
-
-                        for (var i = 0; i < length; i++) {
-                            var row = result.rows.item(i);
-                            var tableName = row.tbl_name || row.name;
-                            try  {
-                                var file = teapo.storage.attached.webSQL.unmangleDatabaseObjectName(tableName);
-                                if (!file)
-                                    continue;
-                            } catch (mangleError) {
-                                continue;
-                            }
-
-                            ftab.push({ table: tableName, file: file });
-                        }
-
-                        return ftab;
                     };
 
                     LoadStorage.prototype._extractFileProperties = function (result) {
@@ -1038,7 +1105,7 @@ var teapo;
                                 updateSQL = _this._createUpdateStatement(file);
                                 _this._updateCore(updateSQL, property, value, callback);
                             }, function (sqlError) {
-                                return callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError));
+                                return callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError, 'update: _createTable'));
                             });
                         }
                     };
@@ -1046,12 +1113,14 @@ var teapo;
                     UpdateStorage.prototype.remove = function (file, callback) {
                         this._db.transaction(function (transaction) {
                             return transaction.executeSql('DROP TABLE "' + teapo.storage.attached.webSQL.mangleDatabaseObjectName(file) + '"', [], function (transaction, result) {
-                                return callback(null);
+                                return teapo.storage.attached.webSQL.updateEdited(Date.now(), transaction, function (sqlError) {
+                                    return callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError, 'remove: updateEdited'));
+                                });
                             }, function (transaction, sqlError) {
-                                return callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError));
+                                return callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError, 'remove: DROP TABLE ~' + file));
                             });
                         }, function (sqlError) {
-                            return callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError));
+                            return callback(teapo.storage.attached.webSQL.wrapSQLError(sqlError, 'remove: transaction'));
                         });
                     };
 
@@ -1061,13 +1130,12 @@ var teapo;
                     };
 
                     UpdateStorage.prototype._updateCore = function (updateSQL, property, value, callback) {
-                        var _this = this;
                         var sqlCallback = function (sqlError) {
-                            return callback(sqlError ? teapo.storage.attached.webSQL.wrapSQLError(sqlError) : null);
+                            return callback(sqlError ? teapo.storage.attached.webSQL.wrapSQLError(sqlError, '_updateCore: ' + updateSQL) : null);
                         };
                         this._db.transaction(function (transaction) {
                             return transaction.executeSql(updateSQL, [property, value], function (transaction, result) {
-                                return _this._updateEdited(transaction, sqlCallback);
+                                return teapo.storage.attached.webSQL.updateEdited(Date.now(), transaction, sqlCallback);
                             }, function (transaction, sqlError) {
                                 return sqlCallback(sqlError);
                             });
@@ -1087,15 +1155,6 @@ var teapo;
                                 return errorCallback(error);
                             });
                         }, errorCallback);
-                    };
-
-                    UpdateStorage.prototype._updateEdited = function (transaction, callback) {
-                        var now = Date.now().toString();
-                        transaction.executeSql('INSERT OR REPLACE INTO "*metadata" VALUES(\'edited\',?)', [now], function (transaction, result) {
-                            return callback(null);
-                        }, function (transaction, sqlError) {
-                            return callback(sqlError);
-                        });
                     };
                     return UpdateStorage;
                 })();
@@ -1118,32 +1177,47 @@ var teapo;
                 webSQL.mangleDatabaseObjectName = mangleDatabaseObjectName;
 
                 function unmangleDatabaseObjectName(name) {
-                    return atob(name);
+                    if (!name || name[name.length - 1] !== '=')
+                        return null;
+
+                    try  {
+                        return atob(name);
+                    } catch (error) {
+                        return null;
+                    }
                 }
                 webSQL.unmangleDatabaseObjectName = unmangleDatabaseObjectName;
 
-                function wrapSQLError(sqlError) {
-                    return new Error(sqlError.message + ' [' + sqlError.code + ']');
+                function wrapSQLError(sqlError, context) {
+                    return new Error(context + ' ' + sqlError.message + ' [' + sqlError.code + ']');
                 }
                 webSQL.wrapSQLError = wrapSQLError;
 
-                function listAllTables(db, callback) {
-                    db.readTransaction(function (transaction) {
-                        return transaction.executeSql('SELECT tbl_name  from sqlite_master WHERE type=\'table\'', [], function (transaction, result) {
-                            var tables = [];
-                            for (var i = 0; i < result.rows.length; i++) {
-                                var row = result.rows.item(i);
-                                tables.push(row.tbl_name);
-                            }
-                            callback(null, tables);
-                        }, function (transaction, sqlError) {
-                            return callback(sqlError, null);
-                        });
-                    }, function (sqlError) {
-                        return callback(sqlError, null);
+                function listAllTables(transaction, callback, errorCallback) {
+                    transaction.executeSql('SELECT tbl_name  from sqlite_master WHERE type=\'table\'', [], function (transaction, result) {
+                        var tables = [];
+                        for (var i = 0; i < result.rows.length; i++) {
+                            var row = result.rows.item(i);
+                            var table = row.tbl_name;
+                            if (!table || (table[0] !== '*' && table[table.length - 1] !== '='))
+                                continue;
+                            tables.push(row.tbl_name);
+                        }
+                        callback(tables);
+                    }, function (transaction, sqlError) {
+                        return errorCallback(sqlError);
                     });
                 }
                 webSQL.listAllTables = listAllTables;
+
+                function updateEdited(editedUTC, transaction, callback) {
+                    transaction.executeSql('INSERT OR REPLACE INTO "*metadata" VALUES(\'edited\',?)', [editedUTC.toString()], function (transaction, result) {
+                        return callback(null);
+                    }, function (transaction, sqlError) {
+                        return callback(sqlError);
+                    });
+                }
+                webSQL.updateEdited = updateEdited;
             })(attached.webSQL || (attached.webSQL = {}));
             var webSQL = attached.webSQL;
         })(storage.attached || (storage.attached = {}));
@@ -1269,6 +1343,123 @@ var teapo;
                 });
             };
 
+            AttachedStorageTests.prototype.update_loadAgain_sameValue = function (callback) {
+                var _this = this;
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    load.load({
+                        file: function (name, values) {
+                            return callback(new Error('LoadStorageRecipient.file should not be called.'));
+                        },
+                        completed: function (updater) {
+                            updater.update('file.txt', 'property', 'value', function (error) {
+                                _this._detect.detectStorageAsync(ukey, function (error, load) {
+                                    var files = {};
+                                    load.load({
+                                        file: function (name, values) {
+                                            return files[name] = values;
+                                        },
+                                        completed: function (updater) {
+                                            var fileTxt = files['file.txt'];
+                                            if (!fileTxt) {
+                                                callback(new Error('File is not reported on subsequent load.'));
+                                            } else {
+                                                var propertyValue = fileTxt['property'];
+                                                callback(propertyValue === 'value' ? null : new Error('Wrong value ' + propertyValue));
+                                            }
+                                        },
+                                        failed: function (error) {
+                                            return callback(error);
+                                        } });
+                                });
+                            });
+                        },
+                        failed: function (error) {
+                            return callback(error);
+                        }
+                    });
+                });
+            };
+
+            AttachedStorageTests.prototype.migrate = function (callback) {
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    load.migrate(2345, { "file.txt": { property: "value" } }, function (error) {
+                        return callback(error);
+                    });
+                });
+            };
+
+            AttachedStorageTests.prototype.migrate_load_sameValue = function (callback) {
+                var _this = this;
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    load.migrate(2345, { "file.txt": { property: "value" } }, function (error) {
+                        _this._detect.detectStorageAsync(ukey, function (error, load) {
+                            var files = {};
+                            load.load({
+                                file: function (name, values) {
+                                    return files[name] = values;
+                                },
+                                completed: function (updater) {
+                                    var fileTxt = files['file.txt'];
+                                    if (!fileTxt) {
+                                        callback(new Error('File is not reported on subsequent load.'));
+                                    } else {
+                                        var propertyValue = fileTxt['property'];
+                                        callback(propertyValue === 'value' ? null : new Error('Wrong value ' + propertyValue));
+                                    }
+                                },
+                                failed: function (error) {
+                                    return callback(error);
+                                }
+                            });
+                        });
+                    });
+                });
+            };
+
+            AttachedStorageTests.prototype.updateTwice_loadAgain_secondValue = function (callback) {
+                var _this = this;
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    load.load({
+                        file: function (name, values) {
+                            return callback(new Error('LoadStorageRecipient.file should not be called.'));
+                        },
+                        completed: function (updater) {
+                            updater.update('file.txt', 'property1', 'value2', function (error) {
+                                return updater.update('file.txt', 'property1', 'value4', function (error) {
+                                    _this._detect.detectStorageAsync(ukey, function (error, load) {
+                                        var files = {};
+                                        load.load({
+                                            file: function (name, values) {
+                                                return files[name] = values;
+                                            },
+                                            completed: function (updater) {
+                                                var fileTxt = files['file.txt'];
+                                                if (!fileTxt) {
+                                                    callback(new Error('File is not reported on subsequent load.'));
+                                                } else {
+                                                    var propertyValue = fileTxt['property1'];
+                                                    callback(propertyValue === 'value4' ? null : new Error('Wrong value ' + propertyValue));
+                                                }
+                                            },
+                                            failed: function (error) {
+                                                return callback(error);
+                                            }
+                                        });
+                                    });
+                                });
+                            });
+                        },
+                        failed: function (error) {
+                            return callback(error);
+                        }
+                    });
+                });
+            };
+
             AttachedStorageTests.prototype._generateKey = function () {
                 return Math.random() + '-' + Math.random();
             };
@@ -1362,7 +1553,7 @@ var teapo;
         (function (WebSQLStorageTests) {
             WebSQLStorageTests.browser;
 
-            if (typeof openDatabase)
+            if (typeof openDatabase === 'function')
                 WebSQLStorageTests.browser = new teapo.tests.AttachedStorageTests(new teapo.storage.attached.webSQL.DetectStorage());
         })(tests.WebSQLStorageTests || (tests.WebSQLStorageTests = {}));
         var WebSQLStorageTests = tests.WebSQLStorageTests;
@@ -1387,5 +1578,5 @@ catch (declarationError) {
 })(teapo);
 </script>
 
-  
+
 </body></html>
