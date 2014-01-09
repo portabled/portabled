@@ -355,6 +355,11 @@ var teapo;
                     }
                 };
 
+                TestCase.prototype.updateTimes = function (now) {
+                    if (this.state() === 1 /* Running */)
+                        this.runtime(now - this._started);
+                };
+
                 TestCase.prototype._startSync = function () {
                     this.state(1 /* Running */);
                     this.runtime(0);
@@ -456,13 +461,44 @@ var teapo;
                     this._continueStartingClosure = function () {
                         return _this._continueStarting();
                     };
+                    this._updateTimesInterval = null;
                     this._loadTests(namespace);
                 }
                 TestPage.prototype.start = function () {
+                    var _this = this;
+                    if (this._updateTimesInterval) {
+                        clearInterval(this._updateTimesInterval);
+                        this._updateTimesInterval = null;
+                    }
+
+                    if (this.all.length) {
+                        this._updateTimesInterval = setInterval(function () {
+                            return _this._updateTimes();
+                        }, 100);
+                    }
+
                     this._continueStarting();
                 };
 
+                TestPage.prototype._updateTimes = function () {
+                    if (this.running().length + this.notStarted().length === 0) {
+                        clearInterval(this._updateTimesInterval);
+                        this._updateTimesInterval = 0;
+                        return;
+                    }
+
+                    var now = Date.now();
+                    this.running().forEach(function (t) {
+                        return t.updateTimes(now);
+                    });
+                };
+
                 TestPage.prototype._continueStarting = function () {
+                    var now = Date.now();
+                    this.running().forEach(function (t) {
+                        t.updateTimes(now);
+                    });
+
                     var nextRest = Date.now() + this.workQuantum;
                     while (true) {
                         if (!this.notStarted().length)
@@ -566,6 +602,223 @@ var teapo;
         var tests = app.tests;
     })(teapo.app || (teapo.app = {}));
     var app = teapo.app;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (storage) {
+        (function (attached) {
+            (function (indexedDB) {
+                var DetectStorage = (function () {
+                    function DetectStorage(_window) {
+                        if (typeof _window === "undefined") { _window = window; }
+                        this._window = _window;
+                    }
+                    DetectStorage.prototype.detectStorageAsync = function (uniqueKey, callback) {
+                        if (!this._window.indexedDB) {
+                            callback(new Error('No indexedDB object exposed from window.'), null);
+                            return;
+                        }
+
+                        if (typeof this._window.indexedDB.open !== 'function') {
+                            callback(new Error('No open method exposed on indexedDB object.'), null);
+                            return;
+                        }
+
+                        var dbName = uniqueKey || 'teapo';
+
+                        var openRequest = this._window.indexedDB.open(dbName, 1);
+                        openRequest.onerror = function (errorEvent) {
+                            return callback(teapo.storage.attached.indexedDB.wrapErrorEvent(errorEvent, 'detectStorageAsync-open'), null);
+                        };
+
+                        openRequest.onupgradeneeded = function (versionChangeEvent) {
+                            var db = openRequest.result;
+                            var filesStore = db.createObjectStore('files', { keyPath: 'path' });
+                            var metadataStore = db.createObjectStore('metadata', { keyPath: 'property' });
+                        };
+
+                        openRequest.onsuccess = function (event) {
+                            var db = openRequest.result;
+
+                            var transaction = db.transaction('metadata');
+                            transaction.onerror = function (errorEvent) {
+                                return callback(teapo.storage.attached.indexedDB.wrapErrorEvent(errorEvent, 'detectStorageAsync-openRequest.onsuccess-transaction'), null);
+                            };
+
+                            var metadataStore = transaction.objectStore('metadata');
+
+                            var editedUTCRequest = metadataStore.get('editedUTC');
+                            editedUTCRequest.onerror = function (errorEvent) {
+                                callback(null, new teapo.storage.attached.indexedDB.LoadStorage(null, db));
+                            };
+
+                            editedUTCRequest.onsuccess = function (event) {
+                                var result = editedUTCRequest.result;
+                                callback(null, new teapo.storage.attached.indexedDB.LoadStorage(result && typeof result.value === 'number' ? result.value : null, db));
+                            };
+                        };
+                    };
+                    return DetectStorage;
+                })();
+                indexedDB.DetectStorage = DetectStorage;
+            })(attached.indexedDB || (attached.indexedDB = {}));
+            var indexedDB = attached.indexedDB;
+        })(storage.attached || (storage.attached = {}));
+        var attached = storage.attached;
+    })(teapo.storage || (teapo.storage = {}));
+    var storage = teapo.storage;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (storage) {
+        (function (attached) {
+            (function (indexedDB) {
+                var LoadStorage = (function () {
+                    function LoadStorage(editedUTC, _db) {
+                        this.editedUTC = editedUTC;
+                        this._db = _db;
+                    }
+                    LoadStorage.prototype.load = function (recipient) {
+                        var _this = this;
+                        var transaction = this._db.transaction('files');
+                        transaction.onerror = function (errorEvent) {
+                            return recipient.failed(teapo.storage.attached.indexedDB.wrapErrorEvent(errorEvent, 'load: transaction'));
+                        };
+                        var filesStore = transaction.objectStore('files');
+                        var cursorRequest = filesStore.openCursor();
+                        cursorRequest.onerror = function (errorEvent) {
+                            return recipient.failed(teapo.storage.attached.indexedDB.wrapErrorEvent(errorEvent, 'load: objectStore-openCursor'));
+                        };
+                        cursorRequest.onsuccess = function (event) {
+                            var cursor = cursorRequest.result;
+
+                            if (!cursor) {
+                                recipient.completed(new teapo.storage.attached.indexedDB.UpdateStorage(_this._db));
+                                return;
+                            }
+
+                            var result = cursor.value;
+                            if (result && result.properties) {
+                                recipient.file(result.path, result.properties);
+                            }
+
+                            cursor.continue();
+                        };
+                    };
+
+                    LoadStorage.prototype.migrate = function (editedUTC, filesByName, callback) {
+                        var _this = this;
+                        var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
+                        transaction.onerror = function (errorEvent) {
+                            return callback(teapo.storage.attached.indexedDB.wrapErrorEvent(errorEvent, 'migrate: transaction'), null);
+                        };
+                        var filesStore = transaction.objectStore('files');
+                        var clearFiles = filesStore.clear();
+                        clearFiles.onerror = function (errorEvent) {
+                            return callback(teapo.storage.attached.indexedDB.wrapErrorEvent(errorEvent, 'migrate: objectStore(files)-clear'), null);
+                        };
+                        clearFiles.onsuccess = function (event) {
+                            var metadataStore = transaction.objectStore('metadata');
+                            var clearMetadata = metadataStore.clear();
+                            clearMetadata.onerror = function (errorEvent) {
+                                return callback(teapo.storage.attached.indexedDB.wrapErrorEvent(errorEvent, 'migrate: objectStore(files)/clear-objectStore(metadata)-clear'), null);
+                            };
+                            clearMetadata.onsuccess = function (event) {
+                                var editedUTC = Date.now();
+                                var putEditedUTC = metadataStore.put({ property: 'editedUTC', value: editedUTC });
+                                putEditedUTC.onerror = function (errorEvent) {
+                                    return callback(teapo.storage.attached.indexedDB.wrapErrorEvent(errorEvent, 'migrate: objectStore(files)/clear-objectStore(metadata)/clear-put(' + editedUTC + ')'), null);
+                                };
+                                putEditedUTC.onsuccess = function (event) {
+                                    var update = new teapo.storage.attached.indexedDB.UpdateStorage(_this._db);
+                                    callback(null, update);
+                                };
+                            };
+                        };
+                    };
+                    return LoadStorage;
+                })();
+                indexedDB.LoadStorage = LoadStorage;
+            })(attached.indexedDB || (attached.indexedDB = {}));
+            var indexedDB = attached.indexedDB;
+        })(storage.attached || (storage.attached = {}));
+        var attached = storage.attached;
+    })(teapo.storage || (teapo.storage = {}));
+    var storage = teapo.storage;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (storage) {
+        (function (attached) {
+            (function (indexedDB) {
+                var UpdateStorage = (function () {
+                    function UpdateStorage(_db) {
+                        this._db = _db;
+                    }
+                    UpdateStorage.prototype.update = function (file, property, value, callback) {
+                        var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
+                        transaction.onerror = function (errorEvent) {
+                            return callback(teapo.storage.attached.indexedDB.wrapErrorEvent(errorEvent, 'update: transaction'));
+                        };
+                        var filesStore = transaction.objectStore('files');
+                        var getFile = filesStore.get(file);
+                        getFile.onerror = function (errorEvent) {
+                            return callback(teapo.storage.attached.indexedDB.wrapErrorEvent(errorEvent, 'update: objectStore(files).get(' + file + ')'));
+                        };
+                        getFile.onsuccess = function (event) {
+                            var fileData = getFile.result || { path: file };
+                            fileData[property] = value;
+
+                            var putFile = filesStore.put(fileData);
+                            putFile.onerror = function (errorEvent) {
+                                return callback(teapo.storage.attached.indexedDB.wrapErrorEvent(errorEvent, 'update: objectStore(files).get(' + file + ')-put(' + property + ',' + value + ')'));
+                            };
+                            putFile.onsuccess = function (event) {
+                                var metadataStore = transaction.objectStore('metadata');
+
+                                var metadataData = { property: 'editedUTC', value: Date.now() };
+                                var putMetadata = metadataStore.put(metadataData);
+                                putMetadata.onerror = function (errorEvent) {
+                                    return callback(teapo.storage.attached.indexedDB.wrapErrorEvent(errorEvent, 'update: objectStore(files)/get/put-objectStore(metadata).put(editedUTC,' + metadataData.value + ')'));
+                                };
+                                putMetadata.onsuccess = function (event) {
+                                    return callback(null);
+                                };
+                            };
+                        };
+                    };
+
+                    UpdateStorage.prototype.remove = function (file, callback) {
+                        callback(new Error('Not implemented.'));
+                    };
+                    return UpdateStorage;
+                })();
+                indexedDB.UpdateStorage = UpdateStorage;
+            })(attached.indexedDB || (attached.indexedDB = {}));
+            var indexedDB = attached.indexedDB;
+        })(storage.attached || (storage.attached = {}));
+        var attached = storage.attached;
+    })(teapo.storage || (teapo.storage = {}));
+    var storage = teapo.storage;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (storage) {
+        (function (attached) {
+            (function (indexedDB) {
+                function wrapErrorEvent(errorEvent, details) {
+                    if (!errorEvent)
+                        return null;
+
+                    return new Error(details + ' ' + errorEvent.message + ' ' + errorEvent.lineno);
+                }
+                indexedDB.wrapErrorEvent = wrapErrorEvent;
+            })(attached.indexedDB || (attached.indexedDB = {}));
+            var indexedDB = attached.indexedDB;
+        })(storage.attached || (storage.attached = {}));
+        var attached = storage.attached;
+    })(teapo.storage || (teapo.storage = {}));
+    var storage = teapo.storage;
 })(teapo || (teapo = {}));
 var teapo;
 (function (teapo) {
@@ -1384,7 +1637,7 @@ var teapo;
             AttachedStorageTests.prototype.migrate = function (callback) {
                 var ukey = this._generateKey();
                 this._detect.detectStorageAsync(ukey, function (error, load) {
-                    load.migrate(2345, { "file.txt": { property: "value" } }, function (error) {
+                    load.migrate(2345, { "file.txt": { property: "value" } }, function (error, update) {
                         return callback(error);
                     });
                 });
@@ -1394,7 +1647,7 @@ var teapo;
                 var _this = this;
                 var ukey = this._generateKey();
                 this._detect.detectStorageAsync(ukey, function (error, load) {
-                    load.migrate(2345, { "file.txt": { property: "value" } }, function (error) {
+                    load.migrate(2345, { "file.txt": { property: "value" } }, function (error, update) {
                         _this._detect.detectStorageAsync(ukey, function (error, load) {
                             var files = {};
                             load.load({
@@ -1466,6 +1719,19 @@ var teapo;
             return AttachedStorageTests;
         })();
         tests.AttachedStorageTests = AttachedStorageTests;
+    })(teapo.tests || (teapo.tests = {}));
+    var tests = teapo.tests;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (tests) {
+        (function (IndexedDBStorageTests) {
+            IndexedDBStorageTests.browser;
+
+            if (typeof indexedDB !== 'undefined' && indexedDB && typeof indexedDB.open === 'function')
+                IndexedDBStorageTests.browser = new teapo.tests.AttachedStorageTests(new teapo.storage.attached.indexedDB.DetectStorage());
+        })(tests.IndexedDBStorageTests || (tests.IndexedDBStorageTests = {}));
+        var IndexedDBStorageTests = tests.IndexedDBStorageTests;
     })(teapo.tests || (teapo.tests = {}));
     var tests = teapo.tests;
 })(teapo || (teapo = {}));
