@@ -2,19 +2,52 @@
 <html><head>
 <title>Teapo v0.5j</title>
  
-<style>###base.css###</style>
+<style>html {
+  margin: 0px;
+  padding: 0px;
+}
+body {
+  margin: 0px;
+  padding: 0px;
+}</style>
 <style>.teapo-early {
   position: fixed;
   left: 0px;
   top: 0px;
   width: 100%;
   height: 100%;
-  background: white;
-  opacity: 0.5;
-  
+  background-color: tomato;
+  background:
+      -moz-radial-gradient(white 18%, transparent 21%),
+      -moz-radial-gradient(white 18%, transparent 21%),
+      tomato;
+  background:
+      -webkit-radial-gradient(white 18%, transparent 21%),
+      -webkit-radial-gradient(white 18%, transparent 21%),
+      tomato;
+  background:
+      radial-gradient(white 18%, transparent 21%),
+      radial-gradient(white 18%, transparent 21%),
+      tomato;
+  background-position: 0 0, 80px 80px;
+
+  -webkit-background-size:160px 160px;
+  -moz-background-size:160px 160px;
+  background-size:160px 160px;
+}
+
+.teapo-early-title {
+
   font-size: 300%;
-  padding: 2em;
+  font-style: italic;
+  font-family: Serif;
   text-align: center;
+  width: auto;
+  background: white;
+  color: tomato;
+  padding: 5px;
+  margin: 2em;
+
 }</style> 
 <style>.teapo-tests-failed {
   color: brown;
@@ -59,15 +92,24 @@
       element.innerHTML = text;
   }
   
-  var earlyElement = document.createElement('div');
-  earlyElement.className = 'teapo-early';
-  setText(earlyElement, 'Downloading..');
-
+  var earlyElementBackground = document.createElement('div');
+  var earlyElementTitle = document.createElement('div');
+  earlyElementBackground.className='teapo-early';
+  earlyElementTitle.className='teapo-early-title';
+  earlyElementBackground.appendChild(earlyElementTitle);
   
-  document.body.appendChild(earlyElement);
+  document.body.appendChild(earlyElementBackground);
 
-  teapo.earlyElement = earlyElement;
+  teapo.earlyElement = function earlyElement(text){
+    setText(earlyElementTitle,text);
+  };
+  teapo.earlyElement.close=function close(){
+    document.body.removeChild(earlyElementBackground);
+  };
+  teapo.earlyElement.background = earlyElementBackground;
   teapo.setText = setText;
+  
+  
 })(typeof teapo==='undefined' ? teapo = {}:teapo)</script>
 <script>/*!
  * https://github.com/es-shims/es5-shim
@@ -190,6 +232,10 @@ new a.w;var b=new a.Ba;0<b.Rb&&a.La(b);a.b("jqueryTmplTemplateEngine",a.Ba)})()}
 
   <h2> Teapo v0.5j  </h2>
   
+  <pre id=one data-bind="scroll: { left: scrollLeft }">one</pre>
+  <pre id=two data-bind="scroll: { top: scrollTop }">two</pre>
+  <pre id=three data-bind="scroll: { left: scrollLeft, top: scrollTop }">three</pre>
+  
   The existing version 0.4h is made to bootstrap itself,
   it's hacky, bizarre and have no tests, but it works and that was the conscious
   goal.<br><br>
@@ -197,8 +243,6 @@ new a.w;var b=new a.Ba;0<b.Rb&&a.La(b);a.b("jqueryTmplTemplateEngine",a.Ba)})()}
   are developed the first working piece is unit test runner.<br><br>
   The tests aren't using any frameworks, they are merely functions
   that throw exceptions to signify a failure. At least for now.
-
-<!-- ko template: { name: 'TestPage', data: tests } --><!-- /ko -->
   
 </div></script>
 <script id="TestPage" type="text/html"><div class=teapo-tests>
@@ -293,57 +337,176 @@ var teapo;
 (function (teapo) {
     (function (app) {
         var Application = (function () {
-            function Application(_host) {
-                this._host = _host;
+            function Application(_body) {
+                if (typeof _body === "undefined") { _body = document.body; }
+                this._body = _body;
                 this.tests = null;
+                this.scrollLeft = ko.observable(1);
+                this.scrollTop = ko.observable(2);
+                this._layout = null;
                 this._startBoot();
             }
             Application.prototype._startBoot = function () {
                 var _this = this;
-                if (teapo.earlyElement) {
-                    teapo.earlyElement.textContent = 'Loading test list...';
-                }
+                teapo.earlyElement('Loading test list...');
 
                 setTimeout(function () {
                     _this.tests = new teapo.app.tests.TestPage();
 
                     setTimeout(function () {
-                        if (teapo.earlyElement) {
-                            teapo.earlyElement.textContent = 'Rendering...';
-                        }
-
+                        teapo.earlyElement('Rendering...');
                         _this._completeBoot();
-                    }, 10);
+                    }, 2000);
                 }, 10);
             };
 
             Application.prototype._completeBoot = function () {
-                if (teapo.earlyElement && teapo.earlyElement.parentElement) {
-                    teapo.earlyElement.parentElement.removeChild(teapo.earlyElement);
-                }
+                var _this = this;
+                this._layout = new teapo.app.PageLayout();
 
-                var splitter = new teapo.app.Splitter(document.body, 'teapo-splitter1');
-                splitter.leftPanel.style.background = 'gold';
-                splitter.leftPanel.style.opacity = '0.5';
-                splitter.rightPanel.style.background = 'cornflowerblue';
-                splitter.rightPanel.style.opacity = '0.5';
+                ko.renderTemplate('Application', this, null, this._layout.leftPanel);
+                ko.renderTemplate('TestPage', this.tests, null, this._layout.rightPanel);
 
-                var newHost = false;
-                if (!this._host) {
-                    this._host = document.createElement('div');
-                    this._host.className = 'teapo-application';
-                    newHost = true;
-                }
+                var startAnimation = Date.now();
+                var endAnimation = startAnimation + 400;
 
-                ko.renderTemplate('Application', this, null, this._host);
+                var containerWidth = this._layout.container.offsetWidth;
+                var pageWidth = teapo.earlyElement.background.offsetWidth;
+                var continueAnimation = function () {
+                    var now = Date.now();
+                    if (now >= endAnimation) {
+                        teapo.earlyElement.close();
+                        _this._layout.container.style.left = '0px';
+                        return;
+                    }
 
-                if (newHost) {
-                    document.body.appendChild(this._host);
-                }
+                    var ratio = (now - startAnimation) / (endAnimation - startAnimation);
+                    _this._layout.container.style.left = (-containerWidth + ratio * containerWidth) + 'px';
+                    teapo.earlyElement.background.style.left = (ratio * containerWidth) + 'px';
+
+                    if (typeof requestAnimationFrame === 'function')
+                        requestAnimationFrame(continueAnimation);
+                    else
+                        setTimeout(continueAnimation, 1);
+                };
+
+                continueAnimation();
             };
             return Application;
         })();
         app.Application = Application;
+    })(teapo.app || (teapo.app = {}));
+    var app = teapo.app;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (app) {
+        var PageLayout = (function () {
+            function PageLayout(_window) {
+                if (typeof _window === "undefined") { _window = window; }
+                var _this = this;
+                this._window = _window;
+                this.leftPanel = document.createElement('div');
+                this.rightPanel = document.createElement('div');
+                this.container = document.createElement('div');
+                this._containerInner = document.createElement('div');
+                this._leftPanelContainer = document.createElement('div');
+                this._rightPanelContainer = document.createElement('div');
+                this._emPixels = PageLayout.measureEmSize(this._window.document);
+
+                teapo.app.addEventListenerWithDelay(window, 'resize', function () {
+                    return _this._updateLayout();
+                });
+                teapo.app.addEventListenerWithDelay(window, 'scroll', function () {
+                    return _this._updateLayout();
+                });
+                teapo.app.addEventListenerWithDelay(this.container, 'scroll', function () {
+                    return _this._updateLayout();
+                });
+
+                this._setStyles();
+
+                this._updateLayout();
+            }
+            PageLayout.prototype._setStyles = function () {
+                this.container.style.position = 'fixed';
+                this.container.style.width = '100%';
+                this.container.style.height = '100%';
+                this.container.style.overflowX = 'scroll';
+                this.container.style.overflowY = 'hidden';
+                this.container.style.paddingBottom = '25px';
+
+                this._containerInner.style.overflow = 'hidden';
+
+                this._containerInner.style.width = '180%';
+                this._containerInner.style.height = '100%';
+
+                this._leftPanelContainer.style.position = 'absolute';
+                this._rightPanelContainer.style.position = 'absolute';
+
+                this._leftPanelContainer.style.width = '90%';
+                this._rightPanelContainer.style.width = '90%';
+
+                this._leftPanelContainer.style.height = '100%';
+                this._rightPanelContainer.style.height = '100%';
+
+                this._rightPanelContainer.style.left = '90%';
+
+                this.leftPanel.style.height = '100%';
+                this.rightPanel.style.height = '100%';
+
+                // TODO: doubt it should be managed in this place:
+                this.leftPanel.style.overflow = 'auto';
+                this.rightPanel.style.overflow = 'auto';
+
+                this._leftPanelContainer.appendChild(this.leftPanel);
+                this._rightPanelContainer.appendChild(this.rightPanel);
+
+                this._containerInner.appendChild(this._leftPanelContainer);
+                this._containerInner.appendChild(this._rightPanelContainer);
+
+                this.container.appendChild(this._containerInner);
+
+                this._window.document.body.appendChild(this.container);
+            };
+
+            PageLayout.prototype._updateLayout = function () {
+                var height = this.container.offsetHeight;
+
+                if (this.leftPanel.offsetHeight != height - 25)
+                    this.leftPanel.style.maxHeight = (height - 25) + 'px';
+                if (this.rightPanel.offsetHeight != height - 25)
+                    this.rightPanel.style.maxHeight = (height - 25) + 'px';
+
+                var width = this.container.offsetWidth;
+                var scroll = this.container.scrollLeft;
+
+                if (this.leftPanel.offsetWidth != width * 0.9 - scroll) {
+                    this.leftPanel.style.maxWidth = (width * 0.9 - scroll) + 'px';
+                    this._leftPanelContainer.style.paddingLeft = scroll + 'px';
+                }
+
+                if (this.rightPanel.offsetWidth != width * 0.05 + scroll) {
+                    this.rightPanel.style.maxWidth = (width * 0.5 + scroll) + 'px';
+                    this._rightPanelContainer.style.paddingRight = (width * 0.9 - scroll) + 'px';
+                }
+            };
+
+            PageLayout.measureEmSize = function (_document) {
+                if (typeof _document === "undefined") { _document = document; }
+                var emDiv = _document.createElement('div');
+                var manyMs = 'MMMMMMMMMMMMMMMMMMMMM';
+                emDiv.textContent = manyMs;
+                emDiv.innerText = manyMs;
+                emDiv.style.opacity = '0.01';
+                document.body.appendChild(emDiv);
+                var emSize = emDiv.offsetWidth / manyMs.length;
+                document.body.removeChild(emDiv);
+                return emSize;
+            };
+            return PageLayout;
+        })();
+        app.PageLayout = PageLayout;
     })(teapo.app || (teapo.app = {}));
     var app = teapo.app;
 })(teapo || (teapo = {}));
@@ -364,157 +527,29 @@ var teapo;
             }
         }
         app.addEventListener = addEventListener;
-    })(teapo.app || (teapo.app = {}));
-    var app = teapo.app;
-})(teapo || (teapo = {}));
-var teapo;
-(function (teapo) {
-    (function (app) {
-        var Splitter = (function () {
-            function Splitter(_host, splitterClassName) {
-                var _this = this;
-                this._host = _host;
-                this._resizeTimeout = 0;
-                this._resizeClosure = function () {
-                    return _this._updateLayout();
-                };
-                this._draggingSplitter = false;
-                this.leftPanel = document.createElement('div');
-                this.rightPanel = document.createElement('div');
-                this._leftContainer = document.createElement('div');
-                this._rightContainer = document.createElement('div');
-                this._splitterContainer = document.createElement('div');
-                this._splitter = document.createElement('div');
-                this._relativeSplitterOffset = 0.20;
-                this._emPixels = 0;
-                this._minLeftWidth = 0;
-                this._visibleSplitterWidth = 1;
-                this._splitterPadding = 4;
-                var onresizeHandler = function () {
-                    if (!_this._resizeTimeout) {
-                        _this._resizeTimeout = 1;
-                        if (window.requestAnimationFrame) {
-                            window.requestAnimationFrame(function () {
-                                _this._resizeTimeout = 0;
-                                _this._updateLayout();
-                            });
-                        } else {
-                            setTimeout(function () {
-                                _this._resizeTimeout = 0;
-                                _this._updateLayout();
-                            });
-                        }
-                    }
-                };
-                teapo.app.addEventListener(window, 'resize', onresizeHandler);
-                teapo.app.addEventListener(window, 'resizestart', onresizeHandler);
 
-                //addEventListener(this._host, 'resizestart', onresizeHandler);
-                var metricDiv = document.createElement('div');
-                metricDiv.style.opacity = '0.01';
-                metricDiv.textContent = metricDiv.innerText = 'MMMMMMMMMM'; // 10 of them
-                metricDiv.style.position = 'absolute';
-                document.body.appendChild(metricDiv);
+        function addEventListenerWithDelay(element, type, listener) {
+            var queued = false;
+            var storedEvent;
 
-                this._emPixels = metricDiv.offsetWidth / 10 || 16;
-                this._minLeftWidth = this._emPixels * 10;
-
-                document.body.removeChild(metricDiv);
-
-                this._splitter.className = splitterClassName;
-
-                this._leftContainer.style.position = 'absolute';
-                this._rightContainer.style.position = 'absolute';
-                this._splitterContainer.style.position = 'absolute';
-                this._leftContainer.style.pointerEvents = 'none';
-                this._rightContainer.style.pointerEvents = 'none';
-                this._splitterContainer.style.pointerEvents = 'none';
-
-                this.leftPanel.style.position = 'relative';
-                this.rightPanel.style.position = 'relative';
-                this._splitter.style.position = 'relative';
-
-                this._leftContainer.appendChild(this.leftPanel);
-                this._rightContainer.appendChild(this.rightPanel);
-                this._splitterContainer.appendChild(this._splitter);
-
-                this._host.appendChild(this._leftContainer);
-                this._host.appendChild(this._rightContainer);
-                this._host.appendChild(this._splitterContainer);
-
-                this._updateLayout();
-
-                setTimeout(function () {
-                    return _this._updateLayout();
-                }, 1);
-            }
-            Splitter.prototype._finishSplitterDragging = function () {
+            var listenerClosure = function () {
+                queued = false;
+                listener(storedEvent);
+                storedEvent = null;
             };
 
-            Splitter.prototype._updateLayout = function () {
-                if (this._draggingSplitter)
-                    this._finishSplitterDragging();
-
-                var hostHeight = this._host.offsetHeight;
-                var hostWidth = this._host.offsetWidth;
-
-                var maximizeThreshold = this._emPixels * 30;
-
-                if (hostWidth > maximizeThreshold) {
-                    var newLeftWidth = Math.floor(Math.max(hostWidth * this._relativeSplitterOffset, this._minLeftWidth));
-                    var newRightWidth = hostWidth - newLeftWidth - this._visibleSplitterWidth;
-
-                    if (this.leftPanel.offsetLeft !== 0)
-                        this.leftPanel.style.left = '0px';
-                    if (this.leftPanel.offsetWidth !== newLeftWidth)
-                        this.leftPanel.style.width = newLeftWidth + 'px';
-                    if (this.leftPanel.offsetHeight !== hostHeight)
-                        this.leftPanel.style.height = hostHeight + 'px';
-
-                    var splitterLeft = newLeftWidth - this._splitterPadding;
-                    if (this._splitter.offsetLeft !== splitterLeft)
-                        this._splitter.style.left = splitterLeft + 'px';
-                    if (this._splitter.offsetHeight !== hostHeight)
-                        this._splitter.style.height = hostHeight + 'px';
-                    var splitterWidth = this._visibleSplitterWidth + this._splitterPadding * 2;
-                    if (this._splitter.offsetWidth !== splitterWidth)
-                        this._splitter.style.width = splitterWidth + 'px';
-
-                    if (this.rightPanel.offsetLeft !== newLeftWidth + this._visibleSplitterWidth)
-                        this.rightPanel.style.left = (newLeftWidth + this._visibleSplitterWidth) + 'px';
-                    if (this.rightPanel.offsetWidth !== newRightWidth)
-                        this.rightPanel.style.width = newRightWidth + 'px';
-                    if (this.rightPanel.offsetHeight !== hostHeight)
-                        this.rightPanel.style.height = hostHeight + 'px';
-                } else {
-                    var newLeftWidth = Math.floor(Math.max(hostWidth * (1 - this._relativeSplitterOffset) / this._relativeSplitterOffset, this._minLeftWidth));
-
-                    if (this.leftPanel.offsetLeft !== -newLeftWidth)
-                        this.leftPanel.style.left = (-newLeftWidth) + 'px';
-                    if (this.leftPanel.offsetWidth !== newLeftWidth)
-                        this.leftPanel.style.width = newLeftWidth + 'px';
-                    if (this.leftPanel.offsetHeight !== hostHeight)
-                        this.leftPanel.offsetHeight = hostHeight;
-
-                    if (this._splitter.offsetLeft !== -this._splitterPadding)
-                        this._splitter.style.left = (-this._splitterPadding) + 'px';
-                    if (this._splitter.offsetHeight !== hostHeight)
-                        this._splitter.style.height = hostHeight + 'px';
-                    var splitterWidth = this._visibleSplitterWidth + this._splitterPadding * 2;
-                    if (this._splitter.offsetWidth !== splitterWidth)
-                        this._splitter.style.width = splitterWidth + 'px';
-
-                    if (this.rightPanel.offsetLeft !== this._visibleSplitterWidth)
-                        this.rightPanel.style.left = this._visibleSplitterWidth + 'px';
-                    if (this.rightPanel.offsetWidth !== hostWidth - this._visibleSplitterWidth)
-                        this.rightPanel.style.width = (hostWidth - this._visibleSplitterWidth) + 'px';
-                    if (this.rightPanel.offsetHeight !== hostHeight)
-                        this.rightPanel.style.width = hostHeight + 'px';
+            addEventListener(element, type, function (event) {
+                storedEvent = event;
+                if (!queued) {
+                    queued = true;
+                    if (typeof requestAnimationFrame === 'function')
+                        requestAnimationFrame(listenerClosure);
+                    else
+                        setTimeout(listenerClosure, 1);
                 }
-            };
-            return Splitter;
-        })();
-        app.Splitter = Splitter;
+            });
+        }
+        app.addEventListenerWithDelay = addEventListenerWithDelay;
     })(teapo.app || (teapo.app = {}));
     var app = teapo.app;
 })(teapo || (teapo = {}));
@@ -793,6 +828,46 @@ var teapo;
         var tests = app.tests;
     })(teapo.app || (teapo.app = {}));
     var app = teapo.app;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (koBindings) {
+        var Scroll = (function () {
+            function Scroll() {
+                this.options = {};
+                this._log = [];
+            }
+            Scroll.prototype.init = function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+                var value = valueAccessor();
+
+                var headTag = element.outerHTML.slice(0, element.outerHTML.indexOf('>') + 1);
+                this._log.push('init(' + headTag + ') ' + typeof value + ' ' + JSON.stringify(value));
+                console.log('init(' + headTag + ') ' + typeof value + ' ', value);
+
+                element.textContent = this._log.join(' \n ');
+            };
+
+            Scroll.prototype.update = function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+                var value = valueAccessor();
+
+                var headTag = element.outerHTML.slice(0, element.outerHTML.indexOf('>') + 1);
+                this._log.push('update(' + headTag + ') ' + typeof value + ' ' + JSON.stringify(value));
+                this._log.push('update(' + headTag + ') ' + typeof value + ' ', value);
+
+                element.textContent = this._log.join(' \n ');
+            };
+            return Scroll;
+        })();
+        koBindings.Scroll = Scroll;
+
+        var scroll = new Scroll();
+        ko.bindingHandlers['scroll'] = { init: function (el, val, vi, bi) {
+                return scroll.init(el, val, vi, bi);
+            }, update: function (el, val, al, vi, bi) {
+                return scroll.update(el, val, al, vi, bi);
+            } };
+    })(teapo.koBindings || (teapo.koBindings = {}));
+    var koBindings = teapo.koBindings;
 })(teapo || (teapo = {}));
 var teapo;
 (function (teapo) {
@@ -2141,9 +2216,10 @@ var teapo;
 
 
 try {
+
   var app = new teapo.app.Application();
 }
-catch (initiError) {
+catch (initError) {
   alert('Error in Teapo initialization: '+initError.message+' '+initError.stack);
 }
 
