@@ -78,6 +78,8 @@ body {
 
 </head>
 <body>
+  
+  
 
 <script>var teapo;
 
@@ -231,11 +233,10 @@ new a.w;var b=new a.Ba;0<b.Rb&&a.La(b);a.b("jqueryTmplTemplateEngine",a.Ba)})()}
 <script id="Application" type="text/html"><div class=teapo-application>
 
   <h2> Teapo v0.5j  </h2>
+
+
   
-  <pre id=one data-bind="scroll: { left: scrollLeft }">one</pre>
-  <pre id=two data-bind="scroll: { top: scrollTop }">two</pre>
-  <pre id=three data-bind="scroll: { left: scrollLeft, top: scrollTop }">three</pre>
-  
+  <div>
   The existing version 0.4h is made to bootstrap itself,
   it's hacky, bizarre and have no tests, but it works and that was the conscious
   goal.<br><br>
@@ -243,6 +244,7 @@ new a.w;var b=new a.Ba;0<b.Rb&&a.La(b);a.b("jqueryTmplTemplateEngine",a.Ba)})()}
   are developed the first working piece is unit test runner.<br><br>
   The tests aren't using any frameworks, they are merely functions
   that throw exceptions to signify a failure. At least for now.
+  </div>
   
 </div></script>
 <script id="TestPage" type="text/html"><div class=teapo-tests>
@@ -346,6 +348,11 @@ var teapo;
                 this._layout = null;
                 this._startBoot();
             }
+            Application.prototype.debugg = function () {
+                this.scrollLeft(this.scrollLeft() + 1);
+                this.scrollTop(this.scrollTop() + 2);
+            };
+
             Application.prototype._startBoot = function () {
                 var _this = this;
                 teapo.earlyElement('Loading test list...');
@@ -507,6 +514,68 @@ var teapo;
             return PageLayout;
         })();
         app.PageLayout = PageLayout;
+    })(teapo.app || (teapo.app = {}));
+    var app = teapo.app;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (app) {
+        (function (files) {
+            var FileEntry = (function () {
+                function FileEntry(parent, name) {
+                    this.parent = parent;
+                    this.name = name;
+                    this.isSelected = ko.observable(false);
+                    this.iconClass = ko.observable('teapo-default-file-icon');
+                    this.height = ko.observable(16);
+                }
+                return FileEntry;
+            })();
+            files.FileEntry = FileEntry;
+        })(app.files || (app.files = {}));
+        var files = app.files;
+    })(teapo.app || (teapo.app = {}));
+    var app = teapo.app;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (app) {
+        (function (files) {
+            var FileList = (function () {
+                function FileList() {
+                    this.folders = ko.observableArray([]);
+                    this.files = ko.observableArray([]);
+                    this.selectedFile = ko.observable(null);
+                    this.scrollTop = ko.observable(32);
+                }
+                return FileList;
+            })();
+            files.FileList = FileList;
+        })(app.files || (app.files = {}));
+        var files = app.files;
+    })(teapo.app || (teapo.app = {}));
+    var app = teapo.app;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (app) {
+        (function (files) {
+            var FolderEntry = (function () {
+                function FolderEntry(parent, name) {
+                    this.parent = parent;
+                    this.name = name;
+                    this.files = ko.observableArray([]);
+                    this.subfolders = ko.observableArray([]);
+                    this.isExpanded = ko.observable(false);
+                    this.containsSelection = ko.observable(false);
+                    this.color = '';
+                    this.height = ko.observable(16);
+                }
+                return FolderEntry;
+            })();
+            files.FolderEntry = FolderEntry;
+        })(app.files || (app.files = {}));
+        var files = app.files;
     })(teapo.app || (teapo.app = {}));
     var app = teapo.app;
 })(teapo || (teapo = {}));
@@ -833,39 +902,67 @@ var teapo;
 (function (teapo) {
     (function (koBindings) {
         var Scroll = (function () {
-            function Scroll() {
-                this.options = {};
-                this._log = [];
+            function Scroll(_getScrollValue, _setScrollValue) {
+                this._getScrollValue = _getScrollValue;
+                this._setScrollValue = _setScrollValue;
             }
             Scroll.prototype.init = function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
-                var value = valueAccessor();
+                var _this = this;
+                var valueRaw = valueAccessor();
+                var value = ko.utils.unwrapObservable(valueRaw);
+                var scrollValue = this._getScrollValue(element);
+                if (value !== element.scrollTop)
+                    this._setScrollValue(element, value);
 
-                var headTag = element.outerHTML.slice(0, element.outerHTML.indexOf('>') + 1);
-                this._log.push('init(' + headTag + ') ' + typeof value + ' ' + JSON.stringify(value));
-                console.log('init(' + headTag + ') ' + typeof value + ' ', value);
-
-                element.textContent = this._log.join(' \n ');
+                if (valueRaw !== value) {
+                    teapo.app.addEventListenerWithDelay(element, 'scroll', function () {
+                        var valueRaw = valueAccessor();
+                        if (typeof valueRaw === 'function')
+                            valueRaw(_this._getScrollValue(element));
+                        else
+                            valueAccessor(_this._getScrollValue(element.scrollTop));
+                    });
+                }
             };
 
             Scroll.prototype.update = function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
-                var value = valueAccessor();
-
-                var headTag = element.outerHTML.slice(0, element.outerHTML.indexOf('>') + 1);
-                this._log.push('update(' + headTag + ') ' + typeof value + ' ' + JSON.stringify(value));
-                this._log.push('update(' + headTag + ') ' + typeof value + ' ', value);
-
-                element.textContent = this._log.join(' \n ');
+                var value = ko.utils.unwrapObservable(valueAccessor());
+                if (value !== this._getScrollValue(element.scrollTop)) {
+                    this._setScrollValue(element, value);
+                }
             };
             return Scroll;
         })();
         koBindings.Scroll = Scroll;
 
-        var scroll = new Scroll();
-        ko.bindingHandlers['scroll'] = { init: function (el, val, vi, bi) {
-                return scroll.init(el, val, vi, bi);
-            }, update: function (el, val, al, vi, bi) {
-                return scroll.update(el, val, al, vi, bi);
-            } };
+        function registerScroll(scroll, name) {
+            var wrapped = {
+                init: scroll.init.bind(scroll),
+                update: scroll.update.bind(scroll)
+            };
+            ko.bindingHandlers[name] = wrapped;
+        }
+
+        registerScroll(new Scroll(function (element) {
+            return element.scrollTop;
+        }, function (element, value) {
+            return element.scrollTop = value;
+        }), 'scrollTop');
+        registerScroll(new Scroll(function (element) {
+            return element.scrollLeft;
+        }, function (element, value) {
+            return element.scrollLeft = value;
+        }), 'scrollLeft');
+        registerScroll(new Scroll(function (element) {
+            return element.scrollWidth;
+        }, function (element, value) {
+            return element.scrollWidth = value;
+        }), 'scrollWidth');
+        registerScroll(new Scroll(function (element) {
+            return element.scrollHeight;
+        }, function (element, value) {
+            return element.scrollHeight = value;
+        }), 'scrollHeight');
     })(teapo.koBindings || (teapo.koBindings = {}));
     var koBindings = teapo.koBindings;
 })(teapo || (teapo = {}));
@@ -1919,6 +2016,55 @@ var teapo;
             };
 
             AttachedStorageTests.prototype.update_loadAgain_sameValue = function (callback) {
+                this._update_loadAgain_sameValue_core('file3928.txt', 'property234', 'value94783', callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_unicodeValue = function (callback) {
+                var unicodeString = 'abc941' + [256, 257, 1024, 1026, 12879, 13879].map(function (m) {
+                    return String.fromCharCode(m);
+                }).join('');
+
+                this._update_loadAgain_sameValue_core('file82263.txt', 'property83784', unicodeString, callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_unicodeProperty = function (callback) {
+                var unicodeString = 'abc6253' + [256, 257, 1024, 1026, 12879, 13879].map(function (m) {
+                    return String.fromCharCode(m);
+                }).join('');
+
+                this._update_loadAgain_sameValue_core('file633.txt', unicodeString, 'value345634', callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_crlfValue = function (callback) {
+                var crlfString = 'abc941\nasdf3434\r07958\r\n4838hr';
+
+                this._update_loadAgain_sameValue_core('file82263.txt', 'property83784', crlfString, callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_crOnly = function (callback) {
+                this._update_loadAgain_sameValue_core('file82263.txt', 'property83784', '\r', callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_lfOnly = function (callback) {
+                this._update_loadAgain_sameValue_core('file82263.txt', 'property83784', '\n', callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_crlfOnly = function (callback) {
+                this._update_loadAgain_sameValue_core('file82263.txt', 'property83784', '\r\n', callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_zeroCharOnly = function (callback) {
+                this._update_loadAgain_sameValue_core('file82263.txt', 'property83784', String.fromCharCode(0), callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_charCodesUnder32 = function (callback) {
+                var chars = '';
+                for (var i = 0; i < 32; i++)
+                    chars + String.fromCharCode(i);
+                this._update_loadAgain_sameValue_core('file82263.txt', 'property83784', chars, callback);
+            };
+
+            AttachedStorageTests.prototype._update_loadAgain_sameValue_core = function (fileName, property, value, callback) {
                 var _this = this;
                 var ukey = this._generateKey();
                 this._detect.detectStorageAsync(ukey, function (error, load) {
@@ -1927,7 +2073,7 @@ var teapo;
                             return callback(new Error('LoadStorageRecipient.file should not be called.'));
                         },
                         completed: function (updater) {
-                            updater.update('file.txt', 'property', 'value', function (error) {
+                            updater.update(fileName, property, value, function (error) {
                                 _this._detect.detectStorageAsync(ukey, function (error, load) {
                                     var files = {};
                                     load.load({
@@ -1935,17 +2081,18 @@ var teapo;
                                             return files[name] = values;
                                         },
                                         completed: function (updater) {
-                                            var fileTxt = files['file.txt'];
+                                            var fileTxt = files[fileName];
                                             if (!fileTxt) {
                                                 callback(new Error('File is not reported on subsequent load.'));
                                             } else {
-                                                var propertyValue = fileTxt['property'];
-                                                callback(propertyValue === 'value' ? null : new Error('Wrong value ' + propertyValue));
+                                                var propertyValue = fileTxt[property];
+                                                callback(propertyValue === value ? null : new Error('Wrong value ' + propertyValue));
                                             }
                                         },
                                         failed: function (error) {
                                             return callback(error);
-                                        } });
+                                        }
+                                    });
                                 });
                             });
                         },
@@ -2013,6 +2160,7 @@ var teapo;
                     });
                 });
             };
+
             AttachedStorageTests.prototype.migrate_remove_load_nofile = function (callback) {
                 var _this = this;
                 var ukey = this._generateKey();
@@ -2231,6 +2379,7 @@ catch (declarationError) {
 
 })(teapo);
 </script>
+
 
 
 </body></html>
