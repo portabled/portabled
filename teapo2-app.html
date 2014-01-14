@@ -12,6 +12,7 @@ body {
 }</style>
 <style>.teapo-early {
   position: fixed;
+  z-index: 90000;
   left: 0px;
   top: 0px;
   width: 100%;
@@ -571,6 +572,31 @@ var teapo;
                     this.color = '';
                     this.height = ko.observable(16);
                 }
+                FolderEntry.calculateColor = function (name) {
+                    var chan = [1, 1, 1];
+
+                    var dist = 29;
+                    if (name) {
+                        for (var i = 0; i < name.length; i++) {
+                            var ch = i % 3;
+                            var v = name.charCodeAt(i) % dist;
+                            var range = 1 / Math.floor(1 + i / 3);
+                            var chValue = v * range / dist;
+                            chan[i] -= chValue;
+                        }
+                    }
+
+                    var delta = 37;
+                    var r = chan[0], g = chan[1], b = chan[2];
+                    r = 255 - delta + delta * r;
+                    g = 255 - delta + delta * g;
+                    b = 255 - delta + delta * b;
+                    var color = (r << 16) + (g << 8) + b;
+                    color = color | 0x1000000;
+
+                    var colorText = '#' + color.toString(16).slice(1);
+                    return colorText;
+                };
                 return FolderEntry;
             })();
             files.FolderEntry = FolderEntry;
@@ -1065,7 +1091,7 @@ var teapo;
                                 recipient.file(result.path, result.properties);
                             }
 
-                            cursor.continue();
+                            cursor['continue']();
                         };
                     };
 
@@ -1185,7 +1211,7 @@ var teapo;
                             return callback(teapo.storage.attached.indexedDB.wrapErrorEvent(errorEvent, 'update: transaction'));
                         };
                         var filesStore = transaction.objectStore('files');
-                        var deleteFile = filesStore.delete(file);
+                        var deleteFile = filesStore['delete'](file);
                         deleteFile.onerror = function (errorEvent) {
                             return callback(teapo.storage.attached.indexedDB.wrapErrorEvent(errorEvent, 'update: objectStore(files).get(' + file + ')'));
                         };
@@ -2379,7 +2405,6 @@ catch (declarationError) {
 
 })(teapo);
 </script>
-
 
 
 </body></html>
