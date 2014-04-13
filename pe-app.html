@@ -1,5 +1,4 @@
-<html>
-<head>
+<html><head>
 
 <title>PE.js mscorlib.dll...</title>
 <style>
@@ -1227,7 +1226,10 @@ html {
 
 </script>
 <script id="Type" type="text/html"><div class=pe-app-type-details>
-  <span data-bind="text: $data"></span><br>
+  <span data-bind="text: $data"></span>
+  <span>: </span>
+  <span data-bind="text: baseType" style="color: blue"></span>
+
   <span data-bind="text: pe.formatEnum(attributes, pe.managed.metadata.TypeAttributes)"></span>
 </div></script>
 <script id="MethodInfo" type="text/html"><div class=pe-app-methodInfo-details>
@@ -1729,7 +1731,6 @@ var pe;
                     var _this = this;
                     input.onchange = function () {
                         if (input.files && input.files.length) {
-                            alert('input.files[0] ' + input.files[0]);
                             _this.open(input.files[0]);
                         }
                     };
@@ -4592,13 +4593,13 @@ var pe;
             function ConstructedGenericType() {
             }
             ConstructedGenericType.prototype.getBaseType = function () {
-                return this.genericType.getBaseType();
+                return this.genericType ? this.genericType.getBaseType() : null;
             };
             ConstructedGenericType.prototype.getAssembly = function () {
-                return this.genericType.getAssembly();
+                return this.genericType ? this.genericType.getAssembly() : null;
             };
             ConstructedGenericType.prototype.getFullName = function () {
-                return this.genericType.getFullName() + "[" + this.genericArguments.join(",") + "]";
+                return this.genericType ? this.genericType.getFullName() + "[" + (this.genericArguments ? this.genericArguments.join(",") : '') + "]" : 'incorrect-generic-type';
             };
 
             ConstructedGenericType.prototype.toString = function () {
@@ -4997,10 +4998,11 @@ var pe;
                         if (rowIndex === 0)
                             return null;
 
-                        var tableKind = codedIndex - (rowIndex << tableKindBitCount);
+                        var tableKindCode = codedIndex - (rowIndex << tableKindBitCount);
+                        var tableKind = tables[tableKindCode];
 
                         var table = _this._tableStream.tables[tableKind];
-                        var row = table[rowIndex];
+                        var row = table[rowIndex - 1];
                         if (!row)
                             return null;
 
@@ -7754,6 +7756,7 @@ var pe;
                         nextMethodList = nextTypeDef.methodList;
                     reader.copyMethodRange(this.def.methods, this.methodList, nextMethodList);
                 };
+                TypeDef.oneAlert = true;
                 return TypeDef;
             })();
             tables.TypeDef = TypeDef;
@@ -7806,6 +7809,11 @@ var pe;
                 }
                 TypeSpec.prototype.read = function (reader) {
                     this.signature = reader.readBlobIndex();
+
+                    // TODO: populate correctly
+                    var fakeType = new pe.managed.Type();
+                    fakeType.name = 'fake*' + this.signature + '*';
+                    this.def.genericType = fakeType;
                 };
                 return TypeSpec;
             })();
@@ -8195,5 +8203,4 @@ var pe;
 
 
 
-</body>
-</html>
+</body></html>
