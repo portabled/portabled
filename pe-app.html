@@ -1,3 +1,4 @@
+<!doctype html>
 <html><head>
 
 <title>PE.js mscorlib.dll...</title>
@@ -218,7 +219,7 @@ html {
   
   <!-- tree-details view -->
   <div class="pe-page-treedetails">
-  <div class="pe-page-tree">
+  <div class="pe-page-tree" data-bind="click: nodeClick">
     <!-- ko template: { data: peHeaders, name: 'PEHeadersNode' } --><div class="pe-tree-node" data-bind="click: click">
   <span class="pe-tree-icon"></span>
   <span>PE Headers</span>
@@ -227,397 +228,397 @@ html {
   <span class="pe-tree-icon"></span>
   <span>References</span>
 </div><!-- /ko -->
-    <!-- ko template: { foreach: namespaces, name: 'NamespaceNode' } --><div class="pe-tree-node pe-namespace" data-bind="click: click">
+    <!-- ko template: { foreach: namespaces, name: 'NamespaceNode' } --><div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">Microsoft.Win32</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">Microsoft.Win32.SafeHandles</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">Mono</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">Mono.Globalization.Unicode</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">Mono.Interop</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">Mono.Math</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">Mono.Math.Prime</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">Mono.Math.Prime.Generator</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">Mono.Security</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">Mono.Security.Authenticode</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">Mono.Security.Cryptography</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">Mono.Security.X509</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">Mono.Security.X509.Extensions</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">Mono.Xml</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Collections</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Collections.Concurrent</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Collections.Concurrent.Partitioners</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Collections.Generic</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Collections.ObjectModel</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Configuration.Assemblies</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Deployment.Internal</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Diagnostics</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Diagnostics.CodeAnalysis</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Diagnostics.Contracts</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Diagnostics.Contracts.Internal</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Diagnostics.SymbolStore</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Globalization</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.IO</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.IO.IsolatedStorage</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Reflection</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Reflection.Emit</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Resources</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.CompilerServices</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.ConstrainedExecution</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.ExceptionServices</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.Hosting</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.InteropServices</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.InteropServices.ComTypes</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.InteropServices.Expando</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.Remoting</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.Remoting.Activation</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.Remoting.Channels</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.Remoting.Contexts</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.Remoting.Lifetime</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.Remoting.Messaging</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.Remoting.Metadata</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.Remoting.Metadata.W3cXsd2001</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.Remoting.Proxies</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.Remoting.Services</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.Serialization</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.Serialization.Formatters</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.Serialization.Formatters.Binary</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Runtime.Versioning</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Security</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Security.AccessControl</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Security.Cryptography</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Security.Cryptography.X509Certificates</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Security.Permissions</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Security.Policy</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Security.Principal</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Text</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Threading</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">System.Threading.Tasks</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
 <!-- ko template: { foreach: types, name: 'TypeNode' } --><!-- /ko -->
 </div>
-<div class="pe-tree-node pe-namespace" data-bind="click: click">
+<div class="pe-tree-node pe-namespace">
   <span class="pe-tree-icon"></span><span data-bind="text: name?name:'{root}'">null</span>
 </div>
 <div class="pe-tree-node-children" data-bind="visible: isExpanded" style="display: none;">
@@ -633,6 +634,15 @@ html {
   </div>
 
   <div class="pe-page-details">
+
+<!-- debug info
+    <div style="background: silver">
+      <div><b>selectedNode(): </b><span data-bind="text: selectedNode()"></span></div>
+      <div><b>data: </b><span data-bind="text: selectedNode() ? selectedNode().details : '<selectedNode=null>'"></span></div>
+      <div><b>name: </b><span data-bind="text: selectedNode()&&selectedNode().details&&selectedNode().details.constructor ? selectedNode().details.constructor.name : '<chain-none>'"></span></div>
+    </div>
+-->
+    
     <!-- ko if: selectedNode()&&selectedNode().details&&selectedNode().details.constructor --><!-- /ko -->
     
   </div>
@@ -696,7 +706,8 @@ html {
   
   <!-- tree-details view -->
   <div class=pe-page-treedetails>
-  <div class=pe-page-tree>
+  <div class=pe-page-tree
+       data-bind="click: nodeClick">
     <!-- ko template: { data: peHeaders, name: 'PEHeadersNode' } --><!-- /ko -->
     <!-- ko template: { data: references, name: 'ReferencesNode' } --><!-- /ko -->
     <!-- ko template: { foreach: namespaces, name: 'NamespaceNode' } --><!-- /ko -->
@@ -705,6 +716,15 @@ html {
   </div>
 
   <div class=pe-page-details>
+
+<!-- debug info
+    <div style="background: silver">
+      <div><b>selectedNode(): </b><span data-bind="text: selectedNode()"></span></div>
+      <div><b>data: </b><span data-bind="text: selectedNode() ? selectedNode().details : '<selectedNode=null>'"></span></div>
+      <div><b>name: </b><span data-bind="text: selectedNode()&&selectedNode().details&&selectedNode().details.constructor ? selectedNode().details.constructor.name : '<chain-none>'"></span></div>
+    </div>
+-->
+    
     <!-- ko if: selectedNode()&&selectedNode().details&&selectedNode().details.constructor -->
     <!-- ko template: { 
         data: selectedNode().details,
@@ -765,8 +785,7 @@ html {
   <span class=pe-tree-icon></span>
   <span data-bind="text: name"></span>()
 </div></script>
-<script id="NamespaceNode" type="text/html"><div class='pe-tree-node pe-namespace'
-     data-bind="click: click">
+<script id="NamespaceNode" type="text/html"><div class='pe-tree-node pe-namespace'>
   <span class=pe-tree-icon></span><span data-bind="text: name?name:'{root}'"></span>
 </div>
 <div class=pe-tree-node-children
@@ -786,8 +805,7 @@ html {
   <span class=pe-tree-icon></span>
   <span>References</span>
 </div></script>
-<script id="TypeNode" type="text/html"><div class='pe-tree-node pe-type'
-     data-bind="click: click">
+<script id="TypeNode" type="text/html"><div class='pe-tree-node pe-type'>
   <span class=pe-tree-icon></span>
   <span data-bind="text: name"></span>
 </div>
@@ -1234,7 +1252,12 @@ html {
 </div></script>
 <script id="MethodInfo" type="text/html"><div class=pe-app-methodInfo-details>
   <span data-bind="text: $data"></span><br>
-  <span data-bind="text: pe.formatEnum(attributes, pe.managed.metadata.MethodAttributes)"></span>
+  <span data-bind="text: pe.formatEnum(attributes, pe.managed.metadata.MethodAttributes)"></span><br>
+  {<br>
+    <blockquote>
+      ...
+    </blockquote>
+  }
 </div></script>
 <style>.body {
   overflow: auto;
@@ -1700,7 +1723,6 @@ var pe;
         (function (loaded) {
             var Page = (function () {
                 function Page(_assembly) {
-                    var _this = this;
                     this._assembly = _assembly;
                     this.selectedNode = ko.observable(null);
                     this.details = new pe.app.loaded.AssemblyDetails(this._assembly);
@@ -1711,17 +1733,6 @@ var pe;
 
                     this.unmanagedImports = new pe.app.loaded.UnmanagedImportsNode(null);
                     this.unmanagedResources = new pe.app.loaded.UnmanagedResourcesNode(null);
-
-                    this.peHeaders.click = (this.peHeaders.handleClick = function () {
-                        _this.selectedNode(_this.peHeaders);
-                    });
-
-                    for (var i = 0; i < this.namespaces.length; i++) {
-                        var ns = this.namespaces[i];
-                        ns.childClick = function (src, chnode) {
-                            _this.selectedNode(chnode);
-                        };
-                    }
                 }
                 Page.prototype.open = function (data) {
                     alert('Page.open()');
@@ -1752,6 +1763,39 @@ var pe;
                     });
 
                     return namespaces;
+                };
+
+                Page.prototype.nodeClick = function (node, event) {
+                    var srcElement = event.srcElement;
+                    while (srcElement) {
+                        var isHandled = false;
+                        var data = ko.dataFor(srcElement);
+
+                        if (typeof data.isExpanded === 'function') {
+                            data.isExpanded(!data.isExpanded());
+                            isHandled = true;
+                        }
+
+                        if (typeof data.click === 'function') {
+                            data.click();
+                            isHandled = true;
+                        }
+
+                        if (data && data.details) {
+                            this.selectedNode(data);
+                            isHandled = true;
+                        }
+
+                        if (isHandled) {
+                            if (event.preventDefault)
+                                event.preventDefault();
+                            if ('cancelBubble' in event)
+                                event.cancelBubble = true;
+                            return;
+                        }
+
+                        srcElement = srcElement.parentElement;
+                    }
                 };
                 return Page;
             })();
@@ -1798,13 +1842,6 @@ var pe;
                     this.details = null;
                 }
                 BaseNode.prototype.click = function () {
-                    if (this.parent)
-                        this.parent.childClick(this, this);
-                    this.handleClick();
-                    return false;
-                };
-
-                BaseNode.prototype.handleClick = function () {
                 };
                 return BaseNode;
             })();
@@ -1821,18 +1858,6 @@ var pe;
                         return _this.populateOnExpand();
                     });
                 }
-                BaseNodeWithChildren.prototype.click = function () {
-                    try  {
-                        this.isExpanded(!this.isExpanded());
-                        return _super.prototype.click.call(this);
-                    } catch (error) {
-                        alert(error.message + ' ' + error.stack);
-                    }
-                };
-
-                BaseNodeWithChildren.prototype.childClick = function (source, child) {
-                };
-
                 BaseNodeWithChildren.prototype.populateOnExpand = function () {
                 };
 
@@ -4532,7 +4557,7 @@ var pe;
                     }
                 }
 
-                var completionReader = new pe.managed.metadata.TableCompletionReader(this.tableStream, this.metadataStreams);
+                var completionReader = new pe.managed.metadata.TableCompletionReader(this.tableStream, this.metadataStreams, this.tableStream.codedIndexReaders);
 
                 for (var iTab = 0; iTab < this.tableStream.tables.length; iTab++) {
                     var table = this.tableStream.tables[iTab];
@@ -4826,13 +4851,15 @@ var pe;
     (function (managed) {
         (function (metadata) {
             var CodedIndexReader = (function () {
-                function CodedIndexReader(tableKinds, tableCounts) {
+                function CodedIndexReader(tables, tableKinds) {
+                    this.tables = tables;
                     this.tableKinds = tableKinds;
-                    this.tableKindBitCount = pe.managed.metadata.calcRequredBitCount(tableKinds.length);
+                    this.tableKindBitCount = pe.managed.metadata.calcRequredBitCount(tableKinds.length - 1);
 
                     var maxTableLength = 0;
                     for (var i = 0; i < tableKinds.length; i++) {
-                        var tableLength = tableCounts[tableKinds[i]];
+                        var t = tables[tableKinds[i]];
+                        var tableLength = t ? t.length : 0;
                         if (tableLength > maxTableLength)
                             maxTableLength = tableLength;
                     }
@@ -4841,10 +4868,29 @@ var pe;
 
                     this.isShortForm = this.tableKindBitCount + this.rowIndexBitCount <= 16;
                 }
-                CodedIndexReader.prototype.createLookup = function (tables) {
-                    //var rowIndex = codedIndex >> this.tableKindBitCount;
-                    //var tableKind = codedIndex;
-                    return null;
+                CodedIndexReader.prototype.readCodedIndex = function (reader) {
+                    return this.isShortForm ? reader.readShort() : reader.readInt();
+                };
+
+                CodedIndexReader.prototype.lookup = function (codedIndex) {
+                    var rowIndex = codedIndex >> this.tableKindBitCount;
+                    if (rowIndex === 0)
+                        return null;
+
+                    var tableKindIndex = codedIndex - (rowIndex << this.tableKindBitCount);
+                    var tableKind = this.tableKinds[tableKindIndex];
+
+                    var table = this.tables[tableKind];
+                    if (!table)
+                        return null;
+
+                    var row = table[rowIndex - 1];
+                    if (!row)
+                        return null;
+
+                    var result = row.def;
+
+                    return result;
                 };
                 return CodedIndexReader;
             })();
@@ -4951,11 +4997,10 @@ var pe;
     (function (managed) {
         (function (metadata) {
             var TableCompletionReader = (function () {
-                function TableCompletionReader(_tableStream, _metadataStreams) {
+                function TableCompletionReader(_tableStream, _metadataStreams, _codedIndexReaders) {
                     this._tableStream = _tableStream;
                     this._metadataStreams = _metadataStreams;
-                    this.lookupResolutionScope = this._createLookup(pe.managed.metadata.TableReader.resolutionScopeTables);
-                    this.lookupTypeDefOrRef = this._createLookup(pe.managed.metadata.TableReader.typeDefOrRefTables);
+                    this._codedIndexReaders = _codedIndexReaders;
                 }
                 TableCompletionReader.prototype.readString = function (index) {
                     return this._tableStream.stringIndices[index];
@@ -4989,6 +5034,16 @@ var pe;
                     }
                 };
 
+                TableCompletionReader.prototype.lookupResolutionScope = function (codedIndex) {
+                    return this._codedIndexReaders.resolutionScope.lookup(codedIndex);
+                };
+                TableCompletionReader.prototype.lookupTypeDefOrRef = function (codedIndex) {
+                    return this._codedIndexReaders.typeDefOrRef.lookup(codedIndex);
+                };
+                TableCompletionReader.prototype.lookupHasConstant = function (codedIndex) {
+                    return this._codedIndexReaders.hasConstant.lookup(codedIndex);
+                };
+
                 TableCompletionReader.prototype._createLookup = function (tables) {
                     var _this = this;
                     var tableKindBitCount = pe.managed.metadata.calcRequredBitCount(tables.length);
@@ -5002,6 +5057,8 @@ var pe;
                         var tableKind = tables[tableKindCode];
 
                         var table = _this._tableStream.tables[tableKind];
+                        if (!table)
+                            return null;
                         var row = table[rowIndex - 1];
                         if (!row)
                             return null;
@@ -5031,27 +5088,14 @@ var pe;
     (function (managed) {
         (function (metadata) {
             var TableReader = (function () {
-                function TableReader(_reader, _tables, stringCount, guidCount, blobCount) {
+                function TableReader(_reader, _tables, stringCount, guidCount, blobCount, _codedIndexReaders) {
                     this._reader = _reader;
                     this._tables = _tables;
+                    this._codedIndexReaders = _codedIndexReaders;
                     this.stringIndices = [];
                     this.readStringIndex = this._getDirectReader(stringCount);
                     this.readGuid = this._getDirectReader(guidCount);
                     this.readBlobIndex = this._getDirectReader(blobCount);
-
-                    this.readResolutionScope = this._getCodedIndexReader(TableReader.resolutionScopeTables);
-                    this.readTypeDefOrRef = this._getCodedIndexReader(TableReader.typeDefOrRefTables);
-                    this.readHasConstant = this._getCodedIndexReader(TableReader.hasConstantTables);
-                    this.readHasCustomAttribute = this._getCodedIndexReader(TableReader.hasCustomAttributeTables);
-                    this.readCustomAttributeType = this._getCodedIndexReader(TableReader.customAttributeTypeTables);
-                    this.readHasDeclSecurity = this._getCodedIndexReader(TableReader.hasDeclSecurityTables);
-                    this.readImplementation = this._getCodedIndexReader(TableReader.implementationTables);
-                    this.readHasFieldMarshal = this._getCodedIndexReader(TableReader.hasFieldMarshalTables);
-                    this.readTypeOrMethodDef = this._getCodedIndexReader(TableReader.typeOrMethodDefTables);
-                    this.readMemberForwarded = this._getCodedIndexReader(TableReader.memberForwardedTables);
-                    this.readMemberRefParent = this._getCodedIndexReader(TableReader.memberRefParentTables);
-                    this.readMethodDefOrRef = this._getCodedIndexReader(TableReader.methodDefOrRefTables);
-                    this.readHasSemantics = this._getCodedIndexReader(TableReader.hasSemanticsTables);
 
                     this.readGenericParamTableIndex = this._getTableIndexReader(42 /* GenericParam */);
                     this.readParamTableIndex = this._getTableIndexReader(8 /* Param */);
@@ -5103,102 +5147,46 @@ var pe;
                 TableReader.prototype.readInt = function () {
                     return this._reader.readInt();
                 };
-                TableReader.resolutionScopeTables = [
-                    0 /* Module */,
-                    26 /* ModuleRef */,
-                    35 /* AssemblyRef */,
-                    1 /* TypeRef */
-                ];
 
-                TableReader.typeDefOrRefTables = [
-                    2 /* TypeDef */,
-                    1 /* TypeRef */,
-                    27 /* TypeSpec */
-                ];
-
-                TableReader.hasConstantTables = [
-                    4 /* Field */,
-                    8 /* Param */,
-                    23 /* Property */
-                ];
-
-                TableReader.hasCustomAttributeTables = [
-                    6 /* MethodDef */,
-                    4 /* Field */,
-                    1 /* TypeRef */,
-                    2 /* TypeDef */,
-                    8 /* Param */,
-                    9 /* InterfaceImpl */,
-                    10 /* MemberRef */,
-                    0 /* Module */,
-                    0xFF,
-                    23 /* Property */,
-                    20 /* Event */,
-                    17 /* StandAloneSig */,
-                    26 /* ModuleRef */,
-                    27 /* TypeSpec */,
-                    32 /* Assembly */,
-                    35 /* AssemblyRef */,
-                    38 /* File */,
-                    39 /* ExportedType */,
-                    40 /* ManifestResource */,
-                    42 /* GenericParam */,
-                    44 /* GenericParamConstraint */,
-                    43 /* MethodSpec */
-                ];
-
-                TableReader.customAttributeTypeTables = [
-                    0xFF,
-                    0xFF,
-                    6 /* MethodDef */,
-                    10 /* MemberRef */,
-                    0xFF
-                ];
-
-                TableReader.hasDeclSecurityTables = [
-                    2 /* TypeDef */,
-                    6 /* MethodDef */,
-                    32 /* Assembly */
-                ];
-
-                TableReader.implementationTables = [
-                    38 /* File */,
-                    35 /* AssemblyRef */,
-                    39 /* ExportedType */
-                ];
-
-                TableReader.hasFieldMarshalTables = [
-                    4 /* Field */,
-                    8 /* Param */
-                ];
-
-                TableReader.typeOrMethodDefTables = [
-                    2 /* TypeDef */,
-                    6 /* MethodDef */
-                ];
-
-                TableReader.memberForwardedTables = [
-                    4 /* Field */,
-                    6 /* MethodDef */
-                ];
-
-                TableReader.memberRefParentTables = [
-                    2 /* TypeDef */,
-                    1 /* TypeRef */,
-                    26 /* ModuleRef */,
-                    6 /* MethodDef */,
-                    27 /* TypeSpec */
-                ];
-
-                TableReader.methodDefOrRefTables = [
-                    6 /* MethodDef */,
-                    10 /* MemberRef */
-                ];
-
-                TableReader.hasSemanticsTables = [
-                    20 /* Event */,
-                    23 /* Property */
-                ];
+                TableReader.prototype.readResolutionScope = function () {
+                    return this._codedIndexReaders.resolutionScope.readCodedIndex(this._reader);
+                };
+                TableReader.prototype.readTypeDefOrRef = function () {
+                    return this._codedIndexReaders.typeDefOrRef.readCodedIndex(this._reader);
+                };
+                TableReader.prototype.readHasConstant = function () {
+                    return this._codedIndexReaders.hasConstant.readCodedIndex(this._reader);
+                };
+                TableReader.prototype.readHasCustomAttribute = function () {
+                    return this._codedIndexReaders.hasCustomAttribute.readCodedIndex(this._reader);
+                };
+                TableReader.prototype.readCustomAttributeType = function () {
+                    return this._codedIndexReaders.customAttributeType.readCodedIndex(this._reader);
+                };
+                TableReader.prototype.readHasDeclSecurity = function () {
+                    return this._codedIndexReaders.hasDeclSecurity.readCodedIndex(this._reader);
+                };
+                TableReader.prototype.readImplementation = function () {
+                    return this._codedIndexReaders.implementation.readCodedIndex(this._reader);
+                };
+                TableReader.prototype.readHasFieldMarshal = function () {
+                    return this._codedIndexReaders.hasFieldMarshal.readCodedIndex(this._reader);
+                };
+                TableReader.prototype.readTypeOrMethodDef = function () {
+                    return this._codedIndexReaders.typeOrMethodDef.readCodedIndex(this._reader);
+                };
+                TableReader.prototype.readMemberForwarded = function () {
+                    return this._codedIndexReaders.memberForwarded.readCodedIndex(this._reader);
+                };
+                TableReader.prototype.readMemberRefParent = function () {
+                    return this._codedIndexReaders.memberRefParent.readCodedIndex(this._reader);
+                };
+                TableReader.prototype.readMethodDefOrRef = function () {
+                    return this._codedIndexReaders.methodDefOrRef.readCodedIndex(this._reader);
+                };
+                TableReader.prototype.readHasSemantics = function () {
+                    return this._codedIndexReaders.hasSemantics.readCodedIndex(this._reader);
+                };
                 return TableReader;
             })();
             metadata.TableReader = TableReader;
@@ -5220,6 +5208,7 @@ var pe;
                     this.reserved1 = 0;
                     this.tables = [];
                     this.stringIndices = [];
+                    this.codedIndexReaders = null;
                 }
                 TableStream.prototype.read = function (reader, stringCount, guidCount, blobCount) {
                     this.reserved0 = reader.readInt();
@@ -5237,7 +5226,9 @@ var pe;
 
                     this._populateTableRows(tableCounts);
 
-                    var tableReader = new pe.managed.metadata.TableReader(reader, this.tables, stringCount, guidCount, blobCount);
+                    this.codedIndexReaders = new pe.managed.metadata.CodedIndexReaders(this.tables);
+
+                    var tableReader = new pe.managed.metadata.TableReader(reader, this.tables, stringCount, guidCount, blobCount, this.codedIndexReaders);
                     this._readTableRows(tableCounts, tableReader);
 
                     this.stringIndices = tableReader.stringIndices;
@@ -8175,6 +8166,106 @@ var pe;
         unmanaged.ResourceDirectoryEntry = ResourceDirectoryEntry;
     })(pe.unmanaged || (pe.unmanaged = {}));
     var unmanaged = pe.unmanaged;
+})(pe || (pe = {}));
+var pe;
+(function (pe) {
+    (function (managed) {
+        (function (metadata) {
+            var CodedIndexReaders = (function () {
+                function CodedIndexReaders(_tables) {
+                    this._tables = _tables;
+                    this.resolutionScope = new pe.managed.metadata.CodedIndexReader(this._tables, [
+                        0 /* Module */,
+                        26 /* ModuleRef */,
+                        35 /* AssemblyRef */,
+                        1 /* TypeRef */
+                    ]);
+                    this.typeDefOrRef = new pe.managed.metadata.CodedIndexReader(this._tables, [
+                        2 /* TypeDef */,
+                        1 /* TypeRef */,
+                        27 /* TypeSpec */
+                    ]);
+                    this.hasConstant = new pe.managed.metadata.CodedIndexReader(this._tables, [
+                        4 /* Field */,
+                        8 /* Param */,
+                        23 /* Property */
+                    ]);
+                    this.hasCustomAttribute = new pe.managed.metadata.CodedIndexReader(this._tables, [
+                        6 /* MethodDef */,
+                        4 /* Field */,
+                        1 /* TypeRef */,
+                        2 /* TypeDef */,
+                        8 /* Param */,
+                        9 /* InterfaceImpl */,
+                        10 /* MemberRef */,
+                        0 /* Module */,
+                        0xFF,
+                        23 /* Property */,
+                        20 /* Event */,
+                        17 /* StandAloneSig */,
+                        26 /* ModuleRef */,
+                        27 /* TypeSpec */,
+                        32 /* Assembly */,
+                        35 /* AssemblyRef */,
+                        38 /* File */,
+                        39 /* ExportedType */,
+                        40 /* ManifestResource */,
+                        42 /* GenericParam */,
+                        44 /* GenericParamConstraint */,
+                        43 /* MethodSpec */
+                    ]);
+                    this.customAttributeType = new pe.managed.metadata.CodedIndexReader(this._tables, [
+                        0xFF,
+                        0xFF,
+                        6 /* MethodDef */,
+                        10 /* MemberRef */,
+                        0xFF
+                    ]);
+                    this.hasDeclSecurity = new pe.managed.metadata.CodedIndexReader(this._tables, [
+                        2 /* TypeDef */,
+                        6 /* MethodDef */,
+                        32 /* Assembly */
+                    ]);
+                    this.implementation = new pe.managed.metadata.CodedIndexReader(this._tables, [
+                        38 /* File */,
+                        35 /* AssemblyRef */,
+                        39 /* ExportedType */
+                    ]);
+                    this.hasFieldMarshal = new pe.managed.metadata.CodedIndexReader(this._tables, [
+                        4 /* Field */,
+                        8 /* Param */
+                    ]);
+                    this.typeOrMethodDef = new pe.managed.metadata.CodedIndexReader(this._tables, [
+                        2 /* TypeDef */,
+                        6 /* MethodDef */
+                    ]);
+                    this.memberForwarded = new pe.managed.metadata.CodedIndexReader(this._tables, [
+                        4 /* Field */,
+                        6 /* MethodDef */
+                    ]);
+                    this.memberRefParent = new pe.managed.metadata.CodedIndexReader(this._tables, [
+                        2 /* TypeDef */,
+                        1 /* TypeRef */,
+                        26 /* ModuleRef */,
+                        6 /* MethodDef */,
+                        27 /* TypeSpec */
+                    ]);
+                    this.methodDefOrRef = new pe.managed.metadata.CodedIndexReader(this._tables, [
+                        6 /* MethodDef */,
+                        10 /* MemberRef */
+                    ]);
+                    this.hasSemantics = new pe.managed.metadata.CodedIndexReader(this._tables, [
+                        20 /* Event */,
+                        23 /* Property */
+                    ]);
+                }
+                return CodedIndexReaders;
+            })();
+            metadata.CodedIndexReaders = CodedIndexReaders;
+        })(managed.metadata || (managed.metadata = {}));
+        var metadata = managed.metadata;
+    })(pe.managed || (pe.managed = {}));
+    var managed = pe.managed;
 })(pe || (pe = {}));
 
 </script>
