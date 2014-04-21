@@ -42,8 +42,15 @@ declare module zip {
 
   export class BlobWriter implements Writer {
   }
+    
+  export class TextWriter implements Writer {
+  }
 
   export class TextReader implements Reader {
     constructor(text: string);
+  }
+
+  export class BlobReader implements Reader {
+    constructor(arg: any);
   }
 }

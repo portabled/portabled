@@ -64,13 +64,13 @@ module teapo {
     }
 
     loadText() {
-      this._load(
+      this._loadToDoc(
         (fileReader, file) => fileReader.readAsText(file),
         (data, docState) => docState.setProperty(null, data));
     }
 
     loadBase64() {
-      this._load(
+      this._loadToDoc(
         (fileReader, file) => fileReader.readAsArrayBuffer(file),
         (data, docState) => {
           var binary: string[] = [];
@@ -84,8 +84,55 @@ module teapo {
           docState.setProperty(null, text);
         });
     }
+      
 
-    private _load(requestLoad: (fileReader: FileReader, file: File) => void, applyData: (data, docState: DocumentState) => void) {
+    loadZip() {
+      this._load(
+        (fileReader, file) => fileReader.readAsArrayBuffer(file),
+        (data, file) => {
+
+          zip.useWebWorkers = false;
+          zip.createReader(
+            new zip.BlobReader (file),
+            reader => {
+              reader.getEntries(entries => {
+
+                var folder = prompt(
+                  '/',
+                  'Add ' + entries.length + ' files from zip to a virtual folder:');
+
+                if (!folder)
+                  return;
+
+                if (folder.charAt(0) !== '/')
+                  folder = '/' + folder;
+                if (folder.charAt(folder.length - 1) !== '/')
+                  folder = folder + '/';
+
+                entries.forEach((entry) => {
+
+                  if (entry.directory)
+                    return;
+
+                  var writer = new zip.TextWriter();
+                  entry.getData(writer, (text) => {
+                    var virtFilename = folder + entry.filename;
+                    var fileEntry = this.fileList.createFileEntry(virtFilename);
+                    var docStorage = this._storage.createDocument(fileEntry.fullPath());
+
+                    docStorage.setProperty(null, text);
+                  }); 
+                });
+              });
+            },
+            error => {
+              alert('Zip file error: ' + error);
+            });
+          
+        });
+    }
+
+    private _load(requestLoad: (fileReader: FileReader, file: File) => void, processData: (data, file) => void) {
 
       this.toolbarExpanded(false);
 
@@ -104,31 +151,39 @@ module teapo {
             alert('read ' + fileReader.readyState + fileReader.error);
             return;
           }
-
-          try {
-
-            var filename = prompt(
-              'Suggested filename:',
-              input.files[0].name);
-
-            if (!filename)
-              return;
-
-            var fileEntry = this.fileList.createFileEntry(filename);
-            var docStorage = this._storage.createDocument(fileEntry.fullPath());
-
-            applyData(fileReader.result, docStorage);
-
-          }
-          catch (error) {
-            alert('parsing ' + error.message + ' ' + error.stack);
-          }
+          
+          processData(fileReader.result, input.files[0]);
         };
 
         requestLoad(fileReader, input.files[0]);
       };
-      
+
       input.click();
+    }
+
+    private _loadToDoc(requestLoad: (fileReader: FileReader, file: File) => void, applyData: (data, docState: DocumentState) => void) {
+
+      this._load(requestLoad, (data, file) => {
+
+        try {
+
+          var filename = prompt(
+            'Suggested filename:',
+            file.name);
+
+          if (!filename)
+            return;
+
+          var fileEntry = this.fileList.createFileEntry(filename);
+          var docStorage = this._storage.createDocument(fileEntry.fullPath());
+
+          applyData(data, docStorage);
+
+        }
+        catch (error) {
+          alert('parsing ' + error.message + ' ' + error.stack);
+        }
+      });
 
     }
 
