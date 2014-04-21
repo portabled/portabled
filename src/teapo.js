@@ -1199,22 +1199,29 @@ var teapo;
         TypeScriptEditor.prototype.build = function () {
             var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
 
-            var errors = [];
+            var diag = [];
+            var errorCount = 0;
+
             for (var i = 0; i < emits.diagnostics.length; i++) {
                 var e = emits.diagnostics[i];
                 var info = e.info();
-                if (info.category === 1 /* Error */) {
-                    errors.push(e.fileName() + ' [' + e.line() + ':' + e.character + '] ' + info.message);
-                }
+                if (info.category === 1 /* Error */)
+                    errorCount++;
+                diag.push(TypeScript.DiagnosticCategory[info.category].charAt(0) + ' ' + e.fileName() + ' [' + e.line() + ':' + e.character + '] ' + info.message);
             }
 
-            if (errors.length)
-                alert(errors.join('\n'));
+            if (diag.length) {
+                var msg = 'Building ' + this.docState.fullPath() + (emits.outputFiles.length ? '' : ' failed') + (errorCount ? errorCount + ' errors' : '') + (diag.length - errorCount ? (diag.length - errorCount) + ' warnings' : '') + ':\n' + diag.join('\n');
+
+                alert(msg);
+            }
 
             for (var i = 0; i < emits.outputFiles.length; i++) {
                 var ou = emits.outputFiles[i];
                 return ou.text;
             }
+
+            return null;
         };
 
         TypeScriptEditor.prototype._formatOnKey = function (addedText, removedText, change) {
@@ -2656,7 +2663,7 @@ var teapo;
                 zip.useWebWorkers = false;
                 zip.createReader(new zip.BlobReader(file), function (reader) {
                     reader.getEntries(function (entries) {
-                        var folder = prompt('/', 'Add ' + entries.length + ' files from zip to a virtual folder:');
+                        var folder = prompt('Add ' + entries.length + ' files from zip to a virtual folder:', '/');
 
                         if (!folder)
                             return;
@@ -2666,6 +2673,8 @@ var teapo;
                         if (folder.charAt(folder.length - 1) !== '/')
                             folder = folder + '/';
 
+                        var completeCount = 0;
+                        var overwriteCount = 0;
                         entries.forEach(function (entry) {
                             if (entry.directory)
                                 return;
@@ -2673,10 +2682,30 @@ var teapo;
                             var writer = new zip.TextWriter();
                             entry.getData(writer, function (text) {
                                 var virtFilename = folder + entry.filename;
-                                var fileEntry = _this.fileList.getFileEntry(virtFilename) || _this.fileList.createFileEntry(virtFilename);
-                                var docStorage = _this._storage.getDocument(fileEntry.fullPath()) || _this._storage.createDocument(fileEntry.fullPath());
+
+                                var isOverwrite = false;
+
+                                var fileEntry = _this.fileList.getFileEntry(virtFilename);
+                                if (fileEntry)
+                                    isOverwrite = true;
+                                else
+                                    fileEntry = _this.fileList.createFileEntry(virtFilename);
+
+                                var docStorage = _this._storage.getDocument(fileEntry.fullPath());
+                                if (docStorage)
+                                    isOverwrite = true;
+                                else
+                                    docStorage = _this._storage.createDocument(fileEntry.fullPath());
 
                                 docStorage.setProperty(null, text);
+
+                                completeCount++;
+                                if (isOverwrite)
+                                    overwriteCount++;
+
+                                if (completeCount == entries.length) {
+                                    alert(completeCount + ' imported into ' + folder + (overwriteCount ? ', ' + overwriteCount + ' existing files overwritten' : ''));
+                                }
                             });
                         });
                     });

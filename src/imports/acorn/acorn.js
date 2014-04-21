@@ -83,7 +83,7 @@
     // When the `locations` option is on, two more parameters are
     // passed, the full `{line, column}` locations of the start and
     // end of the comments. Note that you are not allowed to call the
-    // parser from the callback--Ã‚Âthat will corrupt its internal state.
+    // parser from the callback--ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âthat will corrupt its internal state.
     onComment: null,
     // Nodes have their start and end characters offsets recorded in
     // `start` and `end` properties (directly on the node, rather than
@@ -956,7 +956,7 @@
   // of constructs (for example, the fact that `!x[1]` means `!(x[1])`
   // instead of `(!x)[1]` is handled by the fact that the parser
   // function that parses unary prefix operators is called first, and
-  // in turn calls the function that parses `[]` subscripts --Ã‚Â that
+  // in turn calls the function that parses `[]` subscripts --ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â that
   // way, it'll receive the node for `x[1]` already parsed, and wraps
   // *that* in the unary operator node.
   //
@@ -1096,7 +1096,7 @@
     raise(tokStart, "Unexpected token");
   }
 
-  // Verify that a node is an lval --Ã‚Â something that can be assigned
+  // Verify that a node is an lval --ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â something that can be assigned
   // to.
 
   function checkLVal(expr) {
@@ -1571,7 +1571,7 @@
     } else return base;
   }
 
-  // Parse an atomic expression --Ã‚Â either a single token that is an
+  // Parse an atomic expression --ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â either a single token that is an
   // expression, an expression started by a keyword like `function` or
   // `new`, or an expression wrapped in punctuation like `()`, `[]`,
   // or `{}`.
@@ -1636,7 +1636,7 @@
   }
 
   // New's precedence is slightly tricky. It must allow its argument
-  // to be a `[]` or dot subscript expression, but not a call --Ã‚Â at
+  // to be a `[]` or dot subscript expression, but not a call --ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â at
   // least, not without wrapping it in parentheses. Thus, it uses the
 
   function parseNew() {
@@ -1673,8 +1673,8 @@
         prop.value = parseFunction(startNode(), false);
       } else unexpected();
 
-      // getters and setters are not allowed to clash --Ã‚Â either with
-      // each other or with an init property --Ã‚Â and in strict mode,
+      // getters and setters are not allowed to clash --ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â either with
+      // each other or with an init property --ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â and in strict mode,
       // init properties are also not allowed to be repeated.
 
       if (prop.key.type === "Identifier" && (strict || sawGetSet)) {
