@@ -98,8 +98,8 @@ module teapo {
               reader.getEntries(entries => {
 
                 var folder = prompt(
-                  '/',
-                  'Add ' + entries.length + ' files from zip to a virtual folder:');
+                  'Add ' + entries.length + ' files from zip to a virtual folder:',
+                '/');
 
                 if (!folder)
                   return;
@@ -109,6 +109,8 @@ module teapo {
                 if (folder.charAt(folder.length - 1) !== '/')
                   folder = folder + '/';
 
+                var completeCount = 0;
+                var overwriteCount = 0;
                 entries.forEach((entry) => {
 
                   if (entry.directory)
@@ -117,10 +119,32 @@ module teapo {
                   var writer = new zip.TextWriter();
                   entry.getData(writer, (text) => {
                     var virtFilename = folder + entry.filename;
-                    var fileEntry = this.fileList.getFileEntry(virtFilename) || this.fileList.createFileEntry(virtFilename);
-                    var docStorage = this._storage.getDocument(fileEntry.fullPath()) || this._storage.createDocument(fileEntry.fullPath());
+
+                    var isOverwrite = false;
+                    
+                    var fileEntry = this.fileList.getFileEntry(virtFilename);
+                    if (fileEntry)
+                      isOverwrite = true;
+                    else
+                      fileEntry = this.fileList.createFileEntry(virtFilename);
+
+                    var docStorage = this._storage.getDocument(fileEntry.fullPath());
+                    if (docStorage)
+                      isOverwrite = true;
+                    else
+                      docStorage = this._storage.createDocument(fileEntry.fullPath());
 
                     docStorage.setProperty(null, text);
+                    
+                    completeCount++;
+                    if (isOverwrite)
+                      overwriteCount++;
+                    
+                    if (completeCount == entries.length) {
+                      alert(
+                        completeCount + ' imported into ' + folder +
+                        (overwriteCount ? ', ' + overwriteCount + ' existing files overwritten' : ''));
+                    }
                   }); 
                 });
               });

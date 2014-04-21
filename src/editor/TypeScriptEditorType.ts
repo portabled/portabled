@@ -304,23 +304,36 @@ module teapo {
 
       var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
 
-      var errors: string[] = [];
+      var diag = [];
+      var errorCount = 0;
+      
       for (var i = 0; i < emits.diagnostics.length; i++) {
         var e = emits.diagnostics[i];
         var info = e.info();
-        if (info.category === TypeScript.DiagnosticCategory.Error) {
-          errors.push(
-            e.fileName() + ' [' + e.line() + ':' + e.character + '] ' + info.message);
-        }
+        if (info.category === TypeScript.DiagnosticCategory.Error)
+          errorCount++;
+        diag.push(
+          TypeScript.DiagnosticCategory[info.category].charAt(0) + ' ' +
+          e.fileName() + ' [' + e.line() + ':' + e.character + '] ' + info.message);
       }
 
-      if (errors.length)
-        alert(errors.join('\n'));
+      if (diag.length) { 
+        var msg = 
+            'Building ' +this.docState.fullPath() +
+            (emits.outputFiles.length ? '' : ' failed') +
+            (errorCount ? errorCount + ' errors' : '') +
+            (diag.length - errorCount ? (diag.length - errorCount) + ' warnings' : '') + ':\n' +
+            diag.join('\n');
+
+        alert(msg);
+      }
 
       for (var i = 0; i < emits.outputFiles.length; i++) {
         var ou = emits.outputFiles[i];
         return ou.text;
       }
+      
+      return null;
     }
 
     private _formatOnKey(addedText: string, removedText: string, change: CodeMirror.EditorChange) {

@@ -428,7 +428,9 @@ var teapo;
             this._shared.cm = new CodeMirror(function (element) {
                 return _this._shared.element = element;
             }, options);
-            this._shared.cm.getWrapperElement().style.fontSize = '12px';
+
+            // avoid zoom on focus
+            this._shared.cm.getInputField().style.fontSize = '16px';
         };
 
         CodeMirrorEditor.prototype._initDoc = function () {

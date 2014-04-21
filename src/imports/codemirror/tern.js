@@ -19,8 +19,8 @@
 // * showError: A function(editor, message) that can be used to
 //   override the way errors are displayed.
 // * completionTip: Customize the content in tooltips for completions.
-//   Is passed a single argumentÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Âthe completion's data as returned by
-//   TernÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Âand may return a string, DOM node, or null to indicate that
+//   Is passed a single argumentÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Âthe completion's data as returned by
+//   TernÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Âand may return a string, DOM node, or null to indicate that
 //   no tip should be shown. By default the docstring is shown.
 // * typeTip: Like completionTip, but for the tooltips shown for type
 //   queries.
@@ -238,7 +238,7 @@
       } else {
         var tip = elt("span", null, elt("strong", null, data.type || "not found"));
         if (data.doc)
-          tip.appendChild(document.createTextNode(" ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â " + data.doc));
+          tip.appendChild(document.createTextNode(" ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â " + data.doc));
         if (data.url) {
           tip.appendChild(document.createTextNode(" "));
           tip.appendChild(elt("a", null, "[docs]")).href = data.url;
