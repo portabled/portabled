@@ -1,5 +1,5 @@
 <div class=teapo-folder-withchildren>
-  <div class=teapo-file-item data-bind='attr: { title: fullPath()+"." }, click: toggleExpand'>
+  <div class=teapo-file-item data-bind='attr: { title: fullPath()+"." }'>
     <div data-bind='style: { marginLeft: (nestLevel()-1)/2+"em" }'>
       <b data-bind='visible: isExpanded'>/</b><b data-bind='visible: !isExpanded()'>-</b><b data-bind='text: fullPath().slice(1)'></b>
       <span data-bind='if: containsSelectedFile'>...</span>

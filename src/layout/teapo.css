@@ -176,7 +176,9 @@ html {
 .CodeMirror {
   height: 100%;
   font-family: inherit;
+  font-size: 9pt;
 }
+
 .CodeMirror-activeline-background {
   background: #f8f8f8;
   border: solid 1px #f0f0f0;

@@ -27,7 +27,7 @@
 })(this, function(exports) {
   "use strict";
 
-  exports.version = "0.4.1";
+  exports.version = "0.5.1";
 
   // The main exported interface (under `self.acorn` when in the
   // browser) is a `parse` function that takes a code string and
@@ -62,8 +62,13 @@
     // trailing commas in array and object literals.
     allowTrailingCommas: true,
     // By default, reserved words are not enforced. Enable
-    // `forbidReserved` to enforce them.
+    // `forbidReserved` to enforce them. When this option has the
+    // value "everywhere", reserved words and keywords can also not be
+    // used as property names.
     forbidReserved: false,
+    // When enabled, a return at the top level is not considered an
+    // error.
+    allowReturnOutsideFunction: false,
     // When `locations` is on, `loc` properties holding objects with
     // `start` and `end` properties in `{line, column}` form (with
     // line being 1-based and column 0-based) will be attached to the
@@ -78,7 +83,7 @@
     // When the `locations` option is on, two more parameters are
     // passed, the full `{line, column}` locations of the start and
     // end of the comments. Note that you are not allowed to call the
-    // parser from the callback that will corrupt its internal state.
+    // parser from the callback--that will corrupt its internal state.
     onComment: null,
     // Nodes have their start and end characters offsets recorded in
     // `start` and `end` properties (directly on the node, rather than
@@ -142,6 +147,7 @@
 
     var t = {};
     function getToken(forceRegexp) {
+      lastEnd = tokEnd;
       readToken(forceRegexp);
       t.start = tokStart; t.end = tokEnd;
       t.startLoc = tokStartLoc; t.endLoc = tokEndLoc;
@@ -460,7 +466,7 @@
   // These are used when `options.locations` is on, for the
   // `tokStartLoc` and `tokEndLoc` properties.
 
-  function line_loc_t() {
+  function Position() {
     this.line = tokCurLine;
     this.column = tokPos - tokLineStart;
   }
@@ -480,7 +486,7 @@
 
   function finishToken(type, val) {
     tokEnd = tokPos;
-    if (options.locations) tokEndLoc = new line_loc_t;
+    if (options.locations) tokEndLoc = new Position;
     tokType = type;
     skipSpace();
     tokVal = val;
@@ -488,7 +494,7 @@
   }
 
   function skipBlockComment() {
-    var startLoc = options.onComment && options.locations && new line_loc_t;
+    var startLoc = options.onComment && options.locations && new Position;
     var start = tokPos, end = input.indexOf("*/", tokPos += 2);
     if (end === -1) raise(tokPos - 2, "Unterminated comment");
     tokPos = end + 2;
@@ -502,12 +508,12 @@
     }
     if (options.onComment)
       options.onComment(true, input.slice(start + 2, end), start, tokPos,
-                        startLoc, options.locations && new line_loc_t);
+                        startLoc, options.locations && new Position);
   }
 
   function skipLineComment() {
     var start = tokPos;
-    var startLoc = options.onComment && options.locations && new line_loc_t;
+    var startLoc = options.onComment && options.locations && new Position;
     var ch = input.charCodeAt(tokPos+=2);
     while (tokPos < inputLen && ch !== 10 && ch !== 13 && ch !== 8232 && ch !== 8233) {
       ++tokPos;
@@ -515,7 +521,7 @@
     }
     if (options.onComment)
       options.onComment(false, input.slice(start + 2, tokPos), start, tokPos,
-                        startLoc, options.locations && new line_loc_t);
+                        startLoc, options.locations && new Position);
   }
 
   // Called at the start of the parse and after every token. Skips
@@ -718,7 +724,7 @@
   function readToken(forceRegexp) {
     if (!forceRegexp) tokStart = tokPos;
     else tokPos = tokStart + 1;
-    if (options.locations) tokStartLoc = new line_loc_t;
+    if (options.locations) tokStartLoc = new Position;
     if (forceRegexp) return readRegexp();
     if (tokPos >= inputLen) return finishToken(_eof);
 
@@ -767,11 +773,11 @@
     // Need to use `readWord1` because '\uXXXX' sequences are allowed
     // here (don't ask).
     var mods = readWord1();
-    if (mods && !/^[gmsiy]*$/.test(mods)) raise(start, "Invalid regexp flag");
+    if (mods && !/^[gmsiy]*$/.test(mods)) raise(start, "Invalid regular expression flag");
     try {
       var value = new RegExp(content, mods);
     } catch (e) {
-      if (e instanceof SyntaxError) raise(start, e.message);
+      if (e instanceof SyntaxError) raise(start, "Error parsing regular expression: " + e.message);
       raise(e);
     }
     return finishToken(_regexp, value);
@@ -937,13 +943,8 @@
   function readWord() {
     var word = readWord1();
     var type = _name;
-    if (!containsEsc) {
-      if (isKeyword(word)) type = keywordTypes[word];
-      else if (options.forbidReserved &&
-               (options.ecmaVersion === 3 ? isReservedWord3 : isReservedWord5)(word) ||
-               strict && isStrictReservedWord(word))
-        raise(tokStart, "The keyword '" + word + "' is reserved");
-    }
+    if (!containsEsc && isKeyword(word))
+      type = keywordTypes[word];
     return finishToken(type, word);
   }
 
@@ -955,7 +956,7 @@
   // of constructs (for example, the fact that `!x[1]` means `!(x[1])`
   // instead of `(!x)[1]` is handled by the fact that the parser
   // function that parses unary prefix operators is called first, and
-  // in turn calls the function that parses `[]` subscripts - that
+  // in turn calls the function that parses `[]` subscripts -- that
   // way, it'll receive the node for `x[1]` already parsed, and wraps
   // *that* in the unary operator node.
   //
@@ -996,22 +997,24 @@
 
   // Start an AST node, attaching a start offset.
 
-  function node_t() {
+  function Node() {
     this.type = null;
     this.start = tokStart;
     this.end = null;
   }
+  
+  exports.Node = Node;
 
-  function node_loc_t() {
+  function SourceLocation() {
     this.start = tokStartLoc;
     this.end = null;
     if (sourceFile !== null) this.source = sourceFile;
   }
 
   function startNode() {
-    var node = new node_t();
+    var node = new Node();
     if (options.locations)
-      node.loc = new node_loc_t();
+      node.loc = new SourceLocation();
     if (options.directSourceFile)
       node.sourceFile = options.directSourceFile;
     if (options.ranges)
@@ -1024,10 +1027,10 @@
   // only started after its left-hand side has already been parsed.
 
   function startNodeFrom(other) {
-    var node = new node_t();
+    var node = new Node();
     node.start = other.start;
     if (options.locations) {
-      node.loc = new node_loc_t();
+      node.loc = new SourceLocation();
       node.loc.start = other.loc.start;
     }
     if (options.ranges)
@@ -1093,7 +1096,7 @@
     raise(tokStart, "Unexpected token");
   }
 
-  // Verify that a node is an lval - something that can be assigned
+  // Verify that a node is an lval -- something that can be assigned
   // to.
 
   function checkLVal(expr) {
@@ -1112,7 +1115,7 @@
 
   function parseTopLevel(program) {
     lastStart = lastEnd = tokPos;
-    if (options.locations) lastEndLoc = new line_loc_t;
+    if (options.locations) lastEndLoc = new Position;
     inFunction = strict = null;
     labels = [];
     readToken();
@@ -1223,7 +1226,8 @@
       return finishNode(node, "IfStatement");
 
     case _return:
-      if (!inFunction) raise(tokStart, "'return' outside of function");
+      if (!inFunction && !options.allowReturnOutsideFunction)
+        raise(tokStart, "'return' outside of function");
       next();
 
       // In `return` (and `break`/`continue`), the keywords with
@@ -1567,7 +1571,7 @@
     } else return base;
   }
 
-  // Parse an atomic expression - either a single token that is an
+  // Parse an atomic expression -- either a single token that is an
   // expression, an expression started by a keyword like `function` or
   // `new`, or an expression wrapped in punctuation like `()`, `[]`,
   // or `{}`.
@@ -1632,7 +1636,7 @@
   }
 
   // New's precedence is slightly tricky. It must allow its argument
-  // to be a `[]` or dot subscript expression, but not a call - at
+  // to be a `[]` or dot subscript expression, but not a call -- at
   // least, not without wrapping it in parentheses. Thus, it uses the
 
   function parseNew() {
@@ -1669,8 +1673,8 @@
         prop.value = parseFunction(startNode(), false);
       } else unexpected();
 
-      // getters and setters are not allowed to clash - either with
-      // each other or with an init property - and in strict mode,
+      // getters and setters are not allowed to clash -- either with
+      // each other or with an init property -- and in strict mode,
       // init properties are also not allowed to be repeated.
 
       if (prop.key.type === "Identifier" && (strict || sawGetSet)) {
@@ -1758,7 +1762,20 @@
 
   function parseIdent(liberal) {
     var node = startNode();
-    node.name = tokType === _name ? tokVal : (liberal && !options.forbidReserved && tokType.keyword) || unexpected();
+    if (liberal && options.forbidReserved == "everywhere") liberal = false;
+    if (tokType === _name) {
+      if (!liberal &&
+          (options.forbidReserved &&
+           (options.ecmaVersion === 3 ? isReservedWord3 : isReservedWord5)(tokVal) ||
+           strict && isStrictReservedWord(tokVal)) &&
+          input.slice(tokStart, tokEnd).indexOf("\\") == -1)
+        raise(tokStart, "The keyword '" + tokVal + "' is reserved");
+      node.name = tokVal;
+    } else if (liberal && tokType.keyword) {
+      node.name = tokType.keyword;
+    } else {
+      unexpected();
+    }
     tokRegexpAllowed = false;
     next();
     return finishNode(node, "Identifier");

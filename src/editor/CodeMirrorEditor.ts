@@ -267,7 +267,9 @@ module teapo {
       this._shared.cm = new CodeMirror(
         (element) => this._shared.element = element,
         options);
-      //this._shared.cm.getWrapperElement().style.fontSize = '16px';
+
+      // avoid zoom on focus
+      this._shared.cm.getInputField().style.fontSize = '16px';
     }
 
     private _initDoc() {

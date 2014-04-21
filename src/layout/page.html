@@ -1,5 +1,5 @@
 <div class=teapo-file-list
-   data-bind='event: { keydown: keyDown }'>
+   data-bind='event: { keydown: keyDown }, click: fileList.treeClick'>
   <div data-bind='template: { name: "folder-template", foreach: fileList.folders }'></div>
   <div data-bind='template: { name: "file-template", foreach: fileList.files }'></div>
 </div>

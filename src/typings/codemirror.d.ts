@@ -284,149 +284,149 @@ declare class CodeMirror {
 }
 
 declare module CodeMirror {
-    export var Pass: any;
+  export var Pass: any;
 
-    function fromTextArea(host: HTMLTextAreaElement, options?: Options): CodeMirror;
+  export function fromTextArea(host: HTMLTextAreaElement, options?: Options): CodeMirror;
 
-    var version: string;
+  export var version: string;
 
-    /** If you want to define extra methods in terms of the CodeMirror API, it is possible to use defineExtension.
-    This will cause the given value(usually a method) to be added to all CodeMirror instances created from then on. */
-    function defineExtension(name: string, value: any);
+  /** If you want to define extra methods in terms of the CodeMirror API, it is possible to use defineExtension.
+  This will cause the given value(usually a method) to be added to all CodeMirror instances created from then on. */
+  export function defineExtension(name: string, value: any);
 
-    /** Like defineExtension, but the method will be added to the interface for Doc objects instead. */
-    function defineDocExtension(name: string, value: any);
+  /** Like defineExtension, but the method will be added to the interface for Doc objects instead. */
+  export function defineDocExtension(name: string, value: any);
 
-    /** Similarly, defineOption can be used to define new options for CodeMirror.
-    The updateFunc will be called with the editor instance and the new value when an editor is initialized,
-    and whenever the option is modified through setOption. */
-    function defineOption(name: string, default_: any, updateFunc: Function);
+  /** Similarly, defineOption can be used to define new options for CodeMirror.
+  The updateFunc will be called with the editor instance and the new value when an editor is initialized,
+  and whenever the option is modified through setOption. */
+  export function defineOption(name: string, default_: any, updateFunc: Function);
 
-    /** If your extention just needs to run some code whenever a CodeMirror instance is initialized, use CodeMirror.defineInitHook.
-    Give it a function as its only argument, and from then on, that function will be called (with the instance as argument)
-    whenever a new CodeMirror instance is initialized. */
-    function defineInitHook(func: Function);
-
-
-
-    function on(element: any, eventName: string, handler: Function);
-    function off(element: any, eventName: string, handler: Function);
-
-    /** Fired whenever a change occurs to the document. changeObj has a similar type as the object passed to the editor's "change" event,
-    but it never has a next property, because document change events are not batched (whereas editor change events are). */
-    function on(doc: Doc, eventName: 'change', handler: (instance: Doc, change: EditorChange) => void );
-    function off(doc: Doc, eventName: 'change', handler: (instance: Doc, change: EditorChange) => void );
-
-    /** See the description of the same event on editor instances. */
-    function on(doc: Doc, eventName: 'beforeChange', handler: (instance: Doc, change: EditorChangeCancellable) => void );
-    function off(doc: Doc, eventName: 'beforeChange', handler: (instance: Doc, change: EditorChangeCancellable) => void );
-
-    /** Fired whenever the cursor or selection in this document changes. */
-    function on(doc: Doc, eventName: 'cursorActivity', handler: (instance: CodeMirror) => void );
-    function off(doc: Doc, eventName: 'cursorActivity', handler: (instance: CodeMirror) => void );
-
-    /** Equivalent to the event by the same name as fired on editor instances. */
-    function on(doc: Doc, eventName: 'beforeSelectionChange', handler: (instance: CodeMirror, selection: { head: Pos; anchor: Pos; }) => void );
-    function off(doc: Doc, eventName: 'beforeSelectionChange', handler: (instance: CodeMirror, selection: { head: Pos; anchor: Pos; }) => void );
-
-    /** Will be fired when the line object is deleted. A line object is associated with the start of the line.
-    Mostly useful when you need to find out when your gutter markers on a given line are removed. */
-    function on(line: LineHandle, eventName: 'delete', handler: () => void );
-    function off(line: LineHandle, eventName: 'delete', handler: () => void );
-
-    /** Fires when the line's text content is changed in any way (but the line is not deleted outright).
-    The change object is similar to the one passed to change event on the editor object. */
-    function on(line: LineHandle, eventName: 'change', handler: (line: LineHandle, change: EditorChange) => void );
-    function off(line: LineHandle, eventName: 'change', handler: (line: LineHandle, change: EditorChange) => void );
-
-    /** Fired when the cursor enters the marked range. From this event handler, the editor state may be inspected but not modified,
-    with the exception that the range on which the event fires may be cleared. */
-    function on(marker: TextMarker, eventName: 'beforeCursorEnter', handler: () => void );
-    function off(marker: TextMarker, eventName: 'beforeCursorEnter', handler: () => void );
-
-    /** Fired when the range is cleared, either through cursor movement in combination with clearOnEnter or through a call to its clear() method.
-    Will only be fired once per handle. Note that deleting the range through text editing does not fire this event,
-    because an undo action might bring the range back into existence. */
-    function on(marker: TextMarker, eventName: 'clear', handler: () => void );
-    function off(marker: TextMarker, eventName: 'clear', handler: () => void );
-
-    /** Fired when the last part of the marker is removed from the document by editing operations. */
-    function on(marker: TextMarker, eventName: 'hide', handler: () => void );
-    function off(marker: TextMarker, eventName: 'hide', handler: () => void );
-
-    /** Fired when, after the marker was removed by editing, a undo operation brought the marker back. */
-    function on(marker: TextMarker, eventName: 'unhide', handler: () => void );
-    function off(marker: TextMarker, eventName: 'unhide', handler: () => void );
-
-    /** Fired whenever the editor re-adds the widget to the DOM. This will happen once right after the widget is added (if it is scrolled into view),
-    and then again whenever it is scrolled out of view and back in again, or when changes to the editor options
-    or the line the widget is on require the widget to be redrawn. */
-    function on(line: LineWidget, eventName: 'redraw', handler: () => void );
-    function off(line: LineWidget, eventName: 'redraw', handler: () => void );
-
-    class Doc {
-        constructor (text: string, mode?: any, firstLineNumber?: number);
-
-        /** Get the current editor content. You can pass it an optional argument to specify the string to be used to separate lines (defaults to "\n"). */
-        getValue(seperator?: string): string;
-
-        /** Set the editor content. */
-        setValue(content: string);
-
-        /** Get the text between the given points in the editor, which should be {line, ch} objects.
-        An optional third argument can be given to indicate the line separator string to use (defaults to "\n"). */
-        getRange(from: Pos, to: CodeMirror.Pos, seperator?: string): string;
-
-        /** Replace the part of the document between from and to with the given string.
-        from and to must be {line, ch} objects. to can be left off to simply insert the string at position from. */
-        replaceRange(replacement: string, from: CodeMirror.Pos, to: CodeMirror.Pos);
-
-        /** Get the content of line n. */
-        getLine(n: number): string;
-
-        /** Set the content of line n. */
-        setLine(n: number, text: string);
-
-        /** Remove the given line from the document. */
-        removeLine(n: number);
-
-        /** Get the number of lines in the editor. */
-        lineCount(): number;
-
-        /** Get the first line of the editor. This will usually be zero but for linked sub-views,
-        or documents instantiated with a non-zero first line, it might return other values. */
-        firstLine(): number;
-
-        /** Get the last line of the editor. This will usually be lineCount() - 1, but for linked sub-views, it might return other values. */
-        lastLine(): number;
-
-        /** Fetches the line handle for the given line number. */
-        getLineHandle(num: number): CodeMirror.LineHandle;
-
-        /** Given a line handle, returns the current position of that line (or null when it is no longer in the document). */
-        getLineNumber(handle: CodeMirror.LineHandle): number;
-
-        /** Iterate over the whole document, and call f for each line, passing the line handle.
-        This is a faster way to visit a range of line handlers than calling getLineHandle for each of them.
-        Note that line handles have a text property containing the line's content (as a string). */
-        eachLine(f: (line: CodeMirror.LineHandle) => void );
-
-        /** Iterate over the range from start up to (not including) end, and call f for each line, passing the line handle.
-        This is a faster way to visit a range of line handlers than calling getLineHandle for each of them.
-        Note that line handles have a text property containing the line's content (as a string). */
-        eachLine(start: number, end: number, f: (line: CodeMirror.LineHandle) => void );
-
-        /** Set the editor content as 'clean', a flag that it will retain until it is edited, and which will be set again when such an edit is undone again.
-        Useful to track whether the content needs to be saved. */
-        markClean();
-
-        /** Returns whether the document is currently clean (not modified since initialization or the last call to markClean). */
-        isClean(): boolean;
+  /** If your extention just needs to run some code whenever a CodeMirror instance is initialized, use CodeMirror.defineInitHook.
+  Give it a function as its only argument, and from then on, that function will be called (with the instance as argument)
+  whenever a new CodeMirror instance is initialized. */
+  export function defineInitHook(func: Function);
 
 
 
-        /** Get the currently selected code. */
-        getSelection(): string;
+  export function on(element: any, eventName: string, handler: Function);
+  export function off(element: any, eventName: string, handler: Function);
+
+  /** Fired whenever a change occurs to the document. changeObj has a similar type as the object passed to the editor's "change" event,
+  but it never has a next property, because document change events are not batched (whereas editor change events are). */
+  export function on(doc: Doc, eventName: 'change', handler: (instance: Doc, change: EditorChange) => void);
+  export function off(doc: Doc, eventName: 'change', handler: (instance: Doc, change: EditorChange) => void);
+
+  /** See the description of the same event on editor instances. */
+  export function on(doc: Doc, eventName: 'beforeChange', handler: (instance: Doc, change: EditorChangeCancellable) => void);
+  export function off(doc: Doc, eventName: 'beforeChange', handler: (instance: Doc, change: EditorChangeCancellable) => void);
+
+  /** Fired whenever the cursor or selection in this document changes. */
+  export function on(doc: Doc, eventName: 'cursorActivity', handler: (instance: CodeMirror) => void);
+  export function off(doc: Doc, eventName: 'cursorActivity', handler: (instance: CodeMirror) => void);
+
+  /** Equivalent to the event by the same name as fired on editor instances. */
+  export function on(doc: Doc, eventName: 'beforeSelectionChange', handler: (instance: CodeMirror, selection: { head: Pos; anchor: Pos; }) => void);
+  export function off(doc: Doc, eventName: 'beforeSelectionChange', handler: (instance: CodeMirror, selection: { head: Pos; anchor: Pos; }) => void);
+
+  /** Will be fired when the line object is deleted. A line object is associated with the start of the line.
+  Mostly useful when you need to find out when your gutter markers on a given line are removed. */
+  export function on(line: LineHandle, eventName: 'delete', handler: () => void);
+  export function off(line: LineHandle, eventName: 'delete', handler: () => void);
+
+  /** Fires when the line's text content is changed in any way (but the line is not deleted outright).
+  The change object is similar to the one passed to change event on the editor object. */
+  export function on(line: LineHandle, eventName: 'change', handler: (line: LineHandle, change: EditorChange) => void);
+  export function off(line: LineHandle, eventName: 'change', handler: (line: LineHandle, change: EditorChange) => void);
+
+  /** Fired when the cursor enters the marked range. From this event handler, the editor state may be inspected but not modified,
+  with the exception that the range on which the event fires may be cleared. */
+  export function on(marker: TextMarker, eventName: 'beforeCursorEnter', handler: () => void);
+  export function off(marker: TextMarker, eventName: 'beforeCursorEnter', handler: () => void);
+
+  /** Fired when the range is cleared, either through cursor movement in combination with clearOnEnter or through a call to its clear() method.
+  Will only be fired once per handle. Note that deleting the range through text editing does not fire this event,
+  because an undo action might bring the range back into existence. */
+  export function on(marker: TextMarker, eventName: 'clear', handler: () => void);
+  export function off(marker: TextMarker, eventName: 'clear', handler: () => void);
+
+  /** Fired when the last part of the marker is removed from the document by editing operations. */
+  export function on(marker: TextMarker, eventName: 'hide', handler: () => void);
+  export function off(marker: TextMarker, eventName: 'hide', handler: () => void);
+
+  /** Fired when, after the marker was removed by editing, a undo operation brought the marker back. */
+  export function on(marker: TextMarker, eventName: 'unhide', handler: () => void);
+  export function off(marker: TextMarker, eventName: 'unhide', handler: () => void);
+
+  /** Fired whenever the editor re-adds the widget to the DOM. This will happen once right after the widget is added (if it is scrolled into view),
+  and then again whenever it is scrolled out of view and back in again, or when changes to the editor options
+  or the line the widget is on require the widget to be redrawn. */
+  export function on(line: LineWidget, eventName: 'redraw', handler: () => void);
+  export function off(line: LineWidget, eventName: 'redraw', handler: () => void);
+
+  export class Doc {
+    constructor(text: string, mode?: any, firstLineNumber?: number);
+
+    /** Get the current editor content. You can pass it an optional argument to specify the string to be used to separate lines (defaults to "\n"). */
+    getValue(seperator?: string): string;
+
+    /** Set the editor content. */
+    setValue(content: string);
+
+    /** Get the text between the given points in the editor, which should be {line, ch} objects.
+    An optional third argument can be given to indicate the line separator string to use (defaults to "\n"). */
+    getRange(from: Pos, to: CodeMirror.Pos, seperator?: string): string;
+
+    /** Replace the part of the document between from and to with the given string.
+    from and to must be {line, ch} objects. to can be left off to simply insert the string at position from. */
+    replaceRange(replacement: string, from: CodeMirror.Pos, to: CodeMirror.Pos);
+
+    /** Get the content of line n. */
+    getLine(n: number): string;
+
+    /** Set the content of line n. */
+    setLine(n: number, text: string);
+
+    /** Remove the given line from the document. */
+    removeLine(n: number);
+
+    /** Get the number of lines in the editor. */
+    lineCount(): number;
+
+    /** Get the first line of the editor. This will usually be zero but for linked sub-views,
+    or documents instantiated with a non-zero first line, it might return other values. */
+    firstLine(): number;
+
+    /** Get the last line of the editor. This will usually be lineCount() - 1, but for linked sub-views, it might return other values. */
+    lastLine(): number;
+
+    /** Fetches the line handle for the given line number. */
+    getLineHandle(num: number): CodeMirror.LineHandle;
+
+    /** Given a line handle, returns the current position of that line (or null when it is no longer in the document). */
+    getLineNumber(handle: CodeMirror.LineHandle): number;
+
+    /** Iterate over the whole document, and call f for each line, passing the line handle.
+    This is a faster way to visit a range of line handlers than calling getLineHandle for each of them.
+    Note that line handles have a text property containing the line's content (as a string). */
+    eachLine(f: (line: CodeMirror.LineHandle) => void);
+
+    /** Iterate over the range from start up to (not including) end, and call f for each line, passing the line handle.
+    This is a faster way to visit a range of line handlers than calling getLineHandle for each of them.
+    Note that line handles have a text property containing the line's content (as a string). */
+    eachLine(start: number, end: number, f: (line: CodeMirror.LineHandle) => void);
+
+    /** Set the editor content as 'clean', a flag that it will retain until it is edited, and which will be set again when such an edit is undone again.
+    Useful to track whether the content needs to be saved. */
+    markClean();
+
+    /** Returns whether the document is currently clean (not modified since initialization or the last call to markClean). */
+    isClean(): boolean;
+
+
+
+    /** Get the currently selected code. */
+    getSelection(): string;
 
         /** Replace the selection with the given string. By default, the new selection will span the inserted text.
         The optional collapse argument can be used to change this passing "start" or "end" will collapse the selection to the start or end of the inserted text. */
@@ -437,354 +437,354 @@ declare module CodeMirror {
         or "anchor"(the fixed side of the selection).Omitting the argument is the same as passing "head".A { line , ch } object will be returned. */
         getCursor(start?: string): CodeMirror.Pos;
 
-        /** Return true if any text is selected. */
-        somethingSelected(): boolean;
+    /** Return true if any text is selected. */
+    somethingSelected(): boolean;
 
-        /** Set the cursor position.You can either pass a single { line , ch } object , or the line and the character as two separate parameters. */
-        setCursor(pos: CodeMirror.Pos);
+    /** Set the cursor position.You can either pass a single { line , ch } object , or the line and the character as two separate parameters. */
+    setCursor(pos: CodeMirror.Pos);
 
-        /** Set the selection range.anchor and head should be { line , ch } objects.head defaults to anchor when not given. */
-        setSelection(anchor: CodeMirror.Pos, head: CodeMirror.Pos);
+    /** Set the selection range.anchor and head should be { line , ch } objects.head defaults to anchor when not given. */
+    setSelection(anchor: CodeMirror.Pos, head: CodeMirror.Pos);
 
-        /** Similar to setSelection , but will, if shift is held or the extending flag is set,
-        move the head of the selection while leaving the anchor at its current place.
-        pos2 is optional , and can be passed to ensure a region (for example a word or paragraph) will end up selected
-        (in addition to whatever lies between that region and the current anchor). */
-        extendSelection(from: CodeMirror.Pos, to?: CodeMirror.Pos);
+    /** Similar to setSelection , but will, if shift is held or the extending flag is set,
+    move the head of the selection while leaving the anchor at its current place.
+    pos2 is optional , and can be passed to ensure a region (for example a word or paragraph) will end up selected
+    (in addition to whatever lies between that region and the current anchor). */
+    extendSelection(from: CodeMirror.Pos, to?: CodeMirror.Pos);
 
-        /** Sets or clears the 'extending' flag , which acts similar to the shift key,
-        in that it will cause cursor movement and calls to extendSelection to leave the selection anchor in place. */
-        setExtending(value: boolean);
-
-
-        /** Retrieve the editor associated with a document. May return null. */
-        getEditor(): CodeMirror;
+    /** Sets or clears the 'extending' flag , which acts similar to the shift key,
+    in that it will cause cursor movement and calls to extendSelection to leave the selection anchor in place. */
+    setExtending(value: boolean);
 
 
-        /** Create an identical copy of the given doc. When copyHistory is true , the history will also be copied.Can not be called directly on an editor. */
-        copy(copyHistory: boolean): CodeMirror.Doc;
-
-        /** Create a new document that's linked to the target document. Linked documents will stay in sync (changes to one are also applied to the other) until unlinked. */
-        linkedDoc(options: {
-            /** When turned on, the linked copy will share an undo history with the original.
-            Thus, something done in one of the two can be undone in the other, and vice versa. */
-            sharedHist?: boolean;
-            from?: number;
-            /** Can be given to make the new document a subview of the original. Subviews only show a given range of lines.
-            Note that line coordinates inside the subview will be consistent with those of the parent,
-            so that for example a subview starting at line 10 will refer to its first line as line 10, not 0. */
-            to?: number;
-            /** By default, the new document inherits the mode of the parent. This option can be set to a mode spec to give it a different mode. */
-            mode: any;
-        }): CodeMirror.Doc;
-
-        /** Break the link between two documents. After calling this , changes will no longer propagate between the documents,
-        and, if they had a shared history, the history will become separate. */
-        unlinkDoc(doc: CodeMirror.Doc);
-
-        /** Will call the given function for all documents linked to the target document. It will be passed two arguments,
-        the linked document and a boolean indicating whether that document shares history with the target. */
-        iterLinkedDocs(fn: (doc: CodeMirror.Doc, sharedHist: boolean) => void );
-
-        /** Undo one edit (if any undo events are stored). */
-        undo();
-
-        /** Redo one undone edit. */
-        redo();
-
-        /** Returns an object with {undo, redo } properties , both of which hold integers , indicating the amount of stored undo and redo operations. */
-        historySize(): { undo: number; redo: number; };
-
-        /** Clears the editor's undo history. */
-        clearHistory();
-
-        /** Get a(JSON - serializeable) representation of the undo history. */
-        getHistory(): any;
-
-        /** Replace the editor's undo history with the one provided, which must be a value as returned by getHistory.
-        Note that this will have entirely undefined results if the editor content isn't also the same as it was when getHistory was called. */
-        setHistory(history: any);
+    /** Retrieve the editor associated with a document. May return null. */
+    getEditor(): CodeMirror;
 
 
-        /** Can be used to mark a range of text with a specific CSS class name. from and to should be { line , ch } objects. */
-        markText(from: CodeMirror.Pos, to: CodeMirror.Pos, options?: CodeMirror.TextMarkerOptions): TextMarker;
+    /** Create an identical copy of the given doc. When copyHistory is true , the history will also be copied.Can not be called directly on an editor. */
+    copy(copyHistory: boolean): CodeMirror.Doc;
 
-        /** Inserts a bookmark, a handle that follows the text around it as it is being edited, at the given position.
-        A bookmark has two methods find() and clear(). The first returns the current position of the bookmark, if it is still in the document,
-        and the second explicitly removes the bookmark. */
-        setBookmark(pos: CodeMirror.Pos, options?: {
-            /** Can be used to display a DOM node at the current location of the bookmark (analogous to the replacedWith option to markText). */
-            widget?: HTMLElement;
+    /** Create a new document that's linked to the target document. Linked documents will stay in sync (changes to one are also applied to the other) until unlinked. */
+    linkedDoc(options: {
+      /** When turned on, the linked copy will share an undo history with the original.
+      Thus, something done in one of the two can be undone in the other, and vice versa. */
+      sharedHist?: boolean;
+      from?: number;
+      /** Can be given to make the new document a subview of the original. Subviews only show a given range of lines.
+      Note that line coordinates inside the subview will be consistent with those of the parent,
+      so that for example a subview starting at line 10 will refer to its first line as line 10, not 0. */
+      to?: number;
+      /** By default, the new document inherits the mode of the parent. This option can be set to a mode spec to give it a different mode. */
+      mode: any;
+    }): CodeMirror.Doc;
 
-            /** By default, text typed when the cursor is on top of the bookmark will end up to the right of the bookmark.
-            Set this option to true to make it go to the left instead. */
-            insertLeft?: boolean;
-        }): CodeMirror.TextMarker;
+    /** Break the link between two documents. After calling this , changes will no longer propagate between the documents,
+    and, if they had a shared history, the history will become separate. */
+    unlinkDoc(doc: CodeMirror.Doc);
 
-        /** Returns an array of all the bookmarks and marked ranges present at the given position. */
-        findMarksAt(pos: CodeMirror.Pos): TextMarker[];
-        
-        /** Returns an array containing all marked ranges in the document. */
-        getAllMarks(): CodeMirror.TextMarker[];
+    /** Will call the given function for all documents linked to the target document. It will be passed two arguments,
+    the linked document and a boolean indicating whether that document shares history with the target. */
+    iterLinkedDocs(fn: (doc: CodeMirror.Doc, sharedHist: boolean) => void);
+
+    /** Undo one edit (if any undo events are stored). */
+    undo();
+
+    /** Redo one undone edit. */
+    redo();
+
+    /** Returns an object with {undo, redo } properties , both of which hold integers , indicating the amount of stored undo and redo operations. */
+    historySize(): { undo: number; redo: number; };
+
+    /** Clears the editor's undo history. */
+    clearHistory();
+
+    /** Get a(JSON - serializeable) representation of the undo history. */
+    getHistory(): any;
+
+    /** Replace the editor's undo history with the one provided, which must be a value as returned by getHistory.
+    Note that this will have entirely undefined results if the editor content isn't also the same as it was when getHistory was called. */
+    setHistory(history: any);
 
 
-        /** Gets the mode object for the editor. Note that this is distinct from getOption("mode"), which gives you the mode specification,
-        rather than the resolved, instantiated mode object. */
-        getMode(): any;
+    /** Can be used to mark a range of text with a specific CSS class name. from and to should be { line , ch } objects. */
+    markText(from: CodeMirror.Pos, to: CodeMirror.Pos, options?: CodeMirror.TextMarkerOptions): TextMarker;
 
-        /** Calculates and returns a { line , ch } object for a zero-based index whose value is relative to the start of the editor's text.
-        If the index is out of range of the text then the returned object is clipped to start or end of the text respectively. */
-        posFromIndex(index: number): CodeMirror.Pos;
+    /** Inserts a bookmark, a handle that follows the text around it as it is being edited, at the given position.
+    A bookmark has two methods find() and clear(). The first returns the current position of the bookmark, if it is still in the document,
+    and the second explicitly removes the bookmark. */
+    setBookmark(pos: CodeMirror.Pos, options?: {
+      /** Can be used to display a DOM node at the current location of the bookmark (analogous to the replacedWith option to markText). */
+      widget?: HTMLElement;
 
-        /** The reverse of posFromIndex. */
-        indexFromPos(object: CodeMirror.Pos): number;
+      /** By default, text typed when the cursor is on top of the bookmark will end up to the right of the bookmark.
+      Set this option to true to make it go to the left instead. */
+      insertLeft?: boolean;
+    }): CodeMirror.TextMarker;
 
-    }
+    /** Returns an array of all the bookmarks and marked ranges present at the given position. */
+    findMarksAt(pos: CodeMirror.Pos): TextMarker[];
 
-    interface LineHandle {
-        text: string;
-    }
+    /** Returns an array containing all marked ranges in the document. */
+    getAllMarks(): CodeMirror.TextMarker[];
 
-    interface TextMarker {
-        /** Remove the mark. */
-        clear();
 
-        /** Returns a {from, to} object (both holding document positions), indicating the current position of the marked range,
-        or undefined if the marker is no longer in the document. */
-      find(): {from:CodeMirror.Pos;to:CodeMirror.Pos;};
+    /** Gets the mode object for the editor. Note that this is distinct from getOption("mode"), which gives you the mode specification,
+    rather than the resolved, instantiated mode object. */
+    getMode(): any;
 
-        /**  Returns an object representing the options for the marker. If copyWidget is given true, it will clone the value of the replacedWith option, if any. */
-        getOptions(copyWidget: boolean): CodeMirror.TextMarkerOptions;
-    }
+    /** Calculates and returns a { line , ch } object for a zero-based index whose value is relative to the start of the editor's text.
+    If the index is out of range of the text then the returned object is clipped to start or end of the text respectively. */
+    posFromIndex(index: number): CodeMirror.Pos;
 
-    interface LineWidget {
-        /** Removes the widget. */
-        clear(): void;
+    /** The reverse of posFromIndex. */
+    indexFromPos(object: CodeMirror.Pos): number;
 
-        /** Call this if you made some change to the widget's DOM node that might affect its height.
-        It'll force CodeMirror to update the height of the line that contains the widget. */
-        changed();
-    }
+  }
 
-    interface EditorChange {
-        /** Position (in the pre-change coordinate system) where the change started. */
-        from: CodeMirror.Pos;
-        /** Position (in the pre-change coordinate system) where the change ended. */
-        to: CodeMirror.Pos;
-        /** Array of strings representing the text that replaced the changed range (split by line). */
-        text: string[];
-        /**  Text that used to be between from and to, which is overwritten by this change. */
-        removed: string[];
-    }
+  export interface LineHandle {
+    text: string;
+  }
 
-    interface EditorChangeLinkedList extends CodeMirror.EditorChange {
-        /** Points to another change object (which may point to another, etc). */
-        next?: CodeMirror.EditorChangeLinkedList;
-    }
+  export interface TextMarker {
+    /** Remove the mark. */
+    clear();
 
-    interface EditorChangeCancellable extends CodeMirror.EditorChange {
-        /** may be used to modify the change. All three arguments to update are optional, and can be left off to leave the existing value for that field intact. */
-        update(from?: CodeMirror.Pos, to?: CodeMirror.Pos, text?: string);
+    /** Returns a {from, to} object (both holding document positions), indicating the current position of the marked range,
+    or undefined if the marker is no longer in the document. */
+    find(): { from: CodeMirror.Pos; to: CodeMirror.Pos; };
 
-        cancel();
-    }
+    /**  Returns an object representing the options for the marker. If copyWidget is given true, it will clone the value of the replacedWith option, if any. */
+    getOptions(copyWidget: boolean): CodeMirror.TextMarkerOptions;
+  }
 
-    class Pos {
-      ch: number;
-      line: number;
+  export interface LineWidget {
+    /** Removes the widget. */
+    clear(): void;
 
-      constructor(
-        ch: number,
-        line: number);
-    }
+    /** Call this if you made some change to the widget's DOM node that might affect its height.
+    It'll force CodeMirror to update the height of the line that contains the widget. */
+    changed();
+  }
 
-    interface Options {
-        /** string| The starting value of the editor. Can be a string, or a document object. */
-        value?: any;
+  export interface EditorChange {
+    /** Position (in the pre-change coordinate system) where the change started. */
+    from: CodeMirror.Pos;
+    /** Position (in the pre-change coordinate system) where the change ended. */
+    to: CodeMirror.Pos;
+    /** Array of strings representing the text that replaced the changed range (split by line). */
+    text: string[];
+    /**  Text that used to be between from and to, which is overwritten by this change. */
+    removed: string[];
+  }
 
-        /** string|object. The mode to use. When not given, this will default to the first mode that was loaded.
-        It may be a string, which either simply names the mode or is a MIME type associated with the mode.
-        Alternatively, it may be an object containing configuration options for the mode,
-        with a name property that names the mode (for example {name: "javascript", json: true}). */
-        mode?: any;
+  export interface EditorChangeLinkedList extends CodeMirror.EditorChange {
+    /** Points to another change object (which may point to another, etc). */
+    next?: CodeMirror.EditorChangeLinkedList;
+  }
 
-        /** The theme to style the editor with. You must make sure the CSS file defining the corresponding .cm-s-[name] styles is loaded.
-        The default is "default". */
-        theme?: string;
+  export interface EditorChangeCancellable extends CodeMirror.EditorChange {
+    /** may be used to modify the change. All three arguments to update are optional, and can be left off to leave the existing value for that field intact. */
+    update(from?: CodeMirror.Pos, to?: CodeMirror.Pos, text?: string);
 
-        /** How many spaces a block (whatever that means in the edited language) should be indented. The default is 2. */
-        indentUnit?: number;
+    cancel();
+  }
 
-        /** Whether to use the context-sensitive indentation that the mode provides (or just indent the same as the line before). Defaults to true. */
-        smartIndent?: boolean;
+  export class Pos {
+    ch: number;
+    line: number;
 
-        /** The width of a tab character. Defaults to 4. */
-        tabSize?: number;
+    constructor(
+      ch: number,
+      line: number);
+  }
 
-        /** Whether, when indenting, the first N*tabSize spaces should be replaced by N tabs. Default is false. */
-        indentWithTabs?: boolean;
+  export interface Options {
+    /** string| The starting value of the editor. Can be a string, or a document object. */
+    value?: any;
 
-        /** Configures whether the editor should re-indent the current line when a character is typed
-        that might change its proper indentation (only works if the mode supports indentation). Default is true. */
-        electricChars?: boolean;
-        
-        /** Determines whether horizontal cursor movement through right-to-left (Arabic, Hebrew) text
-        is visual (pressing the left arrow moves the cursor left)
-        or logical (pressing the left arrow moves to the next lower index in the string, which is visually right in right-to-left text).
-        The default is false on Windows, and true on other platforms. */
-        rtlMoveVisually?: boolean;
+    /** string|object. The mode to use. When not given, this will default to the first mode that was loaded.
+    It may be a string, which either simply names the mode or is a MIME type associated with the mode.
+    Alternatively, it may be an object containing configuration options for the mode,
+    with a name property that names the mode (for example {name: "javascript", json: true}). */
+    mode?: any;
 
-        /** Configures the keymap to use. The default is "default", which is the only keymap defined in codemirror.js itself.
-        Extra keymaps are found in the keymap directory. See the section on keymaps for more information. */
-        keyMap?: string;
-        
-        /** Can be used to specify extra keybindings for the editor, alongside the ones defined by keyMap. Should be either null, or a valid keymap value. */
-        extraKeys?: any;
-        
-        /** Whether CodeMirror should scroll or wrap for long lines. Defaults to false (scroll). */
-        lineWrapping?: boolean;
-        
-        /** Whether to show line numbers to the left of the editor. */
-        lineNumbers?: boolean;
-        
-        /** At which number to start counting lines. Default is 1. */
-        firstLineNumber?: number;
+    /** The theme to style the editor with. You must make sure the CSS file defining the corresponding .cm-s-[name] styles is loaded.
+    The default is "default". */
+    theme?: string;
 
-        /** A function used to format line numbers. The function is passed the line number, and should return a string that will be shown in the gutter. */
-        lineNumberFormatter?: (line: number) => string;
+    /** How many spaces a block (whatever that means in the edited language) should be indented. The default is 2. */
+    indentUnit?: number;
 
-        /** Can be used to add extra gutters (beyond or instead of the line number gutter).
-        Should be an array of CSS class names, each of which defines a width (and optionally a background),
-        and which will be used to draw the background of the gutters.
-        May include the CodeMirror-linenumbers class, in order to explicitly set the position of the line number gutter
-        (it will default to be to the right of all other gutters). These class names are the keys passed to setGutterMarker. */
-        gutters?: string[];
-        
-        /** Determines whether the gutter scrolls along with the content horizontally (false)
-        or whether it stays fixed during horizontal scrolling (true, the default). */
-        fixedGutter?: boolean;
-        
-        /** boolean|string. This disables editing of the editor content by the user. If the special value "nocursor" is given (instead of simply true), focusing of the editor is also disallowed. */
-        readOnly?: any;
-        
-        /**Whether the cursor should be drawn when a selection is active. Defaults to false. */
-        showCursorWhenSelecting?: boolean;
-        
-        /** The maximum number of undo levels that the editor stores. Defaults to 40. */
-        undoDepth?: number;
-        
-        /** The period of inactivity (in milliseconds) that will cause a new history event to be started when typing or deleting. Defaults to 500. */
-        historyEventDelay?: number;
-        
-        /** The tab index to assign to the editor. If not given, no tab index will be assigned. */
-        tabindex?: number;
+    /** Whether to use the context-sensitive indentation that the mode provides (or just indent the same as the line before). Defaults to true. */
+    smartIndent?: boolean;
 
-        /** Can be used to make CodeMirror focus itself on initialization. Defaults to off.
-        When fromTextArea is used, and no explicit value is given for this option, it will be set to true when either the source textarea is focused,
-        or it has an autofocus attribute and no other element is focused. */
-        autofocus?: boolean;
+    /** The width of a tab character. Defaults to 4. */
+    tabSize?: number;
 
-        /** Controls whether drag-and - drop is enabled. On by default. */
-        dragDrop?: boolean;
+    /** Whether, when indenting, the first N*tabSize spaces should be replaced by N tabs. Default is false. */
+    indentWithTabs?: boolean;
 
-        /** When given , this will be called when the editor is handling a dragenter , dragover , or drop event.
-        It will be passed the editor instance and the event object as arguments.
-        The callback can choose to handle the event itself , in which case it should return true to indicate that CodeMirror should not do anything further. */
-        onDragEvent?: (instance: CodeMirror, event: Event) => boolean;
+    /** Configures whether the editor should re-indent the current line when a character is typed
+    that might change its proper indentation (only works if the mode supports indentation). Default is true. */
+    electricChars?: boolean;
 
-        /** This provides a rather low - level hook into CodeMirror's key handling.
-        If provided, this function will be called on every keydown, keyup, and keypress event that CodeMirror captures.
-        It will be passed two arguments, the editor instance and the key event.
-        This key event is pretty much the raw key event, except that a stop() method is always added to it.
-        You could feed it to, for example, jQuery.Event to further normalize it.
-        This function can inspect the key event, and handle it if it wants to.
-        It may return true to tell CodeMirror to ignore the event.
-        Be wary that, on some browsers, stopping a keydown does not stop the keypress from firing, whereas on others it does.
-        If you respond to an event, you should probably inspect its type property and only do something when it is keydown
-        (or keypress for actions that need character data). */
-        onKeyEvent?: (instance: CodeMirror, event: Event) => boolean;
+    /** Determines whether horizontal cursor movement through right-to-left (Arabic, Hebrew) text
+    is visual (pressing the left arrow moves the cursor left)
+    or logical (pressing the left arrow moves to the next lower index in the string, which is visually right in right-to-left text).
+    The default is false on Windows, and true on other platforms. */
+    rtlMoveVisually?: boolean;
 
-        /** Half - period in milliseconds used for cursor blinking. The default blink rate is 530ms. */
-        cursorBlinkRate?: number;
+    /** Configures the keymap to use. The default is "default", which is the only keymap defined in codemirror.js itself.
+    Extra keymaps are found in the keymap directory. See the section on keymaps for more information. */
+    keyMap?: string;
 
-        /** Determines the height of the cursor. Default is 1 , meaning it spans the whole height of the line.
-        For some fonts (and by some tastes) a smaller height (for example 0.85),
-        which causes the cursor to not reach all the way to the bottom of the line, looks better */
-        cursorHeight?: number;
+    /** Can be used to specify extra keybindings for the editor, alongside the ones defined by keyMap. Should be either null, or a valid keymap value. */
+    extraKeys?: any;
 
-        /** Highlighting is done by a pseudo background - thread that will work for workTime milliseconds,
-        and then use timeout to sleep for workDelay milliseconds.
-        The defaults are 200 and 300, you can change these options to make the highlighting more or less aggressive. */
-        workTime?: number;
+    /** Whether CodeMirror should scroll or wrap for long lines. Defaults to false (scroll). */
+    lineWrapping?: boolean;
 
-        /** See workTime. */
-        workDelay?: number;
+    /** Whether to show line numbers to the left of the editor. */
+    lineNumbers?: boolean;
 
-        /** Indicates how quickly CodeMirror should poll its input textarea for changes(when focused).
-        Most input is captured by events, but some things, like IME input on some browsers, don't generate events that allow CodeMirror to properly detect it.
-        Thus, it polls. Default is 100 milliseconds. */
-        pollInterval?: number
+    /** At which number to start counting lines. Default is 1. */
+    firstLineNumber?: number;
+
+    /** A function used to format line numbers. The function is passed the line number, and should return a string that will be shown in the gutter. */
+    lineNumberFormatter?: (line: number) => string;
+
+    /** Can be used to add extra gutters (beyond or instead of the line number gutter).
+    Should be an array of CSS class names, each of which defines a width (and optionally a background),
+    and which will be used to draw the background of the gutters.
+    May include the CodeMirror-linenumbers class, in order to explicitly set the position of the line number gutter
+    (it will default to be to the right of all other gutters). These class names are the keys passed to setGutterMarker. */
+    gutters?: string[];
+
+    /** Determines whether the gutter scrolls along with the content horizontally (false)
+    or whether it stays fixed during horizontal scrolling (true, the default). */
+    fixedGutter?: boolean;
+
+    /** boolean|string. This disables editing of the editor content by the user. If the special value "nocursor" is given (instead of simply true), focusing of the editor is also disallowed. */
+    readOnly?: any;
+
+    /**Whether the cursor should be drawn when a selection is active. Defaults to false. */
+    showCursorWhenSelecting?: boolean;
+
+    /** The maximum number of undo levels that the editor stores. Defaults to 40. */
+    undoDepth?: number;
+
+    /** The period of inactivity (in milliseconds) that will cause a new history event to be started when typing or deleting. Defaults to 500. */
+    historyEventDelay?: number;
+
+    /** The tab index to assign to the editor. If not given, no tab index will be assigned. */
+    tabindex?: number;
+
+    /** Can be used to make CodeMirror focus itself on initialization. Defaults to off.
+    When fromTextArea is used, and no explicit value is given for this option, it will be set to true when either the source textarea is focused,
+    or it has an autofocus attribute and no other element is focused. */
+    autofocus?: boolean;
+
+    /** Controls whether drag-and - drop is enabled. On by default. */
+    dragDrop?: boolean;
+
+    /** When given , this will be called when the editor is handling a dragenter , dragover , or drop event.
+    It will be passed the editor instance and the event object as arguments.
+    The callback can choose to handle the event itself , in which case it should return true to indicate that CodeMirror should not do anything further. */
+    onDragEvent?: (instance: CodeMirror, event: Event) => boolean;
+
+    /** This provides a rather low - level hook into CodeMirror's key handling.
+    If provided, this function will be called on every keydown, keyup, and keypress event that CodeMirror captures.
+    It will be passed two arguments, the editor instance and the key event.
+    This key event is pretty much the raw key event, except that a stop() method is always added to it.
+    You could feed it to, for example, jQuery.Event to further normalize it.
+    This function can inspect the key event, and handle it if it wants to.
+    It may return true to tell CodeMirror to ignore the event.
+    Be wary that, on some browsers, stopping a keydown does not stop the keypress from firing, whereas on others it does.
+    If you respond to an event, you should probably inspect its type property and only do something when it is keydown
+    (or keypress for actions that need character data). */
+    onKeyEvent?: (instance: CodeMirror, event: Event) => boolean;
+
+    /** Half - period in milliseconds used for cursor blinking. The default blink rate is 530ms. */
+    cursorBlinkRate?: number;
+
+    /** Determines the height of the cursor. Default is 1 , meaning it spans the whole height of the line.
+    For some fonts (and by some tastes) a smaller height (for example 0.85),
+    which causes the cursor to not reach all the way to the bottom of the line, looks better */
+    cursorHeight?: number;
+
+    /** Highlighting is done by a pseudo background - thread that will work for workTime milliseconds,
+    and then use timeout to sleep for workDelay milliseconds.
+    The defaults are 200 and 300, you can change these options to make the highlighting more or less aggressive. */
+    workTime?: number;
+
+    /** See workTime. */
+    workDelay?: number;
+
+    /** Indicates how quickly CodeMirror should poll its input textarea for changes(when focused).
+    Most input is captured by events, but some things, like IME input on some browsers, don't generate events that allow CodeMirror to properly detect it.
+    Thus, it polls. Default is 100 milliseconds. */
+    pollInterval?: number
 
         /** By default, CodeMirror will combine adjacent tokens into a single span if they have the same class.
         This will result in a simpler DOM tree, and thus perform better. With some kinds of styling(such as rounded corners),
         this will change the way the document looks. You can set this option to false to disable this behavior. */
         flattenSpans?: boolean;
 
-        /** When highlighting long lines, in order to stay responsive, the editor will give up and simply style
-        the rest of the line as plain text when it reaches a certain position. The default is 10000.
-        You can set this to Infinity to turn off this behavior. */
-        maxHighlightLength?: number;
+    /** When highlighting long lines, in order to stay responsive, the editor will give up and simply style
+    the rest of the line as plain text when it reaches a certain position. The default is 10000.
+    You can set this to Infinity to turn off this behavior. */
+    maxHighlightLength?: number;
 
-        /** Specifies the amount of lines that are rendered above and below the part of the document that's currently scrolled into view.
-        This affects the amount of updates needed when scrolling, and the amount of work that such an update does.
-        You should usually leave it at its default, 10. Can be set to Infinity to make sure the whole document is always rendered,
-        and thus the browser's text search works on it. This will have bad effects on performance of big documents. */
-        viewportMargin?: number;
-    }
+    /** Specifies the amount of lines that are rendered above and below the part of the document that's currently scrolled into view.
+    This affects the amount of updates needed when scrolling, and the amount of work that such an update does.
+    You should usually leave it at its default, 10. Can be set to Infinity to make sure the whole document is always rendered,
+    and thus the browser's text search works on it. This will have bad effects on performance of big documents. */
+    viewportMargin?: number;
+  }
 
-    interface TextMarkerOptions {
-        /** Assigns a CSS class to the marked stretch of text. */
-        className?: string;
-        
-        /** Determines whether text inserted on the left of the marker will end up inside or outside of it. */
-        inclusiveLeft?: boolean;
-        
-        /** Like inclusiveLeft , but for the right side. */
-        inclusiveRight?: boolean;
-        
-        /** Atomic ranges act as a single unit when cursor movement is concerned i.e. it is impossible to place the cursor inside of them.
-        In atomic ranges, inclusiveLeft and inclusiveRight have a different meaning they will prevent the cursor from being placed
-        respectively directly before and directly after the range. */
-        atomic?: boolean;
-        
-        /** Collapsed ranges do not show up in the display.Setting a range to be collapsed will automatically make it atomic. */
-        collapsed?: boolean;
-        
-        /** When enabled, will cause the mark to clear itself whenever the cursor enters its range.
-        This is mostly useful for text - replacement widgets that need to 'snap open' when the user tries to edit them.
-        The "clear" event fired on the range handle can be used to be notified when this happens. */
-        clearOnEnter?: boolean;
-        
-        /** Use a given node to display this range.Implies both collapsed and atomic.
-        The given DOM node must be an inline element(as opposed to a block element). */
-        replacedWith?: HTMLElement;
-        
-        /** A read - only span can, as long as it is not cleared, not be modified except by calling setValue to reset the whole document.
-        Note: adding a read - only span currently clears the undo history of the editor,
-        because existing undo events being partially nullified by read - only spans would corrupt the history (in the current implementation). */
-        readOnly?: boolean;
-        
-        /** When set to true (default is false), adding this marker will create an event in the undo history that can be individually undone(clearing the marker). */
-        addToHistory?: boolean;
-        
-        /** Can be used to specify an extra CSS class to be applied to the leftmost span that is part of the marker. */
-        startStyle?: string;
-        
-        /** Equivalent to startStyle, but for the rightmost span. */
-        endStyle?: string;
-        
-        /** When the target document is linked to other documents, you can set shared to true to make the marker appear in all documents.
-        By default, a marker appears only in its target document. */
-        shared?: boolean;
-    }
+  export interface TextMarkerOptions {
+    /** Assigns a CSS class to the marked stretch of text. */
+    className?: string;
+
+    /** Determines whether text inserted on the left of the marker will end up inside or outside of it. */
+    inclusiveLeft?: boolean;
+
+    /** Like inclusiveLeft , but for the right side. */
+    inclusiveRight?: boolean;
+
+    /** Atomic ranges act as a single unit when cursor movement is concerned i.e. it is impossible to place the cursor inside of them.
+    In atomic ranges, inclusiveLeft and inclusiveRight have a different meaning they will prevent the cursor from being placed
+    respectively directly before and directly after the range. */
+    atomic?: boolean;
+
+    /** Collapsed ranges do not show up in the display.Setting a range to be collapsed will automatically make it atomic. */
+    collapsed?: boolean;
+
+    /** When enabled, will cause the mark to clear itself whenever the cursor enters its range.
+    This is mostly useful for text - replacement widgets that need to 'snap open' when the user tries to edit them.
+    The "clear" event fired on the range handle can be used to be notified when this happens. */
+    clearOnEnter?: boolean;
+
+    /** Use a given node to display this range.Implies both collapsed and atomic.
+    The given DOM node must be an inline element(as opposed to a block element). */
+    replacedWith?: HTMLElement;
+
+    /** A read - only span can, as long as it is not cleared, not be modified except by calling setValue to reset the whole document.
+    Note: adding a read - only span currently clears the undo history of the editor,
+    because existing undo events being partially nullified by read - only spans would corrupt the history (in the current implementation). */
+    readOnly?: boolean;
+
+    /** When set to true (default is false), adding this marker will create an event in the undo history that can be individually undone(clearing the marker). */
+    addToHistory?: boolean;
+
+    /** Can be used to specify an extra CSS class to be applied to the leftmost span that is part of the marker. */
+    startStyle?: string;
+
+    /** Equivalent to startStyle, but for the rightmost span. */
+    endStyle?: string;
+
+    /** When the target document is linked to other documents, you can set shared to true to make the marker appear in all documents.
+    By default, a marker appears only in its target document. */
+    shared?: boolean;
+  }
 }

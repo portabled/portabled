@@ -83,6 +83,16 @@ module teapo {
     }
 
 
+    treeClick(data_unused, event: MouseEvent) {
+      var src = event.srcElement;
+      while (src) {
+        var data = ko.dataFor(src);
+        if (data && typeof data.handleClick === 'function') {
+          data.handleClick();
+          return;
+        }
+      }
+    }
 
     private _addFileEntry(fullPath: string) {
       var pathParts = normalizePath(fullPath);
@@ -214,6 +224,7 @@ module teapo {
     }
 
     handleClick(): void {
+      this.toggleExpand();
       this._handleClick();
     }
 

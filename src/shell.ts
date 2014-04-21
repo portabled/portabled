@@ -117,8 +117,8 @@ module teapo {
                   var writer = new zip.TextWriter();
                   entry.getData(writer, (text) => {
                     var virtFilename = folder + entry.filename;
-                    var fileEntry = this.fileList.createFileEntry(virtFilename);
-                    var docStorage = this._storage.createDocument(fileEntry.fullPath());
+                    var fileEntry = this.fileList.getFileEntry(virtFilename) || this.fileList.createFileEntry(virtFilename);
+                    var docStorage = this._storage.getDocument(fileEntry.fullPath()) || this._storage.createDocument(fileEntry.fullPath());
 
                     docStorage.setProperty(null, text);
                   }); 

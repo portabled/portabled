@@ -428,7 +428,7 @@ var teapo;
             this._shared.cm = new CodeMirror(function (element) {
                 return _this._shared.element = element;
             }, options);
-            this._shared.cm.getWrapperElement().style.fontSize = '16px';
+            this._shared.cm.getWrapperElement().style.fontSize = '12px';
         };
 
         CodeMirrorEditor.prototype._initDoc = function () {
@@ -1765,6 +1765,17 @@ var teapo;
             this.selectedFile(null);
         };
 
+        FileList.prototype.treeClick = function (data_unused, event) {
+            var src = event.srcElement;
+            while (src) {
+                var data = ko.dataFor(src);
+                if (data && typeof data.handleClick === 'function') {
+                    data.handleClick();
+                    return;
+                }
+            }
+        };
+
         FileList.prototype._addFileEntry = function (fullPath) {
             var _this = this;
             var pathParts = normalizePath(fullPath);
@@ -1889,6 +1900,7 @@ var teapo;
         };
 
         RuntimeFolderEntry.prototype.handleClick = function () {
+            this.toggleExpand();
             this._handleClick();
         };
 
@@ -2611,7 +2623,7 @@ var teapo;
         };
 
         ApplicationShell.prototype.loadText = function () {
-            this._load(function (fileReader, file) {
+            this._loadToDoc(function (fileReader, file) {
                 return fileReader.readAsText(file);
             }, function (data, docState) {
                 return docState.setProperty(null, data);
@@ -2619,7 +2631,7 @@ var teapo;
         };
 
         ApplicationShell.prototype.loadBase64 = function () {
-            this._load(function (fileReader, file) {
+            this._loadToDoc(function (fileReader, file) {
                 return fileReader.readAsArrayBuffer(file);
             }, function (data, docState) {
                 var binary = [];
@@ -2634,8 +2646,45 @@ var teapo;
             });
         };
 
-        ApplicationShell.prototype._load = function (requestLoad, applyData) {
+        ApplicationShell.prototype.loadZip = function () {
             var _this = this;
+            this._load(function (fileReader, file) {
+                return fileReader.readAsArrayBuffer(file);
+            }, function (data, file) {
+                zip.useWebWorkers = false;
+                zip.createReader(new zip.BlobReader(file), function (reader) {
+                    reader.getEntries(function (entries) {
+                        var folder = prompt('/', 'Add ' + entries.length + ' files from zip to a virtual folder:');
+
+                        if (!folder)
+                            return;
+
+                        if (folder.charAt(0) !== '/')
+                            folder = '/' + folder;
+                        if (folder.charAt(folder.length - 1) !== '/')
+                            folder = folder + '/';
+
+                        entries.forEach(function (entry) {
+                            if (entry.directory)
+                                return;
+
+                            var writer = new zip.TextWriter();
+                            entry.getData(writer, function (text) {
+                                var virtFilename = folder + entry.filename;
+                                var fileEntry = _this.fileList.getFileEntry(virtFilename) || _this.fileList.createFileEntry(virtFilename);
+                                var docStorage = _this._storage.getDocument(fileEntry.fullPath()) || _this._storage.createDocument(fileEntry.fullPath());
+
+                                docStorage.setProperty(null, text);
+                            });
+                        });
+                    });
+                }, function (error) {
+                    alert('Zip file error: ' + error);
+                });
+            });
+        };
+
+        ApplicationShell.prototype._load = function (requestLoad, processData) {
             this.toolbarExpanded(false);
 
             var input = document.createElement('input');
@@ -2655,25 +2704,32 @@ var teapo;
                         return;
                     }
 
-                    try  {
-                        var filename = prompt('Suggested filename:', input.files[0].name);
-
-                        if (!filename)
-                            return;
-
-                        var fileEntry = _this.fileList.createFileEntry(filename);
-                        var docStorage = _this._storage.createDocument(fileEntry.fullPath());
-
-                        applyData(fileReader.result, docStorage);
-                    } catch (error) {
-                        alert('parsing ' + error.message + ' ' + error.stack);
-                    }
+                    processData(fileReader.result, input.files[0]);
                 };
 
                 requestLoad(fileReader, input.files[0]);
             };
 
             input.click();
+        };
+
+        ApplicationShell.prototype._loadToDoc = function (requestLoad, applyData) {
+            var _this = this;
+            this._load(requestLoad, function (data, file) {
+                try  {
+                    var filename = prompt('Suggested filename:', file.name);
+
+                    if (!filename)
+                        return;
+
+                    var fileEntry = _this.fileList.createFileEntry(filename);
+                    var docStorage = _this._storage.createDocument(fileEntry.fullPath());
+
+                    applyData(data, docStorage);
+                } catch (error) {
+                    alert('parsing ' + error.message + ' ' + error.stack);
+                }
+            });
         };
 
         /**
