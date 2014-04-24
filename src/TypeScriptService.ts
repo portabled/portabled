@@ -15,7 +15,7 @@ module teapo {
     logLevels = {
       information: false,
       debug: false,
-      warning: false,
+      warning: true,
       error: true,
       fatal: true
     };
@@ -28,6 +28,10 @@ module teapo {
 
     /** Files added to the compiler/parser scope, by full path. */
     scripts: { [fullPath: string]: TypeScriptService.Script; } = {};
+
+    log: { logLevel: string; text: string; }[] = null;
+  
+    private _logLevel: string = null;
 
 
     constructor() {
@@ -72,11 +76,26 @@ module teapo {
           return { log: (text: string) => this._log(text) };
         },
         getLocalizedDiagnosticMessages: () => null,
-        information: () => this.logLevels.information,
-        debug: () => this.logLevels.debug,
-        warning: () => this.logLevels.warning,
-        error: () => this.logLevels.error,
-        fatal: () => this.logLevels.fatal,
+        information: () => {
+          this._logLevel = 'information';
+          return this.logLevels.information;
+        },
+        debug: () => {
+          this._logLevel = 'debug';
+          return this.logLevels.debug;
+        },
+        warning: () => {
+          this._logLevel = 'warning';
+          return this.logLevels.warning;
+        },
+        error: () => {
+          this._logLevel = 'error';
+          return this.logLevels.error;
+        },
+        fatal: () => {
+          this._logLevel = 'fatal';
+          return this.logLevels.fatal;
+        },
         log: (text: string) => this._log(text),
         resolveRelativePath: (path: string) => {
           var result = path;
@@ -103,7 +122,16 @@ module teapo {
     }
 
     private _log(text) {
-      // console.log(text);
+      if (this.logLevels[this._logLevel]) {
+        console.log(this._logLevel, text);
+        if (this.log) {
+          var msg = {
+            logLevel: this._logLevel,
+            text: text
+          };
+          this.log.push(msg);
+        }
+      }
     }
   }
 

@@ -21,6 +21,7 @@ module teapo {
     fileList: FileList = null;
 
     toolbarExpanded = ko.observable(false);
+    statusText = ko.observable('ready.');
 
     private _selectedDocState: DocumentState = null;
     private _editorElement: HTMLElement = null;
@@ -285,7 +286,7 @@ module teapo {
       this.toolbarExpanded(false);
 
       var filename = this.saveFileName();
-      var blob = new Blob(['<!doctype html>\n', document.documentElement.outerHTML], {type: 'application/octet-stream'});
+      var blob: Blob = new (<any>Blob)(['<!doctype html>\n', document.documentElement.outerHTML], {type: 'application/octet-stream'});
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
@@ -388,7 +389,7 @@ module teapo {
       var newEditorElement: HTMLElement = null;
       if (newDocState) {
         var onchanged = () => this._selectedFileEditorChanged();
-        newEditorElement = newDocState.editor().open(onchanged);
+        newEditorElement = newDocState.editor().open(onchanged, this.statusText);
       }
 
       if (newEditorElement!==this._editorElement) {

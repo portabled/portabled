@@ -11,6 +11,7 @@ module teapo {
     private static _noSingleAutoCompletion = { completeSingle: false };
     private _positionSaveTimeout = 0;
     private _positionSaveClosure = () => this._performPositionSave();
+    private _triggerCompletionPos: CodeMirror.Pos = null;
 
     constructor(
       shared: CodeMirrorEditor.SharedState,
@@ -61,6 +62,7 @@ module teapo {
       var delay = forced ? 1 : CompletionCodeMirrorEditor.completionDelay;
 
       this._completionTimeout = setTimeout(this._completionClosure, delay);
+      this._triggerCompletionPos = this.doc().getCursor();
     }
 
     cancelCompletion() {
@@ -94,10 +96,17 @@ module teapo {
     }
 
     private _oncursorActivity() {
-//      if (this._completionTimeout) {
-//        clearTimeout(this._completionTimeout);
-//        this._completionTimeout = 0;
-//      }
+      
+      // cancel completion in case of cursor activity
+      var pos = this.doc().getCursor();
+      if (this._triggerCompletionPos &&
+        (this._triggerCompletionPos.ch !== pos.ch || this._triggerCompletionPos.line !== pos.line)) {
+
+        if (!this._forcedCompletion && this._completionTimeout) {
+          clearTimeout(this._completionTimeout);
+          this._completionTimeout = 0;
+        }
+      }
 
       this.handleCursorActivity();
 

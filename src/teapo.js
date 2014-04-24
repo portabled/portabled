@@ -14,7 +14,7 @@ var teapo;
             this.logLevels = {
                 information: false,
                 debug: false,
-                warning: false,
+                warning: true,
                 error: true,
                 fatal: true
             };
@@ -22,6 +22,8 @@ var teapo;
             this.compilationSettings = new TypeScript.CompilationSettings();
             /** Files added to the compiler/parser scope, by full path. */
             this.scripts = {};
+            this.log = null;
+            this._logLevel = null;
             var factory = new TypeScript.Services.TypeScriptServicesFactory();
             this.service = factory.createPullLanguageService(this._createLanguageServiceHost());
         }
@@ -73,18 +75,23 @@ var teapo;
                     return null;
                 },
                 information: function () {
+                    _this._logLevel = 'information';
                     return _this.logLevels.information;
                 },
                 debug: function () {
+                    _this._logLevel = 'debug';
                     return _this.logLevels.debug;
                 },
                 warning: function () {
+                    _this._logLevel = 'warning';
                     return _this.logLevels.warning;
                 },
                 error: function () {
+                    _this._logLevel = 'error';
                     return _this.logLevels.error;
                 },
                 fatal: function () {
+                    _this._logLevel = 'fatal';
                     return _this.logLevels.fatal;
                 },
                 log: function (text) {
@@ -118,7 +125,16 @@ var teapo;
         };
 
         TypeScriptService.prototype._log = function (text) {
-            // console.log(text);
+            if (this.logLevels[this._logLevel]) {
+                console.log(this._logLevel, text);
+                if (this.log) {
+                    var msg = {
+                        logLevel: this._logLevel,
+                        text: text
+                    };
+                    this.log.push(msg);
+                }
+            }
         };
         return TypeScriptService;
     })();
@@ -180,6 +196,7 @@ var teapo;
             this._doc = null;
             this._text = null;
             this._positionOnOpen = false;
+            this.statusText = ko.observable(null);
         }
         CodeMirrorEditor.standardEditorConfiguration = function () {
             return {
@@ -194,16 +211,17 @@ var teapo;
                 foldGutter: true,
                 gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
                 tabSize: 2,
-                extraKeys: { "Tab": "indentMore", "Shift-Tab": "indentLess" }
+                extraKeys: { "Tab": "indentMore", "Shift-Tab": "indentLess", "Ctrl-/": "toggleComment", "Ctrl-?": "toggleComment" }
             };
         };
 
         /**
         * Invoked when a file is selected in the file list/tree and brought open.
         */
-        CodeMirrorEditor.prototype.open = function (onchange) {
+        CodeMirrorEditor.prototype.open = function (onchange, statusText) {
             var _this = this;
             this._shared.editor = this;
+            this.statusText = statusText;
 
             // storing passed function
             // (it should be invoked for any change to trigger saving)
@@ -483,6 +501,7 @@ var teapo;
             this._positionSaveClosure = function () {
                 return _this._performPositionSave();
             };
+            this._triggerCompletionPos = null;
         }
         /**
         * Subscribing to cursor activity.
@@ -528,6 +547,7 @@ var teapo;
             var delay = forced ? 1 : CompletionCodeMirrorEditor.completionDelay;
 
             this._completionTimeout = setTimeout(this._completionClosure, delay);
+            this._triggerCompletionPos = this.doc().getCursor();
         };
 
         CompletionCodeMirrorEditor.prototype.cancelCompletion = function () {
@@ -561,10 +581,15 @@ var teapo;
         };
 
         CompletionCodeMirrorEditor.prototype._oncursorActivity = function () {
-            //      if (this._completionTimeout) {
-            //        clearTimeout(this._completionTimeout);
-            //        this._completionTimeout = 0;
-            //      }
+            // cancel completion in case of cursor activity
+            var pos = this.doc().getCursor();
+            if (this._triggerCompletionPos && (this._triggerCompletionPos.ch !== pos.ch || this._triggerCompletionPos.line !== pos.line)) {
+                if (!this._forcedCompletion && this._completionTimeout) {
+                    clearTimeout(this._completionTimeout);
+                    this._completionTimeout = 0;
+                }
+            }
+
             this.handleCursorActivity();
 
             if (this._positionSaveTimeout)
@@ -660,7 +685,7 @@ var teapo;
         */
         function getType(fullPath) {
             // must iterate in reverse, so more generic types get used last
-            var keys = Object.keys(teapo.EditorType);
+            var keys = Object.keys(EditorType);
             for (var i = 0; i < keys.length; i++) {
                 var t = this[keys[i]];
                 if (t.canEdit && t.canEdit(fullPath))
@@ -1055,6 +1080,10 @@ var teapo;
             };
             this._delayedHandleChangeTimeout = 0;
             this._delayedHandleChangeArg = null;
+            this._delayedHandleCursorActivityClosure = function () {
+                return _this._delayedHandleCursorActivity();
+            };
+            this._delayedHandleCursorActivityTimeout = 0;
         }
         TypeScriptEditor.prototype.changes = function () {
             if (this._bufferChanges.length) {
@@ -1072,6 +1101,7 @@ var teapo;
         */
         TypeScriptEditor.prototype.handleOpen = function () {
             this._updateGutter();
+            this._triggerStatusUpdate();
 
             // handling situation where an error refresh was queued,
             // but did not finish when the document was closed last time
@@ -1093,6 +1123,11 @@ var teapo;
                     clearTimeout(this._updateDiagnosticsTimeout);
 
                 this._updateDiagnosticsTimeout = -1;
+            }
+
+            if (this._delayedHandleCursorActivityTimeout) {
+                clearTimeout(this._delayedHandleCursorActivityTimeout);
+                this._delayedHandleCursorActivityTimeout = 0;
             }
         };
 
@@ -1152,6 +1187,9 @@ var teapo;
 
             // trigger error refresh and completion
             this._triggerDiagnosticsUpdate();
+
+            // trigger status update -- do it after normal reaction, so it settles a bit
+            this._triggerStatusUpdate();
         };
 
         TypeScriptEditor.prototype.handleRemove = function () {
@@ -1169,6 +1207,8 @@ var teapo;
             if (this._docSymbolMarks.length) {
                 var doc = this.doc();
                 var cursorPos = doc.getCursor();
+
+                this._triggerStatusUpdate();
 
                 for (var i = 0; i < this._docSymbolMarks.length; i++) {
                     var mpos = this._docSymbolMarks[i].find();
@@ -1188,6 +1228,39 @@ var teapo;
             this._updateDiagnosticsTimeout = setTimeout(this._updateSymbolMarksClosure, TypeScriptEditor.symbolUpdateDelay);
         };
 
+        TypeScriptEditor.prototype._triggerStatusUpdate = function () {
+            if (this._delayedHandleCursorActivityTimeout)
+                clearTimeout(this._delayedHandleCursorActivityTimeout);
+            this._delayedHandleCursorActivityTimeout = setTimeout(this._delayedHandleCursorActivityClosure, 200);
+        };
+
+        TypeScriptEditor.prototype._delayedHandleCursorActivity = function () {
+            this._delayedHandleCursorActivityTimeout = 0;
+
+            this._updateStatusText();
+        };
+
+        TypeScriptEditor.prototype._updateStatusText = function () {
+            var doc = this.doc();
+            var cur = doc.getCursor();
+            var offset = doc.indexFromPos(cur);
+
+            var statusText = cur.line + ':' + cur.ch;
+            var def = this._typescript.service.getTypeAtPosition(this.docState.fullPath(), offset);
+            if (def)
+                statusText += ' ' + def.kind + ' ' + def.memberName;
+
+            var sig = this._typescript.service.getSignatureAtPosition(this.docState.fullPath(), offset);
+            if (sig && sig.formal && sig.formal[sig.activeFormal]) {
+                var sigg = sig.formal[sig.activeFormal];
+                statusText += ' ' + sigg.signatureInfo + (sigg.docComment ? '\n/** ' + sigg.docComment + ' */' : '');
+            } else if (def && def.docComment) {
+                statusText += '\n/**' + def.docComment + '*/';
+            }
+
+            this.statusText(statusText);
+        };
+
         TypeScriptEditor.prototype.debug = function () {
             var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
             for (var i = 0; i < emits.outputFiles.length; i++) {
@@ -1197,24 +1270,19 @@ var teapo;
         };
 
         TypeScriptEditor.prototype.build = function () {
+            this._typescript.log = [];
+
             var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
 
-            var diag = [];
-            var errorCount = 0;
-
-            for (var i = 0; i < emits.diagnostics.length; i++) {
-                var e = emits.diagnostics[i];
-                var info = e.info();
-                if (info.category === 1 /* Error */)
-                    errorCount++;
-                diag.push(TypeScript.DiagnosticCategory[info.category].charAt(0) + ' ' + e.fileName() + ' [' + e.line() + ':' + e.character + '] ' + info.message);
-            }
-
-            if (diag.length) {
-                var msg = 'Building ' + this.docState.fullPath() + (emits.outputFiles.length ? '' : ' failed') + (errorCount ? errorCount + ' errors' : '') + (diag.length - errorCount ? (diag.length - errorCount) + ' warnings' : '') + ':\n' + diag.join('\n');
+            if (this._typescript.log.length || emits.emitOutputResult !== 0 /* Succeeded */) {
+                var msg = 'Building ' + this.docState.fullPath() + ' ' + emits.emitOutputResult + '\n' + this._typescript.log.map(function (msg) {
+                    return msg.logLevel + ' ' + msg.text;
+                }).join('\n');
 
                 alert(msg);
             }
+
+            this._typescript.log = null;
 
             for (var i = 0; i < emits.outputFiles.length; i++) {
                 var ou = emits.outputFiles[i];
@@ -2589,6 +2657,7 @@ var teapo;
             this.saveDelay = 1500;
             this.fileList = null;
             this.toolbarExpanded = ko.observable(false);
+            this.statusText = ko.observable('ready.');
             this._selectedDocState = null;
             this._editorElement = null;
             this._editorHost = null;
@@ -2936,7 +3005,7 @@ var teapo;
                 var onchanged = function () {
                     return _this._selectedFileEditorChanged();
                 };
-                newEditorElement = newDocState.editor().open(onchanged);
+                newEditorElement = newDocState.editor().open(onchanged, this.statusText);
             }
 
             if (newEditorElement !== this._editorElement) {

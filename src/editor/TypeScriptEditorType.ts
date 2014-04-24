@@ -143,6 +143,9 @@ module teapo {
     private _delayedHandleChangeClosure = () => this._delayedHandleChanges();
     private _delayedHandleChangeTimeout = 0;
     private _delayedHandleChangeArg: CodeMirror.EditorChange = null;
+    
+    private _delayedHandleCursorActivityClosure = () => this._delayedHandleCursorActivity();
+    private _delayedHandleCursorActivityTimeout = 0;
 
     constructor(
       private _typescript: TypeScriptService,
@@ -168,6 +171,7 @@ module teapo {
     handleOpen() {
 
       this._updateGutter();
+      this._triggerStatusUpdate();
 
       // handling situation where an error refresh was queued,
       // but did not finish when the document was closed last time
@@ -189,6 +193,11 @@ module teapo {
           clearTimeout(this._updateDiagnosticsTimeout);
 
         this._updateDiagnosticsTimeout = -1;
+      }
+      
+      if (this._delayedHandleCursorActivityTimeout) {
+        clearTimeout(this._delayedHandleCursorActivityTimeout);
+        this._delayedHandleCursorActivityTimeout = 0;
       }
     }
 
@@ -249,7 +258,11 @@ module teapo {
 
       // trigger error refresh and completion
       this._triggerDiagnosticsUpdate();
+      
+      // trigger status update -- do it after normal reaction, so it settles a bit
+      this._triggerStatusUpdate();
     }
+
 
     handleRemove() {
       delete this._typescript.scripts[this.docState.fullPath()];
@@ -267,6 +280,8 @@ module teapo {
       if (this._docSymbolMarks.length) {
         var doc = this.doc();
         var cursorPos = doc.getCursor();
+
+        this._triggerStatusUpdate();
 
         for (var i = 0; i < this._docSymbolMarks.length; i++) {
           var mpos = this._docSymbolMarks[i].find();
@@ -290,6 +305,42 @@ module teapo {
         TypeScriptEditor.symbolUpdateDelay);
     }
 
+    private _triggerStatusUpdate() {
+      if (this._delayedHandleCursorActivityTimeout)
+        clearTimeout(this._delayedHandleCursorActivityTimeout);
+      this._delayedHandleCursorActivityTimeout = setTimeout(this._delayedHandleCursorActivityClosure, 200);
+    }
+
+
+    private _delayedHandleCursorActivity() {
+      this._delayedHandleCursorActivityTimeout = 0;
+
+      this._updateStatusText();
+    }
+
+    private _updateStatusText() {
+      var doc = this.doc();
+      var cur = doc.getCursor();
+      var offset = doc.indexFromPos(cur);
+
+      var statusText = cur.line + ':' + cur.ch;
+      var def = this._typescript.service.getTypeAtPosition(this.docState.fullPath(), offset);
+      if (def)
+        statusText += ' ' + def.kind + ' ' + def.memberName;
+
+      var sig = this._typescript.service.getSignatureAtPosition(this.docState.fullPath(), offset);
+      if (sig && sig.formal && sig.formal[sig.activeFormal]) {
+        var sigg = sig.formal[sig.activeFormal];
+        statusText += ' ' + sigg.signatureInfo + (sigg.docComment ? '\n/** ' + sigg.docComment + ' */' : '');
+      }
+      else if (def && def.docComment) {
+        statusText += '\n/**' + def.docComment + '*/';
+      }
+        
+      this.statusText(statusText);
+    }
+
+
     debug() {
       var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
       for (var i = 0; i < emits.outputFiles.length; i++) {
@@ -302,31 +353,19 @@ module teapo {
 
     build() {
 
+      this._typescript.log = [];
+
       var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
 
-      var diag = [];
-      var errorCount = 0;
-      
-      for (var i = 0; i < emits.diagnostics.length; i++) {
-        var e = emits.diagnostics[i];
-        var info = e.info();
-        if (info.category === TypeScript.DiagnosticCategory.Error)
-          errorCount++;
-        diag.push(
-          TypeScript.DiagnosticCategory[info.category].charAt(0) + ' ' +
-          e.fileName() + ' [' + e.line() + ':' + e.character + '] ' + info.message);
-      }
-
-      if (diag.length) { 
+      if (this._typescript.log.length || emits.emitOutputResult !== TypeScript.EmitOutputResult.Succeeded) { 
         var msg = 
-            'Building ' +this.docState.fullPath() +
-            (emits.outputFiles.length ? '' : ' failed') +
-            (errorCount ? errorCount + ' errors' : '') +
-            (diag.length - errorCount ? (diag.length - errorCount) + ' warnings' : '') + ':\n' +
-            diag.join('\n');
+          'Building ' + this.docState.fullPath() + ' ' + emits.emitOutputResult + '\n' +
+          this._typescript.log.map(msg => msg.logLevel + ' ' + msg.text).join('\n');
 
         alert(msg);
       }
+      
+      this._typescript.log = null;
 
       for (var i = 0; i < emits.outputFiles.length; i++) {
         var ou = emits.outputFiles[i];
