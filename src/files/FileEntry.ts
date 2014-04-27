@@ -1,19 +1,27 @@
-module teapo {
+module teapo.files {
 
   /**
-   * File entry in file list or tree.
+   * Node in the project tree widget representing a file as a ViewModel for Knockout.js.
    */
-  export interface FileEntry {
+  export class FileEntry {
 
-    fullPath(): string;
-    name(): string;
-    parent(): FolderEntry;
+    /** Full path to the file (see also name property for just name). Path is normalized before assigned. */
+    path: string;
 
-    nestLevel(): number;
+    /** Meant as read-only for KO bindings. Modified internally, when clicking handlers are processed.. */
+    isSelected = ko.observable(false);
 
-    isSelected: KnockoutObservable<boolean>;
+    /** Meant as read-only for KO bindings. Modified by DocumentHandler for this file. */
+    iconClass = ko.observable('teapo-default-file-icon');
 
-    handleClick(): void;
+    constructor(
+      /** May be null for a file in the root directory. */
+      public parent: FolderEntry,
+      /** Simple name (without path but with fot-extension if any). See also path for full path. */
+      public name: string) {
+      this.path = parent ? (parent.path + name) : ('/' + name);
+    }
+
   }
 
 }

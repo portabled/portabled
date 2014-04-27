@@ -26,7 +26,7 @@ module teapo {
       var fileNames = this._storage.documentNames();
       for (var i = 0; i < fileNames.length; i++) {
 
-        if (fileNames[i].charAt(0)!=='/')
+        if (fileNames[i].charAt(0) !== '/')
           continue; // ignore hidden files
 
         this._addFileEntry(fileNames[i]);
@@ -37,7 +37,7 @@ module teapo {
      * Find a file from its path.
      */
     getFileEntry(fullPath: string): FileEntry {
-      if (fullPath.charAt(0)!=='/')
+      if (fullPath.charAt(0) !== '/')
         return null; // ignore hidden files
 
       return this._filesByFullPath[fullPath];
@@ -96,14 +96,14 @@ module teapo {
 
     private _addFileEntry(fullPath: string) {
       var pathParts = normalizePath(fullPath);
-      if (pathParts.length===0)
+      if (pathParts.length === 0)
         return; // empty path - noop
 
       var parent: RuntimeFolderEntry = null;
       var folders = this.folders;
       var files = this.files;
 
-      for (var i = 0; i < pathParts.length-1; i++) {
+      for (var i = 0; i < pathParts.length - 1; i++) {
         var folder = this._insertOrLookupFolder(parent, folders, pathParts, i);
 
         folders = folder.folders;
@@ -111,16 +111,16 @@ module teapo {
         parent = folder;
       }
 
-      var fileName = pathParts[pathParts.length-1];
+      var fileName = pathParts[pathParts.length - 1];
 
       var fileArray = files();
       var fileIndex = insertionIndexOfEntry(fileArray, fileName);
       var file = <RuntimeFileEntry>fileArray[fileIndex];
 
-      if (file && file.name()===fileName)
-        throw new Error('File already exists: '+file.fullPath()+'.');
+      if (file && file.name() === fileName)
+        throw new Error('File already exists: ' + file.fullPath() + '.');
 
-      var fullPath = '/'+pathParts.join('/');
+      var fullPath = '/' + pathParts.join('/');
       file = new RuntimeFileEntry(
         fullPath,
         fileName,
@@ -145,8 +145,8 @@ module teapo {
       var folderIndex = insertionIndexOfEntry(folderArray, folderName);
       var folder = <RuntimeFolderEntry>folderArray[folderIndex];
 
-      if (!folder || folder.name()!==folderName) {
-        var folderPath = '/'+pathParts.slice(0,i+1).join('/');
+      if (!folder || folder.name() !== folderName) {
+        var folderPath = '/' + pathParts.slice(0, i + 1).join('/');
         folder = new RuntimeFolderEntry(
           folderPath,
           folderName,
@@ -163,7 +163,7 @@ module teapo {
     }
 
     private _handleFileClick(file: RuntimeFileEntry) {
-      if (this.selectedFile()===file)
+      if (this.selectedFile() === file)
         return;
 
       this._updateSelectionProperties(file);
@@ -220,7 +220,7 @@ module teapo {
     parent(): FolderEntry { return this._parent; }
 
     nestLevel(): number {
-      return this._parent ? this._parent.nestLevel()+1 : 0;
+      return this._parent ? this._parent.nestLevel() + 1 : 0;
     }
 
     handleClick(): void {
@@ -231,7 +231,7 @@ module teapo {
     toggleExpand() {
       this.isExpanded(this.isExpanded() ? false : true);
     }
- }
+  }
 
   class RuntimeFileEntry implements teapo.FileEntry {
 
@@ -251,7 +251,7 @@ module teapo {
     parent(): FolderEntry { return this._parent; }
 
     nestLevel(): number {
-      return this._parent ? this._parent.nestLevel()+1 : 0;
+      return this._parent ? this._parent.nestLevel() + 1 : 0;
     }
 
     handleClick(): void {
@@ -280,12 +280,12 @@ module teapo {
 
     var result: string[] = [];
     for (var i = 0; i < split.length; i++) {
-      if (split[i]==='..') {
+      if (split[i] === '..') {
         if (result.length)
           result.length--;
         continue;
       }
-      else if (split[i]==='.' || split[i]==='') {
+      else if (split[i] === '.' || split[i] === '') {
         continue;
       }
       else {
@@ -297,14 +297,14 @@ module teapo {
 
   function stripOuterSlashes(path: string) {
     var start = 0;
-    while (path.charAt(start)==='/')
-      start ++;
+    while (path.charAt(start) === '/')
+      start++;
 
-    var end = Math.max(start, path.length-1);
-    while (end>start && path.charAt(end)==='/')
+    var end = Math.max(start, path.length - 1);
+    while (end > start && path.charAt(end) === '/')
       end--;
 
-    var pathMid = start===0 && end===path.length-1 ? path : path.slice(start,end+1);
+    var pathMid = start === 0 && end === path.length - 1 ? path : path.slice(start, end + 1);
     return pathMid;
   }
 }
