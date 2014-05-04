@@ -10,7 +10,7 @@ module teapo.storage.attached {
      * Timestamp of when the state was saved.
      */
     editedUTC: number;
-    
+
     /**
      * Load all the data from the storage,
      * returning an instance of UpdateStorage in the end.
@@ -20,7 +20,7 @@ module teapo.storage.attached {
      * 'failed' finishing loading with an error.
      */
     load(recipient: LoadStorageRecipient);
-    
+
     /**
      * Destroy the state in the storage, and load another state instead.
      * After that return an instance of UpdateStorage.

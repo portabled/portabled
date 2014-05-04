@@ -31,9 +31,9 @@ module teapo {
   export module EditorType {
 
     /**
-     * Registering HtmlEditorType.
+     * Registering CssEditorType.
      */
-    export var CodeMirror: EditorType = new CssEditorType();
+    export var Css: EditorType = new CssEditorType();
   }
 
 }

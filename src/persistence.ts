@@ -50,6 +50,8 @@ module teapo {
 
     getProperty(name: string): string;
     setProperty(name: string, value: string): void;
+
+    savingFiles: KnockoutObservableArray<string>;
   }
 
   /**
@@ -134,9 +136,9 @@ module teapo {
 
   interface ExecuteSqlDelegate {
     (sqlStatement: string,
-      arguments?: any[],
-      callback?: (transaction: SQLTransaction, result: SQLResultSet) => void,
-      errorCallback?: (transaction: SQLTransaction, resultSet: SQLResultSet) => void): void;
+      arguments: any[],
+      callback: (transaction: SQLTransaction, result: SQLResultSet) => void,
+      errorCallback: (transaction: SQLTransaction, resultSet: SQLError) => void): void;
   }
 
   class RuntimeDocumentStorage implements DocumentStorage {
@@ -150,7 +152,11 @@ module teapo {
     private _executeSql: ExecuteSqlDelegate = null;
     private _insertMetadataSql = '';
     private _updateMetadataSql = '';
+    
+    _savingCache = new FileSavingCache();
 
+    savingFiles = this._savingCache.savingFiles;
+    
     constructor(
       public handler: DocumentStorageHandler,
       forceLoadFromDom: boolean) {
@@ -170,13 +176,15 @@ module teapo {
 
         this._executeSql = (
           sqlStatement: string,
-          args?: any[],
-          callback?: (transaction: SQLTransaction, result: SQLResultSet) => void,
-          errorCallback?: (transaction: SQLTransaction, error: SQLError) => void) => {
+          args: any[],
+          callback: (transaction: SQLTransaction, result: SQLResultSet) => void,
+          errorCallback: (transaction: SQLTransaction, error: SQLError) => void) => {
 
-          var errorCallbackSafe = errorCallback;
-          if (!errorCallbackSafe)
-            errorCallbackSafe = (t: SQLTransaction, e: SQLError) => alert(e + ' ' + e.message + '\n' + sqlStatement + '\n' + args);
+          var errorCallbackSafe = (t: SQLTransaction, e: SQLError) => {
+            alert(e + ' ' + e.message + '\n' + sqlStatement + '\n' + args);
+            errorCallback(t, e);
+          };
+            
           db.transaction((t) => t.executeSql(sqlStatement, args, callback, errorCallbackSafe));
         };
         this._insertMetadataSql = 'INSERT INTO "*metadata" (name, value) VALUES(?,?)';
@@ -205,7 +213,11 @@ module teapo {
             this._metadataElement,
             this._metadataProperties,
             this._executeSql,
-            () => {
+            sqlError => {
+              if (sqlError) {
+                this.handler.documentStorageCreated(new Error('loadPropertiesFromWebSql:*metadata: ' + sqlError.message), null);
+                return;
+              }
 
               var wsEdited = safeParseInt(this._metadataProperties.edited);
               if (!wsEdited || domEdited && domEdited > wsEdited)
@@ -276,14 +288,38 @@ module teapo {
         this._metadataElement.innerHTML = encodeForInnerHTML(value);
 
       if (this._executeSql) {
-        if (existingProperty)
-          this._executeSql(this._updateMetadataSql, [value, name]);
-        else
-          this._executeSql(this._insertMetadataSql, [name, value]);
-      }
+        if (existingProperty) {
+          this._savingCache.beginSave('*metadata');
+          this._executeSql(
+            this._updateMetadataSql,
+            [value, name],
+            (t, result) => {
+              this._savingCache.endSave('*metadata');
+              if (name !== 'edited')
+                this.setProperty('edited', <any>Date.now());
+            },
+            (t, sqlError) => {
+              alert('setProperty(' + name + ',' + value + ') ' + this._updateMetadataSql + ' [' + value + ',' + name + '] ' + sqlError.message);
+              this._savingCache.endSave('*metadata');
+            });
+        }
+        else {
+          this._savingCache.beginSave('*metadata');
+          this._executeSql(
+            this._insertMetadataSql,
+            [name, value],
+            (t, result) => {
+              this._savingCache.endSave('*metadata');
+              if (name !== 'edited')
+                this.setProperty('edited', <any>Date.now());
+            },
+            (t, sqlError) => {
+              alert('setProperty(' + name + ',' + value + ') ' + this._insertMetadataSql + ' [' + name + ',' + value + '] ' + sqlError.message);
+              this._savingCache.endSave('*metadata');
+            });
 
-      if (name !== 'edited')
-        this.setProperty('edited', <any>Date.now());
+        }
+      }
     }
 
 
@@ -307,12 +343,16 @@ module teapo {
 
         var completedAdding = () => {
           if (this._executeSql) {
+            this.handler.setStatus('Loading files from HTML: ' + addedFileCount + ' of ' + fullPathList.length + '... metadata...');
             this._executeSql(
               'CREATE TABLE "*metadata" (name TEXT, value TEXT)',
               [],
               (tr, r) => {
                 this.handler.documentStorageCreated(null, this);
-              }, null);
+              },
+              (tr,e) => {
+                alert('create *metadata ' + e.message);
+              });
           }
           else {
             this.handler.documentStorageCreated(null, this);
@@ -348,24 +388,50 @@ module teapo {
       };
 
       if (this._executeSql) {
-        this._dropAllTables(loadInClearState);
+        this.handler.setStatus('Loading files from HTML: deleting cached data...');
+        this._dropAllTables(sqlError => {
+          if (sqlError) {
+            this.handler.documentStorageCreated(new Error('Deleting existing table ' + sqlError.message), null);
+            return;
+          }
+          
+          loadInClearState();
+        });
       }
       else {
         loadInClearState();
       }
     }
 
-    private _dropAllTables(completed: () => void) {
+    private _dropAllTables(completed: (sqlError: SQLError) => void) {
       this._loadTableListFromWebsql(
         (tableList) => {
+
+          if (!tableList || !tableList.length) { 
+            completed(null);
+            return;
+          }
+
+          var deletedCount = 0;
+          var failed = false;
           for (var i = 0; i < tableList.length; i++) {
             this._executeSql(
               'DROP TABLE "' + tableList[i] + '"',
               [],
-              null, null);
+              (tr, r) => {
+                deletedCount++;
+                this.handler.setStatus('Loading files from HTML: deleting cached data (' + deletedCount + ' of ' + tableList.length+')...');
+                if (deletedCount == tableList.length)
+                  completed(null);
+              },
+              (tr, error) => {
+                if (!failed) {
+                  failed = true;
+                  completed(error);
+                }
+              });
           }
 
-          completed();
         });
     }
 
@@ -476,9 +542,46 @@ module teapo {
             }
           }
           callback(files);
+        },
+        (t, error) => {
+          this.handler.documentStorageCreated(new Error('_loadTableListFromWebsql ' + sql + ' ' + error.message), null);
         });
     }
   }
+
+  class FileSavingCache {
+
+    savingFiles = ko.observableArray<string>();
+    private _cache: { [fullPath: string]: number; } = {};
+    
+    constructor() { 
+    }
+
+    beginSave(fullPath: string) {
+      var num = this._cache[fullPath];
+      if (num) {
+        this._cache[fullPath]++;
+      }
+      else {
+        this.savingFiles.push(fullPath);
+        this._cache[fullPath] = 1;
+      }
+    }
+
+    endSave(fullPath: string) {
+      setTimeout(() => {
+        var num = this._cache[fullPath];
+        if (!num || !(num - 1)) {
+          delete this._cache[fullPath];
+          this.savingFiles.remove(fullPath);
+        }
+        else {
+          this._cache[fullPath]--;
+        }
+      }, 400);
+    }
+  }
+
 
   /**
    * Standard implementation of DocumentState.
@@ -574,10 +677,33 @@ module teapo {
         this._storeElement.innerHTML = encodeForInnerHTML(value);
 
       if (this._executeSql) {
-        if (existingProperty)
-          this._executeSql(this._updateSql, [value, name]);
-        else
-          this._executeSql(this._insertSql, [name, value]);
+        if (existingProperty) {
+          this._storage._savingCache.beginSave(this.fullPath());
+          this._executeSql(
+            this._updateSql,
+            [value, name],
+            (tr, r) => {
+              this._storage._savingCache.endSave(this.fullPath());
+              return;
+            },
+            (tr, e) => {
+              alert(this._fullPath + ' setProperty(' + name + ',' + value + ') ' + this._updateSql + ' ' + e.message);
+              this._storage._savingCache.endSave(this.fullPath());
+            });
+        }
+        else {
+          this._executeSql(
+            this._insertSql,
+            [name, value],
+            (tr, r) => {
+              this._storage._savingCache.endSave(this.fullPath());
+              return;
+            },
+            (tr, e) => {
+              alert(this._fullPath + 'setProperty(' + name + ',' + value + ') ' + this._insertSql + ' ' + e.message);
+              this._storage._savingCache.endSave(this.fullPath());
+            });
+        }
       }
 
       this._storage.setProperty('edited', <any>Date.now());
@@ -590,7 +716,13 @@ module teapo {
       removeScriptElement(this._storeElement);
 
       if (this._executeSql) {
-        this._executeSql('DROP TABLE "' + this._fullPath + '"');
+        this._executeSql(
+          'DROP TABLE "' + this._fullPath + '"',
+          null,
+          (tr, r) => null,
+          (tr, e) => {
+            alert('drop table ' + this._fullPath + ' ' + e.message);
+          });
       }
     }
 
@@ -690,15 +822,28 @@ module teapo {
 
         properties[a.name] = a.value;
 
-        if (executeSql)
-          executeSql(insertSQL, [a.name, a.value]);
+        if (executeSql) {
+          executeSql(
+            insertSQL,
+            [a.name, a.value],
+            (tr, r) => { return; },
+            (tr, e) => {
+              alert('loadPropertiesFromDom(' + tableName + ') ' + insertSQL + ' [' + a.name + ',' + a.value + '] ' + e.message);
+            });
+        }
       }
 
       // restore HTML-safe conversions
       var contentStr = decodeFromInnerHTML(script.innerHTML);
       properties[''] = contentStr;
       if (executeSql)
-        executeSql(insertSQL, ['', contentStr]);
+        executeSql(
+          insertSQL,
+          ['', contentStr],
+          (tr, r) => { return; },
+          (tr, e) => {
+            alert('loadPropertiesFromDom(' + tableName + ') ' + insertSQL + ' [,' + contentStr + '] ' + e.message);
+          });
     });
   }
 
@@ -707,7 +852,7 @@ module teapo {
     script: HTMLScriptElement,
     properties: any,
     executeSql: ExecuteSqlDelegate,
-    completed: () => void) {
+    completed: (error: SQLError) => void) {
 
     executeSql(
       'SELECT name, value from "' + tableName + '"',
@@ -724,7 +869,10 @@ module teapo {
             script.innerHTML = encodeForInnerHTML(row.value);
         }
 
-        completed();
+        completed(null);
+      },
+      (t, sqlError) => {
+        completed(sqlError);
       });
   }
 

@@ -1,5 +1,14 @@
 module teapo.storage.attached.localStorage {
 
+  function startsWith(str: string, prefix: string) {
+    if (!str) return !prefix;
+    if (!prefix) return false;
+    if (str.length < prefix.length) return false;
+    if (str.charCodeAt(0) !== prefix.charCodeAt(0)) return false;
+    if (str.slice(0, prefix.length) !== prefix) return false;
+    else return true;
+  }
+
   export class UpdateStorage implements attached.UpdateStorage {
 
     private _nameCache: { [name: string]: { [name: string]: string; }; } = {};

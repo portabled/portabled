@@ -668,9 +668,9 @@ var teapo;
 
     (function (EditorType) {
         /**
-        * Registering HtmlEditorType.
+        * Registering CssEditorType.
         */
-        EditorType.CodeMirror = new CssEditorType();
+        EditorType.Css = new CssEditorType();
     })(teapo.EditorType || (teapo.EditorType = {}));
     var EditorType = teapo.EditorType;
 })(teapo || (teapo = {}));
@@ -789,6 +789,7 @@ var teapo;
 
                 var inlineDocState = this._storageForBuild.getDocument(inlineFullPath);
                 if (!inlineDocState) {
+                    console.log('Inlining ' + inlineFullPath + ' failed: cannot find.');
                     continue;
                 }
 
@@ -2065,6 +2066,281 @@ var teapo;
         return pathMid;
     }
 })(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (files) {
+        /**
+        * Node in the project tree widget representing a file as a ViewModel for Knockout.js.
+        */
+        var FileEntry = (function () {
+            function FileEntry(/** May be null for a file in the root directory. */
+            parent, /** Simple name (without path but with fot-extension if any). See also path for full path. */
+            name) {
+                this.parent = parent;
+                this.name = name;
+                /** Meant as read-only for KO bindings. Modified internally, when clicking handlers are processed.. */
+                this.isSelected = ko.observable(false);
+                /** Meant as read-only for KO bindings. Modified by DocumentHandler for this file. */
+                this.iconClass = ko.observable('teapo-default-file-icon');
+                this.path = parent ? (parent.path + name) : ('/' + name);
+            }
+            return FileEntry;
+        })();
+        files.FileEntry = FileEntry;
+    })(teapo.files || (teapo.files = {}));
+    var files = teapo.files;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (_files) {
+        /**
+        * Whole file tree ViewModel for Knockout.js.
+        */
+        var FileList = (function () {
+            function FileList(files) {
+                /** Immediate children of the root folder. */
+                this.folders = ko.observableArray([]);
+                /** Files in the root folder. */
+                this.files = ko.observableArray([]);
+                /** Selected FileEntry (null if nothing is selected). */
+                this.selectedFile = ko.observable(null);
+                this._fileByPath = {};
+                if (files) {
+                    for (var i = 0; i < files.length; i++) {
+                        this.file(files[i]);
+                    }
+                }
+            }
+            /** Get or create file entry for a path. Creating FileEntry doesn't affect actual stored files, that is managed elsewhere. */
+            FileList.prototype.file = function (path) {
+                var entry = this._fileByPath[path];
+                if (entry)
+                    return entry;
+
+                var pathParts = _files.normalizePath(path);
+                if (!pathParts.length)
+                    return null;
+
+                var folder;
+                for (var i = 0; i < pathParts.length - 1; i++) {
+                    folder = this._addOrGetFolderEntry(pathParts[i], folder);
+                }
+
+                entry = this._addFileEntry(pathParts[pathParts.length - 1], folder);
+
+                this._fileByPath[entry.path] = entry;
+
+                return entry;
+            };
+
+            FileList.prototype._addOrGetFolderEntry = function (name, parent) {
+                var _this = this;
+                var folders = parent ? parent.folders : this.folders;
+                var result = teapo.find(folders(), function (f, index) {
+                    if (f.name < name)
+                        return;
+                    if (f.name === name)
+                        return f;
+                    var result = _this._createFolderEntry(parent, name);
+                    folders.splice(index, 0, result);
+                    return result;
+                });
+                if (!result) {
+                    result = this._createFolderEntry(parent, name);
+                    folders.push(result);
+                }
+                return result;
+            };
+
+            FileList.prototype._addFileEntry = function (name, parent) {
+                var _this = this;
+                var siblings = parent ? parent.files : this.files;
+
+                var result = teapo.find(siblings(), function (f, index) {
+                    if (f.name < name)
+                        return;
+                    if (f.name === name)
+                        return f;
+                    var result = _this._createChildFileEntry(parent, name);
+                    siblings.splice(index, 0, result);
+                    return result;
+                });
+
+                if (!result) {
+                    result = this._createChildFileEntry(parent, name);
+                    siblings.push(result);
+                }
+
+                return result;
+            };
+
+            FileList.prototype._createFolderEntry = function (parent, name) {
+                var f = new _files.FolderEntry(parent, name);
+                return f;
+            };
+
+            FileList.prototype._createChildFileEntry = function (parent, name) {
+                var f = new _files.FileEntry(parent, name);
+                return f;
+            };
+            return FileList;
+        })();
+        _files.FileList = FileList;
+    })(teapo.files || (teapo.files = {}));
+    var files = teapo.files;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (files) {
+        /**
+        * Node in the project tree widget representing a folder as a ViewModel for Knockout.js.
+        * Note that root folder is not represented a a folder.
+        */
+        var FolderEntry = (function () {
+            function FolderEntry(parent, name) {
+                this.parent = parent;
+                this.name = name;
+                /** List of subfolders in this folder. */
+                this.folders = ko.observableArray([]);
+                /** List of files in this folder (not including files in subfolders). */
+                this.files = ko.observableArray([]);
+                /** Expand state for tree node, preserved even if parent folder is being collapsed. */
+                this.isExpanded = ko.observable(false);
+                /** Whether selected file is in this folder. Meant to be read-only from KO. */
+                this.containsSelection = ko.observable(false);
+                /** Color is computed from the name hash. Meant to assign shades of color pseudo-randomly to improve visual navigation. */
+                this.color = '';
+                this.path = parent ? (parent.path + name + '/') : ('/' + name + '/');
+                this.color = FolderEntry.calculateColor(this.name);
+            }
+            /** Function used to calculate pseudo-random color. Exposed for easier testing. */
+            FolderEntry.calculateColor = function (name) {
+                var chan = [1, 1, 1];
+
+                var dist = 29;
+                if (name) {
+                    for (var i = 0; i < name.length; i++) {
+                        var ch = i % 3;
+                        var v = name.charCodeAt(i) % dist;
+                        var range = 1 / Math.floor(1 + i / 3);
+                        var chValue = v * range / dist;
+                        chan[i] -= chValue;
+                    }
+                }
+
+                var delta = 37;
+                var r = chan[0], g = chan[1], b = chan[2];
+                r = 255 - delta + delta * r;
+                g = 255 - delta + delta * g;
+                b = 255 - delta + delta * b;
+                var color = (r << 16) + (g << 8) + b;
+                color = color | 0x1000000;
+
+                var colorText = '#' + color.toString(16).slice(1);
+                return colorText;
+            };
+            return FolderEntry;
+        })();
+        files.FolderEntry = FolderEntry;
+    })(teapo.files || (teapo.files = {}));
+    var files = teapo.files;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (files) {
+        /**
+        * Convert string path into an array of path parts,
+        * processing '..' as necessary.
+        */
+        function normalizePath(path) {
+            if (!path)
+                return [];
+
+            var pathMid = stripOuterSlashes(path);
+            var split = pathMid.split('/');
+
+            var result = [];
+            for (var i = 0; i < split.length; i++) {
+                if (split[i] === '..') {
+                    if (result.length)
+                        result.length--;
+                    continue;
+                } else if (split[i] === '.' || split[i] === '') {
+                    continue;
+                } else {
+                    result.push(split[i]);
+                }
+            }
+            return result;
+        }
+        files.normalizePath = normalizePath;
+
+        function stripOuterSlashes(path) {
+            var start = 0;
+            while (path.charAt(start) === '/')
+                start++;
+
+            var end = Math.max(start, path.length - 1);
+            while (end > start && path.charAt(end) === '/')
+                end--;
+
+            var pathMid = start === 0 && end === path.length - 1 ? path : path.slice(start, end + 1);
+            return pathMid;
+        }
+    })(teapo.files || (teapo.files = {}));
+    var files = teapo.files;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    function addEventListener(element, type, listener) {
+        if (element.addEventListener) {
+            element.addEventListener(type, listener);
+        } else {
+            var ontype = 'on' + type;
+
+            if (element.attachEvent) {
+                element.attachEvent('on' + type, listener);
+            } else if (element[ontype]) {
+                element[ontype] = listener;
+            }
+        }
+    }
+    teapo.addEventListener = addEventListener;
+
+    function addEventListenerWithDelay(element, type, listener) {
+        var queued = false;
+        var storedEvent;
+
+        var listenerClosure = function () {
+            queued = false;
+            listener(storedEvent);
+            storedEvent = null;
+        };
+
+        addEventListener(element, type, function (event) {
+            storedEvent = event;
+            if (!queued) {
+                queued = true;
+                if (typeof requestAnimationFrame === 'function')
+                    requestAnimationFrame(listenerClosure);
+                else
+                    setTimeout(listenerClosure, 1);
+            }
+        });
+    }
+    teapo.addEventListenerWithDelay = addEventListenerWithDelay;
+
+    function find(array, predicate) {
+        var result = null;
+        for (var i = 0; i < array.length; i++) {
+            var x = array[i];
+            var p = predicate(x, i);
+            if (p)
+                return p;
+        }
+    }
+    teapo.find = find;
+})(teapo || (teapo = {}));
 /// <reference path='typings/knockout.d.ts' />
 var teapo;
 (function (teapo) {
@@ -2117,6 +2393,8 @@ var teapo;
             this._executeSql = null;
             this._insertMetadataSql = '';
             this._updateMetadataSql = '';
+            this._savingCache = new FileSavingCache();
+            this.savingFiles = this._savingCache.savingFiles;
             this.document = this.handler.document ? this.handler.document : document;
 
             var pathElements = this._scanDomScripts();
@@ -2131,11 +2409,11 @@ var teapo;
                 var db = openDatabase(dbName, 1, null, 1024 * 1024 * 5);
 
                 this._executeSql = function (sqlStatement, args, callback, errorCallback) {
-                    var errorCallbackSafe = errorCallback;
-                    if (!errorCallbackSafe)
-                        errorCallbackSafe = function (t, e) {
-                            return alert(e + ' ' + e.message + '\n' + sqlStatement + '\n' + args);
-                        };
+                    var errorCallbackSafe = function (t, e) {
+                        alert(e + ' ' + e.message + '\n' + sqlStatement + '\n' + args);
+                        errorCallback(t, e);
+                    };
+
                     db.transaction(function (t) {
                         return t.executeSql(sqlStatement, args, callback, errorCallbackSafe);
                     });
@@ -2159,7 +2437,12 @@ var teapo;
 
                     var domEdited = _this._metadataElement ? safeParseInt(_this._metadataElement.getAttribute('edited')) : null;
 
-                    loadPropertiesFromWebSql('*metadata', _this._metadataElement, _this._metadataProperties, _this._executeSql, function () {
+                    loadPropertiesFromWebSql('*metadata', _this._metadataElement, _this._metadataProperties, _this._executeSql, function (sqlError) {
+                        if (sqlError) {
+                            _this.handler.documentStorageCreated(new Error('loadPropertiesFromWebSql:*metadata: ' + sqlError.message), null);
+                            return;
+                        }
+
                         var wsEdited = safeParseInt(_this._metadataProperties.edited);
                         if (!wsEdited || domEdited && domEdited > wsEdited)
                             _this._loadInitialStateFromDom(pathElements);
@@ -2209,6 +2492,7 @@ var teapo;
         };
 
         RuntimeDocumentStorage.prototype.setProperty = function (name, value) {
+            var _this = this;
             name = name || '';
             if (value === this._metadataProperties[name])
                 return;
@@ -2222,14 +2506,28 @@ var teapo;
                 this._metadataElement.innerHTML = encodeForInnerHTML(value);
 
             if (this._executeSql) {
-                if (existingProperty)
-                    this._executeSql(this._updateMetadataSql, [value, name]);
-                else
-                    this._executeSql(this._insertMetadataSql, [name, value]);
+                if (existingProperty) {
+                    this._savingCache.beginSave('*metadata');
+                    this._executeSql(this._updateMetadataSql, [value, name], function (t, result) {
+                        _this._savingCache.endSave('*metadata');
+                        if (name !== 'edited')
+                            _this.setProperty('edited', Date.now());
+                    }, function (t, sqlError) {
+                        alert('setProperty(' + name + ',' + value + ') ' + _this._updateMetadataSql + ' [' + value + ',' + name + '] ' + sqlError.message);
+                        _this._savingCache.endSave('*metadata');
+                    });
+                } else {
+                    this._savingCache.beginSave('*metadata');
+                    this._executeSql(this._insertMetadataSql, [name, value], function (t, result) {
+                        _this._savingCache.endSave('*metadata');
+                        if (name !== 'edited')
+                            _this.setProperty('edited', Date.now());
+                    }, function (t, sqlError) {
+                        alert('setProperty(' + name + ',' + value + ') ' + _this._insertMetadataSql + ' [' + name + ',' + value + '] ' + sqlError.message);
+                        _this._savingCache.endSave('*metadata');
+                    });
+                }
             }
-
-            if (name !== 'edited')
-                this.setProperty('edited', Date.now());
         };
 
         RuntimeDocumentStorage.prototype._loadInitialStateFromDom = function (pathElements) {
@@ -2249,9 +2547,12 @@ var teapo;
 
                 var completedAdding = function () {
                     if (_this._executeSql) {
+                        _this.handler.setStatus('Loading files from HTML: ' + addedFileCount + ' of ' + fullPathList.length + '... metadata...');
                         _this._executeSql('CREATE TABLE "*metadata" (name TEXT, value TEXT)', [], function (tr, r) {
                             _this.handler.documentStorageCreated(null, _this);
-                        }, null);
+                        }, function (tr, e) {
+                            alert('create *metadata ' + e.message);
+                        });
                     } else {
                         _this.handler.documentStorageCreated(null, _this);
                     }
@@ -2280,7 +2581,15 @@ var teapo;
             };
 
             if (this._executeSql) {
-                this._dropAllTables(loadInClearState);
+                this.handler.setStatus('Loading files from HTML: deleting cached data...');
+                this._dropAllTables(function (sqlError) {
+                    if (sqlError) {
+                        _this.handler.documentStorageCreated(new Error('Deleting existing table ' + sqlError.message), null);
+                        return;
+                    }
+
+                    loadInClearState();
+                });
             } else {
                 loadInClearState();
             }
@@ -2289,11 +2598,26 @@ var teapo;
         RuntimeDocumentStorage.prototype._dropAllTables = function (completed) {
             var _this = this;
             this._loadTableListFromWebsql(function (tableList) {
-                for (var i = 0; i < tableList.length; i++) {
-                    _this._executeSql('DROP TABLE "' + tableList[i] + '"', [], null, null);
+                if (!tableList || !tableList.length) {
+                    completed(null);
+                    return;
                 }
 
-                completed();
+                var deletedCount = 0;
+                var failed = false;
+                for (var i = 0; i < tableList.length; i++) {
+                    _this._executeSql('DROP TABLE "' + tableList[i] + '"', [], function (tr, r) {
+                        deletedCount++;
+                        _this.handler.setStatus('Loading files from HTML: deleting cached data (' + deletedCount + ' of ' + tableList.length + ')...');
+                        if (deletedCount == tableList.length)
+                            completed(null);
+                    }, function (tr, error) {
+                        if (!failed) {
+                            failed = true;
+                            completed(error);
+                        }
+                    });
+                }
             });
         };
 
@@ -2380,6 +2704,7 @@ var teapo;
         };
 
         RuntimeDocumentStorage.prototype._loadTableListFromWebsql = function (callback) {
+            var _this = this;
             var sql = 'SELECT name FROM sqlite_master WHERE type=\'table\'';
             this._executeSql(sql, [], function (t, result) {
                 var files = [];
@@ -2390,9 +2715,41 @@ var teapo;
                     }
                 }
                 callback(files);
+            }, function (t, error) {
+                _this.handler.documentStorageCreated(new Error('_loadTableListFromWebsql ' + sql + ' ' + error.message), null);
             });
         };
         return RuntimeDocumentStorage;
+    })();
+
+    var FileSavingCache = (function () {
+        function FileSavingCache() {
+            this.savingFiles = ko.observableArray();
+            this._cache = {};
+        }
+        FileSavingCache.prototype.beginSave = function (fullPath) {
+            var num = this._cache[fullPath];
+            if (num) {
+                this._cache[fullPath]++;
+            } else {
+                this.savingFiles.push(fullPath);
+                this._cache[fullPath] = 1;
+            }
+        };
+
+        FileSavingCache.prototype.endSave = function (fullPath) {
+            var _this = this;
+            setTimeout(function () {
+                var num = _this._cache[fullPath];
+                if (!num || !(num - 1)) {
+                    delete _this._cache[fullPath];
+                    _this.savingFiles.remove(fullPath);
+                } else {
+                    _this._cache[fullPath]--;
+                }
+            }, 400);
+        };
+        return FileSavingCache;
     })();
 
     /**
@@ -2460,6 +2817,7 @@ var teapo;
         };
 
         RuntimeDocumentState.prototype.setProperty = function (name, value) {
+            var _this = this;
             var name = name || '';
             if (value === this._properties[name])
                 return;
@@ -2473,23 +2831,42 @@ var teapo;
                 this._storeElement.innerHTML = encodeForInnerHTML(value);
 
             if (this._executeSql) {
-                if (existingProperty)
-                    this._executeSql(this._updateSql, [value, name]);
-                else
-                    this._executeSql(this._insertSql, [name, value]);
+                if (existingProperty) {
+                    this._storage._savingCache.beginSave(this.fullPath());
+                    this._executeSql(this._updateSql, [value, name], function (tr, r) {
+                        _this._storage._savingCache.endSave(_this.fullPath());
+                        return;
+                    }, function (tr, e) {
+                        alert(_this._fullPath + ' setProperty(' + name + ',' + value + ') ' + _this._updateSql + ' ' + e.message);
+                        _this._storage._savingCache.endSave(_this.fullPath());
+                    });
+                } else {
+                    this._executeSql(this._insertSql, [name, value], function (tr, r) {
+                        _this._storage._savingCache.endSave(_this.fullPath());
+                        return;
+                    }, function (tr, e) {
+                        alert(_this._fullPath + 'setProperty(' + name + ',' + value + ') ' + _this._insertSql + ' ' + e.message);
+                        _this._storage._savingCache.endSave(_this.fullPath());
+                    });
+                }
             }
 
             this._storage.setProperty('edited', Date.now());
         };
 
         RuntimeDocumentState.prototype._removeStorage = function () {
+            var _this = this;
             if (this._editor)
                 this._editor.remove();
 
             removeScriptElement(this._storeElement);
 
             if (this._executeSql) {
-                this._executeSql('DROP TABLE "' + this._fullPath + '"');
+                this._executeSql('DROP TABLE "' + this._fullPath + '"', null, function (tr, r) {
+                    return null;
+                }, function (tr, e) {
+                    alert('drop table ' + _this._fullPath + ' ' + e.message);
+                });
             }
         };
         return RuntimeDocumentState;
@@ -2575,15 +2952,24 @@ var teapo;
 
                 properties[a.name] = a.value;
 
-                if (executeSql)
-                    executeSql(insertSQL, [a.name, a.value]);
+                if (executeSql) {
+                    executeSql(insertSQL, [a.name, a.value], function (tr, r) {
+                        return;
+                    }, function (tr, e) {
+                        alert('loadPropertiesFromDom(' + tableName + ') ' + insertSQL + ' [' + a.name + ',' + a.value + '] ' + e.message);
+                    });
+                }
             }
 
             // restore HTML-safe conversions
             var contentStr = decodeFromInnerHTML(script.innerHTML);
             properties[''] = contentStr;
             if (executeSql)
-                executeSql(insertSQL, ['', contentStr]);
+                executeSql(insertSQL, ['', contentStr], function (tr, r) {
+                    return;
+                }, function (tr, e) {
+                    alert('loadPropertiesFromDom(' + tableName + ') ' + insertSQL + ' [,' + contentStr + '] ' + e.message);
+                });
         });
     }
 
@@ -2599,7 +2985,9 @@ var teapo;
                     script.innerHTML = encodeForInnerHTML(row.value);
             }
 
-            completed();
+            completed(null);
+        }, function (t, sqlError) {
+            completed(sqlError);
         });
     }
 
@@ -2665,6 +3053,8 @@ var teapo;
             this._saveSelectedFileClosure = function () {
                 return _this._invokeSaveSelectedFile();
             };
+            this.savingFiles = this._storage.savingFiles;
+
             this.fileList = new teapo.FileList(this._storage);
 
             this.fileList.selectedFile.subscribe(function (fileEntry) {
@@ -2782,6 +3172,35 @@ var teapo;
                     alert('Zip file error: ' + error);
                 });
             });
+        };
+
+        ApplicationShell.prototype.showTests = function () {
+            var testContainer = document.createElement('div');
+            testContainer.style.position = 'fixed';
+            testContainer.style.left = testContainer.style.top = testContainer.style.right = testContainer.style.bottom = '2em';
+            testContainer.style.border = 'solid 1px silver';
+            testContainer.style.background = 'white';
+            testContainer.style.overflow = 'auto';
+            testContainer.style.padding = '1em';
+            var closeButton = document.createElement('button');
+            closeButton.textContent = closeButton.innerText = ' x ';
+            closeButton.style.float = 'right';
+            testContainer.appendChild(closeButton);
+            var host = document.body;
+            host.appendChild(testContainer);
+            closeButton.onclick = function () {
+                host.removeChild(testContainer);
+            };
+
+            var testbed = document.createElement('div');
+            testContainer.appendChild(testbed);
+            testbed.textContent = 'ok ok ok';
+
+            var tests = new teapo.tests.TestPage();
+
+            ko.renderTemplate('TestPage', tests, null, testbed);
+
+            this.toolbarExpanded(false);
         };
 
         ApplicationShell.prototype._load = function (requestLoad, processData) {
@@ -3043,6 +3462,953 @@ var teapo;
     })();
     teapo.ApplicationShell = ApplicationShell;
 })(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (storage) {
+        (function (attached) {
+            (function (_indexedDB) {
+                var DetectStorage = (function () {
+                    function DetectStorage(_window) {
+                        if (typeof _window === "undefined") { _window = window; }
+                        this._window = _window;
+                    }
+                    DetectStorage.prototype.detectStorageAsync = function (uniqueKey, callback) {
+                        if (!this._window.indexedDB) {
+                            callback(new Error('No indexedDB object exposed from window.'), null);
+                            return;
+                        }
+
+                        if (typeof this._window.indexedDB.open !== 'function') {
+                            callback(new Error('No open method exposed on indexedDB object.'), null);
+                            return;
+                        }
+
+                        var dbName = uniqueKey || 'teapo';
+
+                        var openRequest = this._window.indexedDB.open(dbName, 1);
+                        openRequest.onerror = function (errorEvent) {
+                            return callback(_indexedDB.wrapErrorEvent(errorEvent, 'detectStorageAsync-open'), null);
+                        };
+
+                        openRequest.onupgradeneeded = function (versionChangeEvent) {
+                            var db = openRequest.result;
+                            var filesStore = db.createObjectStore('files', { keyPath: 'path' });
+                            var metadataStore = db.createObjectStore('metadata', { keyPath: 'property' });
+                        };
+
+                        openRequest.onsuccess = function (event) {
+                            var db = openRequest.result;
+
+                            var transaction = db.transaction('metadata');
+                            transaction.onerror = function (errorEvent) {
+                                return callback(_indexedDB.wrapErrorEvent(errorEvent, 'detectStorageAsync-openRequest.onsuccess-transaction'), null);
+                            };
+
+                            var metadataStore = transaction.objectStore('metadata');
+
+                            var editedUTCRequest = metadataStore.get('editedUTC');
+                            editedUTCRequest.onerror = function (errorEvent) {
+                                callback(null, new _indexedDB.LoadStorage(null, db));
+                            };
+
+                            editedUTCRequest.onsuccess = function (event) {
+                                var result = editedUTCRequest.result;
+                                callback(null, new _indexedDB.LoadStorage(result && typeof result.value === 'number' ? result.value : null, db));
+                            };
+                        };
+                    };
+                    return DetectStorage;
+                })();
+                _indexedDB.DetectStorage = DetectStorage;
+            })(attached.indexedDB || (attached.indexedDB = {}));
+            var indexedDB = attached.indexedDB;
+        })(storage.attached || (storage.attached = {}));
+        var attached = storage.attached;
+    })(teapo.storage || (teapo.storage = {}));
+    var storage = teapo.storage;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (storage) {
+        (function (attached) {
+            (function (indexedDB) {
+                var LoadStorage = (function () {
+                    function LoadStorage(editedUTC, _db) {
+                        this.editedUTC = editedUTC;
+                        this._db = _db;
+                    }
+                    LoadStorage.prototype.load = function (recipient) {
+                        var _this = this;
+                        var transaction = this._db.transaction('files');
+                        transaction.onerror = function (errorEvent) {
+                            return recipient.failed(indexedDB.wrapErrorEvent(errorEvent, 'load: transaction'));
+                        };
+                        var filesStore = transaction.objectStore('files');
+                        var cursorRequest = filesStore.openCursor();
+                        cursorRequest.onerror = function (errorEvent) {
+                            return recipient.failed(indexedDB.wrapErrorEvent(errorEvent, 'load: objectStore-openCursor'));
+                        };
+                        cursorRequest.onsuccess = function (event) {
+                            var cursor = cursorRequest.result;
+
+                            if (!cursor) {
+                                recipient.completed(new indexedDB.UpdateStorage(_this._db));
+                                return;
+                            }
+
+                            var result = cursor.value;
+                            if (result && result.properties) {
+                                recipient.file(result.path, result.properties);
+                            }
+
+                            cursor['continue']();
+                        };
+                    };
+
+                    LoadStorage.prototype.migrate = function (editedUTC, filesByName, callback) {
+                        var _this = this;
+                        var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
+                        transaction.onerror = function (errorEvent) {
+                            return callback(indexedDB.wrapErrorEvent(errorEvent, 'migrate: transaction'), null);
+                        };
+                        var filesStore = transaction.objectStore('files');
+                        var clearFiles = filesStore.clear();
+                        clearFiles.onerror = function (errorEvent) {
+                            return callback(indexedDB.wrapErrorEvent(errorEvent, 'migrate: objectStore(files)-clear'), null);
+                        };
+                        clearFiles.onsuccess = function (event) {
+                            var metadataStore = transaction.objectStore('metadata');
+                            var clearMetadata = metadataStore.clear();
+                            clearMetadata.onerror = function (errorEvent) {
+                                return callback(indexedDB.wrapErrorEvent(errorEvent, 'migrate: objectStore(files)/clear-objectStore(metadata)-clear'), null);
+                            };
+                            clearMetadata.onsuccess = function (event) {
+                                var putEditedUTC = metadataStore.put({ property: 'editedUTC', value: editedUTC });
+                                putEditedUTC.onerror = function (errorEvent) {
+                                    return callback(indexedDB.wrapErrorEvent(errorEvent, 'migrate: objectStore(files)/clear-objectStore(metadata)/clear-put(' + editedUTC + ')'), null);
+                                };
+                                putEditedUTC.onsuccess = function (event) {
+                                    var filenames = [];
+                                    for (var k in filesByName)
+                                        if (filesByName.hasOwnProperty(k)) {
+                                            filenames.push(k);
+                                        }
+
+                                    if (!filenames.length) {
+                                        var update = new indexedDB.UpdateStorage(_this._db);
+                                        callback(null, update);
+                                        return;
+                                    }
+
+                                    var completedFiles = 0;
+                                    var anyError = false;
+                                    filenames.forEach(function (file) {
+                                        if (anyError)
+                                            return;
+
+                                        var fileData = { path: file, properties: filesByName[file] };
+                                        var putFile = filesStore.put(fileData);
+                                        putFile.onerror = function (errorEvent) {
+                                            if (anyError)
+                                                return;
+                                            anyError = true;
+                                            callback(indexedDB.wrapErrorEvent(errorEvent, ''), null);
+                                        };
+                                        putFile.onsuccess = function (event) {
+                                            completedFiles++;
+
+                                            if (completedFiles === filenames.length) {
+                                                var update = new indexedDB.UpdateStorage(_this._db);
+                                                callback(null, update);
+                                            }
+                                        };
+                                    });
+                                };
+                            };
+                        };
+                    };
+                    return LoadStorage;
+                })();
+                indexedDB.LoadStorage = LoadStorage;
+            })(attached.indexedDB || (attached.indexedDB = {}));
+            var indexedDB = attached.indexedDB;
+        })(storage.attached || (storage.attached = {}));
+        var attached = storage.attached;
+    })(teapo.storage || (teapo.storage = {}));
+    var storage = teapo.storage;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (storage) {
+        (function (attached) {
+            (function (indexedDB) {
+                var UpdateStorage = (function () {
+                    function UpdateStorage(_db) {
+                        this._db = _db;
+                    }
+                    UpdateStorage.prototype.update = function (file, property, value, callback) {
+                        var _this = this;
+                        var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
+                        transaction.onerror = function (errorEvent) {
+                            return callback(indexedDB.wrapErrorEvent(errorEvent, 'update: transaction'));
+                        };
+                        var filesStore = transaction.objectStore('files');
+                        var getFile = filesStore.get(file);
+                        getFile.onerror = function (errorEvent) {
+                            return callback(indexedDB.wrapErrorEvent(errorEvent, 'update: objectStore(files).get(' + file + ')'));
+                        };
+                        getFile.onsuccess = function (event) {
+                            var fileData = getFile.result || { path: file, properties: {} };
+                            var properties = fileData.properties || (fileData.properties = {});
+                            properties[property] = value;
+
+                            var putFile = filesStore.put(fileData);
+                            putFile.onerror = function (errorEvent) {
+                                return callback(indexedDB.wrapErrorEvent(errorEvent, 'update: objectStore(files).get(' + file + ')-put(' + property + ',' + value + ')'));
+                            };
+                            putFile.onsuccess = function (event) {
+                                return _this._updateEditedUTC(Date.now(), transaction, function (errorEvent) {
+                                    return callback(indexedDB.wrapErrorEvent(errorEvent, 'update: _updateEditedUTC'));
+                                });
+                            };
+                        };
+                    };
+
+                    UpdateStorage.prototype.remove = function (file, callback) {
+                        var _this = this;
+                        var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
+                        transaction.onerror = function (errorEvent) {
+                            return callback(indexedDB.wrapErrorEvent(errorEvent, 'update: transaction'));
+                        };
+                        var filesStore = transaction.objectStore('files');
+                        var deleteFile = filesStore['delete'](file);
+                        deleteFile.onerror = function (errorEvent) {
+                            return callback(indexedDB.wrapErrorEvent(errorEvent, 'update: objectStore(files).get(' + file + ')'));
+                        };
+                        deleteFile.onsuccess = function (event) {
+                            return _this._updateEditedUTC(Date.now(), transaction, function (errorEvent) {
+                                return callback(indexedDB.wrapErrorEvent(errorEvent, 'update: _updateEditedUTC'));
+                            });
+                        };
+                    };
+
+                    UpdateStorage.prototype._updateEditedUTC = function (now, transaction, callback) {
+                        var metadataStore = transaction.objectStore('metadata');
+
+                        var metadataData = { property: 'editedUTC', value: Date.now() };
+                        var putMetadata = metadataStore.put(metadataData);
+                        putMetadata.onerror = function (errorEvent) {
+                            return callback(errorEvent);
+                        };
+                        putMetadata.onsuccess = function (event) {
+                            return callback(null);
+                        };
+                    };
+                    return UpdateStorage;
+                })();
+                indexedDB.UpdateStorage = UpdateStorage;
+            })(attached.indexedDB || (attached.indexedDB = {}));
+            var indexedDB = attached.indexedDB;
+        })(storage.attached || (storage.attached = {}));
+        var attached = storage.attached;
+    })(teapo.storage || (teapo.storage = {}));
+    var storage = teapo.storage;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (storage) {
+        (function (attached) {
+            (function (indexedDB) {
+                function wrapErrorEvent(errorEvent, details) {
+                    if (!errorEvent)
+                        return null;
+
+                    return new Error(details + ' ' + errorEvent.message + ' ' + errorEvent.lineno);
+                }
+                indexedDB.wrapErrorEvent = wrapErrorEvent;
+            })(attached.indexedDB || (attached.indexedDB = {}));
+            var indexedDB = attached.indexedDB;
+        })(storage.attached || (storage.attached = {}));
+        var attached = storage.attached;
+    })(teapo.storage || (teapo.storage = {}));
+    var storage = teapo.storage;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (_storage) {
+        (function (attached) {
+            (function (_localStorage) {
+                var DetectStorage = (function () {
+                    function DetectStorage(_window) {
+                        if (typeof _window === "undefined") { _window = window; }
+                        this._window = _window;
+                    }
+                    DetectStorage.prototype.detectStorageAsync = function (uniqueKey, callback) {
+                        var localStorage = this._window.localStorage;
+
+                        if (!localStorage) {
+                            callback(new Error('Browser does not expose localStorage.'), null);
+                            return;
+                        }
+
+                        var absentFunctions = [];
+                        if (typeof localStorage.length !== 'number')
+                            absentFunctions.push('length');
+                        if (!localStorage.getItem)
+                            absentFunctions.push('getItem');
+                        if (!localStorage.setItem)
+                            absentFunctions.push('setItem');
+                        if (!localStorage.removeItem)
+                            absentFunctions.push('removeItem');
+
+                        if (absentFunctions.length) {
+                            callback(new Error('Incorrect shape of localStorage (' + absentFunctions.join(', ') + ' ' + (absentFunctions.length == 1 ? 'is' : 'are') + ' absent).'), null);
+                            return;
+                        }
+
+                        var storage = new _localStorage.LoadStorage(uniqueKey, localStorage);
+                        callback(null, storage);
+                    };
+                    return DetectStorage;
+                })();
+                _localStorage.DetectStorage = DetectStorage;
+            })(attached.localStorage || (attached.localStorage = {}));
+            var localStorage = attached.localStorage;
+        })(_storage.attached || (_storage.attached = {}));
+        var attached = _storage.attached;
+    })(teapo.storage || (teapo.storage = {}));
+    var storage = teapo.storage;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (storage) {
+        (function (attached) {
+            (function (localStorage) {
+                var LoadStorage = (function () {
+                    function LoadStorage(uniqueKey, _localStorage) {
+                        this._localStorage = _localStorage;
+                        this._prefix = uniqueKey ? uniqueKey + '#' : 'teapo#';
+
+                        var editedValue = this._localStorage.getItem(this._prefix + '#edited');
+                        if (editedValue) {
+                            try  {
+                                this.editedUTC = parseInt(editedValue);
+                            } catch (parseError) {
+                            }
+                        }
+                    }
+                    LoadStorage.prototype.load = function (recipient) {
+                        var docs = {};
+
+                        for (var i = 0; i < this._localStorage.length; i++) {
+                            var key = this._localStorage.key(i);
+                            if (!startsWith(key, this._prefix))
+                                continue;
+
+                            var starPos = key.indexOf('*', this._prefix.length);
+                            if (starPos < 0)
+                                continue;
+
+                            var filename = key.slice(this._prefix.length, starPos);
+                            var propertyName = key.slice(starPos + 1);
+                            var value = this._localStorage.getItem(key);
+
+                            var doc = docs[filename] || (docs[filename] = {});
+                            doc[propertyName] = value;
+                        }
+
+                        for (var k in docs)
+                            if (docs.hasOwnProperty(k)) {
+                                recipient.file(k, docs[k]);
+                            }
+
+                        recipient.completed(new localStorage.UpdateStorage(this._prefix, this._localStorage, this._prefix + '#edited'));
+                    };
+
+                    LoadStorage.prototype.migrate = function (editedUTC, filesByName, callback) {
+                        var _this = this;
+                        // will remove all unneeded entries after collecting
+                        var validKeys = {};
+
+                        for (var file in filesByName)
+                            if (filesByName.hasOwnProperty(file)) {
+                                var properties = filesByName[file];
+                                for (var propertyName in properties)
+                                    if (properties.hasOwnProperty(propertyName)) {
+                                        var value = properties[propertyName];
+
+                                        var key = this._prefix + file + '*' + propertyName;
+                                        this._localStorage.setItem(key, value);
+                                        validKeys[key] = true;
+                                    }
+                            }
+
+                        // clean entries that don't match filesByName
+                        var removeKeys = [];
+                        for (var i = 0; i < this._localStorage.length; i++) {
+                            var key = this._localStorage.key(i);
+                            if (!validKeys[key])
+                                removeKeys.push(key);
+                        }
+
+                        removeKeys.forEach(function (rk) {
+                            return _this._localStorage.removeItem(rk);
+                        });
+
+                        var editedKey = this._prefix + '#edited';
+                        this._localStorage.setItem(editedKey, editedUTC.toString());
+
+                        callback(null, new localStorage.UpdateStorage(this._prefix, this._localStorage, editedKey));
+                    };
+                    return LoadStorage;
+                })();
+                localStorage.LoadStorage = LoadStorage;
+            })(attached.localStorage || (attached.localStorage = {}));
+            var localStorage = attached.localStorage;
+        })(storage.attached || (storage.attached = {}));
+        var attached = storage.attached;
+    })(teapo.storage || (teapo.storage = {}));
+    var storage = teapo.storage;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (storage) {
+        (function (attached) {
+            (function (localStorage) {
+                var UpdateStorage = (function () {
+                    function UpdateStorage(_prefix, _localStorage, _editedKey) {
+                        this._prefix = _prefix;
+                        this._localStorage = _localStorage;
+                        this._editedKey = _editedKey;
+                        this._nameCache = {};
+                    }
+                    UpdateStorage.prototype.update = function (file, propertyName, value, callback) {
+                        var cacheLine = this._nameCache[file] || (this._nameCache[file] = {});
+                        var key = cacheLine[propertyName] || (cacheLine[propertyName] = this._prefix + file + '*' + propertyName);
+                        this._localStorage.setItem(key, value);
+
+                        this._updateEdited(Date.now());
+
+                        if (callback)
+                            callback(null);
+                    };
+
+                    UpdateStorage.prototype.remove = function (file, callback) {
+                        var _this = this;
+                        var removeKeys = [];
+                        var prefix = this._prefix + file + '*';
+                        for (var i = 0; i < this._localStorage.length; i++) {
+                            var key = this._localStorage.key(i);
+                            if (startsWith(key, prefix))
+                                removeKeys.push(key);
+                        }
+
+                        removeKeys.forEach(function (k) {
+                            return _this._localStorage.removeItem(k);
+                        });
+                        delete this._nameCache[file];
+
+                        this._updateEdited(Date.now());
+
+                        if (callback)
+                            callback(null);
+                    };
+
+                    UpdateStorage.prototype._updateEdited = function (editedUTC) {
+                        this._localStorage.setItem(this._editedKey, editedUTC.toString());
+                    };
+                    return UpdateStorage;
+                })();
+                localStorage.UpdateStorage = UpdateStorage;
+            })(attached.localStorage || (attached.localStorage = {}));
+            var localStorage = attached.localStorage;
+        })(storage.attached || (storage.attached = {}));
+        var attached = storage.attached;
+    })(teapo.storage || (teapo.storage = {}));
+    var storage = teapo.storage;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (storage) {
+        (function (attached) {
+            (function (webSQL) {
+                var DetectStorage = (function () {
+                    function DetectStorage(_window) {
+                        if (typeof _window === "undefined") { _window = window; }
+                        this._window = _window;
+                    }
+                    DetectStorage.prototype.detectStorageAsync = function (uniqueKey, callback) {
+                        var openDatabase = this._window.openDatabase;
+
+                        if (!openDatabase) {
+                            callback(new Error('Browser does not expose openDatabase.'), null);
+                            return;
+                        }
+
+                        if (typeof openDatabase !== 'function') {
+                            callback(new Error('Function type expected for openDatabase (' + (typeof openDatabase) + ' found).'), null);
+                            return;
+                        }
+
+                        var dbName = uniqueKey || 'teapo';
+                        var db = openDatabase(dbName, 1, 'Teapo virtual filesystem data', 1024 * 1024);
+
+                        db.readTransaction(function (transaction) {
+                            transaction.executeSql('SELECT value from "*metadata" WHERE name=\'edited\'', [], function (transaction, result) {
+                                var editedValue = null;
+                                if (result.rows && result.rows.length === 1) {
+                                    var editedValueStr = result.rows.item(0).value;
+                                    if (typeof editedValueStr === 'string') {
+                                        try  {
+                                            editedValue = parseInt(editedValueStr);
+                                        } catch (error) {
+                                        }
+                                    }
+                                }
+
+                                callback(null, new webSQL.LoadStorage(editedValue, db, true));
+                            }, function (transaction, sqlError) {
+                                // no data
+                                callback(null, new webSQL.LoadStorage(null, db, false));
+                            });
+                        }, function (sqlError) {
+                            callback(webSQL.wrapSQLError(sqlError, 'SELECT FROM *metadata'), null);
+                        });
+                    };
+                    return DetectStorage;
+                })();
+                webSQL.DetectStorage = DetectStorage;
+            })(attached.webSQL || (attached.webSQL = {}));
+            var webSQL = attached.webSQL;
+        })(storage.attached || (storage.attached = {}));
+        var attached = storage.attached;
+    })(teapo.storage || (teapo.storage = {}));
+    var storage = teapo.storage;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (storage) {
+        (function (attached) {
+            (function (webSQL) {
+                var LoadStorage = (function () {
+                    function LoadStorage(editedUTC, _db, _metadataTableExists) {
+                        this.editedUTC = editedUTC;
+                        this._db = _db;
+                        this._metadataTableExists = _metadataTableExists;
+                    }
+                    LoadStorage.prototype.load = function (recipient) {
+                        var _this = this;
+                        if (typeof this.editedUTC !== 'number') {
+                            this._createUpdateStorage([], function (error, update) {
+                                if (error)
+                                    recipient.failed(error);
+                                else
+                                    recipient.completed(update);
+                            });
+                            return;
+                        }
+
+                        this._db.readTransaction(function (transaction) {
+                            webSQL.listAllTables(transaction, function (tableNames) {
+                                return _this._processTableNames(transaction, tableNames, recipient);
+                            }, function (sqlError) {
+                                return recipient.failed(webSQL.wrapSQLError(sqlError, 'load: listAllTables'));
+                            });
+                        }, function (sqlError) {
+                            return recipient.failed(webSQL.wrapSQLError(sqlError, 'load: readTransaction'));
+                        });
+                    };
+
+                    LoadStorage.prototype.migrate = function (editedUTC, filesByName, callback) {
+                        var _this = this;
+                        this._db.transaction(function (transaction) {
+                            _this._dropAllTables(transaction, function (error) {
+                                if (error) {
+                                    callback(webSQL.wrapSQLError(error, 'migrate:dropAllTables'), null);
+                                    return;
+                                }
+
+                                var migratedTables = 0;
+                                var anyError = false;
+                                var filenames = [];
+
+                                for (var file in filesByName)
+                                    if (filesByName.hasOwnProperty(file)) {
+                                        filenames.push(file);
+                                    }
+
+                                var completeMigration = function () {
+                                    // all tables deleted, so metadata does not exist
+                                    _this._createMetadata(transaction, function () {
+                                        return webSQL.updateEdited(editedUTC, transaction, function (sqlError) {
+                                            if (sqlError) {
+                                                callback(webSQL.wrapSQLError(sqlError, 'migrate: updateEdited(' + editedUTC + ')'), null);
+                                            } else {
+                                                _this._createUpdateStorage(filenames, callback);
+                                            }
+                                        });
+                                    }, function (sqlError) {
+                                        return callback(webSQL.wrapSQLError(sqlError, 'migrate: _createMetadata'), null);
+                                    });
+                                };
+
+                                if (!filenames.length) {
+                                    completeMigration();
+                                    return;
+                                }
+
+                                filenames.forEach(function (file) {
+                                    _this._migrateTable(transaction, file, filesByName[file], function (sqlError) {
+                                        if (error) {
+                                            if (!anyError) {
+                                                anyError = true;
+                                                callback(webSQL.wrapSQLError(error, 'migrate: _migrateTable(' + file + ')'), null);
+                                            }
+                                            return;
+                                        }
+
+                                        migratedTables++;
+
+                                        if (!anyError && migratedTables === filenames.length) {
+                                            completeMigration();
+                                        }
+                                    });
+                                });
+                            });
+                        }, function (sqlError) {
+                            return callback(webSQL.wrapSQLError(sqlError, 'migrate: transaction'), null);
+                        });
+                    };
+
+                    LoadStorage.prototype._createUpdateStorage = function (fileNames, callback) {
+                        var _this = this;
+                        if (this._metadataTableExists) {
+                            callback(null, new webSQL.UpdateStorage(this._db, fileNames));
+                            return;
+                        }
+
+                        this._db.transaction(function (transaction) {
+                            return _this._createMetadata(transaction, function () {
+                                return callback(null, new webSQL.UpdateStorage(_this._db, fileNames));
+                            }, function (sqlError) {
+                                return callback(webSQL.wrapSQLError(sqlError, '_createUpdateStorage: _createMetadata'), null);
+                            });
+                        }, function (sqlError) {
+                            return callback(webSQL.wrapSQLError(sqlError, '_createUpdateStorage: transaction'), null);
+                        });
+                    };
+
+                    LoadStorage.prototype._createMetadata = function (transaction, callback, errorCallback) {
+                        var _this = this;
+                        transaction.executeSql('CREATE TABLE "*metadata" (name PRIMARY KEY, value)', [], function (transaction, result) {
+                            _this._metadataTableExists = true;
+                            callback();
+                        }, function (tranaction, sqlError) {
+                            return errorCallback(sqlError);
+                        });
+                    };
+
+                    LoadStorage.prototype._dropAllTables = function (transaction, callback) {
+                        var _this = this;
+                        webSQL.listAllTables(transaction, function (allTableNames) {
+                            var tableNames = allTableNames;
+
+                            if (!tableNames.length) {
+                                _this._metadataTableExists = false;
+                                callback(null);
+                                return;
+                            }
+
+                            var anyError = false;
+                            var dropped = 0;
+                            tableNames.forEach(function (table) {
+                                return transaction.executeSql('DROP TABLE "' + table + '"', [], function (transaction, result) {
+                                    if (anyError)
+                                        return;
+                                    dropped++;
+                                    if (dropped === tableNames.length) {
+                                        _this._metadataTableExists = false;
+                                        callback(null);
+                                    }
+                                }, function (transaction, sqlError) {
+                                    if (anyError)
+                                        return;
+                                    anyError = true;
+                                    callback(sqlError);
+                                });
+                            });
+                        }, callback);
+                    };
+
+                    LoadStorage.prototype._migrateTable = function (transaction, file, properties, callback) {
+                        transaction.executeSql('CREATE TABLE "' + webSQL.mangleDatabaseObjectName(file) + '" (name PRIMARY KEY, value)', [], function (transaction, result) {
+                            var updateSql = 'INSERT INTO "' + webSQL.mangleDatabaseObjectName(file) + '" (name,value) VALUES (?,?)';
+
+                            var propertiesToUpdate = 0;
+                            var updatedProperties = 0;
+                            var allPropertiesPassed = false;
+                            var anyError = false;
+
+                            for (var propertyName in properties)
+                                if (properties.hasOwnProperty(propertyName)) {
+                                    var value = properties[propertyName];
+
+                                    propertiesToUpdate++;
+
+                                    transaction.executeSql(updateSql, [propertyName, value], function (transaction, result) {
+                                        updatedProperties++;
+                                        if (!anyError && allPropertiesPassed && updatedProperties === propertiesToUpdate)
+                                            callback(null);
+                                    }, function (transaction, sqlError) {
+                                        if (anyError)
+                                            return;
+                                        anyError = true;
+                                        callback(sqlError);
+                                    });
+                                }
+
+                            allPropertiesPassed = true;
+                            if (!anyError && updatedProperties == propertiesToUpdate)
+                                callback(null);
+                        }, function (transaction, sqlError) {
+                            return callback(sqlError);
+                        });
+                    };
+
+                    LoadStorage.prototype._processTableNames = function (transaction, tableNames, recipient) {
+                        var _this = this;
+                        var ftab = tableNames.map(function (table) {
+                            return {
+                                table: table,
+                                file: webSQL.unmangleDatabaseObjectName(table)
+                            };
+                        }).filter(function (ft) {
+                            return ft.file;
+                        });
+
+                        if (!ftab.length) {
+                            recipient.completed(new webSQL.UpdateStorage(this._db, []));
+                            return;
+                        }
+
+                        var anyError = false;
+                        var reportedFileCount = 0;
+
+                        ftab.forEach(function (ft) {
+                            transaction.executeSql('SELECT * FROM "' + ft.table + '"', [], function (transaction, result) {
+                                if (anyError)
+                                    return;
+
+                                var properties = _this._extractFileProperties(result);
+
+                                recipient.file(ft.file, properties);
+                                reportedFileCount++;
+
+                                if (reportedFileCount === ftab.length)
+                                    _this._createUpdateStorage(ftab.map(function (ft) {
+                                        return ft.file;
+                                    }), function (error, update) {
+                                        if (error)
+                                            recipient.failed(error);
+                                        else
+                                            recipient.completed(update);
+                                    });
+                            }, function (transaction, sqlError) {
+                                anyError = true;
+                                recipient.failed(webSQL.wrapSQLError(sqlError, '_processTableNames: SELECT FROM ' + ft.table));
+                            });
+                        });
+                    };
+
+                    LoadStorage.prototype._extractFileProperties = function (result) {
+                        var properties = {};
+                        if (result.rows) {
+                            for (var i = 0; i < result.rows.length; i++) {
+                                var row = result.rows.item(i);
+                                properties[row.name] = webSQL.fromSqlText(row.value);
+                            }
+                        }
+
+                        return properties;
+                    };
+                    return LoadStorage;
+                })();
+                webSQL.LoadStorage = LoadStorage;
+            })(attached.webSQL || (attached.webSQL = {}));
+            var webSQL = attached.webSQL;
+        })(storage.attached || (storage.attached = {}));
+        var attached = storage.attached;
+    })(teapo.storage || (teapo.storage = {}));
+    var storage = teapo.storage;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (storage) {
+        (function (attached) {
+            (function (webSQL) {
+                var UpdateStorage = (function () {
+                    function UpdateStorage(_db, existingFiles) {
+                        var _this = this;
+                        this._db = _db;
+                        this._cachedUpdateStatementsByFile = {};
+                        this._unhandledClosure = function (e) {
+                            return _this.unhandledSQLError(e);
+                        };
+                        this._unhandledTransClosure = function (t, e) {
+                            return _this.unhandledSQLError(e);
+                        };
+                        existingFiles.forEach(function (file) {
+                            return _this._createUpdateStatement(file);
+                        });
+                    }
+                    UpdateStorage.prototype.update = function (file, property, value, callback) {
+                        var _this = this;
+                        var updateSQL = this._cachedUpdateStatementsByFile[file];
+                        if (typeof updateSQL === 'string') {
+                            this._updateCore(updateSQL, property, value, callback);
+                        } else {
+                            this._createTable(webSQL.mangleDatabaseObjectName(file), function (transaction) {
+                                updateSQL = _this._createUpdateStatement(file);
+                                _this._updateCore(updateSQL, property, value, callback);
+                            }, function (sqlError) {
+                                return callback(webSQL.wrapSQLError(sqlError, 'update: _createTable'));
+                            });
+                        }
+                    };
+
+                    UpdateStorage.prototype.remove = function (file, callback) {
+                        this._db.transaction(function (transaction) {
+                            return transaction.executeSql('DROP TABLE "' + webSQL.mangleDatabaseObjectName(file) + '"', [], function (transaction, result) {
+                                return webSQL.updateEdited(Date.now(), transaction, function (sqlError) {
+                                    return callback(webSQL.wrapSQLError(sqlError, 'remove: updateEdited'));
+                                });
+                            }, function (transaction, sqlError) {
+                                return callback(webSQL.wrapSQLError(sqlError, 'remove: DROP TABLE ~' + file));
+                            });
+                        }, function (sqlError) {
+                            return callback(webSQL.wrapSQLError(sqlError, 'remove: transaction'));
+                        });
+                    };
+
+                    UpdateStorage.prototype.unhandledSQLError = function (sqlError) {
+                        if (typeof console !== 'undefined' && console && console.error)
+                            console.error(sqlError);
+                    };
+
+                    UpdateStorage.prototype._updateCore = function (updateSQL, property, value, callback) {
+                        var sqlCallback = function (sqlError) {
+                            return callback(sqlError ? webSQL.wrapSQLError(sqlError, '_updateCore: ' + updateSQL) : null);
+                        };
+                        this._db.transaction(function (transaction) {
+                            return transaction.executeSql(updateSQL, [property, webSQL.toSqlText(value)], function (transaction, result) {
+                                return webSQL.updateEdited(Date.now(), transaction, sqlCallback);
+                            }, function (transaction, sqlError) {
+                                return sqlCallback(sqlError);
+                            });
+                        });
+                    };
+
+                    UpdateStorage.prototype._createUpdateStatement = function (file) {
+                        return this._cachedUpdateStatementsByFile[file] = 'INSERT OR REPLACE INTO "' + webSQL.mangleDatabaseObjectName(file) + '" VALUES (?,?)';
+                    };
+
+                    UpdateStorage.prototype._createTable = function (tableName, callback, errorCallback) {
+                        if (typeof errorCallback === "undefined") { errorCallback = this._unhandledClosure; }
+                        this._db.transaction(function (transaction) {
+                            return transaction.executeSql('CREATE TABLE "' + tableName + '" (name PRIMARY KEY, value)', [], function (transaction, result) {
+                                return callback(transaction);
+                            }, function (transaction, error) {
+                                return errorCallback(error);
+                            });
+                        }, errorCallback);
+                    };
+                    return UpdateStorage;
+                })();
+                webSQL.UpdateStorage = UpdateStorage;
+            })(attached.webSQL || (attached.webSQL = {}));
+            var webSQL = attached.webSQL;
+        })(storage.attached || (storage.attached = {}));
+        var attached = storage.attached;
+    })(teapo.storage || (teapo.storage = {}));
+    var storage = teapo.storage;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (storage) {
+        (function (attached) {
+            (function (webSQL) {
+                function mangleDatabaseObjectName(name) {
+                    return '=' + btoa(name);
+                }
+                webSQL.mangleDatabaseObjectName = mangleDatabaseObjectName;
+
+                function unmangleDatabaseObjectName(name) {
+                    if (!name || name.charAt(0) !== '=')
+                        return null;
+
+                    try  {
+                        return atob(name.slice(1));
+                    } catch (error) {
+                        return null;
+                    }
+                }
+                webSQL.unmangleDatabaseObjectName = unmangleDatabaseObjectName;
+
+                function wrapSQLError(sqlError, context) {
+                    if (!sqlError)
+                        return null;
+                    return new Error(context + ' ' + sqlError.message + ' [' + sqlError.code + ']');
+                }
+                webSQL.wrapSQLError = wrapSQLError;
+
+                function listAllTables(transaction, callback, errorCallback) {
+                    transaction.executeSql('SELECT tbl_name  from sqlite_master WHERE type=\'table\'', [], function (transaction, result) {
+                        var tables = [];
+                        for (var i = 0; i < result.rows.length; i++) {
+                            var row = result.rows.item(i);
+                            var table = row.tbl_name;
+                            if (!table || (table[0] !== '*' && table.charAt(0) !== '='))
+                                continue;
+                            tables.push(row.tbl_name);
+                        }
+                        callback(tables);
+                    }, function (transaction, sqlError) {
+                        return errorCallback(sqlError);
+                    });
+                }
+                webSQL.listAllTables = listAllTables;
+
+                function updateEdited(editedUTC, transaction, callback) {
+                    transaction.executeSql('INSERT OR REPLACE INTO "*metadata" VALUES(\'edited\',?)', [editedUTC.toString()], function (transaction, result) {
+                        return callback(null);
+                    }, function (transaction, sqlError) {
+                        return callback(sqlError);
+                    });
+                }
+                webSQL.updateEdited = updateEdited;
+
+                function toSqlText(text) {
+                    if (text.indexOf('\u00FF') < 0 && text.indexOf('\u0000') < 0)
+                        return text;
+
+                    return text.replace(/\u00FF/g, '\u00FFf').replace(/\u0000/g, '\u00FF0');
+                }
+                webSQL.toSqlText = toSqlText;
+
+                function fromSqlText(sqlText) {
+                    if (sqlText.indexOf('\u00FF') < 0 && sqlText.indexOf('\u0000') < 0)
+                        return sqlText;
+
+                    return sqlText.replace(/\u00FFf/g, '\u00FF').replace(/\u00FF0/g, '\u0000');
+                }
+                webSQL.fromSqlText = fromSqlText;
+            })(attached.webSQL || (attached.webSQL = {}));
+            var webSQL = attached.webSQL;
+        })(storage.attached || (storage.attached = {}));
+        var attached = storage.attached;
+    })(teapo.storage || (teapo.storage = {}));
+    var storage = teapo.storage;
+})(teapo || (teapo = {}));
 /// <reference path='typings/codemirror.d.ts' />
 /// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='ko.ts' />
@@ -3115,3 +4481,906 @@ var teapo;
         window.onload = start;
     }
 })();
+var teapo;
+(function (teapo) {
+    (function (tests) {
+        var TestCase = (function () {
+            function TestCase(name, _this_, _test) {
+                this.name = name;
+                this._this_ = _this_;
+                this._test = _test;
+                this.state = ko.observable(0 /* NotStarted */);
+                this.runtime = ko.observable(null);
+                this.failure = ko.observable(null);
+                this._started = -1;
+                this.async = this._test.length ? true : false;
+            }
+            TestCase.prototype.start = function (callback) {
+                if (this.state() !== 0 /* NotStarted */)
+                    throw new Error('Test case already started (' + TestCase.State[this.state()] + ').');
+
+                if (this.async) {
+                    this._startAsync(callback);
+                } else {
+                    this._startSync();
+                    if (callback)
+                        callback();
+                }
+            };
+
+            TestCase.prototype.updateTimes = function (now) {
+                if (this.state() === 1 /* Running */)
+                    this.runtime(now - this._started);
+            };
+
+            TestCase.prototype._startSync = function () {
+                this.state(1 /* Running */);
+                this.runtime(0);
+                this._started = Date.now();
+
+                var failure;
+                var failed = false;
+                try  {
+                    this._test.apply(this._this_);
+                } catch (error) {
+                    failed = true;
+                    failure = error;
+                }
+
+                this.runtime(Date.now() - this._started);
+
+                if (failed) {
+                    this.failure(failure);
+                    this.state(3 /* Failed */);
+                } else {
+                    this.state(2 /* Succeeded */);
+                }
+            };
+
+            TestCase.prototype._startAsync = function (callback) {
+                var _this = this;
+                this.state(1 /* Running */);
+                this.runtime(0);
+                this._started = Date.now();
+
+                var failure;
+                var failedSynchrously = false;
+                try  {
+                    this._test.apply(this._this_, [function (failure) {
+                            _this.runtime(Date.now() - _this._started);
+
+                            if (failure) {
+                                _this.failure(failure);
+                                _this.state(3 /* Failed */);
+                            } else {
+                                _this.state(2 /* Succeeded */);
+                            }
+
+                            if (callback)
+                                callback();
+                        }]);
+                } catch (error) {
+                    failedSynchrously = true;
+                    failure = error;
+                }
+
+                this.runtime(Date.now() - this._started);
+
+                if (failedSynchrously) {
+                    this.failure(failure);
+                    this.state(3 /* Failed */);
+
+                    if (callback)
+                        callback();
+                }
+            };
+            return TestCase;
+        })();
+        tests.TestCase = TestCase;
+
+        (function (TestCase) {
+            (function (State) {
+                State[State["NotStarted"] = 0] = "NotStarted";
+                State[State["Running"] = 1] = "Running";
+                State[State["Succeeded"] = 2] = "Succeeded";
+                State[State["Failed"] = 3] = "Failed";
+            })(TestCase.State || (TestCase.State = {}));
+            var State = TestCase.State;
+        })(tests.TestCase || (tests.TestCase = {}));
+        var TestCase = tests.TestCase;
+    })(teapo.tests || (teapo.tests = {}));
+    var tests = teapo.tests;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (tests) {
+        var TestPage = (function () {
+            function TestPage(namespace, _queueWorkItem) {
+                if (typeof namespace === "undefined") { namespace = teapo.tests; }
+                if (typeof _queueWorkItem === "undefined") { _queueWorkItem = function (action) {
+                    return setTimeout(action, 10);
+                }; }
+                var _this = this;
+                this._queueWorkItem = _queueWorkItem;
+                this.all = [];
+                this.notStarted = ko.observableArray([]);
+                this.running = ko.observableArray([]);
+                this.succeeded = ko.observableArray([]);
+                this.failed = ko.observableArray([]);
+                this.workQuantum = 50;
+                this._continueStartingClosure = function () {
+                    return _this._continueStarting();
+                };
+                this._updateTimesInterval = null;
+                this._loadTests(namespace);
+            }
+            TestPage.prototype.start = function () {
+                var _this = this;
+                if (this._updateTimesInterval) {
+                    clearInterval(this._updateTimesInterval);
+                    this._updateTimesInterval = null;
+                }
+
+                if (this.all.length) {
+                    this._updateTimesInterval = setInterval(function () {
+                        return _this._updateTimes();
+                    }, 100);
+                }
+
+                this._continueStarting();
+            };
+
+            TestPage.prototype._updateTimes = function () {
+                if (this.running().length + this.notStarted().length === 0) {
+                    clearInterval(this._updateTimesInterval);
+                    this._updateTimesInterval = 0;
+                    return;
+                }
+
+                var now = Date.now();
+                this.running().forEach(function (t) {
+                    return t.updateTimes(now);
+                });
+            };
+
+            TestPage.prototype._continueStarting = function () {
+                var now = Date.now();
+                this.running().forEach(function (t) {
+                    t.updateTimes(now);
+                });
+
+                var nextRest = Date.now() + this.workQuantum;
+                while (true) {
+                    if (!this.notStarted().length)
+                        return;
+
+                    this._startOne();
+
+                    if (!this.notStarted().length)
+                        return;
+
+                    if (Date.now() >= nextRest) {
+                        this._queueWorkItem(this._continueStartingClosure);
+                        return;
+                    }
+                }
+            };
+
+            TestPage.prototype._startOne = function () {
+                var _this = this;
+                var nextTest = this.notStarted.shift();
+                this.running.push(nextTest);
+
+                nextTest.start(function () {
+                    _this.running.remove(nextTest);
+
+                    var newState = nextTest.state();
+
+                    var targetCollection = newState === 2 /* Succeeded */ ? _this.succeeded : newState === 3 /* Failed */ ? _this.failed : null;
+
+                    if (targetCollection) {
+                        var targetCollectionArray = targetCollection();
+
+                        for (var i = targetCollectionArray.length - 1; i >= 0; i--) {
+                            var t = targetCollectionArray[i];
+                            if (nextTest.name > t.name) {
+                                targetCollection.splice(i + 1, 0, nextTest);
+                                return;
+                            }
+                        }
+
+                        targetCollection.unshift(nextTest);
+                    }
+                });
+            };
+
+            TestPage.prototype._loadTests = function (namespace) {
+                var _this = this;
+                var byName = {};
+                var names = [];
+
+                TestPage.forEachTest(namespace, function (name, _this_, test) {
+                    var testCase = new tests.TestCase(name, _this_, test);
+                    byName[name] = testCase;
+                    names.push(name);
+                });
+
+                names.sort();
+                names.forEach(function (name) {
+                    var testCase = byName[name];
+                    _this.all.push(testCase);
+                });
+
+                this.notStarted(this.all);
+            };
+
+            TestPage.forEachTest = function (namespace, callback) {
+                for (var k in namespace) {
+                    if (!k || k[0] === '_' || Object.prototype[k])
+                        continue;
+
+                    var t = namespace[k];
+                    if (typeof t === 'function') {
+                        var isClass = false;
+                        for (var k in t.prototype) {
+                            if (!k || Object.prototype[k])
+                                continue;
+
+                            isClass = true;
+                            break;
+                        }
+
+                        if (isClass) {
+                            if (!t.length)
+                                TestPage.forEachTest(new t(), function (name, _this_, test) {
+                                    return callback(k + '.' + name, _this_, test);
+                                });
+                        } else {
+                            callback(k, namespace, t);
+                        }
+                    } else if (typeof t === 'object') {
+                        TestPage.forEachTest(t, function (name, _this_, test) {
+                            return callback(k + '.' + name, _this_, test);
+                        });
+                    }
+                }
+            };
+            return TestPage;
+        })();
+        tests.TestPage = TestPage;
+    })(teapo.tests || (teapo.tests = {}));
+    var tests = teapo.tests;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    /**
+    * All tests are stashed away in teapo.tests module.
+    * Teapo is an application, not a library, so all the tests are tests of the application pieces and parts.
+    */
+    (function (tests) {
+        function sampleTest() {
+            return;
+        }
+        tests.sampleTest = sampleTest;
+
+        function sampleAsyncTest(callback) {
+            callback(null);
+        }
+        tests.sampleAsyncTest = sampleAsyncTest;
+
+        (function (sampleModule) {
+            function sampleTest() {
+            }
+            sampleModule.sampleTest = sampleTest;
+        })(tests.sampleModule || (tests.sampleModule = {}));
+        var sampleModule = tests.sampleModule;
+    })(teapo.tests || (teapo.tests = {}));
+    var tests = teapo.tests;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (tests) {
+        (function (FileListTests) {
+            function constructor_succeeds() {
+                var fl = new teapo.files.FileList();
+            }
+            FileListTests.constructor_succeeds = constructor_succeeds;
+
+            function constructor_null_succeeds() {
+                var fl = new teapo.files.FileList(null);
+            }
+            FileListTests.constructor_null_succeeds = constructor_null_succeeds;
+
+            function constructor_empty_succeeds() {
+                var fl = new teapo.files.FileList([]);
+            }
+            FileListTests.constructor_empty_succeeds = constructor_empty_succeeds;
+
+            function constructor_single_simple() {
+                var fl = new teapo.files.FileList(['root.txt']);
+                if (fl.folders().length)
+                    throw new Error('Should not have any folders, ' + fl.folders().length);
+                if (fl.files().length !== 1)
+                    throw new Error('File expected, found ' + fl.files().length);
+                if (fl.files()[0].name !== 'root.txt')
+                    throw new Error('Expected "root.txt", ' + fl.files()[0].name);
+                if (fl.files()[0].path !== '/root.txt')
+                    throw new Error('Expected "/root.txt", ' + fl.files()[0].path);
+            }
+            FileListTests.constructor_single_simple = constructor_single_simple;
+
+            function constructor_single_root() {
+                var fl = new teapo.files.FileList(['/root.txt']);
+                if (fl.folders().length)
+                    throw new Error('Should not have any folders, ' + fl.folders().length);
+                if (fl.files().length !== 1)
+                    throw new Error('File expected, found ' + fl.files().length);
+                if (fl.files()[0].name !== 'root.txt')
+                    throw new Error('Expected "root.txt", ' + fl.files()[0].name);
+                if (fl.files()[0].path !== '/root.txt')
+                    throw new Error('Expected "/root.txt", ' + fl.files()[0].path);
+            }
+            FileListTests.constructor_single_root = constructor_single_root;
+
+            function constructor_single_rootAndTrailSlash() {
+                var fl = new teapo.files.FileList(['/root.txt/']);
+                if (fl.folders().length)
+                    throw new Error('Should not have any folders, ' + fl.folders().length);
+                if (fl.files().length !== 1)
+                    throw new Error('File expected, found ' + fl.files().length);
+                if (fl.files()[0].name !== 'root.txt')
+                    throw new Error('Expected "root.txt", ' + fl.files()[0].name);
+                if (fl.files()[0].path !== '/root.txt')
+                    throw new Error('Expected "/root.txt", ' + fl.files()[0].path);
+            }
+            FileListTests.constructor_single_rootAndTrailSlash = constructor_single_rootAndTrailSlash;
+
+            function constructor_single_nest1() {
+                var fl = new teapo.files.FileList(['/fold/root.txt']);
+                if (fl.files().length)
+                    throw new Error('No root files expected, ' + fl.files().length);
+                if (fl.folders().length !== 1)
+                    throw new Error('Folder expected, found ' + fl.folders().length);
+                var fold = fl.folders()[0];
+                if (fold.name !== 'fold')
+                    throw new Error('Expected "fold", ' + fold.name);
+                if (fold.path !== '/fold/')
+                    throw new Error('Expected "/fold/", ' + fold.path);
+                if (fold.folders().length)
+                    throw new Error('Shoud not have subfolders, ' + fold.folders().length);
+
+                if (fold.files().length !== 1)
+                    throw new Error('File expected, found ' + fold.files().length);
+                if (fold.files()[0].name !== 'root.txt')
+                    throw new Error('Expected "root.txt", ' + fold.files()[0].name);
+                if (fold.files()[0].path !== '/fold/root.txt')
+                    throw new Error('Expected "/fold/root.txt", ' + fold.files()[0].path);
+            }
+            FileListTests.constructor_single_nest1 = constructor_single_nest1;
+
+            function file_simple() {
+                var fl = new teapo.files.FileList();
+                fl.file('root.txt');
+                if (fl.folders().length)
+                    throw new Error('Should not have any folders, ' + fl.folders().length);
+                if (fl.files().length !== 1)
+                    throw new Error('File expected, found ' + fl.files().length);
+                if (fl.files()[0].name !== 'root.txt')
+                    throw new Error('Expected "root.txt", ' + fl.files()[0].name);
+                if (fl.files()[0].path !== '/root.txt')
+                    throw new Error('Expected "/root.txt", ' + fl.files()[0].path);
+            }
+            FileListTests.file_simple = file_simple;
+
+            function file_root() {
+                var fl = new teapo.files.FileList();
+                fl.file('/root.txt');
+                if (fl.folders().length)
+                    throw new Error('Should not have any folders, ' + fl.folders().length);
+                if (fl.files().length !== 1)
+                    throw new Error('File expected, found ' + fl.files().length);
+                if (fl.files()[0].name !== 'root.txt')
+                    throw new Error('Expected "root.txt", ' + fl.files()[0].name);
+                if (fl.files()[0].path !== '/root.txt')
+                    throw new Error('Expected "/root.txt", ' + fl.files()[0].path);
+            }
+            FileListTests.file_root = file_root;
+
+            function file_rootAndTrailSlash() {
+                var fl = new teapo.files.FileList();
+                fl.file('/root.txt/');
+                if (fl.folders().length)
+                    throw new Error('Should not have any folders, ' + fl.folders().length);
+                if (fl.files().length !== 1)
+                    throw new Error('File expected, found ' + fl.files().length);
+                if (fl.files()[0].name !== 'root.txt')
+                    throw new Error('Expected "root.txt", ' + fl.files()[0].name);
+                if (fl.files()[0].path !== '/root.txt')
+                    throw new Error('Expected "/root.txt", ' + fl.files()[0].path);
+            }
+            FileListTests.file_rootAndTrailSlash = file_rootAndTrailSlash;
+
+            function file_nest1() {
+                var fl = new teapo.files.FileList();
+                fl.file('/fold/root.txt');
+                if (fl.files().length)
+                    throw new Error('No root files expected, ' + fl.files().length);
+                if (fl.folders().length !== 1)
+                    throw new Error('Folder expected, found ' + fl.folders().length);
+                var fold = fl.folders()[0];
+                if (fold.name !== 'fold')
+                    throw new Error('Expected "fold", ' + fold.name);
+                if (fold.path !== '/fold/')
+                    throw new Error('Expected "/fold/", ' + fold.path);
+                if (fold.folders().length)
+                    throw new Error('Shoud not have subfolders, ' + fold.folders().length);
+
+                if (fold.files().length !== 1)
+                    throw new Error('File expected, found ' + fold.files().length);
+                if (fold.files()[0].name !== 'root.txt')
+                    throw new Error('Expected "root.txt", ' + fold.files()[0].name);
+                if (fold.files()[0].path !== '/fold/root.txt')
+                    throw new Error('Expected "/fold/root.txt", ' + fold.files()[0].path);
+            }
+            FileListTests.file_nest1 = file_nest1;
+
+            function file1_file2() {
+                var fl = new teapo.files.FileList();
+
+                fl.file('file1.txt');
+                fl.file('/folder/file2.txt');
+
+                if (fl.files().length !== 1)
+                    throw new Error('Files expected, found ' + fl.files().length);
+                if (fl.folders().length !== 1)
+                    throw new Error('Folder expected, found ' + fl.folders().length);
+                var file1 = fl.files()[0];
+                var file2 = fl.folders()[0].files()[0];
+
+                if (file1.path !== '/file1.txt')
+                    throw new Error('Expected "/file1.txt", ' + file1.path);
+                if (file2.path !== '/folder/file2.txt')
+                    throw new Error('Expected "/folder/file2.txt", ' + file2.path);
+            }
+            FileListTests.file1_file2 = file1_file2;
+        })(tests.FileListTests || (tests.FileListTests = {}));
+        var FileListTests = tests.FileListTests;
+    })(teapo.tests || (teapo.tests = {}));
+    var tests = teapo.tests;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (tests) {
+        var AttachedStorageTests = (function () {
+            function AttachedStorageTests(_detect) {
+                this._detect = _detect;
+                //
+            }
+            AttachedStorageTests.prototype.detectStorageAsync_succeeds = function (callback) {
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    return callback(error);
+                });
+            };
+
+            AttachedStorageTests.prototype.detectStorageAsync_editedUTC_null = function (callback) {
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    return callback(load.editedUTC ? new Error('Expected null, found ' + load.editedUTC) : null);
+                });
+            };
+
+            AttachedStorageTests.prototype.load = function (callback) {
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    load.load({
+                        file: function (name, values) {
+                            return callback(new Error('LoadStorageRecipient.file should not be called.'));
+                        },
+                        completed: function (updater) {
+                            return callback(null);
+                        },
+                        failed: function (error) {
+                            return callback(error);
+                        }
+                    });
+                });
+            };
+
+            AttachedStorageTests.prototype.update = function (callback) {
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    load.load({
+                        file: function (name, values) {
+                            return callback(new Error('LoadStorageRecipient.file should not be called.'));
+                        },
+                        completed: function (updater) {
+                            updater.update('file.txt', 'property', 'value', callback);
+                        },
+                        failed: function (error) {
+                            return callback(error);
+                        }
+                    });
+                });
+            };
+
+            AttachedStorageTests.prototype.update_detectStorageAsync_editedUTC_recent = function (callback) {
+                var _this = this;
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    load.load({
+                        file: function (name, values) {
+                            return callback(new Error('LoadStorageRecipient.file should not be called.'));
+                        },
+                        completed: function (updater) {
+                            updater.update('file.txt', 'property', 'value', function (error) {
+                                _this._detect.detectStorageAsync(ukey, function (error, load) {
+                                    return callback(load.editedUTC ? null : new Error('Expected non-null.'));
+                                });
+                            });
+                        },
+                        failed: function (error) {
+                            return callback(error);
+                        }
+                    });
+                });
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue = function (callback) {
+                this._update_loadAgain_sameValue_core('update_loadAgain_sameValue.txt', 'property234', 'value94783', callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_unicodeValue = function (callback) {
+                var unicodeString = 'abc941' + [256, 257, 1024, 1026, 12879, 13879].map(function (m) {
+                    return String.fromCharCode(m);
+                }).join('');
+
+                this._update_loadAgain_sameValue_core('update_loadAgain_sameValue_unicodeValue.txt', 'property83784', unicodeString, callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_unicodeProperty = function (callback) {
+                var unicodeString = 'abc6253' + [256, 257, 1024, 1026, 12879, 13879].map(function (m) {
+                    return String.fromCharCode(m);
+                }).join('');
+
+                this._update_loadAgain_sameValue_core('update_loadAgain_sameValue_unicodeProperty.txt', unicodeString, 'value345634', callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_crlfValue = function (callback) {
+                var crlfString = 'abc941\nasdf3434\r07958\r\n4838hr';
+
+                this._update_loadAgain_sameValue_core('update_loadAgain_sameValue_crlfValue.txt', 'property83784', crlfString, callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_crOnly = function (callback) {
+                this._update_loadAgain_sameValue_core('file82263.txt', 'property83784', '\r', callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_lfOnly = function (callback) {
+                this._update_loadAgain_sameValue_core('file82263.txt', 'property83784', '\n', callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_crlfOnly = function (callback) {
+                this._update_loadAgain_sameValue_core('update_loadAgain_sameValue_lfOnly.txt', 'property83784', '\r\n', callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_zeroCharOnly = function (callback) {
+                this._update_loadAgain_sameValue_core('update_loadAgain_sameValue_zeroCharOnly.txt', 'property83784', String.fromCharCode(0), callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_zeroCharPrefix = function (callback) {
+                this._update_loadAgain_sameValue_core('update_loadAgain_sameValue_zeroCharOnly.txt', 'property83784', String.fromCharCode(0) + 'abcd', callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_zeroCharSuffix = function (callback) {
+                this._update_loadAgain_sameValue_core('update_loadAgain_sameValue_zeroCharOnly.txt', 'property83784', 'abcde' + String.fromCharCode(0), callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_zeroCharMiddle = function (callback) {
+                this._update_loadAgain_sameValue_core('update_loadAgain_sameValue_zeroCharOnly.txt', 'property83784', 'abcde' + String.fromCharCode(0) + 'zxcvbnm', callback);
+            };
+
+            AttachedStorageTests.prototype.update_loadAgain_sameValue_charCodesUnder32 = function (callback) {
+                var chars = '';
+                for (var i = 0; i < 32; i++)
+                    chars + String.fromCharCode(i);
+                this._update_loadAgain_sameValue_core('update_loadAgain_sameValue_charCodesUnder32.txt', 'property83784', chars, callback);
+            };
+
+            AttachedStorageTests.prototype._update_loadAgain_sameValue_core = function (fileName, property, value, callback) {
+                var _this = this;
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    load.load({
+                        file: function (name, values) {
+                            return callback(new Error('LoadStorageRecipient.file should not be called.'));
+                        },
+                        completed: function (updater) {
+                            updater.update(fileName, property, value, function (error) {
+                                _this._detect.detectStorageAsync(ukey, function (error, load) {
+                                    var files = {};
+                                    load.load({
+                                        file: function (name, values) {
+                                            return files[name] = values;
+                                        },
+                                        completed: function (updater) {
+                                            var fileTxt = files[fileName];
+                                            if (!fileTxt) {
+                                                callback(new Error('File is not reported on subsequent load.'));
+                                            } else {
+                                                var propertyValue = fileTxt[property];
+                                                callback(propertyValue === value ? null : new Error('Wrong value ' + JSON.stringify(propertyValue) + ' instead of ' + JSON.stringify(value)));
+                                            }
+                                        },
+                                        failed: function (error) {
+                                            return callback(error);
+                                        }
+                                    });
+                                });
+                            });
+                        },
+                        failed: function (error) {
+                            return callback(error);
+                        }
+                    });
+                });
+            };
+
+            AttachedStorageTests.prototype.migrate = function (callback) {
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    load.migrate(2345, { "file.txt": { property: "value" } }, function (error, update) {
+                        return callback(error);
+                    });
+                });
+            };
+
+            AttachedStorageTests.prototype.migrate_load_sameValue = function (callback) {
+                var _this = this;
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    load.migrate(2345, { "file.txt": { property: "value" } }, function (error, update) {
+                        _this._detect.detectStorageAsync(ukey, function (error, load) {
+                            var files = {};
+                            load.load({
+                                file: function (name, values) {
+                                    return files[name] = values;
+                                },
+                                completed: function (updater) {
+                                    var fileTxt = files['file.txt'];
+                                    if (!fileTxt) {
+                                        callback(new Error('File is not reported on subsequent load.'));
+                                    } else {
+                                        var propertyValue = fileTxt['property'];
+                                        callback(propertyValue === 'value' ? null : new Error('Wrong value ' + propertyValue));
+                                    }
+                                },
+                                failed: function (error) {
+                                    return callback(error);
+                                }
+                            });
+                        });
+                    });
+                });
+            };
+
+            AttachedStorageTests.prototype.migrate_remove_detectStorageAsync_editedUTC_isrecent = function (callback) {
+                var _this = this;
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    load.migrate(2345, { "file.txt": { property: "value" } }, function (error, update) {
+                        update.remove('file.txt', function (error) {
+                            if (error) {
+                                callback(error);
+                                return;
+                            }
+
+                            _this._detect.detectStorageAsync(ukey, function (error, load) {
+                                var now = Date.now();
+                                callback(Math.abs(now - load.editedUTC) < 10000 ? null : new Error('Recent editedUTC expected, ' + load.editedUTC + ' (now ' + now + ', diff ' + (now - load.editedUTC) + ').'));
+                            });
+                        });
+                    });
+                });
+            };
+
+            AttachedStorageTests.prototype.migrate_remove_load_nofile = function (callback) {
+                var _this = this;
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    load.migrate(2345, { "file.txt": { property: "value" } }, function (error, update) {
+                        update.remove('file.txt', function (error) {
+                            if (error) {
+                                callback(error);
+                                return;
+                            }
+
+                            _this._detect.detectStorageAsync(ukey, function (error, load) {
+                                var filenames = [];
+                                load.load({
+                                    file: function (name, values) {
+                                        return filenames.push(name);
+                                    },
+                                    completed: function (updater) {
+                                        if (filenames.length) {
+                                            callback(new Error('Should not have any files: ' + filenames.join(', ') + '.'));
+                                        } else {
+                                            callback(null);
+                                        }
+                                    },
+                                    failed: function (error) {
+                                        return callback(error);
+                                    }
+                                });
+                            });
+                        });
+                    });
+                });
+            };
+
+            AttachedStorageTests.prototype.migrate_detectStorageAsync_editedUTC = function (callback) {
+                var _this = this;
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    load.migrate(2345, { "file.txt": { property: "value" } }, function (error, update) {
+                        _this._detect.detectStorageAsync(ukey, function (error, load) {
+                            callback(load.editedUTC === 2345 ? null : new Error('Incorrect editedUTC value ' + load.editedUTC + ' (expected 2345).'));
+                        });
+                    });
+                });
+            };
+
+            AttachedStorageTests.prototype.updateTwice_loadAgain_secondValue = function (callback) {
+                var _this = this;
+                var ukey = this._generateKey();
+                this._detect.detectStorageAsync(ukey, function (error, load) {
+                    load.load({
+                        file: function (name, values) {
+                            return callback(new Error('LoadStorageRecipient.file should not be called.'));
+                        },
+                        completed: function (updater) {
+                            updater.update('file.txt', 'property1', 'value2', function (error) {
+                                return updater.update('file.txt', 'property1', 'value4', function (error) {
+                                    _this._detect.detectStorageAsync(ukey, function (error, load) {
+                                        var files = {};
+                                        load.load({
+                                            file: function (name, values) {
+                                                return files[name] = values;
+                                            },
+                                            completed: function (updater) {
+                                                var fileTxt = files['file.txt'];
+                                                if (!fileTxt) {
+                                                    callback(new Error('File is not reported on subsequent load.'));
+                                                } else {
+                                                    var propertyValue = fileTxt['property1'];
+                                                    callback(propertyValue === 'value4' ? null : new Error('Wrong value ' + propertyValue));
+                                                }
+                                            },
+                                            failed: function (error) {
+                                                return callback(error);
+                                            }
+                                        });
+                                    });
+                                });
+                            });
+                        },
+                        failed: function (error) {
+                            return callback(error);
+                        }
+                    });
+                });
+            };
+
+            AttachedStorageTests.prototype._generateKey = function () {
+                return Math.random() + '-' + Math.random();
+            };
+            return AttachedStorageTests;
+        })();
+        tests.AttachedStorageTests = AttachedStorageTests;
+    })(teapo.tests || (teapo.tests = {}));
+    var tests = teapo.tests;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (tests) {
+        (function (IndexedDBStorageTests) {
+            IndexedDBStorageTests.browser;
+
+            if (typeof indexedDB !== 'undefined' && indexedDB && typeof indexedDB.open === 'function')
+                IndexedDBStorageTests.browser = new tests.AttachedStorageTests(new teapo.storage.attached.indexedDB.DetectStorage());
+        })(tests.IndexedDBStorageTests || (tests.IndexedDBStorageTests = {}));
+        var IndexedDBStorageTests = tests.IndexedDBStorageTests;
+    })(teapo.tests || (teapo.tests = {}));
+    var tests = teapo.tests;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (tests) {
+        (function (LocalStorageStorageTests) {
+            function constructor_noArgs_succeeds() {
+                new teapo.storage.attached.localStorage.DetectStorage();
+            }
+            LocalStorageStorageTests.constructor_noArgs_succeeds = constructor_noArgs_succeeds;
+
+            function constructor_null_succeeds() {
+                new teapo.storage.attached.localStorage.DetectStorage(null);
+            }
+            LocalStorageStorageTests.constructor_null_succeeds = constructor_null_succeeds;
+
+            function constructor_empty_succeeds() {
+                new teapo.storage.attached.localStorage.DetectStorage({});
+            }
+            LocalStorageStorageTests.constructor_empty_succeeds = constructor_empty_succeeds;
+
+            function detectStorageAsync_whenNullPassedToConstructor_throwsError() {
+                var s = new teapo.storage.attached.localStorage.DetectStorage(null);
+                try  {
+                    s.detectStorageAsync('', function (error, loaded) {
+                    });
+                } catch (error) {
+                    // fine, expected
+                    return;
+                }
+
+                throw new Error('No exception.');
+            }
+            LocalStorageStorageTests.detectStorageAsync_whenNullPassedToConstructor_throwsError = detectStorageAsync_whenNullPassedToConstructor_throwsError;
+
+            function detectStorageAsync_noLocalStorage_passesError(callback) {
+                var s = new teapo.storage.attached.localStorage.DetectStorage({});
+
+                s.detectStorageAsync('', function (error, loaded) {
+                    return callback(error ? null : new Error('No error passed. State: ' + loaded));
+                });
+            }
+            LocalStorageStorageTests.detectStorageAsync_noLocalStorage_passesError = detectStorageAsync_noLocalStorage_passesError;
+
+            function detectStorageAsync_localStorageNoMethods_passesError(callback) {
+                var s = new teapo.storage.attached.localStorage.DetectStorage({ localStorage: {} });
+
+                s.detectStorageAsync('', function (error, loaded) {
+                    return callback(error ? null : new Error('No error passed. State: ' + loaded));
+                });
+            }
+            LocalStorageStorageTests.detectStorageAsync_localStorageNoMethods_passesError = detectStorageAsync_localStorageNoMethods_passesError;
+
+            function detectStorageAsync_localStorageLengthGetItemSetItemRemoveItem_passesResult(callback) {
+                var localStorage = {
+                    length: 0,
+                    getItem: function () {
+                    },
+                    setItem: function () {
+                    },
+                    removeItem: function () {
+                    }
+                };
+
+                var s = new teapo.storage.attached.localStorage.DetectStorage({ localStorage: localStorage });
+
+                s.detectStorageAsync('', function (error, loaded) {
+                    return callback(error);
+                });
+            }
+            LocalStorageStorageTests.detectStorageAsync_localStorageLengthGetItemSetItemRemoveItem_passesResult = detectStorageAsync_localStorageLengthGetItemSetItemRemoveItem_passesResult;
+
+            LocalStorageStorageTests.browser;
+            if (window.localStorage)
+                LocalStorageStorageTests.browser = new tests.AttachedStorageTests(new teapo.storage.attached.localStorage.DetectStorage());
+        })(tests.LocalStorageStorageTests || (tests.LocalStorageStorageTests = {}));
+        var LocalStorageStorageTests = tests.LocalStorageStorageTests;
+    })(teapo.tests || (teapo.tests = {}));
+    var tests = teapo.tests;
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    (function (tests) {
+        (function (WebSQLStorageTests) {
+            WebSQLStorageTests.browser;
+
+            if (typeof openDatabase === 'function')
+                WebSQLStorageTests.browser = new tests.AttachedStorageTests(new teapo.storage.attached.webSQL.DetectStorage());
+        })(tests.WebSQLStorageTests || (tests.WebSQLStorageTests = {}));
+        var WebSQLStorageTests = tests.WebSQLStorageTests;
+    })(teapo.tests || (teapo.tests = {}));
+    var tests = teapo.tests;
+})(teapo || (teapo = {}));

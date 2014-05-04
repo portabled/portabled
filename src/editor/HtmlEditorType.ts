@@ -94,6 +94,7 @@ module teapo {
 
         var inlineDocState = this._storageForBuild.getDocument(inlineFullPath);
         if (!inlineDocState) {
+          console.log('Inlining ' + inlineFullPath + ' failed: cannot find.');
           continue;
         }
   

@@ -29,6 +29,7 @@
     <button data-bind='click: loadText' class=teapo-action-button>Load text...</button>
     <button data-bind='click: loadBase64' class=teapo-action-button>Load base64...</button>
     <button data-bind='click: loadZip' class=teapo-action-button>Load zip...</button>
+    <button data-bind='click: showTests' class=teapo-action-button>Tests...</button>
   </div>
 
   <button title='add new file' data-bind='click: newFileClick' class=teapo-new-file-button> + </button>
@@ -76,6 +77,10 @@
       <br>
       Author: <a href=mailto:mihailik@gmail.com>Oleg Mihailik</a>
   </div>
+</div>
+
+<div data-bind="foreach: savingFiles || []" class=teapo-content style="opacity: 0.4; left: 80%; max-height: 4em; overflow: auto;">
+  <div data-bind="text: $data"></div>
 </div>
 
 

@@ -1,0 +1,72 @@
+<div class=teapo-tests>
+
+  
+<!-- ko if: running().length -->
+  <div class=teapo-tests-running>
+    <div>
+      Running:
+      <span data-bind="text: running().length"></span>
+    </div>
+    
+<!-- ko template: { name: 'TestCase', foreach: running() } -->
+<!-- /ko -->
+
+  </div>
+<!-- /ko -->
+
+  
+<!-- ko if: failed().length -->
+  <div class=teapo-tests-failed>
+    <div>
+      Failed: 
+      <span data-bind="text: failed().length"></span>
+    </div>
+    
+<!-- ko template: { name: 'TestCase', foreach: failed() } -->
+<!-- /ko -->
+
+  </div>
+<!-- /ko -->
+
+  
+  
+<!-- ko if: succeeded().length -->
+  <div class=teapo-tests-succeeded>
+    <div>
+      Succeeded:
+      <span data-bind="text: succeeded().length"></span>
+    </div>
+    
+<!-- ko template: { name: 'TestCase', foreach: succeeded() } -->
+<!-- /ko -->
+
+  </div>
+<!-- /ko -->
+
+  
+  
+
+  
+  
+<!-- ko if: notStarted().length || failed().length || succeeded().length -->
+  <button data-bind="click: start, enabled: notStarted().length && !failed().length && !succeeded().length"> Run tests  </button>
+<!-- /ko -->
+
+  
+  
+<!-- ko if: notStarted().length -->
+  <div class=teapo-tests-notStarted>
+    <div>
+      Tests:
+      <span data-bind="text: notStarted().length"></span>
+    </div>
+    
+<!-- ko template: { name: 'TestCase', foreach: notStarted() } -->
+<!-- /ko -->
+
+  </div>
+<!-- /ko -->
+
+  
+  
+</div>
