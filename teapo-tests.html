@@ -25164,7 +25164,7 @@ new a.w;var b=new a.Ba;0<b.Rb&&a.La(b);a.b("jqueryTmplTemplateEngine",a.Ba)})()}
 })(this);
 </script>
 
-<script>/// <reference path='typings/typescriptServices.d.ts' />
+<script id="teapo-script">/// <reference path='typings/typescriptServices.d.ts' />
 /// <reference path='typings/codemirror.d.ts' />
 var teapo;
 (function (teapo) {
@@ -31085,6 +31085,19 @@ var teapo;
     var tests = teapo.tests;
 })(teapo || (teapo = {}));
 </script>
-<script>teapo.tests.app.run();</script>
+<script>
+  if (!teapo || !teapo.tests || !teapo.tests.app) {
+    try {
+      var teapoScript = document.getElementById('teapo-script');
+      eval(teapoScript.innerHTML);
+    }
+    catch (error) {
+      alert(error.message+' '+(error.stack ? error.stack : error));
+    }
+  }
+  else {
+    teapo.tests.app.run();
+  }
+</script>
 
 </body></html>
