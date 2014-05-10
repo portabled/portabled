@@ -13678,7 +13678,107 @@ var teapo;
 <div class="teapo-page"><div class="teapo-tests">
 
   
-<!-- ko if: running().length --><!-- /ko -->
+<!-- ko if: running().length -->
+  <div class="teapo-tests-running">
+    <div>
+      Running:
+      <span data-bind="text: running().length">30</span>
+    </div>
+    
+<!-- ko template: { name: 'TestCase', foreach: running() } --><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.migrate_detectStorageAsync_editedUTC</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.113ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.migrate_load_sameValue</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.109ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.migrate_remove_detectStorageAsync_editedUTC_isrecent</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.079ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.migrate_remove_load_nofile</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.071ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.updateTwice_loadAgain_secondValue</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_detectStorageAsync_editedUTC_recent</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.998ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.992ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_charCodesUnder32</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.987ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_crOnly</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.983ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_crlfOnly</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.978ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_crlfValue</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.975ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_lfOnly</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.970ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_unicodeProperty</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.966ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_unicodeValue</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.962ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_zeroCharMiddle</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.957ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_zeroCharOnly</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.951ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_zeroCharPrefix</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.908ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_zeroCharSuffix</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.900ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.migrate</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.456ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.migrate_detectStorageAsync_editedUTC</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.434ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.migrate_load_sameValue</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.390ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.migrate_remove_detectStorageAsync_editedUTC_isrecent</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.296ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.migrate_remove_load_nofile</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.276ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.255ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.updateTwice_loadAgain_secondValue</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.196ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_detectStorageAsync_editedUTC_recent</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.175ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.151ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_charCodesUnder32</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.102ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_crOnly</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.043ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_crlfOnly</span><!-- ko if: typeof runtime()==='number' -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.027ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><!-- /ko -->
+
+  </div>
+<!-- /ko -->
 
   
 <!-- ko if: failed().length --><!-- /ko -->
@@ -13689,27 +13789,27 @@ var teapo;
   <div class="teapo-tests-succeeded">
     <div>
       Succeeded:
-      <span data-bind="text: succeeded().length">119</span>
+      <span data-bind="text: succeeded().length">78</span>
     </div>
     
 <!-- ko template: { name: 'TestCase', foreach: succeeded() } --><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.detectStorageAsync_editedUTC_null</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.005ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.detectStorageAsync_succeeds</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.load</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.migrate</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.005ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.migrate_detectStorageAsync_editedUTC</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.migrate_load_sameValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.009ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.008ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.migrate_remove_detectStorageAsync_editedUTC_isrecent</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
@@ -13718,22 +13818,22 @@ var teapo;
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.update</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.updateTwice_loadAgain_secondValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.update_detectStorageAsync_editedUTC_recent</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.update_loadAgain_sameValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.005ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.update_loadAgain_sameValue_charCodesUnder32</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.update_loadAgain_sameValue_crOnly</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.update_loadAgain_sameValue_crlfOnly</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
@@ -13742,19 +13842,19 @@ var teapo;
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.update_loadAgain_sameValue_lfOnly</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.update_loadAgain_sameValue_unicodeProperty</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.update_loadAgain_sameValue_unicodeValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.006ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.update_loadAgain_sameValue_zeroCharMiddle</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.update_loadAgain_sameValue_zeroCharOnly</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.browser.update_loadAgain_sameValue_zeroCharPrefix</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
@@ -13769,7 +13869,7 @@ var teapo;
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.detectStorageAsync_dummyElement_editedUTC_falsy</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">DomStorageTests.detectStorageAsync_whenNullPassedToConstructor_throwsError</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
@@ -13790,10 +13890,10 @@ var teapo;
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">FileListTests.constructor_single_rootAndTrailSlash</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.001ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">FileListTests.constructor_single_simple</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.001ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">FileListTests.constructor_succeeds</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
@@ -13802,10 +13902,10 @@ var teapo;
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.001ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">FileListTests.file_nest1</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.001ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">FileListTests.file_root</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.001ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">FileListTests.file_rootAndTrailSlash</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
@@ -13814,94 +13914,40 @@ var teapo;
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.001ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.detectStorageAsync_editedUTC_null</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.255ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.291ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.detectStorageAsync_succeeds</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.255ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.290ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.load</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.390ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.447ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.migrate</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.907ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.migrate_detectStorageAsync_editedUTC</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.174ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.migrate_load_sameValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.336ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.migrate_remove_detectStorageAsync_editedUTC_isrecent</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.325ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.migrate_remove_load_nofile</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.368ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.903ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.892ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.updateTwice_loadAgain_secondValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.468ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_detectStorageAsync_editedUTC_recent</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.155ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.310ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_charCodesUnder32</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.308ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_crOnly</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.312ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_crlfOnly</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.307ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_crlfValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.308ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_lfOnly</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.308ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_unicodeProperty</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.307ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_unicodeValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.307ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_zeroCharMiddle</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.308ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_zeroCharOnly</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.309ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_zeroCharPrefix</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.312ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">IndexedDBStorageTests.browser.update_loadAgain_sameValue_zeroCharSuffix</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.308ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.998ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.detectStorageAsync_editedUTC_null</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.detectStorageAsync_succeeds</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.load</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.migrate</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.006ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.015ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.migrate_detectStorageAsync_editedUTC</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.007ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.migrate_load_sameValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.migrate_remove_detectStorageAsync_editedUTC_isrecent</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.007ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.migrate_remove_load_nofile</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.005ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
@@ -13913,142 +13959,73 @@ var teapo;
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.005ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.update_detectStorageAsync_editedUTC_recent</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.update_loadAgain_sameValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.update_loadAgain_sameValue_charCodesUnder32</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.update_loadAgain_sameValue_crOnly</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.005ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.update_loadAgain_sameValue_crlfOnly</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.update_loadAgain_sameValue_crlfValue</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.update_loadAgain_sameValue_lfOnly</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.update_loadAgain_sameValue_unicodeProperty</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.update_loadAgain_sameValue_unicodeValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.007ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.005ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.update_loadAgain_sameValue_zeroCharMiddle</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.005ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.update_loadAgain_sameValue_zeroCharOnly</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.005ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.update_loadAgain_sameValue_zeroCharPrefix</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.browser.update_loadAgain_sameValue_zeroCharSuffix</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.004ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.constructor_empty_succeeds</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.constructor_noArgs_succeeds</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.001ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.constructor_null_succeeds</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.detectStorageAsync_localStorageLengthGetItemSetItemRemoveItem_passesResult</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.detectStorageAsync_localStorageNoMethods_passesError</span><!-- ko if: typeof runtime()==='number' -->
   <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.detectStorageAsync_noLocalStorage_passesError</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.003ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">LocalStorageStorageTests.detectStorageAsync_whenNullPassedToConstructor_throwsError</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.001ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.detectStorageAsync_editedUTC_null</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.129ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.165ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.detectStorageAsync_succeeds</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.112ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.207ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><div class="teapo-test">
   <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.load</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.338ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.migrate</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.694ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.migrate_detectStorageAsync_editedUTC</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.863ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.migrate_load_sameValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.092ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.migrate_remove_detectStorageAsync_editedUTC_isrecent</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.096ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.migrate_remove_load_nofile</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.134ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.866ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.updateTwice_loadAgain_secondValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.154ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_detectStorageAsync_editedUTC_recent</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.023ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_charCodesUnder32</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">1.007ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_crOnly</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.988ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_crlfOnly</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.962ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_crlfValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.942ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_lfOnly</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.926ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_unicodeProperty</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.861ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_unicodeValue</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.841ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_zeroCharMiddle</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.823ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_zeroCharOnly</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.795ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_zeroCharPrefix</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.775ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_zeroCharSuffix</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.758ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">sampleAsyncTest</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.002ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">sampleModule.sampleTest</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
-</div><div class="teapo-test">
-  <span data-bind="text: name" class="teapo-test-name">sampleTest</span><!-- ko if: typeof runtime()==='number' -->
-  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.000ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+  <span data-bind="text: (runtime()/1000).toFixed(3)+'ms'" class="teapo-test-runtime">0.362ms</span><!-- /ko --><!-- ko if:failure --><!-- /ko -->
 </div><!-- /ko -->
 
   </div>
@@ -14065,7 +14042,39 @@ var teapo;
 
   
   
-<!-- ko if: notStarted().length --><!-- /ko -->
+<!-- ko if: notStarted().length -->
+  <div class="teapo-tests-notStarted">
+    <div>
+      Tests:
+      <span data-bind="text: notStarted().length">11</span>
+    </div>
+    
+<!-- ko template: { name: 'TestCase', foreach: notStarted() } --><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_crlfValue</span><!-- ko if: typeof runtime()==='number' --><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_lfOnly</span><!-- ko if: typeof runtime()==='number' --><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_unicodeProperty</span><!-- ko if: typeof runtime()==='number' --><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_unicodeValue</span><!-- ko if: typeof runtime()==='number' --><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_zeroCharMiddle</span><!-- ko if: typeof runtime()==='number' --><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_zeroCharOnly</span><!-- ko if: typeof runtime()==='number' --><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_zeroCharPrefix</span><!-- ko if: typeof runtime()==='number' --><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">WebSQLStorageTests.browser.update_loadAgain_sameValue_zeroCharSuffix</span><!-- ko if: typeof runtime()==='number' --><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">sampleAsyncTest</span><!-- ko if: typeof runtime()==='number' --><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">sampleModule.sampleTest</span><!-- ko if: typeof runtime()==='number' --><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><div class="teapo-test">
+  <span data-bind="text: name" class="teapo-test-name">sampleTest</span><!-- ko if: typeof runtime()==='number' --><!-- /ko --><!-- ko if:failure --><!-- /ko -->
+</div><!-- /ko -->
+
+  </div>
+<!-- /ko -->
 
   
   
