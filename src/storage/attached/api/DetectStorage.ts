@@ -13,7 +13,7 @@ module teapo.storage.attached {
      * @param uniqueKey Used to tell storage for different documents within the same domain apart from each other.
      * @callback Invoked either with an error object, or LoadStorage instance.
      */
-    detectStorageAsync(uniqueKey: string, callback: (error: Error, load: LoadStorage) => void);
+    detectStorageAsync(uniqueKey: string, callback: (error: Error, load: LoadStorage) => void): void;
 
   }
 

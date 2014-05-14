@@ -11,7 +11,7 @@ module teapo {
 
     nestLevel(): number;
 
-    isSelected: KnockoutObservable<boolean>;
+    isSelected: ko.Observable<boolean>;
 
     handleClick(): void;
   }

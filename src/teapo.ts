@@ -1,81 +1,70 @@
-/// <reference path='typings/codemirror.d.ts' />
-/// <reference path='typings/typescriptServices.d.ts' />
+module teapo.app {
 
-/// <reference path='ko.ts' />
-/// <reference path='shell.ts' />
+  export function run() {
+    var loadingDiv = document.createElement('div');
+    loadingDiv.className = 'teapo-boot';
+    loadingDiv.textContent = loadingDiv.innerText = 'Loading...';
 
-/// <reference path='editor-std.ts' />
-/// <reference path='editor-x-ts.ts' />
-/// <reference path='editor-x-html.ts' />
-/// <reference path='editor-x-js.ts' />
-/// <reference path='editor-x-css.ts' />
+    var pageElement: HTMLElement = null;
 
-(function() {
+    for (var i = 0; i < document.body.childNodes.length; i++) {
+      var e = <HTMLElement>document.body.childNodes.item(i);
+      if (e && e.tagName && e.tagName.toLowerCase()
+        && e.className && e.className.indexOf('teapo-page') >= 0) {
 
-  var loadingDiv = document.createElement('div');
-  loadingDiv.className='teapo-boot';
-  loadingDiv.textContent = loadingDiv.innerText = 'Loading...';
+        pageElement = e;
+        pageElement.appendChild(loadingDiv);
+        break;
 
-  var pageElement: HTMLElement = null;
+      }
+    }
 
-  for (var i = 0; i < document.body.childNodes.length; i++) {
-    var e = <HTMLElement>document.body.childNodes.item(i);
-    if (e && e.tagName && e.tagName.toLowerCase()
-      && e.className && e.className.indexOf('teapo-page')>=0) {
 
-      pageElement = e;
+    function start() {
+
+      loadingDiv.textContent = 'Loading storage...';
+
+      var storage: teapo.DocumentStorage = null;
+      var viewModel: teapo.ApplicationShell = null;
+
       pageElement.appendChild(loadingDiv);
-      break;
 
-    }
-  }
-  
+      function storageLoaded() {
 
-  function start() {
+        loadingDiv.textContent += ' rendering...';
 
-    loadingDiv.textContent = 'Loading storage...';
+        setTimeout(() => {
+          teapo.registerKnockoutBindings(ko);
+          (<any>teapo.EditorType).Html.storageForBuild = storage;
 
-    var storage: teapo.DocumentStorage = null;
-    var viewModel: teapo.ApplicationShell = null;
+          viewModel = new teapo.ApplicationShell(storage);
+          (<any>window).debugShell = viewModel;
 
-    pageElement.appendChild(loadingDiv);
+          ko.renderTemplate('page-template', viewModel, null, pageElement);
+        }, 1);
+      }
 
-    function storageLoaded() {
+      var forceLoadFromDom = window.location.hash && window.location.hash.toLowerCase() === '#resettodom';
 
-      loadingDiv.textContent += ' rendering...';
-
-      setTimeout(() => {
-        teapo.registerKnockoutBindings(ko);
-        (<any>teapo.EditorType).Html.storageForBuild = storage;
-
-        viewModel = new teapo.ApplicationShell(storage);
-        (<any>window).debugShell = viewModel;
-
-        ko.renderTemplate('page-template', viewModel, null, pageElement);
-       }, 1);
-    }
-
-    var forceLoadFromDom = window.location.hash && window.location.hash.toLowerCase()==='#resettodom';
-
-    teapo.openStorage(
-      {
-        documentStorageCreated: (error,s) => {
-          storage = s;
-          storageLoaded();
+      teapo.openStorage(
+        {
+          documentStorageCreated: (error, s) => {
+            storage = s;
+            storageLoaded();
+          },
+          getType: (fullPath) => teapo.EditorType.getType(fullPath),
+          getFileEntry: (fullPath) => viewModel.fileList.getFileEntry(fullPath),
+          setStatus: (text) => loadingDiv.textContent = text
         },
-        getType: (fullPath) => teapo.EditorType.getType(fullPath),
-        getFileEntry: (fullPath) => viewModel.fileList.getFileEntry(fullPath),
-        setStatus: (text) => loadingDiv.textContent = text
-      },
-      forceLoadFromDom);
-  }
+        forceLoadFromDom);
+    }
 
-  if (window.addEventListener) {
-    window.addEventListener('load', start, true);
+    if (window.addEventListener) {
+      window.addEventListener('load', start, true);
+    }
+    else {
+      window.onload = start;
+    }
   }
-  else {
-    window.onload = start;
-  }
-
   
-})();
+}

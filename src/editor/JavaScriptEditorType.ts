@@ -1,12 +1,18 @@
 module teapo {
 
+  function createTernServer() {
+    var ts = (<any>CodeMirror).TernServer;
+    if (!ts) return null;
+    return new (<any>CodeMirror).TernServer()
+  }
+  
   /**
    * Handling detection of .js files.
    */
   class JavaScriptEditorType implements EditorType {
     private _shared: JavaScriptEditor.SharedState = JavaScriptEditorType.createShared();
 
-    constructor(tern = new(<any>CodeMirror).TernServer()) {
+    constructor(tern?) {
       this._shared.tern = tern;
     }
 
@@ -57,7 +63,7 @@ module teapo {
       shared: JavaScriptEditor.SharedState,
       docState: DocumentState) {
       super(shared, docState);
-      this._tern = shared.tern;
+      this._tern = shared.tern || createTernServer();
 
       this._tern.server.addFile(this.docState.fullPath(), this.text());
     }

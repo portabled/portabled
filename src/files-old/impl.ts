@@ -136,7 +136,7 @@ module teapo {
 
     private _insertOrLookupFolder(
       parent: RuntimeFolderEntry,
-      folders: KnockoutObservableArray<FolderEntry>,
+      folders: ko.ObservableArray<FolderEntry>,
       pathParts: string[],
       i: number): RuntimeFolderEntry {
       var folderName = pathParts[i];

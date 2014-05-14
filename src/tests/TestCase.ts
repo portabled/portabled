@@ -41,7 +41,7 @@ module teapo.tests {
 
       this.state(TestCase.State.Running);
       this.runtime(0);
-      this._started = Date.now();
+      this._started = dateNow();
 
       var failure: Error;
       var failed = false;
@@ -53,7 +53,7 @@ module teapo.tests {
         failure = error;
       }
 
-      this.runtime(Date.now() - this._started);
+      this.runtime(dateNow() - this._started);
 
       if (failed) {
         this.failure(failure);
@@ -67,7 +67,7 @@ module teapo.tests {
     private _startAsync(callback?: () => void) {
       this.state(TestCase.State.Running);
       this.runtime(0);
-      this._started = Date.now();
+      this._started = dateNow();
 
                         
       var failure: Error;
@@ -75,7 +75,7 @@ module teapo.tests {
       try {
         this._test.apply(this._this_, [(failure?) => {
 
-          this.runtime(Date.now() - this._started);
+          this.runtime(dateNow() - this._started);
 
           if (failure) {
             this.failure(failure);
@@ -94,7 +94,7 @@ module teapo.tests {
         failure = error;
       }
 
-      this.runtime(Date.now() - this._started);
+      this.runtime(dateNow() - this._started);
 
       if (failedSynchrously) {
         this.failure(failure);

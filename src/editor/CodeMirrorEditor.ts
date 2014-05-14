@@ -9,7 +9,7 @@ module teapo {
     private _text: string = null;
     private _positionOnOpen = false;
 
-    statusText: KnockoutObservable<string> = ko.observable(null);
+    statusText: ko.Observable<string> = ko.observable(null);
 
     static positionSaveDelay = 400;
 
@@ -31,14 +31,17 @@ module teapo {
         foldGutter: true,
         gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
         tabSize: 2,
-        extraKeys: { "Tab": "indentMore", "Shift-Tab": "indentLess", "Ctrl-/": "toggleComment", "Ctrl-?": "toggleComment" }
+        extraKeys: {
+          "Tab": "indentMore", "Shift-Tab": "indentLess",
+          "Ctrl-/": "toggleComment", "Ctrl-?": "toggleComment"
+        }
       };
     }
 
     /**
      * Invoked when a file is selected in the file list/tree and brought open.
      */
-    open(onchange: () => void, statusText?: KnockoutObservable<string>): HTMLElement {
+    open(onchange: () => void, statusText?: ko.Observable<string>): HTMLElement {
 
       this._shared.editor = this;
       this.statusText = statusText;

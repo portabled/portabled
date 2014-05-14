@@ -19,7 +19,7 @@ module teapo.storage.attached {
      * 'competed' finishing loading and passing an instance of UpdateStorage,
      * 'failed' finishing loading with an error.
      */
-    load(recipient: LoadStorageRecipient);
+    load(recipient: LoadStorageRecipient): void;
 
     /**
      * Destroy the state in the storage, and load another state instead.
@@ -31,8 +31,8 @@ module teapo.storage.attached {
      */
     migrate(
       editedUTC: number,
-      filesByName: { [name: string]: { [name: string]: string; }; },
-      callback: (error: Error, updater: attached.UpdateStorage) => void);
+      filesByName: { [fullPath: string]: { [propertyName: string]: string; }; },
+      callback: (error: Error, updater: attached.UpdateStorage) => void): void;
 
   }
 

@@ -357,11 +357,23 @@ module teapo {
 
       var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
 
-      if (this._typescript.log.length || emits.emitOutputResult !== TypeScript.EmitOutputResult.Succeeded) { 
+      if (this._typescript.log.length || emits.emitOutputResult !== TypeScript.EmitOutputResult.Succeeded) {
         var msg = 
-          'Building ' + this.docState.fullPath() + ' ' + emits.emitOutputResult + '\n' +
+          'Building ' + this.docState.fullPath() + ' ' + TypeScript.EmitOutputResult[emits.emitOutputResult] + '\n' +
           this._typescript.log.map(msg => msg.logLevel + ' ' + msg.text).join('\n');
 
+        if (typeof (<any>this._typescript.service).getAllSyntacticDiagnostics === 'function') {
+          // a hack
+          try {
+            var diag: TypeScript.Diagnostic[] = (<any>this._typescript.service).getAllSyntacticDiagnostics();
+            if (diag && diag.length) {
+              msg = 'Building ' + this.docState.fullPath() + ' ' + TypeScript.EmitOutputResult[emits.emitOutputResult] + '\n' +
+                diag.map(d => d.fileName() + ' ' + d.line() + ':' + d.character() + ' ' + d.message()).join('\n');
+            }
+          }
+          catch (error) {  }
+        }
+        
         alert(msg);
       }
       

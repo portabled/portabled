@@ -29,9 +29,14 @@ module teapo {
     private _saveTimeout = 0;
     private _saveSelectedFileClosure = () => this._invokeSaveSelectedFile();
 
-    savingFiles: KnockoutObservableArray<string>;
+    savingFiles: ko.ObservableArray<string>;
 
     constructor(private _storage: DocumentStorage) {
+    
+      if (this._storage.editedUTC){
+        var dt = new Date(this._storage.editedUTC);
+        this.statusText('Updated ' + dt.getFullYear() + '-' + dt.getMonth() + '-' + dt.getDate() + ' ' + dt.getHours() + ':' + dt.getMinutes()+'.');
+      }
 
       this.savingFiles = this._storage.savingFiles;
     

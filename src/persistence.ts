@@ -1,8 +1,3 @@
-/// <reference path='typings/websql.d.ts' />
-
-/// <reference path='editor.ts' />
-/// <reference path='files.ts' />
-
 module teapo {
 
   /**
@@ -15,123 +10,8 @@ module teapo {
    */
   export function openStorage(handler: DocumentStorageHandler, forceLoadFromDom = false): void {
 
-    try {
-      throw null;
-    }
-    catch (e) { }
     var storage = new RuntimeDocumentStorage(handler, forceLoadFromDom);
   }
-
-  /**
-   * Encapsulating all necessary for storing documents, metadata and properties.
-   */
-  export interface DocumentStorage {
-
-    /**
-     * Full paths of all files.
-     */
-    documentNames(): string[];
-
-    /**
-     * Given a path retrieves an object for reading and writing document state,
-     * also exposes runtime features like editor and entry in the file list.
-     */
-    getDocument(fullPath: string): DocumentState;
-
-    /**
-     * Creates a persisted state for a document, and returns it as a result.
-     */
-    createDocument(fullPath: string): DocumentState;
-
-    /**
-     * Removes the document and all its state.
-     */
-    removeDocument(fullPath: string): DocumentState;
-
-    getProperty(name: string): string;
-    setProperty(name: string, value: string): void;
-
-    savingFiles: KnockoutObservableArray<string>;
-  }
-
-  /**
-   * Allows reading, writing properties of the document,
-   * and also exposes runtime features like editor and entry in the file list.
-   */
-  export interface DocumentState {
-
-    fullPath(): string;
-
-    /**
-     * Retrieves object encapsulating document type (such as plain text, JavaScript, HTML).
-     * Note that type is metadata, so the instance is shared across all of the documents
-     * of the same type.
-     */
-    type(): EditorType;
-
-    /**
-     * Retrieves object encapsulating editor behaviour for the document.
-     */
-    editor(): Editor;
-
-    /**
-     * Same as editor, but returns null if the editor has never been instantiated yet.
-     */
-    currentEditor(): Editor;
-
-    /**
-     * Retrieves object representing a node in the file list or tree view.
-     */
-    fileEntry(): FileEntry;
-
-    /**
-     * Retrieves property value from whatever persistence mechanism is implemented.
-     */
-    getProperty(name: string): string;
-
-    /**
-     * Persists property value.
-     */
-    setProperty(name: string, value: string): void;
-  }
-
-  /**
-   * Details necessary to request DocumentStorage creation,
-   * as well as the callback logic.
-   */
-  export interface DocumentStorageHandler {
-
-    /**
-     * Callback invoked when the document storage creation is completed.
-     */
-    documentStorageCreated(error: Error, storage: DocumentStorage);
-
-    setStatus(text: string);
-
-    /**
-     * Returns EditorType object handling editor behavior for a given file.
-     */
-    getType(fullPath: string): EditorType;
-
-    /**
-     * Returns FileEntry object representing the file in list/tree.
-     */
-    getFileEntry(fullPath: string): FileEntry;
-
-    /**
-     * Overrides unique key used to differentiate multiple documents
-     * sharing the same domain/scheme in WebSQL storage.
-     */
-    uniqueKey?: string;
-
-    /** Overrides access to the global document object. */
-    document?: typeof document;
-
-    /** Overrides WebSQL API */
-    openDatabase?: typeof openDatabase;
-  }
-
-
 
 
   interface ExecuteSqlDelegate {
@@ -144,6 +24,7 @@ module teapo {
   class RuntimeDocumentStorage implements DocumentStorage {
     document: typeof document = null;
 
+    editedUTC: number = null;
     _metadataElement: HTMLScriptElement = null;
 
     private _metadataProperties: any = null;
@@ -171,61 +52,7 @@ module teapo {
 
       var openDatabase = this.handler.openDatabase || getOpenDatabase();
       if (typeof openDatabase === 'function') {
-        var dbName = this.handler.uniqueKey ? this.handler.uniqueKey : getUniqueKey();
-        var db = openDatabase(dbName, 1, null, 1024 * 1024 * 5);
-
-        this._executeSql = (
-          sqlStatement: string,
-          args: any[],
-          callback: (transaction: SQLTransaction, result: SQLResultSet) => void,
-          errorCallback: (transaction: SQLTransaction, error: SQLError) => void) => {
-
-          var errorCallbackSafe = (t: SQLTransaction, e: SQLError) => {
-            alert(e + ' ' + e.message + '\n' + sqlStatement + '\n' + args);
-            errorCallback(t, e);
-          };
-            
-          db.transaction((t) => t.executeSql(sqlStatement, args, callback, errorCallbackSafe));
-        };
-        this._insertMetadataSql = 'INSERT INTO "*metadata" (name, value) VALUES(?,?)';
-        this._updateMetadataSql = 'UPDATE "*metadata" SET value=? WHERE name=?';
-
-        this._metadataProperties = {};
-        this._loadTableListFromWebsql((tableList) => {
-          var metadataTableExists = false;
-          for (var i = 0; i < tableList.length; i++) {
-            if (tableList[i] === '*metadata') {
-              metadataTableExists = true;
-              break;
-            }
-          }
-          if (!metadataTableExists || forceLoadFromDom) {
-            this._loadInitialStateFromDom(pathElements);
-            return;
-          }
-
-          var domEdited = this._metadataElement ?
-            safeParseInt(this._metadataElement.getAttribute('edited')) :
-            null;
-
-          loadPropertiesFromWebSql(
-            '*metadata',
-            this._metadataElement,
-            this._metadataProperties,
-            this._executeSql,
-            sqlError => {
-              if (sqlError) {
-                this.handler.documentStorageCreated(new Error('loadPropertiesFromWebSql:*metadata: ' + sqlError.message), null);
-                return;
-              }
-
-              var wsEdited = safeParseInt(this._metadataProperties.edited);
-              if (!wsEdited || domEdited && domEdited > wsEdited)
-                this._loadInitialStateFromDom(pathElements);
-              else
-                this._loadInitialStateFromWebSql(pathElements);
-            });
-        });
+        this._initFromOpenDatabase(openDatabase, forceLoadFromDom, pathElements);
       }
       else {
         this._loadInitialStateFromDom(pathElements);
@@ -323,6 +150,123 @@ module teapo {
     }
 
 
+    
+    private _initFromOpenDatabase(openDatabase, forceLoadFromDom: boolean, pathElements: { [name: string]: HTMLScriptElement; }) {
+      var dbName = this.handler.uniqueKey ? this.handler.uniqueKey : getUniqueKey();
+
+      var detectIndexedDB = new teapo.storage.attached.indexedDB.DetectStorage();
+      detectIndexedDB.detectStorageAsync(dbName, (errorIndexedDB, load) => {
+        if (errorIndexedDB) {
+          var detectWebSQL = new teapo.storage.attached.webSQL.DetectStorage();
+          detectWebSQL.detectStorageAsync(dbName, (errorWebSQL, load) => {
+            if (errorWebSQL) {
+              alert(
+                'Persistent storage is not stable\n'+
+                'indexedDB ' + errorIndexedDB + '\n' +
+                'webSQL ' + errorWebSQL);
+              return;
+            }
+
+            this._initWithStorage(load, forceLoadFromDom, pathElements);
+          });
+          return;
+        }
+        
+        this._initWithStorage(load, forceLoadFromDom, pathElements);
+      });
+
+      var db = openDatabase(dbName, 1, null, 1024 * 1024 * 5);
+
+      this._executeSql = (
+        sqlStatement: string,
+        args: any[],
+        callback: (transaction: SQLTransaction, result: SQLResultSet) => void,
+        errorCallback: (transaction: SQLTransaction, error: SQLError) => void) => {
+
+        var errorCallbackSafe = (t: SQLTransaction, e: SQLError) => {
+          alert(e + ' ' + e.message + '\n' + sqlStatement + '\n' + args);
+          errorCallback(t, e);
+        };
+
+        db.transaction((t) => t.executeSql(sqlStatement, args, callback, errorCallbackSafe));
+      };
+      this._insertMetadataSql = 'INSERT INTO "*metadata" (name, value) VALUES(?,?)';
+      this._updateMetadataSql = 'UPDATE "*metadata" SET value=? WHERE name=?';
+
+      this._metadataProperties = {};
+      this._loadTableListFromWebsql((tableList) => {
+        this._initWithTableList(tableList, forceLoadFromDom, pathElements);
+      });
+    }
+
+    private _initWithStorage(load: teapo.storage.attached.LoadStorage, forceLoadFromDom: boolean, pathElements: { [name: string]: HTMLScriptElement; }) {
+      var domEdited = this._metadataElement ?
+        safeParseInt(this._metadataElement.getAttribute('edited')) :
+        null;
+
+      if (domEdited || 0 < load.editedUTC || 0) {
+        console.log('DOM is younger, need to call load.load', domEdited, load.editedUTC);
+      }
+      else {
+        console.log('DOM is older, need to call load.migrate', domEdited, load.editedUTC);
+        var filesByName: { [fullPath: string]: { [propertyName: string]: string; }; } = { };
+        for (var fullPath in pathElements) if (pathElements.hasOwnProperty(fullPath)) {
+          var pbag: any = {};
+          loadPropertyBagFromDom(pathElements[fullPath], pbag);
+          var contentStr = decodeFromInnerHTML(pathElements[fullPath].innerHTML);
+          pbag[''] = contentStr;
+
+          filesByName[fullPath] = pbag;
+        }
+
+        load.migrate(
+          domEdited || new Date().valueOf(),
+          filesByName,
+          (error, updater) => {
+            console.log('migrate completed: ', error, updater, filesByName);
+          });
+      }
+    }
+
+    private _initWithTableList(tableList: string[], forceLoadFromDom: boolean, pathElements: { [name: string]: HTMLScriptElement; }) { 
+      var metadataTableExists = false;
+      for (var i = 0; i < tableList.length; i++) {
+        if (tableList[i] === '*metadata') {
+          metadataTableExists = true;
+          break;
+        }
+      }
+      if (!metadataTableExists || forceLoadFromDom) {
+        this._loadInitialStateFromDom(pathElements);
+        return;
+      }
+
+      var domEdited = this._metadataElement ?
+        safeParseInt(this._metadataElement.getAttribute('edited')) :
+        null;
+
+      loadPropertiesFromWebSql(
+        '*metadata',
+        this._metadataElement,
+        this._metadataProperties,
+        this._executeSql,
+        sqlError => {
+          if (sqlError) {
+            this.handler.documentStorageCreated(new Error('loadPropertiesFromWebSql:*metadata: ' + sqlError.message), null);
+            return;
+          }
+
+          var wsEdited = safeParseInt(this._metadataProperties.edited);
+          if (!wsEdited || domEdited && domEdited > wsEdited) {
+            this.editedUTC = domEdited;
+            this._loadInitialStateFromDom(pathElements);
+          }
+          else{
+            this.editedUTC = wsEdited;
+            this._loadInitialStateFromWebSql(pathElements);
+          }
+        });
+    }
 
     private _loadInitialStateFromDom(
       pathElements: { [fullPath: string]: HTMLScriptElement; }) {
@@ -814,21 +758,20 @@ module teapo {
     afterCreateTable(() => {
       var insertSQL = 'INSERT INTO "' + tableName + '" (name, value) VALUES(?,?)';
 
-      for (var i = 0; i < script.attributes.length; i++) {
-        var a = script.attributes.item(i);
+      var pbag = {};
+      loadPropertyBagFromDom(script, pbag);
+      for (var p in pbag) if (pbag.hasOwnProperty(p)) { 
 
-        if (a.name === 'id' || a.name === 'data-path' || a.name === 'type')
-          continue;
-
-        properties[a.name] = a.value;
+        var v = pbag[p];
+        properties[p] = v;
 
         if (executeSql) {
           executeSql(
             insertSQL,
-            [a.name, a.value],
+            [p, v],
             (tr, r) => { return; },
             (tr, e) => {
-              alert('loadPropertiesFromDom(' + tableName + ') ' + insertSQL + ' [' + a.name + ',' + a.value + '] ' + e.message);
+              alert('loadPropertiesFromDom(' + tableName + ') ' + insertSQL + ' [' + p + ',' + v + '] ' + e.message);
             });
         }
       }
@@ -845,6 +788,17 @@ module teapo {
             alert('loadPropertiesFromDom(' + tableName + ') ' + insertSQL + ' [,' + contentStr + '] ' + e.message);
           });
     });
+  }
+
+  function loadPropertyBagFromDom(script: HTMLElement, properties: any) {
+    for (var i = 0; i < script.attributes.length; i++) {
+      var a = script.attributes.item(i);
+
+      if (a.name === 'id' || a.name === 'data-path' || a.name === 'type')
+        continue;
+
+      properties[a.name] = a.value;
+    }
   }
 
   function loadPropertiesFromWebSql(
@@ -886,23 +840,4 @@ module teapo {
     }
   }
 
-  /**
-   * Escape unsafe character sequences like a closing script tag.
-   */
-  export function encodeForInnerHTML(content: string): string {
-    // matching script closing tag with *one* or more consequtive slashes
-    return content.replace(/<\/+script/g, (match) => {
-      return '</' + match.slice(1); // skip angle bracket, inject bracket and extra slash
-    });
-  }
-
-  /**
-   * Unescape character sequences wrapped with encodeForInnerHTML for safety.
-   */
-  export function decodeFromInnerHTML(innerHTML: string): string {
-    // matching script closing tag with *t*wo or more consequtive slashes
-    return innerHTML.replace(/<\/\/+script/g, (match) => {
-      return '<' + match.slice(2); // skip angle bracket and one slash, inject bracket
-    });
-  }
 }

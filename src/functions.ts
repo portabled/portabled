@@ -38,6 +38,17 @@ module teapo {
     });
   }
 
+  export function forEach<T>(array: T[], callback: (x: T, index: number) => void) {
+    if (array.forEach) {
+      array.forEach(callback);
+    }
+    else {
+      for (var i = 0; i < array.length; i++) {
+        callback(array[i], i);
+      }
+    }
+  }
+
   export function find<T, R>(array: T[], predicate: (x: T, index: number) => R): R {
     var result = null;
     for (var i = 0; i < array.length; i++) {
@@ -47,4 +58,75 @@ module teapo {
     }
   }
 
+  /**
+ * Escape unsafe character sequences like a closing script tag.
+ */
+  export function encodeForInnerHTML(content: string): string {
+    // matching script closing tag with *one* or more consequtive slashes
+    return content.replace(/<\/+script/g, (match) => {
+      return '</' + match.slice(1); // skip angle bracket, inject bracket and extra slash
+    });
+  }
+
+  /**
+   * Unescape character sequences wrapped with encodeForInnerHTML for safety.
+   */
+  export function decodeFromInnerHTML(innerHTML: string): string {
+    // matching script closing tag with *t*wo or more consequtive slashes
+    return innerHTML.replace(/<\/\/+script/g, (match) => {
+      return '<' + match.slice(2); // skip angle bracket and one slash, inject bracket
+    });
+  }
+
+  export function encodeForAttributeName(value: string): string {
+    var codes: number[] = [];
+    var passableOnly = true;
+
+    for (var i = 0; i < value.length; i++) {
+      var c = value.charAt(i);
+      var cc = value.charCodeAt(i);
+      codes.push(cc);
+      if (passableOnly)
+        passableOnly = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z' || c === '_' || c === '-');
+    }
+
+    if (passableOnly)
+      return 's-' + value;
+    else
+      return 'n-' + codes.join('-');
+  }
+
+  export function decodeFromAttributeName(attributeNamePart: string): string {
+    if (attributeNamePart.slice(0, 2) === 's-')
+      return attributeNamePart.slice(2);
+
+    var codes = attributeNamePart.slice(2).split('-');
+    var result: string[] = [];
+    for (var i = 0; i < codes.length; i++) {
+      try {
+        result[i] = String.fromCharCode(parseInt(codes[i]));
+      }
+      catch (error) {
+        console.log('Parsing attribute name error: ' + attributeNamePart + ' has non-numeric chunk ' + i + ' (' + codes[i] + ').');
+        return null;
+      }
+    }
+    return result.join('');
+  }
+
+  export function startsWith(str: string, prefix: string) {
+    if (!str) return !prefix;
+    if (!prefix) return false;
+    if (str.length < prefix.length) return false;
+    if (str.charCodeAt(0) !== prefix.charCodeAt(0)) return false;
+    if (str.slice(0, prefix.length) !== prefix) return false;
+    else return true;
+  }
+
+  export function dateNow(): number {
+    if (Date.now)
+      return Date.now();
+    else
+      return new Date().valueOf();
+  } 
 }

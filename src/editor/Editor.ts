@@ -10,7 +10,7 @@ module teapo {
      * Opens the editor for editing, returning HTML element for editing.
      * @onchange callback to notify that saving is needed now.
      */
-    open(onchange: () => void, statusText?: KnockoutObservable<string>): HTMLElement;
+    open(onchange: () => void, statusText?: ko.Observable<string>): HTMLElement;
 
     /**
      * Invoked when it's finally a good time to save the changes.

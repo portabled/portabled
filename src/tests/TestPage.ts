@@ -42,17 +42,17 @@ module teapo.tests {
         return;
       }
 
-      var now = Date.now();
-      this.running().forEach(t => t.updateTimes(now));
+      var now = dateNow();
+      forEach(this.running(), t => t.updateTimes(now));
     }
 
     private _continueStarting() {
-      var now = Date.now();
-      this.running().forEach(t => {
+      var now = dateNow();
+      forEach(this.running(), t => {
         t.updateTimes(now);
       });
       
-      var nextRest = Date.now() + this.workQuantum;
+      var nextRest = dateNow() + this.workQuantum;
       while (true) {
 
         if (!this.notStarted().length)
@@ -63,7 +63,7 @@ module teapo.tests {
         if (!this.notStarted().length)
           return;
         
-        if (Date.now() >= nextRest) {
+        if (dateNow() >= nextRest) {
           this._queueWorkItem(this._continueStartingClosure);
           return;
         }
@@ -114,7 +114,7 @@ module teapo.tests {
       });
 
       names.sort();
-      names.forEach(name => {
+      forEach(names, name => {
         var testCase = byName[name];
         this.all.push(testCase);
       });
@@ -126,7 +126,7 @@ module teapo.tests {
     static forEachTest(namespace: any, callback: (name: string, _this_: any, test: () => void) => void) {
 
       for (var k in namespace) {
-        if (!k || k[0] === '_' || Object.prototype[k]) continue;
+        if (!k || k.charAt(0) === '_' || Object.prototype[k]) continue;
 
         var t = namespace[k];
         if (typeof t === 'function') {

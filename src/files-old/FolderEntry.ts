@@ -11,12 +11,12 @@ module teapo {
 
     nestLevel(): number;
 
-    isExpanded: KnockoutObservable<boolean>;
+    isExpanded: ko.Observable<boolean>;
 
-    folders: KnockoutObservableArray<FolderEntry>;
-    files: KnockoutObservableArray<FileEntry>;
+    folders: ko.ObservableArray<FolderEntry>;
+    files: ko.ObservableArray<FileEntry>;
 
-    containsSelectedFile: KnockoutObservable<boolean>;
+    containsSelectedFile: ko.Observable<boolean>;
 
     handleClick(): void;
     toggleExpand(): void;

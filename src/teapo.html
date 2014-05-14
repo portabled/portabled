@@ -1,8 +1,6 @@
-<!DOCTYPE html>
-<html>
-<head>
+<!doctype html><html><head><script>###teapo.ts:build###</script>
 <title>Teapo v0.4h</title>
-<meta name="viewport" content="width=600">
+<meta name="viewport" content="width=800">
 <style data-path='/imports/codemirror/codemirror.css'>###imports/codemirror/codemirror.css###</style>
 <style data-path='/imports/codemirror/show-hint.css'>###imports/codemirror/show-hint.css###</style>
 <style data-path='/imports/codemirror/dialog.css'>###imports/codemirror/dialog.css###</style>
@@ -113,6 +111,9 @@
 <script data-path='/storage/attached/api/DetectStorage.ts' type='text/html'>###storage/attached/api/DetectStorage.ts###</script>
 <script data-path='/storage/attached/api/LoadStorageRecipient.ts' type='text/html'>###storage/attached/api/LoadStorageRecipient.ts###</script>
 <script data-path='/storage/attached/api/UpdateStorage.ts' type='text/html'>###storage/attached/api/UpdateStorage.ts###</script>
+<script data-path='/storage/attached/dom/DetectStorage.ts' type='text/html'>###storage/attached/dom/DetectStorage.ts###</script>
+<script data-path='/storage/attached/dom/LoadStorage.ts' type='text/html'>###storage/attached/dom/LoadStorage.ts###</script>
+<script data-path='/storage/attached/dom/UpdateStorage.ts' type='text/html'>###storage/attached/dom/UpdateStorage.ts###</script>
 <script data-path='/storage/attached/indexedDB/DetectStorage.ts' type='text/html'>###storage/attached/indexedDB/DetectStorage.ts###</script>
 <script data-path='/storage/attached/indexedDB/FileData.ts' type='text/html'>###storage/attached/indexedDB/FileData.ts###</script>
 <script data-path='/storage/attached/indexedDB/LoadStorage.ts' type='text/html'>###storage/attached/indexedDB/LoadStorage.ts###</script>
@@ -127,12 +128,23 @@
 <script data-path='/storage/attached/webSQL/UpdateStorage.ts' type='text/html'>###storage/attached/webSQL/UpdateStorage.ts###</script>
 <script data-path='/storage/attached/webSQL/functions.ts' type='text/html'>###storage/attached/webSQL/functions.ts###</script>
 
+<script data-path='/docs/api/Document.ts' type='text/html'>###docs/api/Document.ts###</script>
+<script data-path='/docs/api/Document_Storage.ts' type='text/html'>###docs/api/Document_Storage.ts###</script>
+<script data-path='/docs/api/Document_Type.ts' type='text/html'>###docs/api/Document_Type.ts###</script>
+<script data-path='/docs/api/Drive.ts' type='text/html'>###docs/api/Drive.ts###</script>
+<script data-path='/docs/api/Folder.ts' type='text/html'>###docs/api/Folder.ts###</script>
+<script data-path='/docs/CodeMirrorServices/DocumentState.ts' type='text/html'>###docs/CodeMirrorServices/DocumentState.ts###</script>
+<script data-path='/docs/CodeMirrorServices/EditorPool.ts' type='text/html'>###docs/CodeMirrorServices/EditorPool.ts###</script>
+
 <script data-path='/tests/storage/attached/AttachedStorageTests.ts' type='text/html'>###tests/storage/attached/AttachedStorageTests.ts###</script>
+<script data-path='/tests/storage/attached/DomStorageTests.ts' type='text/html'>###tests/storage/attached/DomStorageTests.ts###</script>
 <script data-path='/tests/storage/attached/IndexedDBStorageTests.ts' type='text/html'>###tests/storage/attached/IndexedDBStorageTests.ts###</script>
 <script data-path='/tests/storage/attached/LocalStorageStorageTests.ts' type='text/html'>###tests/storage/attached/LocalStorageStorageTests.ts###</script>
 <script data-path='/tests/storage/attached/WebSQLStorageTests.ts' type='text/html'>###tests/storage/attached/WebSQLStorageTests.ts###</script>
 <script data-path='/tests/files/FileList.ts' type='text/html'>###tests/files/FileList.ts###</script>
 <script data-path='/tests/_sampleTests.ts' type='text/html'>###tests/_sampleTests.ts###</script>
+<script data-path='/tests/teapo-tests.html' type='text/html'>###tests/teapo-tests.html###</script>
+<script data-path='/tests/teapo-tests.ts' type='text/html'>###tests/teapo-tests.ts###</script>
   
 <script id=TestPage data-path='/tests/TestPage.html' type='text/html'>###tests/TestPage.html###</script>
 <script id=TestCase data-path='/tests/TestCase.html' type='text/html'>###tests/TestCase.html###</script>
@@ -140,17 +152,19 @@
   
 <script data-path='/ko.ts' type='text/html'>###ko.ts###</script>
 <script data-path='/persistence.ts' type='text/html'>###persistence.ts###</script>
+<script data-path='/persistence.api.ts' type='text/html'>###persistence.api.ts###</script>
 <script data-path='/shell.ts' type='text/html'>###shell.ts###</script>
 <script data-path='/teapo.ts' type='text/html'>###teapo.ts###</script>
 <script data-path='/TypeScriptService.ts' type='text/html'>###TypeScriptService.ts###</script>
 
 <script data-path='/teapo.html' type='text/html'>###teapo.html###</script>
+<script data-path='/nteapo.html' type='text/html'>###nteapo.html###</script>
 
 <!-- TypeScript services, taken from TS bin directory verbatim --->
 <script data-path='/imports/typescript/typescriptServices.js' >###imports/typescript/typescriptServices.js###</script>
 
-<!-- Teapo code (this will actually execute stuff straight away) -->
-<script data-path='/teapo.js' >###teapo.ts:build###</script>
+<!-- Kicking off -->
+<script>teapo.app.run();</script>
 
 </body>
 </html>

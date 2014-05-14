@@ -13,14 +13,14 @@ module teapo.storage.attached {
      * By convention, null value is considered as a request to remove the property.
      * @param callback Optional callback to invoke when the update is complete (or failed with an error).
      */
-    update(file: string, property: string, value: string, callback?: (error: Error) => void);
+    update(file: string, property: string, value: string, callback?: (error: Error) => void): void;
 
     /**
      * Remove the file and all its properties.
      * @param file Full path to the file.
      * @param callback Optional callback to invoke when the removal is complete (or failed with an error).
      */
-    remove(file: string, callback?: (error: Error) => void);
+    remove(file: string, callback?: (error: Error) => void): void;
     
   }
 

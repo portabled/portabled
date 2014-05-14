@@ -217,7 +217,7 @@ module teapo.tests {
         (error, load) => {
           load.migrate(
             2345,
-            { "file.txt": { property: "value" } },
+            { "file63.txt": { property: "value" } },
             (error, update) => {
               this._detect.detectStorageAsync(
                 ukey,
@@ -226,7 +226,7 @@ module teapo.tests {
                   load.load({
                     file: (name, values) => files[name] = values,
                     completed: (updater) => {
-                      var fileTxt = files['file.txt'];
+                      var fileTxt = files['file63.txt'];
                       if (!fileTxt) {
                         callback(new Error('File is not reported on subsequent load.'));
                       }
@@ -260,7 +260,7 @@ module teapo.tests {
                 this._detect.detectStorageAsync(
                   ukey,
                   (error, load) => {
-                    var now = Date.now();
+                    var now = dateNow();
                     callback(Math.abs(now - load.editedUTC) < 10000 ? null : new Error('Recent editedUTC expected, ' + load.editedUTC + ' (now ' + now + ', diff ' + (now - load.editedUTC) + ').'));
                   });
 
