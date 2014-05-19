@@ -277,7 +277,8 @@ var teapo;
                 this._storageLoader = null;
                 this._persistenceName = null;
                 this._editedUTC = 0;
-                this._supportsPersistence = false;
+                this._loadingFromPersistence = false;
+                this._fileCount = 0;
             }
             BootController.prototype.startBooting = function () {
                 var _this = this;
@@ -357,8 +358,8 @@ var teapo;
 
                 this._storageLoader = new boot.StorageLoader(this.dom, this._storageElem, uniqueKey);
                 this._storageLoader.loadStorage({
-                    detectionComplete: function (err, name, editedUTC, supportsPersistence) {
-                        return _this._storageDetectionComplete(err, name, editedUTC, supportsPersistence);
+                    detectionComplete: function (err, persistenceName, editedUTC, loadingFromPersistence) {
+                        return _this._storageDetectionComplete(err, persistenceName, editedUTC, loadingFromPersistence);
                     },
                     loadProgress: function (totalFileCount, loadedFileCount, lastLoadedFileName) {
                         return _this._storageLoadProgress(totalFileCount, loadedFileCount, lastLoadedFileName);
@@ -369,23 +370,25 @@ var teapo;
                 });
             };
 
-            BootController.prototype._storageDetectionComplete = function (err, name, editedUTC, supportsPersistence) {
+            BootController.prototype._storageDetectionComplete = function (err, persistenceName, editedUTC, loadingFromPersistence) {
                 if (err) {
                     alert('Detection ' + err.message);
                     return;
                 }
 
-                this._persistenceName = name;
+                this._persistenceName = persistenceName;
                 this._editedUTC = editedUTC;
-                this._supportsPersistence = supportsPersistence;
+                this._loadingFromPersistence = loadingFromPersistence;
 
                 this._layout.setProgressColor('goldenrod');
-                this._layout.setSmallProgressText('Loading files from ' + name + ' edited on ' + new Date(editedUTC) + '...');
+                this._layout.setSmallProgressText('Loading files from ' + (loadingFromPersistence ? persistenceName : 'dom' + (persistenceName ? ' (' + persistenceName + ')' : '')) + (editedUTC ? ' edited on ' + new Date(editedUTC) : '') + '...');
             };
 
             BootController.prototype._storageLoadProgress = function (totalFileCount, loadedFileCount, lastLoadedFileName) {
                 this._layout.setProgressColor('green');
                 this._layout.setSmallProgressText('Loading "' + lastLoadedFileName + '" ' + loadedFileCount + ' of ' + totalFileCount + '...');
+                this._layout.setProgressRatio(BootController.initialProgress + BootController.domLoadProgressAmount + BootController.migrateProgressAmount * loadedFileCount / totalFileCount);
+                this._fileCount = loadedFileCount;
             };
 
             BootController.prototype._storageLoaded = function (err, byFullPath, domUpdater, persistenceUpdater) {
@@ -395,7 +398,8 @@ var teapo;
                 }
 
                 this._layout.setProgressColor('black');
-                this._layout.setSmallProgressText('Loaded files from ' + this._persistenceName + ' edited on ' + new Date(this._editedUTC) + '...');
+                this._layout.setSmallProgressText('Loaded ' + this._fileCount + ' files from ' + (this._loadingFromPersistence ? this._persistenceName : 'dom' + (this._persistenceName ? ' (' + this._persistenceName + ')' : '')) + (this._editedUTC ? ' edited on ' + new Date(this._editedUTC) : '') + '.');
+                this._layout.setProgressRatio(BootController.initialProgress + BootController.domLoadProgressAmount + BootController.migrateProgressAmount);
 
                 teapo.addEventListener(window, 'keydown', function (evt) {
                     if (evt.keyCode === 83 && evt.ctrlKey) {
@@ -427,6 +431,7 @@ var teapo;
             };
             BootController.initialProgress = 0.15;
             BootController.domLoadProgressAmount = 0.3;
+            BootController.migrateProgressAmount = 0.3;
             return BootController;
         })();
         boot.BootController = BootController;
@@ -562,7 +567,7 @@ var teapo;
                 var sourceLoad = loadingFromPersistence ? this._persistence : this._domStorage;
                 var targetLoad = loadingFromPersistence ? this._domStorage : this._persistence;
 
-                this._callbacks.detectionComplete(null, this._persistenceName, sourceLoad.editedUTC, targetLoad ? true : false);
+                this._callbacks.detectionComplete(null, this._persistenceName, sourceLoad.editedUTC, loadingFromPersistence);
 
                 var byFullPath = {};
                 var loadedFileCount = 0;
@@ -1339,7 +1344,7 @@ var teapo;
                     for (var i = 0; i < docNames.length; i++) {
                         var fullPath = docNames[i];
                         var docState = _this._storageForBuild.getDocument(fullPath);
-                        output.push('<' + 'script' + ' data-path="' + fullPath + '" type="text/html">');
+                        output.push('<' + 'script' + ' data-teapo-path="' + fullPath + '" type="text/html">');
                         var content = docState.getProperty(null);
                         output.push(teapo.encodeForInnerHTML(content));
                         output.push('</' + 'script' + '>');
@@ -4370,7 +4375,7 @@ var teapo;
                         }
 
                         var result = {};
-
+                        var anyProperty = false;
                         for (var i = 0; i < element.attributes.length; i++) {
                             var a = element.attributes.item(i);
 
@@ -4381,6 +4386,12 @@ var teapo;
                             var attrName = teapo.decodeFromAttributeName(a.name.slice(prefix.length));
                             var content = a.value;
                             result[attrName] = content;
+                            anyProperty = true;
+                        }
+
+                        if (!anyProperty) {
+                            // fallback for legacy support
+                            result[''] = teapo.decodeFromInnerHTML(element.innerHTML);
                         }
 
                         recipient.file(fullPath, result);
@@ -6659,7 +6670,7 @@ var teapo;
 
 
 
-</div><div style="position: fixed; z-index: 1000000; left: 0px; top: 0px; right: 0px; bottom: 0px; background-color: white; color: black; background-position: initial initial; background-repeat: initial initial;"><div style="position: fixed; left: 5%; top: 5%; right: 5%;"><div style="font-size: 200%;">Loading teapo...</div><div style="height: 2px; background-color: rgb(245, 245, 245); background-position: initial initial; background-repeat: initial initial;"><div style="height: 2px; background-color: black; width: 44.9%; background-position: initial initial; background-repeat: initial initial;"></div></div><div style="font-size: 90%;">Loaded files from indexedDB edited on Invalid Date...</div></div></div>
+</div><div style="position: fixed; z-index: 1000000; left: 0px; top: 0px; right: 0px; bottom: 0px; background-color: white; color: black; background-position: initial initial; background-repeat: initial initial;"><div style="position: fixed; left: 5%; top: 5%; right: 5%;"><div style="font-size: 200%;">Loading teapo...</div><div style="height: 2px; background-color: rgb(245, 245, 245); background-position: initial initial; background-repeat: initial initial;"><div style="height: 2px; background-color: black; width: 75%; background-position: initial initial; background-repeat: initial initial;"></div></div><div style="font-size: 90%;">Loaded 129 files from dom (indexedDB).</div></div></div>
 
 
 </body></html>
