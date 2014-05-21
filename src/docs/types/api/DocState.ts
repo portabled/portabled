@@ -1,12 +1,12 @@
-module teapo.docs {
+module teapo.docs.types {
 
-  export interface Document {
+  export interface DocState {
 
     iconClass(): string;
-    
+
     open(): HTMLElement;
     close(): void;
-    
+
   }
 
 }

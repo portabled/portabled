@@ -2,10 +2,10 @@ module teapo.docs.CodeMirrorServices {
 
   export class DocumentState {
 
-    private _doc: CodeMirror.Doc = null;
-    
     loadText: () => string;
-    
+
+    private _doc: CodeMirror.Doc = null;
+
     constructor() {
     }
 

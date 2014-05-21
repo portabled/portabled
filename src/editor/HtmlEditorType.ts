@@ -17,7 +17,7 @@ module teapo {
       var shared: CodeMirrorEditor.SharedState = { options: options };
 
       options.mode = "text/html";
-      options.gutters = [ 'teapo-errors' ];
+      options.gutters = ['teapo-errors'];
 
       var debugClosure = () => {
         var editor = <HtmlEditor>shared.editor;
@@ -27,8 +27,8 @@ module teapo {
       };
 
       var extraKeys = options.extraKeys || (options.extraKeys = {});
-      var shortcuts = ['Ctrl-B','Alt-B','Cmd-B','Shift-Ctrl-B','Ctrl-Alt-B','Shift-Alt-B','Shift-Cmd-B','Cmd-Alt-B'];
-      for (var i = 0; i<shortcuts.length; i++) {
+      var shortcuts = ['Ctrl-B', 'Alt-B', 'Cmd-B', 'Shift-Ctrl-B', 'Ctrl-Alt-B', 'Shift-Alt-B', 'Shift-Cmd-B', 'Cmd-Alt-B'];
+      for (var i = 0; i < shortcuts.length; i++) {
         var k = shortcuts[i];
         if (k in extraKeys)
           continue;
@@ -41,8 +41,8 @@ module teapo {
 
     canEdit(fullPath: string): boolean {
       var dotParts = fullPath.split('.');
-      return dotParts.length>1 &&
-        (dotParts[dotParts.length-1].toLowerCase()==='html' || dotParts[dotParts.length-1].toLowerCase()==='htm');
+      return dotParts.length > 1 &&
+        (dotParts[dotParts.length - 1].toLowerCase() === 'html' || dotParts[dotParts.length - 1].toLowerCase() === 'htm');
     }
 
     editDocument(docState: DocumentState): Editor {
@@ -61,8 +61,8 @@ module teapo {
     handleChange(change: CodeMirror.EditorChange) {
       super.handleChange(change);
 
-      if (change.text.length===1
-          && (change.text[0]==='<' || change.text[0]==='/'))
+      if (change.text.length === 1
+        && (change.text[0] === '<' || change.text[0] === '/'))
         this.triggerCompletion(true);
     }
 
@@ -81,48 +81,95 @@ module teapo {
       var match;
 
       while (match = srcRegex.exec(html)) {
-        var inlineFullPath = match[1];
+        var directive = match[1];
+        var inlineFullPath = directive;
         var verb: string = null;
 
-        if (inlineFullPath.lastIndexOf(':')>=0) {
-          verb = inlineFullPath.slice(inlineFullPath.lastIndexOf(':')+1);
-          inlineFullPath = inlineFullPath.slice(0,inlineFullPath.length-verb.length-1);
+        if (inlineFullPath.lastIndexOf(':') >= 0) {
+          verb = inlineFullPath.slice(inlineFullPath.lastIndexOf(':') + 1);
+          inlineFullPath = inlineFullPath.slice(0, inlineFullPath.length - verb.length - 1);
         }
 
-        if (inlineFullPath.charAt(0)!=='/' && inlineFullPath.charAt(0)!=='#')
-          inlineFullPath = '/'+inlineFullPath;
+        if (inlineFullPath.charAt(0) !== '/' && inlineFullPath.charAt(0) !== '#')
+          inlineFullPath = '/' + inlineFullPath;
 
         var inlineDocState = this._storageForBuild.getDocument(inlineFullPath);
-        if (!inlineDocState) {
-          console.log('Inlining ' + inlineFullPath + ' failed: cannot find.');
-          continue;
-        }
-  
-        convertedOutput.push(html.slice(offset, match.index));
-  
+
+        var _embedAllDocs = () => {
+          var docNames = this._storageForBuild.documentNames();
+          var output: string[] = [];
+          output.push('<!' + '-- data insertion --' + '>');
+          output.push('<div id=data-teapo-' + 'storage style="display: none;" data-teapo-file-count="' + docNames.length + '">');
+          for (var i = 0; i < docNames.length; i++) {
+            var fullPath = docNames[i];
+            var docState = this._storageForBuild.getDocument(fullPath);
+            output.push('<' + 'script' + ' data-teapo-path="' + fullPath + '" type="text/html">');
+            var content = docState.getProperty(null);
+            output.push(encodeForInnerHTML(content));
+            output.push('</' + 'script' + '>');
+            output.push('\n');
+          }
+          output.push('</' + 'div' + '>');
+          return output.join('');
+        };
+
+        function embedAllDocs() {
+          return _embedAllDocs();
+        };
+
+
         var embedContent: string;
-        if (verb && verb in inlineDocState.editor()) {
-          embedContent = (<any>inlineDocState.editor())[verb]();
+
+        if (!inlineDocState) {
+          if (startsWith(directive, '(js)')) {
+            var js = directive.slice('(js)'.length);
+
+            var storage = this._storageForBuild;
+            var docState = this.docState;
+            var fullPath = this.docState.fullPath();
+
+            try {
+              var _content = eval(js);
+              if (typeof _content === 'string')
+                embedContent = _content;
+            }
+            catch (evalError) {
+              alert('(js) eval ' + evalError);
+              continue;
+            }
+
+          }
+          else {
+            alert('Inlining ' + inlineFullPath + ' failed: cannot find.');
+            continue;
+          }
         }
         else {
-          embedContent = inlineDocState.getProperty(null);
+          if (verb && verb in inlineDocState.editor()) {
+            embedContent = (<any>inlineDocState.editor())[verb]();
+          }
+          else {
+            embedContent = inlineDocState.getProperty(null);
+          }
+
+          embedContent = encodeForInnerHTML(embedContent);
         }
-  
-        embedContent = embedContent.replace(/<\/script/g, '</script');
+
+        convertedOutput.push(html.slice(offset, match.index));
         convertedOutput.push(embedContent);
-        offset = match.index+match[0].length;
-  
+        offset = match.index + match[0].length;
+
         var shortName = match[1];
-        shortName = shortName.slice(shortName.lastIndexOf('/')+1);
+        shortName = shortName.slice(shortName.lastIndexOf('/') + 1);
       }
-  
-      if (offset<html.length)
+
+      if (offset < html.length)
         convertedOutput.push(html.slice(offset));
-  
+
       var filename = this.docState.fileEntry().name();
-      var blob = new Blob(convertedOutput, {type: 'text/html'});
+      var blob = new Blob(convertedOutput, { type: 'text/html' });
       var url = URL.createObjectURL(blob);
-      window.open(url, '_blank'+Date.now());
+      window.open(url, '_blank' + Date.now());
 
     }
   }

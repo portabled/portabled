@@ -1,42 +1,5 @@
 module teapo {
 
-  export function addEventListener(element: any, type: string, listener: (event: Event) => void) {
-    if (element.addEventListener) {
-      element.addEventListener(type, listener);
-    }
-    else {
-      var ontype = 'on' + type;
-
-      if (element.attachEvent) {
-        element.attachEvent('on' + type, listener);
-      }
-      else if (element[ontype]) {
-        element[ontype] = listener;
-      }
-    }
-  }
-
-  export function addEventListenerWithDelay(element: any, type: string, listener: (event: Event) => void) {
-    var queued = false;
-    var storedEvent: Event;
-
-    var listenerClosure = () => {
-      queued = false;
-      listener(storedEvent);
-      storedEvent = null;
-    };
-
-    addEventListener(element, type, event => {
-      storedEvent = event;
-      if (!queued) {
-        queued = true;
-        if (typeof requestAnimationFrame === 'function')
-          requestAnimationFrame(listenerClosure);
-        else
-          setTimeout(listenerClosure, 1);
-      }
-    });
-  }
 
   export function forEach<T>(array: T[], callback: (x: T, index: number) => void) {
     if (array.forEach) {
@@ -128,5 +91,63 @@ module teapo {
       return Date.now();
     else
       return new Date().valueOf();
-  } 
+  }
+
+  export function saveCurrentHtmlAsIs() {
+    var blob: Blob = new (<any>Blob)(['<!doctype html>\n', document.documentElement.outerHTML], { type: 'application/octet-stream' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.setAttribute('download', 'nteapo.html');
+    try {
+      // safer save method, supposed to work with FireFox
+      var evt_ = document.createEvent("MouseEvents");
+      (<any>evt_).initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+      a.dispatchEvent(evt_);
+    }
+    catch (e) {
+      a.click();
+    }
+  }
+    
+    
+    
+  export function addEventListener(element: any, type: string, listener: (event: Event) => void) {
+    if (element.addEventListener) {
+      element.addEventListener(type, listener);
+    }
+    else {
+      var ontype = 'on' + type;
+
+      if (element.attachEvent) {
+        element.attachEvent('on' + type, listener);
+      }
+      else if (element[ontype]) {
+        element[ontype] = listener;
+      }
+    }
+  }
+
+  export function addEventListenerWithDelay(element: any, type: string, listener: (event: Event) => void) {
+    var queued = false;
+    var storedEvent: Event;
+
+    var listenerClosure = () => {
+      queued = false;
+      listener(storedEvent);
+      storedEvent = null;
+    };
+
+    addEventListener(element, type, event => {
+      storedEvent = event;
+      if (!queued) {
+        queued = true;
+        if (typeof requestAnimationFrame === 'function')
+          requestAnimationFrame(listenerClosure);
+        else
+          setTimeout(listenerClosure, 1);
+      }
+    });
+  }
+
 }

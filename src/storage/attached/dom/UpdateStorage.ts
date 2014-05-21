@@ -14,6 +14,7 @@ module teapo.storage.attached.dom {
 
       if (!element) {
         element = UpdateStorage.createElement(this._parentElement, file, this._document);
+        this._parentElement.setAttribute('data-teapo-file-count', <any>this._parentElement.children.length);
         this._byName[file] = element;
       }
 

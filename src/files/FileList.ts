@@ -16,7 +16,10 @@ module teapo.files {
 
     private _fileByPath: { [path: string]: FileEntry; } = {};
 
-    constructor(files?: string[]) {
+    constructor(
+      files: string[],
+      private _attachFileEntry: (fileEntry: FileEntry) => void,
+      private _detachFileEntry: (fileEntry: FileEntry) => void) {
       if (files) {
         for (var i = 0; i < files.length; i++) {
           this.file(files[i]);
@@ -92,6 +95,7 @@ module teapo.files {
 
     private _createChildFileEntry(parent: FolderEntry, name: string) {
       var f = new FileEntry(parent, name);
+      this._attachFileEntry(f);
       return f;
     }
 

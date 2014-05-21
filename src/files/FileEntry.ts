@@ -14,6 +14,8 @@ module teapo.files {
     /** Meant as read-only for KO bindings. Modified by DocumentHandler for this file. */
     iconClass = ko.observable('teapo-default-file-icon');
 
+    internalDocState: docs.types.DocState = null;
+
     constructor(
       /** May be null for a file in the root directory. */
       public parent: FolderEntry,

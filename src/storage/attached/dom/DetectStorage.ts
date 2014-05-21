@@ -9,18 +9,25 @@ module teapo.storage.attached.dom {
 
     detectStorageAsync(uniqueKey: string, callback: (error: Error, load: LoadStorage) => void) {
 
-      if (!this._parent) {
-        callback(new Error('Parent DOM element is null.'), null);
-        return;
+      try {
+        var load = this.detectStorageSync();
+        callback(null, load);
       }
+      catch (error) {
+        callback(error, null);
+      }
+    }
 
-      if (!this._document) {
-        callback(new Error('Expected non-null document argument.'), null);
-        return;
-      }
+    detectStorageSync() {
+
+      if (!this._parent)
+        throw new Error('Parent DOM element is null.');
+
+      if (!this._document)
+        throw new Error('Expected non-null document argument.');
 
       var load = new LoadStorage(this._parent, this._document);
-      callback(null, load);
+      return load;
     }
 
   }

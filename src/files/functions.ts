@@ -1,4 +1,4 @@
-module teapo.files { 
+module teapo.files {
 
   /**
    * Convert string path into an array of path parts,
@@ -39,5 +39,5 @@ module teapo.files {
     var pathMid = start === 0 && end === path.length - 1 ? path : path.slice(start, end + 1);
     return pathMid;
   }
-  
+
 }
