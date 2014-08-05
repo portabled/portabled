@@ -7,7 +7,7 @@ module teapo.files {
 
     /** Immediate children of the root folder. */
     folders = ko.observableArray<FolderEntry>([]);
-    
+
     /** Files in the root folder. */
     files = ko.observableArray<FileEntry>([]);
 
@@ -17,9 +17,9 @@ module teapo.files {
     private _fileByPath: { [path: string]: FileEntry; } = {};
 
     constructor(
-      files: string[],
-      private _attachFileEntry: (fileEntry: FileEntry) => void,
-      private _detachFileEntry: (fileEntry: FileEntry) => void) {
+      files?: string[],
+      private _attachFileEntry?: (fileEntry: FileEntry) => void,
+      private _detachFileEntry?: (fileEntry: FileEntry) => void) {
       if (files) {
         for (var i = 0; i < files.length; i++) {
           this.file(files[i]);
@@ -35,7 +35,7 @@ module teapo.files {
 
       var pathParts: string[] = normalizePath(path);
       if (!pathParts.length) return null;
-      
+
       var folder: FolderEntry;
       for (var i = 0; i < pathParts.length - 1; i++) {
         folder = this._addOrGetFolderEntry(pathParts[i], folder);
@@ -48,11 +48,11 @@ module teapo.files {
       return entry;
     }
 
-    private _addOrGetFolderEntry(name: string, parent: FolderEntry) { 
+    private _addOrGetFolderEntry(name: string, parent: FolderEntry) {
       var folders = parent ? parent.folders : this.folders;
-      var result = find < FolderEntry, FolderEntry>(
+      var result = find(
         folders(),
-        (f,index)=>{
+        (f, index) => {
           if (f.name < name) return;
           if (f.name === name) return f;
           var result = this._createFolderEntry(parent, name);
@@ -69,16 +69,15 @@ module teapo.files {
     private _addFileEntry(name: string, parent: FolderEntry) {
       var siblings = parent ? parent.files : this.files;
 
-      var result =
-        find<FileEntry, FileEntry>(
-          siblings(),
-          (f, index) => {
-            if (f.name < name) return;
-            if (f.name === name) return f;
-            var result = this._createChildFileEntry(parent, name);
-            siblings.splice(index, 0, result);
-            return result;
-          });
+      var result = find(
+        siblings(),
+        (f, index) => {
+          if (f.name < name) return;
+          if (f.name === name) return f;
+          var result = this._createChildFileEntry(parent, name);
+          siblings.splice(index, 0, result);
+          return result;
+        });
 
       if (!result) {
         result = this._createChildFileEntry(parent, name);
@@ -87,15 +86,16 @@ module teapo.files {
 
       return result;
     }
-  
-    private _createFolderEntry(parent: FolderEntry, name: string) { 
+
+    private _createFolderEntry(parent: FolderEntry, name: string) {
       var f = new FolderEntry(parent, name);
       return f;
     }
 
     private _createChildFileEntry(parent: FolderEntry, name: string) {
       var f = new FileEntry(parent, name);
-      this._attachFileEntry(f);
+      if (this._attachFileEntry)
+        this._attachFileEntry(f);
       return f;
     }
 

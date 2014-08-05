@@ -16,8 +16,14 @@ module teapo.tests {
 
     constructor(
       namespace: any = teapo.tests,
-      private _queueWorkItem: (action: () => void) => void = action => setTimeout(action, 10)) {
+      private _queueWorkItem: (action: () => void) => void = action => setTimeout(action, 10),
+      private _urlHash = window.location.hash) {
 
+      if (this._urlHash && this._urlHash.charAt(0) === '#')
+        this._urlHash = this._urlHash.slice(1);
+      if (this._urlHash)
+        this._urlHash = this._urlHash.toLowerCase();
+    
       this._loadTests(namespace);
 
     }
@@ -108,6 +114,12 @@ module teapo.tests {
       var names: string[] = [];
 
       TestPage.forEachTest(namespace, (name, _this_, test) => {
+        if (this._urlHash) {
+
+          if (name.toLowerCase().indexOf(this._urlHash) < 0)
+            return;
+        }
+        
         var testCase = new TestCase(name, _this_, test);
         byName[name] = testCase;
         names.push(name);

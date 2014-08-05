@@ -43,7 +43,7 @@ module teapo {
         }
       }
 
-      addShortcuts(['Ctrl-K', 'Alt-K', 'Cmd-K', 'Shift-Ctrl-K', 'Ctrl-Alt-K', 'Shift-Alt-K', 'Shift-Cmd-K', 'Cmd-Alt-K'], editor => editor.debug());
+      addShortcuts(['Ctrl-K', 'Alt-K', 'Cmd-K', 'Shift-Ctrl-K', 'Ctrl-Alt-K', 'Shift-Alt-K', 'Shift-Cmd-K', 'Cmd-Alt-K'], editor => editor.lookupSearch());
       addShortcuts(['Ctrl-,', 'Alt-,', 'Cmd-,', 'Shift-Ctrl-Up', 'Ctrl-Alt-Up', 'Shift-Alt-Up', 'Shift-Cmd-Up', 'Cmd-Alt-Up'], editor => editor.jumpSymbol(-1));
       addShortcuts(['Ctrl-.', 'Alt-.', 'Cmd-.', 'Shift-Ctrl-Down', 'Ctrl-Alt-Down', 'Shift-Alt-Down', 'Shift-Cmd-Down', 'Cmd-Alt-Down'], editor => editor.jumpSymbol(+1));
 
@@ -147,11 +147,14 @@ module teapo {
     private _delayedHandleCursorActivityClosure = () => this._delayedHandleCursorActivity();
     private _delayedHandleCursorActivityTimeout = 0;
 
+    private _lookupHost: HTMLDivElement = null;
+    private _dom: Dom = null;
+
     constructor(
       private _typescript: TypeScriptService,
-      shared: CodeMirrorEditor.SharedState,
+      private _sharedState: CodeMirrorEditor.SharedState,
       docState: DocumentState) {
-      super(shared, docState);
+      super(_sharedState, docState);
     }
 
     changes() {
@@ -185,6 +188,9 @@ module teapo {
      * Overringin closing of the file, stopping queued requests.
      */
     handleClose() {
+
+      this._removeLookupHost();
+      
       super.handleClose();
 
       // if error refresh is queued, cancel it, but keep a special value as a flag
@@ -341,14 +347,93 @@ module teapo {
     }
 
 
-    debug() {
-      var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
-      for (var i = 0; i < emits.outputFiles.length; i++) {
-        var e = emits.outputFiles[i];
-        alert(
-          e.name + '\n\n' +
-          e.text);
+    lookupSearch() {
+      this._removeLookupHost();
+
+      if (!this._dom)
+        this._dom = new Dom();
+      
+      this._lookupHost = <HTMLDivElement>this._dom.createElement('div', {
+        position: 'absolute',
+        left: '25%',
+        right: '25%',
+        top: '25%',
+        bottom: '25%',
+        background: 'white',
+        border: '2px solid silver',
+        padding: '1em',
+        zIndex: '900',
+        overflow: 'auto'
+      }, this._sharedState.element);
+
+      var doc = this.doc();
+      var cursorPos = doc.getCursor();
+      var cursorOffset = doc.indexFromPos(cursorPos);
+
+      var searchInput = <HTMLInputElement>this._dom.createElement('input', {
+        width: '100%'
+      }, this._lookupHost);
+      
+      var textSpan = this._typescript.service.getNameOrDottedNameSpan(this.docState.fullPath(), cursorOffset, cursorOffset + 1);
+      if (textSpan)
+        searchInput.value = textSpan.text;
+      else
+        searchInput.value = 'this';
+
+      var searchResult = <HTMLDivElement>this._dom.createElement('div', {
+
+      }, this._lookupHost);
+
+      var refs = this._typescript.service.getReferencesAtPosition(this.docState.fullPath(), cursorOffset);
+      for (var i = 0; i < refs.length; i++) {
+        this._dom.createElement('div', {
+          text: refs[i].fileName + ' ' + refs[i].minChar
+        }, searchResult);
       }
+
+      setTimeout(() => {
+        searchInput.focus();
+      }, 10);
+
+      var updateTimeout = 0;
+      var searchedText = searchInput.value;
+
+      searchInput.onkeydown = (evt) => {
+        if (evt.keyCode === 27) { 
+          this._removeLookupHost();
+          if (evt.preventDefault)
+            evt.preventDefault();
+          return;
+        }
+
+        if (!updateTimeout) {
+          updateTimeout = setTimeout(() => {
+            updateTimeout = 0;
+            if (searchInput.value === searchedText) return;
+            searchedText = searchInput.value;
+                                     
+            var cursorPos = doc.getCursor();
+            var cursorOffset = doc.indexFromPos(cursorPos);
+            searchResult.textContent = '';
+            var refs = this._typescript.service.getNavigateToItems(searchInput.value || 'this');
+            for (var i = 0; i < refs.length; i++) {
+              this._dom.createElement('div', {
+                text: refs[i].fileName + ' ' + refs[i].minChar
+              }, searchResult);
+            }
+          }, 400);
+        }
+      };
+    }
+
+    private _removeLookupHost() { 
+      
+      if (this._lookupHost) {
+        if (this._lookupHost.parentElement)
+          this._lookupHost.parentElement.removeChild(this._lookupHost);
+        this._lookupHost = null;
+      }
+      
     }
 
     build() {

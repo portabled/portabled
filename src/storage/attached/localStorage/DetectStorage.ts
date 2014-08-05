@@ -3,7 +3,7 @@ module teapo.storage.attached.localStorage {
   export class DetectStorage implements teapo.storage.attached.DetectStorage {
 
     constructor(
-      private _window: { localStorage?: typeof localStorage; } = window) {
+      private _window: { localStorage?: Storage; } = window) {
     }
 
     detectStorageAsync(uniqueKey: string, callback: (error: Error, load: LoadStorage) => void) {

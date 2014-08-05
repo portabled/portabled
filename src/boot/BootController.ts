@@ -12,12 +12,12 @@ module teapo.boot {
 
     private _storageElem: HTMLElement = null;
     private _totalFileCount = -1;
-    
+
     private _storageLoader: StorageLoader = null;
     private _persistenceName: string = null;
     private _editedUTC: number = 0;
     private _loadingFromPersistence = false;
-    
+
     private _lastReportedStorageProgress = 0;
 
     constructor(public dom = new Dom()) {
@@ -45,23 +45,23 @@ module teapo.boot {
     private _updateDomLoadingProgress() {
       this._checkBootLayoutAdded();
 
-      var wasDomStorageDiscovered = this._storageElem;      
+      var wasDomStorageDiscovered = this._storageElem;
       this._discoverDomStorage();
-      if (this._storageElem && !wasDomStorageDiscovered) { 
+      if (this._storageElem && !wasDomStorageDiscovered) {
         this._layout.setSmallProgressText('Downloading data...');
         this._layout.setProgressColor('green');
       }
 
       if (this._totalFileCount > 0) {
-        
+
         this._layout.setProgressRatio(
           BootController.initialProgress +
           BootController.domLoadProgressAmount * (this._storageElem.children.length / this._totalFileCount));
 
         var lastFileName = this._storageElem.children.length ?
           this._storageElem.children[this._storageElem.children.length - 1].getAttribute('data-teapo-path') : null;
-        
-        this._layout.setSmallProgressText('Downloading ' + (lastFileName ? ' embedded file "' + lastFileName+'"':' data') + ': ' + this._storageElem.children.length + ' of ' + this._totalFileCount + '...');
+
+        this._layout.setSmallProgressText('Downloading ' + (lastFileName ? ' embedded file "' + lastFileName + '"' : ' data') + ': ' + this._storageElem.children.length + ' of ' + this._totalFileCount + '...');
       }
     }
 
@@ -101,7 +101,7 @@ module teapo.boot {
         catch (totalFileCountParsingError) {
           // TODO: report out
         }
-      }      
+      }
     }
 
     private _startLoadingStorage() {
@@ -122,7 +122,7 @@ module teapo.boot {
         loadComplete: (err, byFullPath, domUpdater, persistenceUpdater) =>
           this._storageLoaded(err, byFullPath, domUpdater, persistenceUpdater)
       });
-      
+
     }
 
     private _storageDetectionComplete(
@@ -130,8 +130,8 @@ module teapo.boot {
       persistenceName: string,
       editedUTC: number,
       loadingFromPersistence) {
-      if (err) { 
-        alert('Detection '+err.message);
+      if (err) {
+        alert('Detection ' + err.message);
         return;
       }
 
@@ -154,12 +154,12 @@ module teapo.boot {
 
       this._totalFileCount = loadedFileCount;
 
-      
+
       var now = dateNow();
-      if (now - this._lastReportedStorageProgress < 100) return; // don't update DOM too often
+      if (now - this._lastReportedStorageProgress < 200) return; // don't update DOM too often
       this._lastReportedStorageProgress = now;
 
-      
+
       this._layout.setProgressColor('green');
       this._layout.setSmallProgressText('Loading "' + lastLoadedFileName + '" ' + loadedFileCount + ' of ' + totalFileCount + '...');
       this._layout.setProgressRatio(
@@ -177,9 +177,9 @@ module teapo.boot {
         return;
       }
 
-      var preciseFileCount = 0;
+      this._totalFileCount = 0;
       for (var k in byFullPath) if (byFullPath.hasOwnProperty(k)) {
-        preciseFileCount++;
+        this._totalFileCount++;
       }
 
       var body = this.dom.documenOverride.body;
@@ -197,7 +197,13 @@ module teapo.boot {
         body.removeChild(removeElements[i]);
       }
 
-      var loadedText = 'Loaded ' + preciseFileCount + ' files from ' +
+    }
+
+    private _startLoadingDocs() {
+
+      var body = this.dom.documenOverride.body;
+
+      var loadedText = 'Loaded ' + this._totalFileCount + ' files from ' +
         (this._loadingFromPersistence ? this._persistenceName + ' to dom' : 'dom' + (this._persistenceName ? ' to ' + this._persistenceName : '')) +
         (this._editedUTC ? ' edited on ' + new Date(this._editedUTC) : '') + '.';
 
@@ -207,7 +213,7 @@ module teapo.boot {
 
       Dom.setText(newLayout.leftContainer, loadedText);
       newLayout.rightContainer.style.background = 'gold';
-      
+
       body.appendChild(newLayout.container);
 
       setTimeout(() => {
@@ -223,7 +229,7 @@ module teapo.boot {
           }
         });
       }, 10);
-      
+
     }
 
     private _getUniqueKey() {

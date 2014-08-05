@@ -47,6 +47,7 @@ module teapo.tests.DomStorageTests {
 
 
   export var browser;
+  export var browserNew;
   {
     var byName: { [name: string]: HTMLElement; } = {};
     function detectStorageAsync(
@@ -61,7 +62,21 @@ module teapo.tests.DomStorageTests {
       result.detectStorageAsync(null, callback);
 
     }
+    
+    function detectStorageAsync2(
+      uniqueKey: string,
+      callback: (error: Error, meta: storage.attached.StorageDetect.BootState, access: storage.attached.StorageAccess) => void) {
+
+      var detect = byName[uniqueKey];
+      if (!detect)
+        byName[uniqueKey] = detect = document.createElement('div');
+
+      var result = new teapo.storage.attached.dom.StorageDetect(detect);
+      result.detect(null, callback);
+
+    }
 
     browser = new AttachedStorageTests({ detectStorageAsync: detectStorageAsync });
+    browserNew = new AttachedStorageTestsNew({ detect: detectStorageAsync2 });
   }
 }

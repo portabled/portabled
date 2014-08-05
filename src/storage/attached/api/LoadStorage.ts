@@ -35,5 +35,7 @@ module teapo.storage.attached {
       callback: (error: Error, updater: attached.UpdateStorage) => void): void;
 
   }
+  
+
 
 }

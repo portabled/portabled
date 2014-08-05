@@ -31,7 +31,7 @@ module teapo.app {
 
       function storageLoaded() {
 
-        loadingDiv.textContent += ' rendering...';
+        loadingDiv.textContent = statusText + ' rendering...';
 
         setTimeout(() => {
           teapo.registerKnockoutBindings(ko);
@@ -46,6 +46,9 @@ module teapo.app {
 
       var forceLoadFromDom = window.location.hash && window.location.hash.toLowerCase() === '#resettodom';
 
+      var nextUpdate = dateNow();
+      var statusText: string = '';
+
       teapo.openStorage(
         {
           documentStorageCreated: (error, s) => {
@@ -54,7 +57,13 @@ module teapo.app {
           },
           getType: (fullPath) => teapo.EditorType.getType(fullPath),
           getFileEntry: (fullPath) => viewModel.fileList.getFileEntry(fullPath),
-          setStatus: (text) => loadingDiv.textContent = text
+          setStatus: (text) => {
+            statusText = text;
+            var now = dateNow();
+            if (now < nextUpdate) return;
+            nextUpdate = now + 300;
+            loadingDiv.textContent = text;
+          }
         },
         forceLoadFromDom);
     }
@@ -66,5 +75,5 @@ module teapo.app {
       window.onload = start;
     }
   }
-  
+
 }

@@ -21,10 +21,12 @@ module teapo {
     };
 
     /** TypeScript custom settings. */
-    compilationSettings = new TypeScript.CompilationSettings();
+    compilationSettings: ts.CompilerOptions = {};
+
+    registry: ts.DocumentRegistry = null;
 
     /** Main public API of TypeScript compiler/parser engine. */
-    service: TypeScript.Services.ILanguageService;
+    service: ts.LanguageService;
 
     /** Files added to the compiler/parser scope, by full path. */
     scripts: { [fullPath: string]: TypeScriptService.Script; } = {};
@@ -35,15 +37,18 @@ module teapo {
 
 
     constructor() {
-
-      var factory = new TypeScript.Services.TypeScriptServicesFactory();
-      this.service = factory.createPullLanguageService(this._createLanguageServiceHost());
+      this.registry = ts.createDocumentRegistry();
+      this.service = ts.createLanguageService(this._createLanguageServiceHost(), this.registry);
     }
 
     /**
      * The main API required by TypeScript for talking to the host environment. */
-    private _createLanguageServiceHost() {
+    private _createLanguageServiceHost(): ts.LanguageServiceHost {
       return {
+
+        getCancellationToken: () => null,
+
+        
         getCompilationSettings: () => this.compilationSettings,
         getScriptFileNames: () => {
           var result = Object.keys(this.scripts).filter(k => this.scripts.hasOwnProperty(k)).sort();
@@ -59,7 +64,7 @@ module teapo {
         getScriptIsOpen: (fileName: string) => {
           return true;
         },
-        getScriptByteOrderMark: (fileName: string) => TypeScript.ByteOrderMark.None,
+        getScriptByteOrderMark: (fileName: string) => ts.ByteOrderMark.None,
         getScriptSnapshot: (fileName: string) => {
           var script = this.scripts[fileName];
           var snapshot = <TypeScriptDocumentSnapshot>script._cachedSnapshot;

@@ -17,7 +17,7 @@ module teapo.storage.attached.dom {
         callback(error, null);
       }
     }
-
+  
     detectStorageSync() {
 
       if (!this._parent)

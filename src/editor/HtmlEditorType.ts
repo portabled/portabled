@@ -80,6 +80,9 @@ module teapo {
       var srcRegex = /###(.*)###/g;
       var match;
 
+      var missing: string[] = [];
+      var inlineFilenames: string[] = [];
+
       while (match = srcRegex.exec(html)) {
         var directive = match[1];
         var inlineFullPath = directive;
@@ -115,7 +118,42 @@ module teapo {
 
         function embedAllDocs() {
           return _embedAllDocs();
+        }
+
+
+        var _embedRemainingDocs = () => {
+          var docNames = this._storageForBuild.documentNames();
+          
+          var embedDocHTMLs: string[] = [];
+          var skipped = 0;
+          
+          for (var i = 0; i < docNames.length; i++) {
+            var fullPath = docNames[i];
+            if (inlineFilenames.indexOf(fullPath)>=0) {
+              skipped++;
+              continue;
+            }
+
+            var docState = this._storageForBuild.getDocument(fullPath);
+
+            var content = docState.getProperty(null);
+            embedDocHTMLs.push(
+              '<' + 'script data-' + 'path="' + fullPath + '" type="text/html">'+
+              encodeForInnerHTML(content)+
+              '</' + 'script' + '>'+
+              '\n');
+          }
+
+          var result =
+            '<!-- embedding remaining ' + embedRemainingDocs.length + ' (skipped ' + skipped+') -->\n' +
+            embedDocHTMLs.join('\n');
+          
+          return result;
         };
+
+        function embedRemainingDocs() {
+          return _embedRemainingDocs;
+        }
 
 
         var embedContent: string;
@@ -130,7 +168,7 @@ module teapo {
 
             try {
               var _content = eval(js);
-              if (typeof _content === 'string')
+              if (typeof _content === 'string' || typeof _content === 'function')
                 embedContent = _content;
             }
             catch (evalError) {
@@ -140,7 +178,7 @@ module teapo {
 
           }
           else {
-            alert('Inlining ' + inlineFullPath + ' failed: cannot find.');
+            missing.push(inlineFullPath);
             continue;
           }
         }
@@ -153,8 +191,10 @@ module teapo {
           }
 
           embedContent = encodeForInnerHTML(embedContent);
-        }
 
+          inlineFilenames.push(inlineDocState.fullPath());
+        }
+        
         convertedOutput.push(html.slice(offset, match.index));
         convertedOutput.push(embedContent);
         offset = match.index + match[0].length;
@@ -163,8 +203,17 @@ module teapo {
         shortName = shortName.slice(shortName.lastIndexOf('/') + 1);
       }
 
+      if (missing.length) {
+        alert('Inlining failed:\n' + missing.join('\n'));
+      }
+      
       if (offset < html.length)
         convertedOutput.push(html.slice(offset));
+      
+      for (var i = 0; i < convertedOutput.length; i++) {
+        if (typeof convertedOutput[i] === 'function')
+          convertedOutput[i] = convertedOutput[i]();
+      }
 
       var filename = this.docState.fileEntry().name();
       var blob = new Blob(convertedOutput, { type: 'text/html' });

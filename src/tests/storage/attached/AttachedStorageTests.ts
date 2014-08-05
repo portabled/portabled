@@ -3,7 +3,6 @@ module teapo.tests {
   export class AttachedStorageTests {
 
     constructor(private _detect: teapo.storage.attached.DetectStorage) {
-      //
     }
 
     detectStorageAsync_succeeds(callback: (error: Error) => void) {
@@ -30,6 +29,7 @@ module teapo.tests {
         ukey,
         (error, load) => {
           load.load({
+            files: () => {},
             file: (name, values) => callback(new Error('LoadStorageRecipient.file should not be called.')),
             completed: (updater) => callback(null),
             failed: (error) => callback(error)
@@ -43,6 +43,7 @@ module teapo.tests {
         ukey,
         (error, load) => {
           load.load({
+            files: () => { },
             file: (name, values) => callback(new Error('LoadStorageRecipient.file should not be called.')),
             completed: (updater: teapo.storage.attached.UpdateStorage) => {
               updater.update(
@@ -60,6 +61,7 @@ module teapo.tests {
         ukey,
         (error, load) => {
           load.load({
+            files: () => { },
             file: (name, values) => callback(new Error('LoadStorageRecipient.file should not be called.')),
             completed: (updater: teapo.storage.attached.UpdateStorage) => {
               updater.update(
@@ -90,7 +92,7 @@ module teapo.tests {
         'update_loadAgain_sameValue_unicodeValue.txt', 'property83784', unicodeString,
         callback);
     }
-  
+
     update_loadAgain_sameValue_unicodeProperty(callback: (error: Error) => void) {
       var unicodeString = 'abc6253' +
         [256, 257, 1024, 1026, 12879, 13879].map(m=> String.fromCharCode(m)).join('');
@@ -114,7 +116,7 @@ module teapo.tests {
         'file82263.txt', 'property83784', '\r',
         callback);
     }
-  
+
     update_loadAgain_sameValue_lfOnly(callback: (error: Error) => void) {
       this._update_loadAgain_sameValue_core(
         'file82263.txt', 'property83784', '\n',
@@ -132,16 +134,16 @@ module teapo.tests {
         'update_loadAgain_sameValue_zeroCharOnly.txt', 'property83784', String.fromCharCode(0),
         callback);
     }
-  
+
     update_loadAgain_sameValue_zeroCharPrefix(callback: (error: Error) => void) {
       this._update_loadAgain_sameValue_core(
         'update_loadAgain_sameValue_zeroCharOnly.txt', 'property83784', String.fromCharCode(0) + 'abcd',
         callback);
     }
-  
+
     update_loadAgain_sameValue_zeroCharSuffix(callback: (error: Error) => void) {
       this._update_loadAgain_sameValue_core(
-        'update_loadAgain_sameValue_zeroCharOnly.txt', 'property83784', 'abcde'+String.fromCharCode(0),
+        'update_loadAgain_sameValue_zeroCharOnly.txt', 'property83784', 'abcde' + String.fromCharCode(0),
         callback);
     }
 
@@ -153,7 +155,7 @@ module teapo.tests {
 
     update_loadAgain_sameValue_charCodesUnder32(callback: (error: Error) => void) {
 
-      var chars='';
+      var chars = '';
       for (var i = 0; i < 32; i++) chars + String.fromCharCode(i);
       this._update_loadAgain_sameValue_core(
         'update_loadAgain_sameValue_charCodesUnder32.txt', 'property83784', chars,
@@ -167,6 +169,7 @@ module teapo.tests {
         ukey,
         (error, load) => {
           load.load({
+            files: () => { },
             file: (name, values) => callback(new Error('LoadStorageRecipient.file should not be called.')),
             completed: (updater: teapo.storage.attached.UpdateStorage) => {
               updater.update(
@@ -177,6 +180,7 @@ module teapo.tests {
                     (error, load) => {
                       var files: any = {};
                       load.load({
+                        files: () => { },
                         file: (name, values) => files[name] = values,
                         completed: (updater) => {
                           var fileTxt = files[fileName];
@@ -224,6 +228,7 @@ module teapo.tests {
                 (error, load) => {
                   var files: any = {};
                   load.load({
+                    files: () => { },
                     file: (name, values) => files[name] = values,
                     completed: (updater) => {
                       var fileTxt = files['file63.txt'];
@@ -268,7 +273,7 @@ module teapo.tests {
             });
         });
     }
-  
+
     migrate_remove_load_nofile(callback: (error: Error) => void) {
       var ukey = this._generateKey();
       this._detect.detectStorageAsync(
@@ -289,6 +294,7 @@ module teapo.tests {
                   (error, load) => {
                     var filenames: string[] = [];
                     load.load({
+                      files: () => { },
                       file: (name, values) => filenames.push(name),
                       completed: (updater) => {
                         if (filenames.length) {
@@ -332,6 +338,7 @@ module teapo.tests {
         ukey,
         (error, load) => {
           load.load({
+            files: () => { },
             file: (name, values) => callback(new Error('LoadStorageRecipient.file should not be called.')),
             completed: (updater: teapo.storage.attached.UpdateStorage) => {
               updater.update(
@@ -344,6 +351,7 @@ module teapo.tests {
                       (error, load) => {
                         var files: any = {};
                         load.load({
+                          files: () => { },
                           file: (name, values) => files[name] = values,
                           completed: (updater) => {
                             var fileTxt = files['file.txt'];

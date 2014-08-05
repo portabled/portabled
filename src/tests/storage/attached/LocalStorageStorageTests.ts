@@ -58,8 +58,17 @@ module teapo.tests.LocalStorageStorageTests {
 
   }
 
+
+  export var browserNew;
+
+
   export var browser;
-  if (window.localStorage)
+  if (window.localStorage) {
     browser = new AttachedStorageTests(new teapo.storage.attached.localStorage.DetectStorage());
+
+    browserNew = new AttachedStorageTestsNew(
+      new teapo.storage.attached.localStorage.StorageDetect());
+    
+  }
 
 }

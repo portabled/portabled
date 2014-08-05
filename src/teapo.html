@@ -20,6 +20,9 @@
 <script id=folder-template type='text/html'  data-path='/layout/folder.html'>###layout/folder.html###</script>
 <script id=file-template type='text/html'  data-path='/layout/file.html'>###layout/file.html###</script>
 
+<script id=TestPage data-path='/tests/TestPage.html' type='text/html'>###tests/TestPage.html###</script>
+<script id=TestCase data-path='/tests/TestCase.html' type='text/html'>###tests/TestCase.html###</script>
+
 
 <!-- External JS libraries: CodeMirror, Acorn/Tern, Knockout and Zip.js --->
 <!--CodeMirror-->
@@ -73,102 +76,10 @@
 <script data-path='/imports/zip.js/inflate.js'>###imports/zip.js/inflate.js###</script>
 
 
-<!-- TypeScript definitions lib.d.ts, taken from TS bin directory verbatim ---> 
-<script data-path='/imports/typescript/lib.d.ts' type='text/html'>###imports/typescript/lib.d.ts###</script>
-
-<!-- Typings ---> 
-<script data-path='/typings/typescriptServices.d.ts' type='text/html'>###typings/typescriptServices.d.ts###</script>
-<script data-path='/typings/codemirror.d.ts' type='text/html'>###typings/codemirror.d.ts###</script>
-<script data-path='/typings/knockout.d.ts' type='text/html'>###typings/knockout.d.ts###</script>
-<script data-path='/typings/websql.d.ts' type='text/html'>###typings/websql.d.ts###</script>
-<script data-path='/typings/zip.js.d.ts' type='text/html'>###typings/zip.js.d.ts###</script>
-
-
-<!-- Embedded files, using teapo's sources --->
-<script data-path='/editor/CodeMirrorEditor.ts' type='text/html'>###editor/CodeMirrorEditor.ts###</script>
-<script data-path='/editor/CompletionCodeMirrorEditor.ts' type='text/html'>###editor/CompletionCodeMirrorEditor.ts###</script>
-<script data-path='/editor/CssEditorType.ts' type='text/html'>###editor/CssEditorType.ts###</script>
-<script data-path='/editor/Editor.ts' type='text/html'>###editor/Editor.ts###</script>
-<script data-path='/editor/EditorType.ts' type='text/html'>###editor/EditorType.ts###</script>
-<script data-path='/editor/HtmlEditorType.ts' type='text/html'>###editor/HtmlEditorType.ts###</script>
-<script data-path='/editor/JavaScriptEditorType.ts' type='text/html'>###editor/JavaScriptEditorType.ts###</script>
-<script data-path='/editor/TypeScriptEditorType.ts' type='text/html'>###editor/TypeScriptEditorType.ts###</script>
-<script data-path='/editor/x-last-PlainTextEditorType.ts' type='text/html'>###editor/x-last-PlainTextEditorType.ts###</script>
-
-<script data-path='/files-old/FileEntry.ts' type='text/html'>###files-old/FileEntry.ts###</script>
-<script data-path='/files-old/FolderEntry.ts' type='text/html'>###files-old/FolderEntry.ts###</script>
-<script data-path='/files-old/impl.ts' type='text/html'>###files-old/impl.ts###</script>
-
-<script data-path='/files/FileEntry.ts' type='text/html'>###files/FileEntry.ts###</script>
-<script data-path='/files/FolderEntry.ts' type='text/html'>###files/FolderEntry.ts###</script>
-<script data-path='/files/FileList.ts' type='text/html'>###files/FileList.ts###</script>
-<script data-path='/files/functions.ts' type='text/html'>###files/functions.ts###</script>
-<script data-path='/tests/TestCase.ts' type='text/html'>###tests/TestCase.ts###</script>
-<script data-path='/tests/TestPage.ts' type='text/html'>###tests/TestPage.ts###</script>
-<script data-path='/functions.ts' type='text/html'>###functions.ts###</script>
-
-<script data-path='/storage/attached/api/LoadStorage.ts' type='text/html'>###storage/attached/api/LoadStorage.ts###</script>
-<script data-path='/storage/attached/api/DetectStorage.ts' type='text/html'>###storage/attached/api/DetectStorage.ts###</script>
-<script data-path='/storage/attached/api/LoadStorageRecipient.ts' type='text/html'>###storage/attached/api/LoadStorageRecipient.ts###</script>
-<script data-path='/storage/attached/api/UpdateStorage.ts' type='text/html'>###storage/attached/api/UpdateStorage.ts###</script>
-<script data-path='/storage/attached/dom/DetectStorage.ts' type='text/html'>###storage/attached/dom/DetectStorage.ts###</script>
-<script data-path='/storage/attached/dom/LoadStorage.ts' type='text/html'>###storage/attached/dom/LoadStorage.ts###</script>
-<script data-path='/storage/attached/dom/UpdateStorage.ts' type='text/html'>###storage/attached/dom/UpdateStorage.ts###</script>
-<script data-path='/storage/attached/indexedDB/DetectStorage.ts' type='text/html'>###storage/attached/indexedDB/DetectStorage.ts###</script>
-<script data-path='/storage/attached/indexedDB/FileData.ts' type='text/html'>###storage/attached/indexedDB/FileData.ts###</script>
-<script data-path='/storage/attached/indexedDB/LoadStorage.ts' type='text/html'>###storage/attached/indexedDB/LoadStorage.ts###</script>
-<script data-path='/storage/attached/indexedDB/MetadataData.ts' type='text/html'>###storage/attached/indexedDB/MetadataData.ts###</script>
-<script data-path='/storage/attached/indexedDB/UpdateStorage.ts' type='text/html'>###storage/attached/indexedDB/UpdateStorage.ts###</script>
-<script data-path='/storage/attached/indexedDB/functions.ts' type='text/html'>###storage/attached/indexedDB/functions.ts###</script>
-<script data-path='/storage/attached/localStorage/DetectStorage.ts' type='text/html'>###storage/attached/localStorage/DetectStorage.ts###</script>
-<script data-path='/storage/attached/localStorage/LoadStorage.ts' type='text/html'>###storage/attached/localStorage/LoadStorage.ts###</script>
-<script data-path='/storage/attached/localStorage/UpdateStorage.ts' type='text/html'>###storage/attached/localStorage/UpdateStorage.ts###</script>
-<script data-path='/storage/attached/webSQL/DetectStorage.ts' type='text/html'>###storage/attached/webSQL/DetectStorage.ts###</script>
-<script data-path='/storage/attached/webSQL/LoadStorage.ts' type='text/html'>###storage/attached/webSQL/LoadStorage.ts###</script>
-<script data-path='/storage/attached/webSQL/UpdateStorage.ts' type='text/html'>###storage/attached/webSQL/UpdateStorage.ts###</script>
-<script data-path='/storage/attached/webSQL/functions.ts' type='text/html'>###storage/attached/webSQL/functions.ts###</script>
-
-<script data-path='/docs/api/Document.ts' type='text/html'>###docs/api/Document.ts###</script>
-<script data-path='/docs/api/Document_Storage.ts' type='text/html'>###docs/api/Document_Storage.ts###</script>
-<script data-path='/docs/api/Document_Type.ts' type='text/html'>###docs/api/Document_Type.ts###</script>
-<script data-path='/docs/api/Drive.ts' type='text/html'>###docs/api/Drive.ts###</script>
-<script data-path='/docs/api/Folder.ts' type='text/html'>###docs/api/Folder.ts###</script>
-<script data-path='/docs/CodeMirrorServices/DocumentState.ts' type='text/html'>###docs/CodeMirrorServices/DocumentState.ts###</script>
-<script data-path='/docs/CodeMirrorServices/EditorPool.ts' type='text/html'>###docs/CodeMirrorServices/EditorPool.ts###</script>
-
-<script data-path='/tests/storage/attached/AttachedStorageTests.ts' type='text/html'>###tests/storage/attached/AttachedStorageTests.ts###</script>
-<script data-path='/tests/storage/attached/DomStorageTests.ts' type='text/html'>###tests/storage/attached/DomStorageTests.ts###</script>
-<script data-path='/tests/storage/attached/IndexedDBStorageTests.ts' type='text/html'>###tests/storage/attached/IndexedDBStorageTests.ts###</script>
-<script data-path='/tests/storage/attached/LocalStorageStorageTests.ts' type='text/html'>###tests/storage/attached/LocalStorageStorageTests.ts###</script>
-<script data-path='/tests/storage/attached/WebSQLStorageTests.ts' type='text/html'>###tests/storage/attached/WebSQLStorageTests.ts###</script>
-<script data-path='/tests/files/FileList.ts' type='text/html'>###tests/files/FileList.ts###</script>
-<script data-path='/tests/_sampleTests.ts' type='text/html'>###tests/_sampleTests.ts###</script>
-<script data-path='/tests/teapo-tests.html' type='text/html'>###tests/teapo-tests.html###</script>
-<script data-path='/tests/teapo-tests.ts' type='text/html'>###tests/teapo-tests.ts###</script>
-  
-<script id=TestPage data-path='/tests/TestPage.html' type='text/html'>###tests/TestPage.html###</script>
-<script id=TestCase data-path='/tests/TestCase.html' type='text/html'>###tests/TestCase.html###</script>
-
-  
-<script data-path='/ko.ts' type='text/html'>###ko.ts###</script>
-<script data-path='/persistence.ts' type='text/html'>###persistence.ts###</script>
-<script data-path='/persistence.api.ts' type='text/html'>###persistence.api.ts###</script>
-<script data-path='/shell.ts' type='text/html'>###shell.ts###</script>
 <script data-path='/teapo.ts' type='text/html'>###teapo.ts###</script>
-<script data-path='/TypeScriptService.ts' type='text/html'>###TypeScriptService.ts###</script>
 
-<script data-path='/teapo.html' type='text/html'>###teapo.html###</script>
-<script data-path='/nteapo.html' type='text/html'>###nteapo.html###</script>
 
-<script data-path='/boot/BootController.ts' type='text/html'>###/boot/BootController.ts###</script>
-<script data-path='/boot/BootLayout.ts' type='text/html'>###/boot/BootLayout.ts###</script>
-<script data-path='/boot/StorageLoader.ts' type='text/html'>###/boot/StorageLoader.ts###</script>
-<script data-path='/boot/boot.ts' type='text/html'>###/boot/boot.ts###</script>
-<script data-path='/try.js' type='text/html'>###/try.js###</script>
-<script data-path='/try.html' type='text/html'>###/try.html###</script>
-<script data-path='/layout/MainLayout.ts' type='text/html'>###/layout/MainLayout.ts###</script>
-<script data-path='/Dom.ts' type='text/html'>###/Dom.ts###</script>
-
+###(js)embedRemainingDocs()###
   
 <!-- TypeScript services, taken from TS bin directory verbatim --->
 <script data-path='/imports/typescript/typescriptServices.js' >###imports/typescript/typescriptServices.js###</script>
