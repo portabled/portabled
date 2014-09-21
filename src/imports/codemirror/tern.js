@@ -1,3 +1,6 @@
+// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
 // Glue code between CodeMirror and Tern.
 //
 // Create a CodeMirror.TernServer to wrap an actual Tern server,
@@ -14,13 +17,13 @@
 //   indicate that a file is not available.
 // * fileFilter: A function(value, docName, doc) that will be applied
 //   to documents before passing them on to Tern.
-// * switchToDoc: A function(name) that should, when providing a
+// * switchToDoc: A function(name, doc) that should, when providing a
 //   multi-file view, switch the view or focus to the named file.
 // * showError: A function(editor, message) that can be used to
 //   override the way errors are displayed.
 // * completionTip: Customize the content in tooltips for completions.
-//   Is passed a single argument -- the completion's data as returned by
-//   Tern -- and may return a string, DOM node, or null to indicate that
+//   Is passed a single argument—the completion's data as returned by
+//   Tern—and may return a string, DOM node, or null to indicate that
 //   no tip should be shown. By default the docstring is shown.
 // * typeTip: Like completionTip, but for the tooltips shown for type
 //   queries.
@@ -72,6 +75,9 @@
     this.cachedArgHints = null;
     this.activeArgHints = null;
     this.jumpStack = [];
+
+    this.getHint = function(cm, c) { return hint(self, cm, c); };
+    this.getHint.async = true;
   };
 
   CodeMirror.TernServer.prototype = {
@@ -82,28 +88,25 @@
       return this.docs[name] = data;
     },
 
-    delDoc: function(name) {
-      var found = this.docs[name];
+    delDoc: function(id) {
+      var found = resolveDoc(this, id);
       if (!found) return;
       CodeMirror.off(found.doc, "change", this.trackChange);
-      delete this.docs[name];
-      this.server.delFile(name);
+      delete this.docs[found.name];
+      this.server.delFile(found.name);
     },
 
-    hideDoc: function(name) {
+    hideDoc: function(id) {
       closeArgHints(this);
-      var found = this.docs[name];
+      var found = resolveDoc(this, id);
       if (found && found.changed) sendDoc(this, found);
     },
 
     complete: function(cm) {
-      var self = this;
-      CodeMirror.showHint(cm, function(cm, c) { return hint(self, cm, c); }, {async: true});
+      cm.showHint({hint: this.getHint});
     },
 
-    getHint: function(cm, c) { return hint(this, cm, c); },
-
-    showType: function(cm, pos) { showType(this, cm, pos); },
+    showType: function(cm, pos, c) { showType(this, cm, pos, c); },
 
     updateArgHints: function(cm) { updateArgHints(this, cm); },
 
@@ -152,6 +155,12 @@
       if (!ts.docs[n]) { name = n; break; }
     }
     return ts.addDoc(name, doc);
+  }
+
+  function resolveDoc(ts, id) {
+    if (typeof id == "string") return ts.docs[id];
+    if (id instanceof CodeMirror) id = id.getDoc();
+    if (id instanceof CodeMirror.Doc) return findDoc(ts, id);
   }
 
   function trackChange(ts, doc, change) {
@@ -230,7 +239,7 @@
 
   // Type queries
 
-  function showType(ts, cm, pos) {
+  function showType(ts, cm, pos, c) {
     ts.request(cm, "type", function(error, data) {
       if (error) return showError(ts, cm, error);
       if (ts.options.typeTip) {
@@ -238,13 +247,14 @@
       } else {
         var tip = elt("span", null, elt("strong", null, data.type || "not found"));
         if (data.doc)
-          tip.appendChild(document.createTextNode(" - " + data.doc));
+          tip.appendChild(document.createTextNode(" — " + data.doc));
         if (data.url) {
           tip.appendChild(document.createTextNode(" "));
           tip.appendChild(elt("a", null, "[docs]")).href = data.url;
         }
       }
       tempTooltip(cm, tip);
+      if (c) c();
     }, pos);
   }
 
@@ -381,10 +391,10 @@
   }
 
   function moveTo(ts, curDoc, doc, start, end) {
-    doc.doc.setSelection(end, start);
+    doc.doc.setSelection(start, end);
     if (curDoc != doc && ts.options.switchToDoc) {
       closeArgHints(ts);
-      ts.options.switchToDoc(doc.name);
+      ts.options.switchToDoc(doc.name, doc.doc);
     }
   }
 
@@ -429,7 +439,7 @@
 
   function rename(ts, cm) {
     var token = cm.getTokenAt(cm.getCursor());
-    if (!/\w/.test(token.string)) showError(ts, cm, "Not at a variable");
+    if (!/\w/.test(token.string)) return showError(ts, cm, "Not at a variable");
     dialog(cm, "New name for " + token.string, function(newName) {
       ts.request(cm, {type: "rename", newName: newName, fullDocs: true}, function(error, data) {
         if (error) return showError(ts, cm, error);
@@ -439,8 +449,6 @@
   }
 
   function selectName(ts, cm) {
-    var cur = cm.getCursor(), token = cm.getTokenAt(cur);
-    if (!/\w/.test(token.string)) showError(ts, cm, "Not at a variable");
     var name = findDoc(ts, cm.doc).name;
     ts.request(cm, {type: "refs"}, function(error, data) {
       if (error) return showError(ts, cm, error);
