@@ -96,8 +96,9 @@ module teapo {
       }
       
       this._typescript.service.getSyntacticDiagnostics(dequeueDocState.fullPath());
+      
       setTimeout(() => {
-        this._typescript.service.getSignatureAtPosition(dequeueDocState.fullPath(), 0);
+        this._typescript.service.getSignatureHelpItems(dequeueDocState.fullPath(), 0);
 
         this._initDocQueue[i] = null;
 
@@ -107,7 +108,7 @@ module teapo {
 
     private _initTypescript() {
       this._typescript = new TypeScriptService();
-      this._typescript.compilationSettings.outFileOption = '/out.ts';
+      this._typescript.compilationSettings.out = '/out.ts';
     }
   }
 
@@ -126,8 +127,8 @@ module teapo {
     static maxCompletions = 20;
     static symbolUpdateDelay = 3000;
 
-    private _syntacticDiagnostics: TypeScript.Diagnostic[] = [];
-    private _semanticDiagnostics: TypeScript.Diagnostic[] = [];
+    private _syntacticDiagnostics: ts.Diagnostic[] = [];
+    private _semanticDiagnostics: ts.Diagnostic[] = [];
     private _updateDiagnosticsTimeout = -1;
     private _updateDiagnosticsClosure = () => this._updateDiagnostics();
     private _teapoErrorsGutterElement: HTMLElement = null;
@@ -334,10 +335,12 @@ module teapo {
       if (def)
         statusText += ' ' + def.kind + ' ' + def.memberName;
 
-      var sig = this._typescript.service.getSignatureAtPosition(this.docState.fullPath(), offset);
-      if (sig && sig.formal && sig.formal[sig.activeFormal]) {
-        var sigg = sig.formal[sig.activeFormal];
-        statusText += ' ' + sigg.signatureInfo + (sigg.docComment ? '\n/** ' + sigg.docComment + ' */' : '');
+      var sig = this._typescript.service.getSignatureHelpItems(this.docState.fullPath(), offset);
+      if (sig && sig.items && sig.items.length) {
+        var sigg = sig.items[sig.selectedItemIndex];
+        if (sigg.documentation) {
+          statusText += ' /** ' + sigg.documentation + ' */';
+        }
       }
       else if (def && def.docComment) {
         statusText += '\n/**' + def.docComment + '*/';
@@ -367,6 +370,7 @@ module teapo {
       }, this._sharedState.element);
 
       var doc = this.doc();
+      var editor = this.editor();
       var cursorPos = doc.getCursor();
       var cursorOffset = doc.indexFromPos(cursorPos);
 
@@ -376,7 +380,7 @@ module teapo {
       
       var textSpan = this._typescript.service.getNameOrDottedNameSpan(this.docState.fullPath(), cursorOffset, cursorOffset + 1);
       if (textSpan)
-        searchInput.value = textSpan.text;
+        searchInput.value = doc.getRange(doc.posFromIndex(textSpan.start()), doc.posFromIndex(textSpan.end()));
       else
         searchInput.value = 'this';
 
@@ -387,7 +391,7 @@ module teapo {
       var refs = this._typescript.service.getReferencesAtPosition(this.docState.fullPath(), cursorOffset);
       for (var i = 0; i < refs.length; i++) {
         this._dom.createElement('div', {
-          text: refs[i].fileName + ' ' + refs[i].minChar
+          text: refs[i].fileName + ' @' + refs[i].textSpan.start()
         }, searchResult);
       }
 
@@ -418,7 +422,7 @@ module teapo {
             var refs = this._typescript.service.getNavigateToItems(searchInput.value || 'this');
             for (var i = 0; i < refs.length; i++) {
               this._dom.createElement('div', {
-                text: refs[i].fileName + ' ' + refs[i].minChar
+                text: refs[i].fileName + ' ' + refs[i].textSpan.start()
               }, searchResult);
             }
           }, 400);
@@ -442,9 +446,9 @@ module teapo {
 
       var emits = this._typescript.service.getEmitOutput(this.docState.fullPath());
 
-      if (this._typescript.log.length || emits.emitOutputResult !== TypeScript.EmitOutputResult.Succeeded) {
+      if (this._typescript.log.length || emits.emitOutputStatus !== ts.EmitReturnStatus.Succeeded) {
         var msg = 
-          'Building ' + this.docState.fullPath() + ' ' + TypeScript.EmitOutputResult[emits.emitOutputResult] + '\n' +
+          'Building ' + this.docState.fullPath() + ' ' + ts.EmitReturnStatus[emits.emitOutputStatus] + '\n' +
           this._typescript.log.map(msg => msg.logLevel + ' ' + msg.text).join('\n');
 
         if (typeof (<any>this._typescript.service).getAllSyntacticDiagnostics === 'function') {
@@ -452,7 +456,7 @@ module teapo {
           try {
             var diag: TypeScript.Diagnostic[] = (<any>this._typescript.service).getAllSyntacticDiagnostics();
             if (diag && diag.length) {
-              msg = 'Building ' + this.docState.fullPath() + ' ' + TypeScript.EmitOutputResult[emits.emitOutputResult] + '\n' +
+              msg = 'Building ' + this.docState.fullPath() + ' ' + ts.EmitReturnStatus[emits.emitOutputStatus] + '\n' +
                 diag.map(d => d.fileName() + ' ' + d.line() + ':' + d.character() + ' ' + d.message()).join('\n');
             }
           }
@@ -481,20 +485,33 @@ module teapo {
       var fullPath = this.docState.fullPath();
       var key = addedText.charAt(addedText.length - 1);
 
-      var options = new TypeScript.Services.FormatCodeOptions();
-      options.IndentSize = 2;
-      options.TabSize = 2;
-      options.ConvertTabsToSpaces = true;
-      options.NewLineCharacter = '\n';
-
       var edits = this._typescript.service.getFormattingEditsAfterKeystroke(
         fullPath,
         offset,
         key,
-        options);
+        this._formatOptions());
 
 
-      this._applyEdits(edits);
+      this._applyEdits(doc, edits);
+    }
+
+    private _formatOptions() {
+      var opt: ts.FormatCodeOptions = {
+        IndentSize: 2,
+        TabSize: 4,
+        NewLineCharacter: '\n',
+        ConvertTabsToSpaces: true,
+
+        InsertSpaceAfterCommaDelimiter: true,
+        InsertSpaceAfterSemicolonInForStatements: true,
+        InsertSpaceBeforeAndAfterBinaryOperators: true,
+        InsertSpaceAfterKeywordsInControlFlowStatements: true,
+        InsertSpaceAfterFunctionKeywordForAnonymousFunctions: false,
+        InsertSpaceAfterOpeningAndBeforeClosingNonemptyParenthesis: false,
+        PlaceOpenBraceOnNewLineForFunctions: false,
+        PlaceOpenBraceOnNewLineForControlBlocks: false
+      };
+      return opt;
     }
 
     private _formatOnPaste(addedText: string, removedText: string, change: CodeMirror.EditorChange) {
@@ -505,34 +522,27 @@ module teapo {
       var fullPath = this.docState.fullPath();
       var key = addedText.charAt(addedText.length - 1);
 
-      var options = new TypeScript.Services.FormatCodeOptions();
-      options.IndentSize = 2;
-      options.TabSize = 2;
-      options.ConvertTabsToSpaces = true;
-      options.NewLineCharacter = '\n';
-
-      var edits = this._typescript.service.getFormattingEditsOnPaste(
+      var edits = this._typescript.service.getFormattingEditsForRange(
         fullPath,
         offset, offset + addedText.length,
-        options);
+        this._formatOptions());
 
 
-      this._applyEdits(edits);
+      this._applyEdits(doc, edits);
     }
 
-    private _applyEdits(edits: TypeScript.Services.TextEdit[]) {
+    private _applyEdits(doc: CodeMirror.Doc, edits: ts.TextChange[]) {
       if (!edits.length) return;
 
       //console.log('_applyEdits('+edits.length+')...');
       this._applyingEdits = true;
-      var doc = this.doc();
-      var orderedEdits = edits.sort((e1, e2) => e1.minChar < e2.minChar ? +1 : e1.minChar == e2.minChar ? 0 : -1);
+      var orderedEdits = edits.sort((e1, e2) => e1.span.start() < e2.span.start() ? +1 : e1.span.start() == e2.span.start() ? 0 : -1);
       for (var i = 0; i < orderedEdits.length; i++) {
         var e = orderedEdits[i];
         doc.replaceRange(
-          e.text,
-          doc.posFromIndex(e.minChar),
-          doc.posFromIndex(e.limChar));
+          e.newText,
+          doc.posFromIndex(e.span.start()),
+          doc.posFromIndex(e.span.start()));
       }
       this._applyingEdits = false;
       //console.log('_applyEdits('+edits.length+') - complete.');
@@ -690,20 +700,20 @@ module teapo {
 
       if (!symbols) return;
       var existingMarks: boolean[] = [];
-      var orderedSymbols = symbols.sort((s1, s2) => s1.minChar < s2.minChar ? -1 : s1.minChar > s2.minChar ? 1 : 0);
+      var orderedSymbols = symbols.sort((s1, s2) => s1.textSpan.start() < s2.textSpan.start() ? -1 : s1.textSpan.start() > s2.textSpan.start() ? 1 : 0);
       for (var i = 0; i < orderedSymbols.length; i++) {
         var s = symbols[i];
         if (fullPath !== s.fileName) continue;
 
-        if (existingMarks[s.minChar])
+        if (existingMarks[s.textSpan.start()])
           continue;
-        existingMarks[s.minChar] = true;
+        existingMarks[s.textSpan.start()] = true;
 
-        var from = doc.posFromIndex(s.minChar);
-        var to = doc.posFromIndex(s.limChar);
+        var from = doc.posFromIndex(s.textSpan.start());
+        var to = doc.posFromIndex(s.textSpan.end());
 
         var cls = 'teapo-symbol teapo-symbol-nocursor';
-        if (s.minChar <= cursorOffset && s.limChar >= cursorOffset) {
+        if (s.textSpan.start() <= cursorOffset && s.textSpan.end() >= cursorOffset) {
           cls = 'teapo-symbol teapo-symbol-cursor';
           this._currentSymbolMarkIndex = i;
         }
@@ -762,21 +772,22 @@ module teapo {
       doc.setCursor(newCursorPos);
     }
 
-    private _markDocError(error: TypeScript.Diagnostic, className: string, doc: CodeMirror.Doc) {
-      var from = { line: error.line(), ch: error.character() };
-      var to = { line: error.line(), ch: from.ch + error.length() };
+    private _markDocError(error: ts.Diagnostic, className: string, doc: CodeMirror.Doc) {
+      var from = doc.posFromIndex(error.start);
+      var to = doc.posFromIndex(error.start + error.length);
 
       var m = doc.markText(
         from, to,
         {
           className: className,
-          title: error.text()
+          title: error.messageText
         });
       this._docErrorMarks.push(m);
     }
 
     private _updateGutter() {
       var editor = this.editor();
+      var doc = this.doc();
 
       editor.clearGutter('teapo-errors');
 
@@ -798,16 +809,16 @@ module teapo {
 
         for (var i = 0; i < src.errors.length; i++) {
           var err = src.errors[i];
-          var info = err.info();
+          var errPos = doc.posFromIndex(err.start);
 
-          var lnerr = lineErrors[err.line()];
-          var text = '[' + TypeScript.DiagnosticCategory[info.category] + '] ' + err.text();
+          var lnerr = lineErrors[errPos.line];
+          var text = '[' + TypeScript.DiagnosticCategory[err.category] + '] ' + err.messageText;
           if (lnerr) {
             lnerr.text += '\n' + text;
           }
           else {
             lnerr = { text: text, classNames: {} };
-            lineErrors[err.line()] = lnerr;
+            lineErrors[errPos.line] = lnerr;
           }
 
           lnerr.classNames['teapo-gutter-' + src.kind + '-error'] = '';
@@ -869,8 +880,8 @@ module teapo {
     text: string;
 
     constructor(
-      private _completionEntry: TypeScript.Services.CompletionEntry,
-      private _completionEntryDetails: TypeScript.Services.CompletionEntryDetails,
+      private _completionEntry: ts.CompletionEntry,
+      private _completionEntryDetails: ts.CompletionEntryDetails,
       private _index: number,
       private _lead: string, private _tail: string) {
       this.text = this._completionEntry.name;

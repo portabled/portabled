@@ -44,11 +44,11 @@ module teapo {
     /**
      * The main API required by TypeScript for talking to the host environment. */
     private _createLanguageServiceHost(): ts.LanguageServiceHost {
+
       return {
-
+        getCurrentDirectory: () => '/',
+        getDefaultLibFilename: () => '#lib.d.ts',
         getCancellationToken: () => null,
-
-        
         getCompilationSettings: () => this.compilationSettings,
         getScriptFileNames: () => {
           var result = Object.keys(this.scripts).filter(k => this.scripts.hasOwnProperty(k)).sort();
@@ -58,13 +58,12 @@ module teapo {
         getScriptVersion: (fileName: string) => {
           var script = this.scripts[fileName];
           if (script.changes)
-            return script.changes().length;
-          return 0;
+            return (script.changes().length+1)+'';
+          return '1';
         },
         getScriptIsOpen: (fileName: string) => {
           return true;
         },
-        getScriptByteOrderMark: (fileName: string) => ts.ByteOrderMark.None,
         getScriptSnapshot: (fileName: string) => {
           var script = this.scripts[fileName];
           var snapshot = <TypeScriptDocumentSnapshot>script._cachedSnapshot;
@@ -123,7 +122,7 @@ module teapo {
           else
             return '/';
         }
-      }
+      };
     }
 
     private _log(text) {
@@ -138,6 +137,68 @@ module teapo {
         }
       }
     }
+  }
+  
+  class TypeScriptLanguageHost implements ts.LanguageServiceHost {
+    
+    constructor(private _tss: TypeScriptService) {
+      
+    }
+    
+    getCompilationSettings(): CompilerOptions {
+      return this.compilationSettings;
+    }
+
+    getScriptFileNames(): string[] {
+      var result = Object.keys(this.scripts).filter(k => this.scripts.hasOwnProperty(k)).sort();
+      //console.log('...getScriptFileNames():',result);
+      return result;
+     }
+    
+    getScriptVersion(fileName: string): string {
+      var script = this.scripts[fileName];
+      if (script.changes)
+        return script.changes().length;
+      return 0;
+    }
+
+    getScriptIsOpen(fileName: string): boolean {
+      return true;
+    }
+
+    getScriptSnapshot(fileName: string): TypeScript.IScriptSnapshot {
+      var script = this.scripts[fileName];
+      var snapshot = <TypeScriptDocumentSnapshot>script._cachedSnapshot;
+
+      // checking if snapshot is out of date
+      if (!snapshot || (script.changes && snapshot.version < script.changes().length)) {
+        script._cachedSnapshot =
+        snapshot = new TypeScriptDocumentSnapshot(script);
+      }
+
+      return snapshot;
+    }
+
+    getLocalizedDiagnosticMessages(): any {
+      return null;
+    }
+
+    getCancellationToken(): CancellationToken {
+      return null;
+    }
+
+    getCurrentDirectory(): string {
+      return '/';
+    }
+
+    getDefaultLibFilename(): string {
+      return '#lib.d.ts';
+    }
+    
+    log(s: string) {
+      
+    }
+
   }
 
   export module TypeScriptService {
@@ -189,6 +250,11 @@ module teapo {
       var text = this._getText();
       var result = TypeScript.TextUtilities.parseLineStarts(text);
       return result;
+    }
+    
+    getChangeRange(oldSnapshot: TypeScript.IScriptSnapshot): TypeScript.TextChangeRange {
+      var baseVersion = (<any>oldSnapshot).version || 0;
+      return this.getTextChangeRangeSinceVersion(baseVersion);
     }
 
     getTextChangeRangeSinceVersion(scriptVersion: number): TypeScript.TextChangeRange {

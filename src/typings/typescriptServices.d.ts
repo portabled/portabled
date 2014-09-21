@@ -1,31 +1,6 @@
 declare module ts {
     var Diagnostics: {
-        Unknown_compiler_option_0: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        File_0_not_found: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        File_0_must_have_extension_ts_or_d_ts: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Unrecognized_escape_sequence: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Unexpected_character_0: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Missing_close_quote_character: {
+        Unterminated_string_literal: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -35,22 +10,7 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        _0_keyword_expected: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
         _0_expected: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Identifier_expected_0_is_a_keyword: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Automatic_semicolon_insertion_not_allowed: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -61,11 +21,6 @@ declare module ts {
             key: string;
         };
         Asterisk_Slash_expected: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        public_or_private_modifier_must_precede_static: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -130,22 +85,22 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        extends_clause_already_seen: {
+        A_class_or_interface_declaration_can_only_have_one_extends_clause: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        extends_clause_must_precede_implements_clause: {
+        An_extends_clause_must_precede_an_implements_clause: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        Classes_can_only_extend_a_single_class: {
+        A_class_can_only_extend_a_single_class: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        implements_clause_already_seen: {
+        A_class_declaration_can_only_have_one_implements_clause: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -170,12 +125,12 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        Interface_declaration_cannot_have_implements_clause: {
+        An_interface_declaration_cannot_have_an_implements_clause: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        super_invocation_cannot_have_type_arguments: {
+        super_must_be_followed_by_an_argument_list_or_member_access: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -255,11 +210,6 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        Modifiers_cannot_appear_here: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
         Accessors_are_only_available_when_targeting_ECMAScript_5_and_higher: {
             code: number;
             category: DiagnosticCategory;
@@ -280,62 +230,7 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        module_class_interface_enum_import_or_statement: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
         Unexpected_token_A_constructor_method_accessor_or_property_was_expected: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        statement: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        case_or_default_clause: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        identifier: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        call_construct_index_property_or_function_signature: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        expression: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        type_name: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        property_or_accessor: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        parameter: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        type_parameter: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -430,11 +325,6 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        Invalid_left_hand_side_in_for_in_statement: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
         A_continue_statement_can_only_be_used_within_an_enclosing_iteration_statement: {
             code: number;
             category: DiagnosticCategory;
@@ -515,642 +405,12 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        Duplicate_identifier_0: {
+        Octal_literals_are_not_allowed_in_strict_mode: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        new_T_cannot_be_used_to_create_an_array_Use_new_Array_T_instead: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Multiple_constructor_implementations_are_not_allowed: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        A_class_may_only_implement_another_class_or_interface: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        get_and_set_accessor_must_have_the_same_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Static_members_cannot_reference_class_type_parameters: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        super_property_access_is_permitted_only_in_a_constructor_member_function_or_member_accessor_of_a_derived_class: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        The_right_hand_side_of_an_arithmetic_operation_must_be_of_type_any_number_or_an_enum_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        The_left_hand_side_of_an_arithmetic_operation_must_be_of_type_any_number_or_an_enum_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        An_arithmetic_operand_must_be_of_type_any_number_or_an_enum_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        The_left_hand_side_of_a_for_in_statement_cannot_use_a_type_annotation: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        The_left_hand_side_of_a_for_in_statement_must_be_of_type_string_or_any: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        The_right_hand_side_of_a_for_in_statement_must_be_of_type_any_an_object_type_or_a_type_parameter: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        The_left_hand_side_of_an_in_expression_must_be_of_types_any_string_or_number: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        The_right_hand_side_of_an_in_expression_must_be_of_type_any_an_object_type_or_a_type_parameter: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        A_get_accessor_must_return_a_value_or_consist_of_a_single_throw_statement: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Getter_and_setter_accessors_do_not_agree_in_visibility: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        A_function_whose_declared_type_is_neither_void_nor_any_must_return_a_value_or_consist_of_a_single_throw_statement: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Untyped_function_calls_may_not_accept_type_arguments: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        The_left_hand_side_of_an_instanceof_expression_must_be_of_type_any_an_object_type_or_a_type_parameter: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        The_right_hand_side_of_an_instanceof_expression_must_be_of_type_any_or_of_a_type_assignable_to_the_Function_interface_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Setters_cannot_return_a_value: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Invalid_left_hand_side_of_assignment_expression: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Subsequent_variable_declarations_must_have_the_same_type_Variable_0_must_be_of_type_1_but_here_has_type_2: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        All_symbols_within_a_with_block_will_be_resolved_to_any: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        The_operand_of_an_increment_or_decrement_operator_must_be_a_variable_property_or_indexer: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Overload_signatures_must_all_be_public_or_private: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Overload_signatures_must_all_be_exported_or_not_exported: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Overload_signatures_must_all_be_ambient_or_non_ambient: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Overload_signatures_must_all_be_optional_or_required: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        this_cannot_be_referenced_in_constructor_arguments: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Value_of_type_0_is_not_callable_Did_you_mean_to_include_new: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        A_signature_with_an_implementation_cannot_use_a_string_literal_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Interface_0_cannot_simultaneously_extend_types_1_and_2_Colon: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Initializer_of_parameter_0_cannot_reference_identifier_1_declared_after_it: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Individual_declarations_in_merged_declaration_0_must_be_all_exported_or_all_local: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        super_cannot_be_referenced_in_constructor_arguments: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Return_type_of_constructor_signature_must_be_assignable_to_the_instance_type_of_the_class: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Ambient_external_module_declaration_cannot_specify_relative_module_name: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Import_declaration_in_an_ambient_external_module_declaration_cannot_reference_external_module_through_relative_external_module_name: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Duplicate_identifier_this_Compiler_uses_variable_declaration_this_to_capture_this_reference: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Duplicate_identifier_super_Compiler_uses_super_to_capture_base_class_reference: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Expression_resolves_to_variable_declaration_this_that_compiler_uses_to_capture_this_reference: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Expression_resolves_to_super_that_compiler_uses_to_capture_base_class_reference: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Duplicate_identifier_i_Compiler_uses_i_to_initialize_rest_parameter: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Duplicate_identifier_arguments_Compiler_uses_arguments_to_initialize_rest_parameters: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Constraint_of_a_type_parameter_cannot_reference_any_type_parameter_from_the_same_type_parameter_list: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Initializer_of_instance_member_variable_0_cannot_reference_identifier_1_declared_in_the_constructor: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Parameter_0_cannot_be_referenced_in_its_initializer: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Duplicate_string_index_signature: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Duplicate_number_index_signature: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        All_declarations_of_an_interface_must_have_identical_type_parameters: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Expression_resolves_to_variable_declaration_i_that_compiler_uses_to_initialize_rest_parameter: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Function_implementation_name_must_be_0: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Constructor_implementation_is_missing: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        An_export_assignment_cannot_be_used_in_a_module_with_other_exported_elements: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        A_parameter_property_is_only_allowed_in_a_constructor_implementation: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Function_overload_must_be_static: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Function_overload_must_not_be_static: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Circular_definition_of_import_alias_0: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Cannot_find_name_0: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Module_0_has_no_exported_member_1: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Cannot_find_external_module_0: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        A_module_cannot_have_more_than_one_export_assignment: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Type_0_recursively_references_itself_as_a_base_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        A_class_may_only_extend_another_class: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        An_interface_may_only_extend_a_class_or_another_interface: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Generic_type_0_requires_1_type_argument_s: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Type_0_is_not_generic: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Cannot_find_global_type_0: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Global_type_0_must_be_a_class_or_interface_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Global_type_0_must_have_1_type_parameter_s: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        this_cannot_be_referenced_in_a_module_body: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        this_cannot_be_referenced_in_a_static_property_initializer: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        this_cannot_be_referenced_in_current_location: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        super_can_only_be_referenced_in_a_derived_class: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Property_0_does_not_exist_on_type_1: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        An_index_expression_argument_must_be_of_type_string_number_or_any: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Type_0_does_not_satisfy_the_constraint_1_Colon: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Type_0_does_not_satisfy_the_constraint_1: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Supplied_parameters_do_not_match_any_signature_of_call_target: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Cannot_invoke_an_expression_whose_type_lacks_a_call_signature: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Only_a_void_function_can_be_called_with_the_new_keyword: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Cannot_use_new_with_an_expression_whose_type_lacks_a_call_or_construct_signature: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Neither_type_0_nor_type_1_is_assignable_to_the_other_Colon: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Neither_type_0_nor_type_1_is_assignable_to_the_other: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        No_best_common_type_exists_among_return_expressions: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Operator_0_cannot_be_applied_to_types_1_and_2: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        No_best_common_type_exists_between_0_and_1: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        No_best_common_type_exists_between_0_1_and_2: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        A_rest_parameter_must_be_of_an_array_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        A_parameter_initializer_is_only_allowed_in_a_function_or_constructor_implementation: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Specialized_overload_signature_is_not_assignable_to_any_non_specialized_signature: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Duplicate_function_implementation: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Overload_signature_is_not_compatible_with_function_implementation: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Argument_of_type_0_is_not_assignable_to_parameter_of_type_1: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Index_signature_is_missing_in_type_0: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Index_signatures_are_incompatible_Colon: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Class_0_defines_instance_member_accessor_1_but_extended_class_2_defines_it_as_instance_member_function: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Class_0_defines_instance_member_property_1_but_extended_class_2_defines_it_as_instance_member_function: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Class_0_defines_instance_member_function_1_but_extended_class_2_defines_it_as_instance_member_accessor: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Class_0_defines_instance_member_function_1_but_extended_class_2_defines_it_as_instance_member_property: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        In_an_enum_with_multiple_declarations_only_one_declaration_can_omit_an_initializer_for_its_first_enum_element: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Named_properties_0_of_types_1_and_2_are_not_identical: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        The_current_host_does_not_support_the_0_option: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Cannot_find_the_common_subdirectory_path_for_the_input_files: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Cannot_read_file_0_Colon_1: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Unsupported_file_encoding: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Could_not_write_file_0_Colon_1: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Option_mapRoot_cannot_be_specified_without_specifying_sourcemap_option: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Option_sourceRoot_cannot_be_specified_without_specifying_sourcemap_option: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Version_0: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        File_change_detected_Compiling: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Compilation_complete_Watching_for_file_changes: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Variable_0_implicitly_has_an_1_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Parameter_0_implicitly_has_an_1_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Member_0_implicitly_has_an_1_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        new_expression_whose_target_lacks_a_construct_signature_implicitly_has_an_any_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        _0_which_lacks_return_type_annotation_implicitly_has_an_1_return_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Function_expression_which_lacks_return_type_annotation_implicitly_has_an_0_return_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Construct_signature_which_lacks_return_type_annotation_implicitly_has_an_any_return_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Lambda_function_which_lacks_return_type_annotation_implicitly_has_an_0_return_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Array_literal_implicitly_has_an_0_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Property_0_implicitly_has_type_any_because_its_set_accessor_lacks_a_type_annotation: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Index_signature_of_object_type_implicitly_has_an_any_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Object_literal_s_property_0_implicitly_has_an_1_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Rest_parameter_0_implicitly_has_an_any_type: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Call_signature_which_lacks_return_type_annotation_implicitly_has_an_any_return_type: {
+        A_tuple_type_element_list_cannot_be_empty: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -1171,11 +431,6 @@ declare module ts {
             key: string;
         };
         Unexpected_end_of_text: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Unterminated_string_constant: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -1255,21 +510,6 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        not_preceded_by_parameter_list: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        Invalid_assignment_target: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
-        super_must_be_followed_by_argument_list_or_member_access: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
         Line_break_not_permitted_here: {
             code: number;
             category: DiagnosticCategory;
@@ -1290,22 +530,132 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        Class_member_declaration_expected: {
-            code: number;
-            category: DiagnosticCategory;
-            key: string;
-        };
         Declaration_expected: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        Invalid_reference_comment: {
+        Import_declarations_in_an_internal_module_cannot_reference_an_external_module: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Cannot_compile_external_modules_unless_the_module_flag_is_provided: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Filename_0_differs_from_already_included_filename_1_only_in_casing: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        new_T_cannot_be_used_to_create_an_array_Use_new_Array_T_instead: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Duplicate_identifier_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Initializer_of_instance_member_variable_0_cannot_reference_identifier_1_declared_in_the_constructor: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Static_members_cannot_reference_class_type_parameters: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Circular_definition_of_import_alias_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Cannot_find_name_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Module_0_has_no_exported_member_1: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
         File_0_is_not_an_external_module: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Cannot_find_external_module_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        A_module_cannot_have_more_than_one_export_assignment: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        An_export_assignment_cannot_be_used_in_a_module_with_other_exported_elements: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_0_recursively_references_itself_as_a_base_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        A_class_may_only_extend_another_class: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        An_interface_may_only_extend_a_class_or_another_interface: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Constraint_of_a_type_parameter_cannot_reference_any_type_parameter_from_the_same_type_parameter_list: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Generic_type_0_requires_1_type_argument_s: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_0_is_not_generic: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Global_type_0_must_be_a_class_or_interface_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Global_type_0_must_have_1_type_parameter_s: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Cannot_find_global_type_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Named_properties_0_of_types_1_and_2_are_not_identical: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Interface_0_cannot_simultaneously_extend_types_1_and_2_Colon: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -1330,12 +680,62 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        Private_property_0_cannot_be_reimplemented: {
+        Property_0_is_private_in_type_1_but_not_in_type_2: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        Required_property_0_cannot_be_reimplemented_with_optional_property_in_1: {
+        Types_of_property_0_are_incompatible_Colon: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Property_0_is_optional_in_type_1_but_required_in_type_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Types_of_parameters_0_and_1_are_incompatible_Colon: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Index_signature_is_missing_in_type_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Index_signatures_are_incompatible_Colon: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        this_cannot_be_referenced_in_a_module_body: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        this_cannot_be_referenced_in_current_location: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        this_cannot_be_referenced_in_constructor_arguments: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        this_cannot_be_referenced_in_a_static_property_initializer: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        super_can_only_be_referenced_in_a_derived_class: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        super_cannot_be_referenced_in_constructor_arguments: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -1345,7 +745,192 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        Only_public_methods_of_the_base_class_are_accessible_via_the_super_keyword: {
+        super_property_access_is_permitted_only_in_a_constructor_member_function_or_member_accessor_of_a_derived_class: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Property_0_does_not_exist_on_type_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Only_public_and_protected_methods_of_the_base_class_are_accessible_via_the_super_keyword: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Property_0_is_private_and_only_accessible_within_class_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        An_index_expression_argument_must_be_of_type_string_number_or_any: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_0_does_not_satisfy_the_constraint_1_Colon: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_0_does_not_satisfy_the_constraint_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Argument_of_type_0_is_not_assignable_to_parameter_of_type_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Supplied_parameters_do_not_match_any_signature_of_call_target: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Untyped_function_calls_may_not_accept_type_arguments: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Value_of_type_0_is_not_callable_Did_you_mean_to_include_new: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Cannot_invoke_an_expression_whose_type_lacks_a_call_signature: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Only_a_void_function_can_be_called_with_the_new_keyword: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Cannot_use_new_with_an_expression_whose_type_lacks_a_call_or_construct_signature: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Neither_type_0_nor_type_1_is_assignable_to_the_other: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Neither_type_0_nor_type_1_is_assignable_to_the_other_Colon: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        No_best_common_type_exists_among_return_expressions: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        A_function_whose_declared_type_is_neither_void_nor_any_must_return_a_value_or_consist_of_a_single_throw_statement: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        An_arithmetic_operand_must_be_of_type_any_number_or_an_enum_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        The_operand_of_an_increment_or_decrement_operator_must_be_a_variable_property_or_indexer: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        The_left_hand_side_of_an_instanceof_expression_must_be_of_type_any_an_object_type_or_a_type_parameter: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        The_right_hand_side_of_an_instanceof_expression_must_be_of_type_any_or_of_a_type_assignable_to_the_Function_interface_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        The_left_hand_side_of_an_in_expression_must_be_of_types_any_string_or_number: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        The_right_hand_side_of_an_in_expression_must_be_of_type_any_an_object_type_or_a_type_parameter: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        The_left_hand_side_of_an_arithmetic_operation_must_be_of_type_any_number_or_an_enum_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        The_right_hand_side_of_an_arithmetic_operation_must_be_of_type_any_number_or_an_enum_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Invalid_left_hand_side_of_assignment_expression: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Operator_0_cannot_be_applied_to_types_1_and_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        No_best_common_type_exists_between_0_1_and_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        No_best_common_type_exists_between_0_and_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_name_cannot_be_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        A_parameter_property_is_only_allowed_in_a_constructor_implementation: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        A_rest_parameter_must_be_of_an_array_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        A_parameter_initializer_is_only_allowed_in_a_function_or_constructor_implementation: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_cannot_be_referenced_in_its_initializer: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Initializer_of_parameter_0_cannot_reference_identifier_1_declared_after_it: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Duplicate_string_index_signature: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Duplicate_number_index_signature: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -1360,52 +945,167 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        Import_name_cannot_be_0: {
+        A_get_accessor_must_return_a_value_or_consist_of_a_single_throw_statement: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        Type_parameter_name_cannot_be_0: {
+        Getter_and_setter_accessors_do_not_agree_in_visibility: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        Class_name_cannot_be_0: {
+        get_and_set_accessor_must_have_the_same_type: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        Interface_name_cannot_be_0: {
+        A_signature_with_an_implementation_cannot_use_a_string_literal_type: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        Enum_name_cannot_be_0: {
+        Specialized_overload_signature_is_not_assignable_to_any_non_specialized_signature: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        Types_of_property_0_are_incompatible_Colon: {
+        Overload_signatures_must_all_be_exported_or_not_exported: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        Types_of_parameters_0_and_1_are_incompatible_Colon: {
+        Overload_signatures_must_all_be_ambient_or_non_ambient: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        Unknown_identifier_0: {
+        Overload_signatures_must_all_be_public_private_or_protected: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        Property_0_is_inaccessible: {
+        Overload_signatures_must_all_be_optional_or_required: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Function_overload_must_be_static: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Function_overload_must_not_be_static: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Function_implementation_name_must_be_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Constructor_implementation_is_missing: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
         Function_implementation_is_missing_or_not_immediately_following_the_declaration: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Multiple_constructor_implementations_are_not_allowed: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Duplicate_function_implementation: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Overload_signature_is_not_compatible_with_function_implementation: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Individual_declarations_in_merged_declaration_0_must_be_all_exported_or_all_local: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Duplicate_identifier_arguments_Compiler_uses_arguments_to_initialize_rest_parameters: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Duplicate_identifier_i_Compiler_uses_i_to_initialize_rest_parameter: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Expression_resolves_to_variable_declaration_i_that_compiler_uses_to_initialize_rest_parameter: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Duplicate_identifier_this_Compiler_uses_variable_declaration_this_to_capture_this_reference: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Expression_resolves_to_variable_declaration_this_that_compiler_uses_to_capture_this_reference: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Duplicate_identifier_super_Compiler_uses_super_to_capture_base_class_reference: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Expression_resolves_to_super_that_compiler_uses_to_capture_base_class_reference: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Subsequent_variable_declarations_must_have_the_same_type_Variable_0_must_be_of_type_1_but_here_has_type_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        The_left_hand_side_of_a_for_in_statement_cannot_use_a_type_annotation: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        The_left_hand_side_of_a_for_in_statement_must_be_of_type_string_or_any: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Invalid_left_hand_side_in_for_in_statement: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        The_right_hand_side_of_a_for_in_statement_must_be_of_type_any_an_object_type_or_a_type_parameter: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Setters_cannot_return_a_value: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_constructor_signature_must_be_assignable_to_the_instance_type_of_the_class: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        All_symbols_within_a_with_block_will_be_resolved_to_any: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -1425,7 +1125,7 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        Class_0_incorrectly_extends_base_class_1_Colon: {
+        Class_name_cannot_be_0: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -1435,7 +1135,7 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        Class_static_side_0_incorrectly_extends_base_class_static_side_1_Colon: {
+        Class_0_incorrectly_extends_base_class_1_Colon: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -1445,7 +1145,17 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
+        Class_static_side_0_incorrectly_extends_base_class_static_side_1_Colon: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
         Type_name_0_in_extends_clause_does_not_reference_constructor_function_for_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Class_0_incorrectly_implements_interface_1: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -1455,7 +1165,37 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        Class_0_incorrectly_implements_interface_1: {
+        A_class_may_only_implement_another_class_or_interface: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Class_0_defines_instance_member_function_1_but_extended_class_2_defines_it_as_instance_member_accessor: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Class_0_defines_instance_member_function_1_but_extended_class_2_defines_it_as_instance_member_property: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Class_0_defines_instance_member_property_1_but_extended_class_2_defines_it_as_instance_member_function: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Class_0_defines_instance_member_accessor_1_but_extended_class_2_defines_it_as_instance_member_function: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Interface_name_cannot_be_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        All_declarations_of_an_interface_must_have_identical_type_parameters: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -1470,12 +1210,12 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        Ambient_external_modules_cannot_be_nested_in_other_modules: {
+        Enum_name_cannot_be_0: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        Import_declarations_in_an_internal_module_cannot_reference_an_external_module: {
+        In_an_enum_with_multiple_declarations_only_one_declaration_can_omit_an_initializer_for_its_first_enum_element: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -1490,12 +1230,12 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        Cannot_compile_external_modules_unless_the_module_flag_is_provided: {
+        Ambient_external_modules_cannot_be_nested_in_other_modules: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        Import_declaration_conflicts_with_local_declaration_of_0: {
+        Ambient_external_module_declaration_cannot_specify_relative_module_name: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -1505,17 +1245,612 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        Filename_0_differs_from_already_included_filename_1_only_in_casing: {
+        Import_name_cannot_be_0: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        Argument_for_module_option_must_be_commonjs_or_amd: {
+        Import_declaration_in_an_ambient_external_module_declaration_cannot_reference_external_module_through_relative_external_module_name: {
             code: number;
             category: DiagnosticCategory;
             key: string;
         };
-        Argument_for_target_option_must_be_es3_or_es5: {
+        Import_declaration_conflicts_with_local_declaration_of_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Duplicate_identifier_0_Compiler_reserves_name_1_in_top_level_scope_of_an_external_module: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Types_have_separate_declarations_of_a_private_property_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Property_0_is_protected_but_type_1_is_not_a_class_derived_from_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Property_0_is_protected_in_type_1_but_public_in_type_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Property_0_is_protected_and_only_accessible_within_class_1_and_its_subclasses: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Property_0_is_protected_and_only_accessible_through_an_instance_of_class_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Import_declaration_0_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_exported_class_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_exported_class_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_exported_interface_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_exported_interface_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_constructor_signature_from_exported_interface_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_constructor_signature_from_exported_interface_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_call_signature_from_exported_interface_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_call_signature_from_exported_interface_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_public_static_method_from_exported_class_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_public_static_method_from_exported_class_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_public_method_from_exported_class_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_public_method_from_exported_class_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_method_from_exported_interface_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_method_from_exported_interface_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_exported_function_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Type_parameter_0_of_exported_function_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Implements_clause_of_exported_class_0_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Extends_clause_of_exported_class_0_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Implements_clause_of_exported_class_0_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Extends_clause_of_exported_class_0_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Extends_clause_of_exported_interface_0_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Extends_clause_of_exported_interface_0_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Exported_variable_0_has_or_is_using_name_1_from_external_module_2_but_cannot_be_named: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Exported_variable_0_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Exported_variable_0_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Public_static_property_0_of_exported_class_has_or_is_using_name_1_from_external_module_2_but_cannot_be_named: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Public_static_property_0_of_exported_class_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Public_static_property_0_of_exported_class_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Public_property_0_of_exported_class_has_or_is_using_name_1_from_external_module_2_but_cannot_be_named: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Public_property_0_of_exported_class_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Public_property_0_of_exported_class_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Property_0_of_exported_interface_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Property_0_of_exported_interface_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_public_static_property_setter_from_exported_class_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_public_static_property_setter_from_exported_class_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_public_property_setter_from_exported_class_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_public_property_setter_from_exported_class_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_public_static_property_getter_from_exported_class_has_or_is_using_name_0_from_external_module_1_but_cannot_be_named: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_public_static_property_getter_from_exported_class_has_or_is_using_name_0_from_private_module_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_public_static_property_getter_from_exported_class_has_or_is_using_private_name_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_public_property_getter_from_exported_class_has_or_is_using_name_0_from_external_module_1_but_cannot_be_named: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_public_property_getter_from_exported_class_has_or_is_using_name_0_from_private_module_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_public_property_getter_from_exported_class_has_or_is_using_private_name_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_constructor_signature_from_exported_interface_has_or_is_using_name_0_from_private_module_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_constructor_signature_from_exported_interface_has_or_is_using_private_name_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_call_signature_from_exported_interface_has_or_is_using_name_0_from_private_module_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_call_signature_from_exported_interface_has_or_is_using_private_name_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_index_signature_from_exported_interface_has_or_is_using_name_0_from_private_module_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_index_signature_from_exported_interface_has_or_is_using_private_name_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_public_static_method_from_exported_class_has_or_is_using_name_0_from_external_module_1_but_cannot_be_named: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_public_static_method_from_exported_class_has_or_is_using_name_0_from_private_module_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_public_static_method_from_exported_class_has_or_is_using_private_name_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_public_method_from_exported_class_has_or_is_using_name_0_from_external_module_1_but_cannot_be_named: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_public_method_from_exported_class_has_or_is_using_name_0_from_private_module_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_public_method_from_exported_class_has_or_is_using_private_name_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_method_from_exported_interface_has_or_is_using_name_0_from_private_module_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_method_from_exported_interface_has_or_is_using_private_name_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_exported_function_has_or_is_using_name_0_from_external_module_1_but_cannot_be_named: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_exported_function_has_or_is_using_name_0_from_private_module_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Return_type_of_exported_function_has_or_is_using_private_name_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_constructor_from_exported_class_has_or_is_using_name_1_from_external_module_2_but_cannot_be_named: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_constructor_from_exported_class_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_constructor_from_exported_class_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_constructor_signature_from_exported_interface_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_constructor_signature_from_exported_interface_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_call_signature_from_exported_interface_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_call_signature_from_exported_interface_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_public_static_method_from_exported_class_has_or_is_using_name_1_from_external_module_2_but_cannot_be_named: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_public_static_method_from_exported_class_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_public_static_method_from_exported_class_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_public_method_from_exported_class_has_or_is_using_name_1_from_external_module_2_but_cannot_be_named: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_public_method_from_exported_class_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_public_method_from_exported_class_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_method_from_exported_interface_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_method_from_exported_interface_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_exported_function_has_or_is_using_name_1_from_external_module_2_but_cannot_be_named: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_exported_function_has_or_is_using_name_1_from_private_module_2: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_of_exported_function_has_or_is_using_private_name_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        The_current_host_does_not_support_the_0_option: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Cannot_find_the_common_subdirectory_path_for_the_input_files: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Cannot_read_file_0_Colon_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Unsupported_file_encoding: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Unknown_compiler_option_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Could_not_write_file_0_Colon_1: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Option_mapRoot_cannot_be_specified_without_specifying_sourcemap_option: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Option_sourceRoot_cannot_be_specified_without_specifying_sourcemap_option: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Concatenate_and_emit_output_to_single_file: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Generates_corresponding_d_ts_file: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Specifies_the_location_where_debugger_should_locate_map_files_instead_of_generated_locations: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Specifies_the_location_where_debugger_should_locate_TypeScript_files_instead_of_source_locations: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Watch_input_files: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Redirect_output_structure_to_the_directory: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Do_not_emit_comments_to_output: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Specify_ECMAScript_target_version_Colon_ES3_default_or_ES5: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Specify_module_code_generation_Colon_commonjs_or_amd: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Print_this_message: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Print_the_compiler_s_version: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Syntax_Colon_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        options: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        file: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Examples_Colon_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Options_Colon: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Version_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Insert_command_line_options_and_files_from_a_file: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        File_change_detected_Compiling: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        KIND: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        FILE: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        VERSION: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        LOCATION: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        DIRECTORY: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Compilation_complete_Watching_for_file_changes: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Generates_corresponding_map_file: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -1526,6 +1861,16 @@ declare module ts {
             key: string;
         };
         Unterminated_quoted_string_in_response_file_0: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Argument_for_module_option_must_be_commonjs_or_amd: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Argument_for_target_option_must_be_es3_or_es5: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -1550,7 +1895,102 @@ declare module ts {
             category: DiagnosticCategory;
             key: string;
         };
-        No_input_files_specified: {
+        Warn_on_expressions_and_declarations_with_an_implied_any_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        File_0_not_found: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        File_0_must_have_extension_ts_or_d_ts: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Variable_0_implicitly_has_an_1_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Parameter_0_implicitly_has_an_1_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Member_0_implicitly_has_an_1_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        new_expression_whose_target_lacks_a_construct_signature_implicitly_has_an_any_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        _0_which_lacks_return_type_annotation_implicitly_has_an_1_return_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Function_expression_which_lacks_return_type_annotation_implicitly_has_an_0_return_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Construct_signature_which_lacks_return_type_annotation_implicitly_has_an_any_return_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Property_0_implicitly_has_type_any_because_its_set_accessor_lacks_a_type_annotation: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Index_signature_of_object_type_implicitly_has_an_any_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Object_literal_s_property_0_implicitly_has_an_1_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Rest_parameter_0_implicitly_has_an_any_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Call_signature_which_lacks_return_type_annotation_implicitly_has_an_any_return_type: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        _0_implicitly_has_type_any_because_it_is_referenced_directly_or_indirectly_in_its_own_type_annotation: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        _0_implicitly_has_type_any_because_it_is_does_not_have_a_type_annotation_and_is_referenced_directly_or_indirectly_in_its_own_initializer: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        _0_implicitly_has_return_type_any_because_it_does_not_have_a_return_type_annotation_and_is_referenced_directly_or_indirectly_in_one_of_its_return_expressions: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        Function_implicitly_has_return_type_any_because_it_does_not_have_a_return_type_annotation_and_is_referenced_directly_or_indirectly_in_one_of_its_return_expressions: {
+            code: number;
+            category: DiagnosticCategory;
+            key: string;
+        };
+        You_cannot_rename_this_element: {
             code: number;
             category: DiagnosticCategory;
             key: string;
@@ -1583,6 +2023,7 @@ declare module ts {
     }
     function tokenToString(t: SyntaxKind): string;
     function getLineStarts(text: string): number[];
+    function getPositionFromLineAndCharacter(lineStarts: number[], line: number, character: number): number;
     function getLineAndCharacterOfPosition(lineStarts: number[], position: number): {
         line: number;
         character: number;
@@ -1591,8 +2032,15 @@ declare module ts {
         line: number;
         character: number;
     };
+    function isWhiteSpace(ch: number): boolean;
+    function isLineBreak(ch: number): boolean;
+    function isOctalDigit(ch: number): boolean;
     function skipTrivia(text: string, pos: number, stopAfterLineBreak?: boolean): number;
-    function createScanner(languageVersion: ScriptTarget, text?: string, onError?: ErrorCallback, onComment?: CommentCallback): Scanner;
+    function getLeadingComments(text: string, pos: number): Comment[];
+    function getTrailingComments(text: string, pos: number): Comment[];
+    function isIdentifierStart(ch: number, languageVersion: ScriptTarget): boolean;
+    function isIdentifierPart(ch: number, languageVersion: ScriptTarget): boolean;
+    function createScanner(languageVersion: ScriptTarget, skipTrivia: boolean, text?: string, onError?: ErrorCallback, onComment?: CommentCallback): Scanner;
 }
 declare module ts {
     interface TextRange {
@@ -1602,185 +2050,190 @@ declare module ts {
     enum SyntaxKind {
         Unknown = 0,
         EndOfFileToken = 1,
-        NumericLiteral = 2,
-        StringLiteral = 3,
-        RegularExpressionLiteral = 4,
-        OpenBraceToken = 5,
-        CloseBraceToken = 6,
-        OpenParenToken = 7,
-        CloseParenToken = 8,
-        OpenBracketToken = 9,
-        CloseBracketToken = 10,
-        DotToken = 11,
-        DotDotDotToken = 12,
-        SemicolonToken = 13,
-        CommaToken = 14,
-        LessThanToken = 15,
-        GreaterThanToken = 16,
-        LessThanEqualsToken = 17,
-        GreaterThanEqualsToken = 18,
-        EqualsEqualsToken = 19,
-        ExclamationEqualsToken = 20,
-        EqualsEqualsEqualsToken = 21,
-        ExclamationEqualsEqualsToken = 22,
-        EqualsGreaterThanToken = 23,
-        PlusToken = 24,
-        MinusToken = 25,
-        AsteriskToken = 26,
-        SlashToken = 27,
-        PercentToken = 28,
-        PlusPlusToken = 29,
-        MinusMinusToken = 30,
-        LessThanLessThanToken = 31,
-        GreaterThanGreaterThanToken = 32,
-        GreaterThanGreaterThanGreaterThanToken = 33,
-        AmpersandToken = 34,
-        BarToken = 35,
-        CaretToken = 36,
-        ExclamationToken = 37,
-        TildeToken = 38,
-        AmpersandAmpersandToken = 39,
-        BarBarToken = 40,
-        QuestionToken = 41,
-        ColonToken = 42,
-        EqualsToken = 43,
-        PlusEqualsToken = 44,
-        MinusEqualsToken = 45,
-        AsteriskEqualsToken = 46,
-        SlashEqualsToken = 47,
-        PercentEqualsToken = 48,
-        LessThanLessThanEqualsToken = 49,
-        GreaterThanGreaterThanEqualsToken = 50,
-        GreaterThanGreaterThanGreaterThanEqualsToken = 51,
-        AmpersandEqualsToken = 52,
-        BarEqualsToken = 53,
-        CaretEqualsToken = 54,
-        Identifier = 55,
-        BreakKeyword = 56,
-        CaseKeyword = 57,
-        CatchKeyword = 58,
-        ClassKeyword = 59,
-        ConstKeyword = 60,
-        ContinueKeyword = 61,
-        DebuggerKeyword = 62,
-        DefaultKeyword = 63,
-        DeleteKeyword = 64,
-        DoKeyword = 65,
-        ElseKeyword = 66,
-        EnumKeyword = 67,
-        ExportKeyword = 68,
-        ExtendsKeyword = 69,
-        FalseKeyword = 70,
-        FinallyKeyword = 71,
-        ForKeyword = 72,
-        FunctionKeyword = 73,
-        IfKeyword = 74,
-        ImportKeyword = 75,
-        InKeyword = 76,
-        InstanceOfKeyword = 77,
-        NewKeyword = 78,
-        NullKeyword = 79,
-        ReturnKeyword = 80,
-        SuperKeyword = 81,
-        SwitchKeyword = 82,
-        ThisKeyword = 83,
-        ThrowKeyword = 84,
-        TrueKeyword = 85,
-        TryKeyword = 86,
-        TypeOfKeyword = 87,
-        VarKeyword = 88,
-        VoidKeyword = 89,
-        WhileKeyword = 90,
-        WithKeyword = 91,
-        ImplementsKeyword = 92,
-        InterfaceKeyword = 93,
-        LetKeyword = 94,
-        PackageKeyword = 95,
-        PrivateKeyword = 96,
-        ProtectedKeyword = 97,
-        PublicKeyword = 98,
-        StaticKeyword = 99,
-        YieldKeyword = 100,
-        AnyKeyword = 101,
-        BooleanKeyword = 102,
-        ConstructorKeyword = 103,
-        DeclareKeyword = 104,
-        GetKeyword = 105,
-        ModuleKeyword = 106,
-        RequireKeyword = 107,
-        NumberKeyword = 108,
-        SetKeyword = 109,
-        StringKeyword = 110,
-        Missing = 111,
-        QualifiedName = 112,
-        TypeParameter = 113,
-        Parameter = 114,
-        Property = 115,
-        Method = 116,
-        Constructor = 117,
-        GetAccessor = 118,
-        SetAccessor = 119,
-        CallSignature = 120,
-        ConstructSignature = 121,
-        IndexSignature = 122,
-        TypeReference = 123,
-        TypeQuery = 124,
-        TypeLiteral = 125,
-        ArrayType = 126,
-        ArrayLiteral = 127,
-        ObjectLiteral = 128,
-        PropertyAssignment = 129,
-        PropertyAccess = 130,
-        IndexedAccess = 131,
-        CallExpression = 132,
-        NewExpression = 133,
-        TypeAssertion = 134,
-        ParenExpression = 135,
-        FunctionExpression = 136,
-        ArrowFunction = 137,
-        PrefixOperator = 138,
-        PostfixOperator = 139,
-        BinaryExpression = 140,
-        ConditionalExpression = 141,
-        OmittedExpression = 142,
-        Block = 143,
-        VariableStatement = 144,
-        EmptyStatement = 145,
-        ExpressionStatement = 146,
-        IfStatement = 147,
-        DoStatement = 148,
-        WhileStatement = 149,
-        ForStatement = 150,
-        ForInStatement = 151,
-        ContinueStatement = 152,
-        BreakStatement = 153,
-        ReturnStatement = 154,
-        WithStatement = 155,
-        SwitchStatement = 156,
-        CaseClause = 157,
-        DefaultClause = 158,
-        LabelledStatement = 159,
-        ThrowStatement = 160,
-        TryStatement = 161,
-        TryBlock = 162,
-        CatchBlock = 163,
-        FinallyBlock = 164,
-        DebuggerStatement = 165,
-        VariableDeclaration = 166,
-        FunctionDeclaration = 167,
-        FunctionBlock = 168,
-        ClassDeclaration = 169,
-        InterfaceDeclaration = 170,
-        EnumDeclaration = 171,
-        ModuleDeclaration = 172,
-        ModuleBlock = 173,
-        ImportDeclaration = 174,
-        ExportAssignment = 175,
-        EnumMember = 176,
-        SourceFile = 177,
-        Program = 178,
-        SyntaxList = 179,
-        Count = 180,
+        SingleLineCommentTrivia = 2,
+        MultiLineCommentTrivia = 3,
+        NewLineTrivia = 4,
+        WhitespaceTrivia = 5,
+        NumericLiteral = 6,
+        StringLiteral = 7,
+        RegularExpressionLiteral = 8,
+        OpenBraceToken = 9,
+        CloseBraceToken = 10,
+        OpenParenToken = 11,
+        CloseParenToken = 12,
+        OpenBracketToken = 13,
+        CloseBracketToken = 14,
+        DotToken = 15,
+        DotDotDotToken = 16,
+        SemicolonToken = 17,
+        CommaToken = 18,
+        LessThanToken = 19,
+        GreaterThanToken = 20,
+        LessThanEqualsToken = 21,
+        GreaterThanEqualsToken = 22,
+        EqualsEqualsToken = 23,
+        ExclamationEqualsToken = 24,
+        EqualsEqualsEqualsToken = 25,
+        ExclamationEqualsEqualsToken = 26,
+        EqualsGreaterThanToken = 27,
+        PlusToken = 28,
+        MinusToken = 29,
+        AsteriskToken = 30,
+        SlashToken = 31,
+        PercentToken = 32,
+        PlusPlusToken = 33,
+        MinusMinusToken = 34,
+        LessThanLessThanToken = 35,
+        GreaterThanGreaterThanToken = 36,
+        GreaterThanGreaterThanGreaterThanToken = 37,
+        AmpersandToken = 38,
+        BarToken = 39,
+        CaretToken = 40,
+        ExclamationToken = 41,
+        TildeToken = 42,
+        AmpersandAmpersandToken = 43,
+        BarBarToken = 44,
+        QuestionToken = 45,
+        ColonToken = 46,
+        EqualsToken = 47,
+        PlusEqualsToken = 48,
+        MinusEqualsToken = 49,
+        AsteriskEqualsToken = 50,
+        SlashEqualsToken = 51,
+        PercentEqualsToken = 52,
+        LessThanLessThanEqualsToken = 53,
+        GreaterThanGreaterThanEqualsToken = 54,
+        GreaterThanGreaterThanGreaterThanEqualsToken = 55,
+        AmpersandEqualsToken = 56,
+        BarEqualsToken = 57,
+        CaretEqualsToken = 58,
+        Identifier = 59,
+        BreakKeyword = 60,
+        CaseKeyword = 61,
+        CatchKeyword = 62,
+        ClassKeyword = 63,
+        ConstKeyword = 64,
+        ContinueKeyword = 65,
+        DebuggerKeyword = 66,
+        DefaultKeyword = 67,
+        DeleteKeyword = 68,
+        DoKeyword = 69,
+        ElseKeyword = 70,
+        EnumKeyword = 71,
+        ExportKeyword = 72,
+        ExtendsKeyword = 73,
+        FalseKeyword = 74,
+        FinallyKeyword = 75,
+        ForKeyword = 76,
+        FunctionKeyword = 77,
+        IfKeyword = 78,
+        ImportKeyword = 79,
+        InKeyword = 80,
+        InstanceOfKeyword = 81,
+        NewKeyword = 82,
+        NullKeyword = 83,
+        ReturnKeyword = 84,
+        SuperKeyword = 85,
+        SwitchKeyword = 86,
+        ThisKeyword = 87,
+        ThrowKeyword = 88,
+        TrueKeyword = 89,
+        TryKeyword = 90,
+        TypeOfKeyword = 91,
+        VarKeyword = 92,
+        VoidKeyword = 93,
+        WhileKeyword = 94,
+        WithKeyword = 95,
+        ImplementsKeyword = 96,
+        InterfaceKeyword = 97,
+        LetKeyword = 98,
+        PackageKeyword = 99,
+        PrivateKeyword = 100,
+        ProtectedKeyword = 101,
+        PublicKeyword = 102,
+        StaticKeyword = 103,
+        YieldKeyword = 104,
+        AnyKeyword = 105,
+        BooleanKeyword = 106,
+        ConstructorKeyword = 107,
+        DeclareKeyword = 108,
+        GetKeyword = 109,
+        ModuleKeyword = 110,
+        RequireKeyword = 111,
+        NumberKeyword = 112,
+        SetKeyword = 113,
+        StringKeyword = 114,
+        Missing = 115,
+        QualifiedName = 116,
+        TypeParameter = 117,
+        Parameter = 118,
+        Property = 119,
+        Method = 120,
+        Constructor = 121,
+        GetAccessor = 122,
+        SetAccessor = 123,
+        CallSignature = 124,
+        ConstructSignature = 125,
+        IndexSignature = 126,
+        TypeReference = 127,
+        TypeQuery = 128,
+        TypeLiteral = 129,
+        ArrayType = 130,
+        TupleType = 131,
+        ArrayLiteral = 132,
+        ObjectLiteral = 133,
+        PropertyAssignment = 134,
+        PropertyAccess = 135,
+        IndexedAccess = 136,
+        CallExpression = 137,
+        NewExpression = 138,
+        TypeAssertion = 139,
+        ParenExpression = 140,
+        FunctionExpression = 141,
+        ArrowFunction = 142,
+        PrefixOperator = 143,
+        PostfixOperator = 144,
+        BinaryExpression = 145,
+        ConditionalExpression = 146,
+        OmittedExpression = 147,
+        Block = 148,
+        VariableStatement = 149,
+        EmptyStatement = 150,
+        ExpressionStatement = 151,
+        IfStatement = 152,
+        DoStatement = 153,
+        WhileStatement = 154,
+        ForStatement = 155,
+        ForInStatement = 156,
+        ContinueStatement = 157,
+        BreakStatement = 158,
+        ReturnStatement = 159,
+        WithStatement = 160,
+        SwitchStatement = 161,
+        CaseClause = 162,
+        DefaultClause = 163,
+        LabeledStatement = 164,
+        ThrowStatement = 165,
+        TryStatement = 166,
+        TryBlock = 167,
+        CatchBlock = 168,
+        FinallyBlock = 169,
+        DebuggerStatement = 170,
+        VariableDeclaration = 171,
+        FunctionDeclaration = 172,
+        FunctionBlock = 173,
+        ClassDeclaration = 174,
+        InterfaceDeclaration = 175,
+        EnumDeclaration = 176,
+        ModuleDeclaration = 177,
+        ModuleBlock = 178,
+        ImportDeclaration = 179,
+        ExportAssignment = 180,
+        EnumMember = 181,
+        SourceFile = 182,
+        Program = 183,
+        SyntaxList = 184,
+        Count = 185,
         FirstAssignment,
         LastAssignment,
         FirstReservedWord,
@@ -1789,6 +2242,12 @@ declare module ts {
         LastKeyword,
         FirstFutureReservedWord,
         LastFutureReservedWord,
+        FirstTypeNode,
+        LastTypeNode,
+        FirstPunctuation,
+        LastPunctuation,
+        FirstToken,
+        LastToken,
     }
     enum NodeFlags {
         Export = 1,
@@ -1797,11 +2256,13 @@ declare module ts {
         Rest = 8,
         Public = 16,
         Private = 32,
-        Static = 64,
-        MultiLine = 128,
-        Synthetic = 256,
-        DeclarationFile = 512,
+        Protected = 64,
+        Static = 128,
+        MultiLine = 256,
+        Synthetic = 512,
+        DeclarationFile = 1024,
         Modifier,
+        AccessibilityModifier,
     }
     interface Node extends TextRange {
         kind: SyntaxKind;
@@ -1868,6 +2329,9 @@ declare module ts {
     }
     interface ArrayTypeNode extends TypeNode {
         elementType: TypeNode;
+    }
+    interface TupleTypeNode extends TypeNode {
+        elementTypes: NodeArray<TypeNode>;
     }
     interface StringLiteralTypeNode extends TypeNode {
         text: string;
@@ -1977,7 +2441,7 @@ declare module ts {
         expression?: Expression;
         statements: NodeArray<Statement>;
     }
-    interface LabelledStatement extends Statement {
+    interface LabeledStatement extends Statement {
         label: Identifier;
         statement: Statement;
     }
@@ -2022,6 +2486,9 @@ declare module ts {
     interface FileReference extends TextRange {
         filename: string;
     }
+    interface Comment extends TextRange {
+        hasTrailingNewLine?: boolean;
+    }
     interface SourceFile extends Block {
         filename: string;
         text: string;
@@ -2029,6 +2496,7 @@ declare module ts {
             line: number;
             character: number;
         };
+        getPositionFromLineAndCharacter(line: number, character: number): number;
         amdDependencies: string[];
         referencedFiles: FileReference[];
         syntacticErrors: Diagnostic[];
@@ -2038,10 +2506,10 @@ declare module ts {
         nodeCount: number;
         identifierCount: number;
         symbolCount: number;
-        byteOrderMark: ByteOrderMark;
         isOpen: boolean;
-        version: number;
+        version: string;
         languageVersion: ScriptTarget;
+        identifiers: Map<string>;
     }
     interface Program {
         getSourceFile(filename: string): SourceFile;
@@ -2050,29 +2518,53 @@ declare module ts {
         getCompilerHost(): CompilerHost;
         getDiagnostics(sourceFile?: SourceFile): Diagnostic[];
         getGlobalDiagnostics(): Diagnostic[];
-        getTypeChecker(): TypeChecker;
+        getTypeChecker(fullTypeCheckMode: boolean): TypeChecker;
         getCommonSourceDirectory(): string;
     }
     interface SourceMapSpan {
+        /** Line number in the js file*/
         emittedLine: number;
+        /** Column number in the js file */
         emittedColumn: number;
+        /** Line number in the ts file */
         sourceLine: number;
+        /** Column number in the ts file */
         sourceColumn: number;
+        /** Optional name (index into names array) associated with this span */
         nameIndex?: number;
+        /** ts file (index into sources array) associated with this span*/
         sourceIndex: number;
     }
     interface SourceMapData {
+        /** Where the sourcemap file is written */
         sourceMapFilePath: string;
+        /** source map URL written in the js file */
         jsSourceMappingURL: string;
+        /** Source map's file field - js file name*/
         sourceMapFile: string;
+        /** Source map's sourceRoot field - location where the sources will be present if not "" */
         sourceMapSourceRoot: string;
+        /** Source map's sources field - list of sources that can be indexed in this source map*/
         sourceMapSources: string[];
+        /** input source file (which one can use on program to get the file)
+            this is one to one mapping with the sourceMapSources list*/
         inputSourceFileNames: string[];
+        /** Source map's names field - list of names that can be indexed in this source map*/
         sourceMapNames?: string[];
+        /** Source map's mapping field - encoded source map spans*/
         sourceMapMappings: string;
+        /** Raw source map spans that were encoded into the sourceMapMappings*/
         sourceMapDecodedMappings: SourceMapSpan[];
     }
+    enum EmitReturnStatus {
+        Succeeded = 0,
+        AllOutputGenerationSkipped = 1,
+        JSGeneratedWithSemanticErrors = 2,
+        DeclarationGenerationSkipped = 3,
+        EmitErrorsEncountered = 4,
+    }
     interface EmitResult {
+        emitResultStatus: EmitReturnStatus;
         errors: Diagnostic[];
         sourceMaps: SourceMapData[];
     }
@@ -2085,26 +2577,28 @@ declare module ts {
         getSymbolCount(): number;
         getTypeCount(): number;
         checkProgram(): void;
-        emitFiles(): EmitResult;
-        getSymbolOfNode(node: Node): Symbol;
+        emitFiles(targetSourceFile?: SourceFile): EmitResult;
         getParentOfSymbol(symbol: Symbol): Symbol;
         getTypeOfSymbol(symbol: Symbol): Type;
-        getDeclaredTypeOfSymbol(symbol: Symbol): Type;
         getPropertiesOfType(type: Type): Symbol[];
         getPropertyOfType(type: Type, propetyName: string): Symbol;
         getSignaturesOfType(type: Type, kind: SignatureKind): Signature[];
         getIndexTypeOfType(type: Type, kind: IndexKind): Type;
         getReturnTypeOfSignature(signature: Signature): Type;
-        resolveEntityName(location: Node, name: EntityName, meaning: SymbolFlags): Symbol;
         getSymbolsInScope(location: Node, meaning: SymbolFlags): Symbol[];
         getSymbolInfo(node: Node): Symbol;
-        getTypeOfExpression(node: Expression, contextualType?: Type, contextualMapper?: TypeMapper): Type;
+        getTypeOfNode(node: Node): Type;
+        getApparentType(type: Type): ApparentType;
         typeToString(type: Type, enclosingDeclaration?: Node, flags?: TypeFormatFlags): string;
         symbolToString(symbol: Symbol, enclosingDeclaration?: Node, meaning?: SymbolFlags): string;
+        getFullyQualifiedName(symbol: Symbol): string;
         getAugmentedPropertiesOfApparentType(type: Type): Symbol[];
+        getRootSymbol(symbol: Symbol): Symbol;
+        getContextualType(node: Node): Type;
     }
     interface TextWriter {
         write(s: string): void;
+        writeSymbol(symbol: Symbol, enclosingDeclaration?: Node, meaning?: SymbolFlags): void;
         writeLine(): void;
         increaseIndent(): void;
         decreaseIndent(): void;
@@ -2113,6 +2607,19 @@ declare module ts {
     enum TypeFormatFlags {
         None = 0,
         WriteArrayAsGenericType = 1,
+        UseTypeOfFunction = 2,
+        NoTruncation = 4,
+    }
+    enum SymbolAccessibility {
+        Accessible = 0,
+        NotAccessible = 1,
+        CannotBeNamed = 2,
+    }
+    interface SymbolAccessiblityResult {
+        accessibility: SymbolAccessibility;
+        errorSymbolName?: string;
+        errorModuleName?: string;
+        aliasesToMakeVisible?: ImportDeclaration[];
     }
     interface EmitResolver {
         getProgram(): Program;
@@ -2124,11 +2631,14 @@ declare module ts {
         isTopLevelValueImportedViaEntityName(node: ImportDeclaration): boolean;
         getNodeCheckFlags(node: Node): NodeCheckFlags;
         getEnumMemberValue(node: EnumMember): number;
-        shouldEmitDeclarations(): boolean;
+        hasSemanticErrors(): boolean;
         isDeclarationVisible(node: Declaration): boolean;
         isImplementationOfOverload(node: FunctionDeclaration): boolean;
         writeTypeAtLocation(location: Node, enclosingDeclaration: Node, flags: TypeFormatFlags, writer: TextWriter): void;
         writeReturnTypeOfSignatureDeclaration(signatureDeclaration: SignatureDeclaration, enclosingDeclaration: Node, flags: TypeFormatFlags, writer: TextWriter): void;
+        writeSymbol(symbol: Symbol, enclosingDeclaration: Node, meaning: SymbolFlags, writer: TextWriter): void;
+        isSymbolAccessible(symbol: Symbol, enclosingDeclaration: Node, meaning: SymbolFlags): SymbolAccessiblityResult;
+        isImportDeclarationEntityNameReferenceDeclarationVisibile(entityName: EntityName): SymbolAccessiblityResult;
     }
     enum SymbolFlags {
         Variable = 1,
@@ -2246,8 +2756,9 @@ declare module ts {
         Class = 1024,
         Interface = 2048,
         Reference = 4096,
-        Anonymous = 8192,
-        FromSignature = 16384,
+        Tuple = 8192,
+        Anonymous = 16384,
+        FromSignature = 32768,
         Intrinsic,
         StringLike,
         NumberLike,
@@ -2286,6 +2797,10 @@ declare module ts {
         instantiations: Map<TypeReference>;
         openReferenceTargets: GenericType[];
         openReferenceChecks: Map<boolean>;
+    }
+    interface TupleType extends ObjectType {
+        elementTypes: Type[];
+        baseArrayType: TypeReference;
     }
     interface ResolvedObjectType extends ObjectType {
         members: SymbolTable;
@@ -2352,17 +2867,18 @@ declare module ts {
         Warning = 0,
         Error = 1,
         Message = 2,
-        NoPrefix = 3,
     }
     interface CompilerOptions {
         charset?: string;
         codepage?: number;
         declaration?: boolean;
         diagnostics?: boolean;
+        emitBOM?: boolean;
         help?: boolean;
         locale?: string;
         mapRoot?: string;
         module?: ModuleKind;
+        noErrorTruncation?: boolean;
         noImplicitAny?: boolean;
         noLib?: boolean;
         noLibCheck?: boolean;
@@ -2382,6 +2898,10 @@ declare module ts {
         CommonJS = 1,
         AMD = 2,
     }
+    interface LineAndCharacter {
+        line: number;
+        character: number;
+    }
     enum ScriptTarget {
         ES3 = 0,
         ES5 = 1,
@@ -2394,6 +2914,9 @@ declare module ts {
     interface CommandLineOption {
         name: string;
         type: any;
+        shortName?: string;
+        description?: DiagnosticMessage;
+        paramName?: DiagnosticMessage;
         error?: DiagnosticMessage;
     }
     enum CharacterCodes {
@@ -2527,17 +3050,11 @@ declare module ts {
         getSourceFile(filename: string, languageVersion: ScriptTarget, onError?: (message: string) => void): SourceFile;
         getDefaultLibFilename(): string;
         getCancellationToken?(): CancellationToken;
-        writeFile(filename: string, data: string, onError?: (message: string) => void): void;
+        writeFile(filename: string, data: string, writeByteOrderMark: boolean, onError?: (message: string) => void): void;
         getCurrentDirectory(): string;
         getCanonicalFileName(fileName: string): string;
         useCaseSensitiveFileNames(): boolean;
         getNewLine(): string;
-    }
-    enum ByteOrderMark {
-        None = 0,
-        Utf8 = 1,
-        Utf16BigEndian = 2,
-        Utf16LittleEndian = 3,
     }
 }
 declare module ts {
@@ -2552,6 +3069,7 @@ declare module ts {
     function filter<T>(array: T[], f: (x: T) => boolean): T[];
     function map<T, U>(array: T[], f: (x: T) => U): U[];
     function concatenate<T>(array1: T[], array2: T[]): T[];
+    function uniqueElements<T>(array: T[]): T[];
     function sum(array: any[], prop: string): number;
     function binarySearch(array: number[], value: number): number;
     function hasProperty<T>(map: Map<T>, key: string): boolean;
@@ -2562,14 +3080,24 @@ declare module ts {
     function forEachKey<T, U>(map: Map<T>, callback: (key: string) => U): U;
     function lookUp<T>(map: Map<T>, key: string): T;
     function mapToArray<T>(map: Map<T>): T[];
+    /**
+     * Creates a map from the elements of an array.
+     *
+     * @param array the array of input elements.
+     * @param makeKey a function that produces a key for a given element.
+     *
+     * This function makes no effort to avoid collisions; if any two elements produce
+     * the same key with the given 'makeKey' function, then the element with the higher
+     * index in the array will be the one associated with the produced key.
+     */
+    function arrayToMap<T>(array: T[], makeKey: (value: T) => string): Map<T>;
     var localizedDiagnosticMessages: Map<string>;
+    function getLocaleSpecificMessage(message: string): string;
     function createFileDiagnostic(file: SourceFile, start: number, length: number, message: DiagnosticMessage, ...args: any[]): Diagnostic;
-    function createFileDiagnostic(file: SourceFile, start: number, length: number, message: DiagnosticMessage): Diagnostic;
     function createCompilerDiagnostic(message: DiagnosticMessage, ...args: any[]): Diagnostic;
-    function createCompilerDiagnostic(message: DiagnosticMessage): Diagnostic;
     function chainDiagnosticMessages(details: DiagnosticMessageChain, message: DiagnosticMessage, ...args: any[]): DiagnosticMessageChain;
-    function chainDiagnosticMessages(details: DiagnosticMessageChain, message: DiagnosticMessage): DiagnosticMessageChain;
     function flattenDiagnosticChain(file: SourceFile, start: number, length: number, diagnosticChain: DiagnosticMessageChain, newLine: string): Diagnostic;
+    function compareValues<T>(a: T, b: T): number;
     function compareDiagnostics(d1: Diagnostic, d2: Diagnostic): number;
     function deduplicateSortedDiagnostics(diagnostics: Diagnostic[]): Diagnostic[];
     function normalizeSlashes(path: string): string;
@@ -2580,12 +3108,11 @@ declare module ts {
     function isUrl(path: string): boolean;
     function isRootedDiskPath(path: string): boolean;
     function getNormalizedPathComponents(path: string, currentDirectory: string): string[];
-    function getNormalizedPathFromPathCompoments(pathComponents: string[]): string;
+    function getNormalizedPathFromPathComponents(pathComponents: string[]): string;
     function getRelativePathToDirectoryOrUrl(directoryPathOrUrl: string, relativeOrAbsolutePath: string, currentDirectory: string, isAbsolutePathAnUrl: boolean): string;
     function getBaseFilename(path: string): string;
     function combinePaths(path1: string, path2: string): string;
     function fileExtensionIs(path: string, extension: string): boolean;
-    function getCanonicalFileName(fileName: string): string;
     interface ObjectAllocator {
         getNodeConstructor(kind: SyntaxKind): new () => Node;
         getSymbolConstructor(): new (flags: SymbolFlags, name: string) => Symbol;
@@ -2605,38 +3132,13 @@ declare module ts {
         function fail(message?: string): void;
     }
 }
-interface System {
-    args: string[];
-    newLine: string;
-    useCaseSensitiveFileNames: boolean;
-    write(s: string): void;
-    readFile(fileName: string, encoding?: string): string;
-    writeFile(fileName: string, data: string): void;
-    watchFile?(fileName: string, callback: (fileName: string) => void): FileWatcher;
-    resolvePath(path: string): string;
-    fileExists(path: string): boolean;
-    directoryExists(path: string): boolean;
-    createDirectory(directoryName: string): void;
-    getExecutingFilePath(): string;
-    getCurrentDirectory(): string;
-    getMemoryUsage(): number;
-    exit(exitCode?: number): void;
-}
-interface FileWatcher {
-    close(): void;
-}
-declare var require: any;
-declare var module: any;
-declare var process: any;
-declare var global: any;
-declare var sys: System;
 declare module ts {
     function getNodeConstructor(kind: SyntaxKind): new () => Node;
     function getModuleNameFromFilename(filename: string): string;
     function getSourceFileOfNode(node: Node): SourceFile;
     function nodePosToString(node: Node): string;
     function getStartPosOfNode(node: Node): number;
-    function getTokenPosOfNode(node: Node): number;
+    function getTokenPosOfNode(node: Node, sourceFile?: SourceFile): number;
     function getSourceTextOfNodeFromSourceText(sourceText: string, node: Node): string;
     function getSourceTextOfNode(node: Node): string;
     function escapeIdentifier(identifier: string): string;
@@ -2647,10 +3149,24 @@ declare module ts {
     function getErrorSpanForNode(node: Node): Node;
     function isExternalModule(file: SourceFile): boolean;
     function isPrologueDirective(node: Node): boolean;
+    function getLeadingCommentsOfNode(node: Node, sourceFileOfNode: SourceFile): Comment[];
+    function getJsDocComments(node: Declaration, sourceFileOfNode: SourceFile): Comment[];
+    var fullTripleSlashReferencePathRegEx: RegExp;
     function forEachChild<T>(node: Node, cbNode: (node: Node) => T, cbNodes?: (nodes: Node[]) => T): T;
+    function forEachReturnStatement<T>(body: Block, visitor: (stmt: ReturnStatement) => T): T;
+    function isAnyFunction(node: Node): boolean;
+    function getContainingFunction(node: Node): SignatureDeclaration;
+    function getThisContainer(node: Node, includeArrowFunctions: boolean): Node;
+    function getSuperContainer(node: Node): Node;
     function hasRestParameters(s: SignatureDeclaration): boolean;
     function isInAmbientContext(node: Node): boolean;
-    function createSourceFile(filename: string, sourceText: string, languageVersion: ScriptTarget, byteOrderMark: ByteOrderMark, version?: number, isOpen?: boolean): SourceFile;
+    function isDeclaration(node: Node): boolean;
+    function isStatement(n: Node): boolean;
+    function isDeclarationOrFunctionExpressionOrCatchVariableName(name: Node): boolean;
+    function getAncestor(node: Node, kind: SyntaxKind): Node;
+    function isKeyword(token: SyntaxKind): boolean;
+    function isModifier(token: SyntaxKind): boolean;
+    function createSourceFile(filename: string, sourceText: string, languageVersion: ScriptTarget, version: string, isOpen?: boolean): SourceFile;
     function createProgram(rootNames: string[], options: CompilerOptions, host: CompilerHost): Program;
 }
 declare module ts {
@@ -2658,10 +3174,13 @@ declare module ts {
     function bindSourceFile(file: SourceFile): void;
 }
 declare module ts {
-    function emitFiles(resolver: EmitResolver): EmitResult;
+    function shouldEmitToOwnFile(sourceFile: SourceFile, compilerOptions: CompilerOptions): boolean;
+    function isExternalModuleOrDeclarationFile(sourceFile: SourceFile): boolean;
+    function emitFiles(resolver: EmitResolver, targetSourceFile?: SourceFile): EmitResult;
 }
 declare module ts {
-    function createTypeChecker(program: Program): TypeChecker;
+    function getDeclarationOfKind(symbol: Symbol, kind: SyntaxKind): Declaration;
+    function createTypeChecker(program: Program, fullTypeCheck: boolean): TypeChecker;
 }
 declare module TypeScript {
     var DiagnosticCode: {
@@ -3177,8 +3696,19 @@ declare module TypeScript {
         toJSON(key: any): any;
         diagnosticKey(): string;
         arguments(): any[];
+        /**
+         * Get the text of the message in the given language.
+         */
         text(): string;
+        /**
+         * Get the text of the message including the error code in the given language.
+         */
         message(): string;
+        /**
+         * If a derived class has additional information about other referenced symbols, it can
+         * expose the locations of those symbols in a general way, so they can be reported along
+         * with the error.
+         */
         additionalLocations(): Location[];
         static equals(diagnostic1: Diagnostic, diagnostic2: Diagnostic): boolean;
         info(): DiagnosticInfo;
@@ -3202,17 +3732,6 @@ declare module TypeScript {
         static abstract(): Error;
         static notYetImplemented(): Error;
         static invalidOperation(message?: string): Error;
-    }
-}
-declare module TypeScript {
-    class Hash {
-        private static FNV_BASE;
-        private static FNV_PRIME;
-        private static computeFnv1aCharArrayHashCode(text, start, len);
-        static computeSimple31BitCharArrayHashCode(key: number[], start: number, len: number): number;
-        static computeSimple31BitStringHashCode(key: string): number;
-        static computeMurmur2StringHashCode(key: string, seed: number): number;
-        static combine(value: number, currentHash: number): number;
     }
 }
 declare module TypeScript {
@@ -3248,6 +3767,11 @@ declare module TypeScript {
     class LineAndCharacter {
         private _line;
         private _character;
+        /**
+         * Initializes a new instance of a LinePosition with the given line and character. ArgumentOutOfRangeException if "line" or "character" is less than zero.
+         * @param line The line of the line position. The first line in a file is defined as line 0 (zero based line numbering).
+         * @param character The character position in the line.
+         */
         constructor(line: number, character: number);
         line(): number;
         character(): number;
@@ -3390,14 +3914,23 @@ declare module TypeScript {
         getText(start: number, end: number): string;
         getLength(): number;
         getLineStartPositions(): number[];
-        getTextChangeRangeSinceVersion(scriptVersion: number): TextChangeRange;
+        getChangeRange(oldSnapshot: IScriptSnapshot): TextChangeRange;
     }
     module ScriptSnapshot {
         function fromString(text: string): IScriptSnapshot;
     }
 }
+/**
+ * Represents an immutable snapshot of text.
+ */
 declare module TypeScript {
+    /**
+     * Represents an immutable snapshot of text.
+     */
     interface ISimpleText {
+        /**
+         * Total number of characters in the text source.
+         */
         length(): number;
         substr(start: number, length: number): string;
         charCodeAt(index: number): number;
@@ -3433,19 +3966,63 @@ declare module TypeScript {
     class TextSpan implements ISpan {
         private _start;
         private _length;
+        /**
+         * Creates a TextSpan instance beginning with the position Start and having the Length
+         * specified with length.
+         */
         constructor(start: number, length: number);
+        toJSON(key: any): any;
         start(): number;
         length(): number;
         end(): number;
         isEmpty(): boolean;
+        /**
+         * Determines whether the position lies within the span. Returns true if the position is greater than or equal to Start and strictly less
+         * than End, otherwise false.
+         * @param position The position to check.
+         */
         containsPosition(position: number): boolean;
+        /**
+         * Determines whether span falls completely within this span. Returns true if the specified span falls completely within this span, otherwise false.
+         * @param span The span to check.
+         */
         containsTextSpan(span: TextSpan): boolean;
+        /**
+         * Determines whether the given span overlaps this span. Two spans are considered to overlap
+         * if they have positions in common and neither is empty. Empty spans do not overlap with any
+         * other span. Returns true if the spans overlap, false otherwise.
+         * @param span The span to check.
+         */
         overlapsWith(span: TextSpan): boolean;
+        /**
+         * Returns the overlap with the given span, or null if there is no overlap.
+         * @param span The span to check.
+         */
         overlap(span: TextSpan): TextSpan;
+        /**
+         * Determines whether span intersects this span. Two spans are considered to
+         * intersect if they have positions in common or the end of one span
+         * coincides with the start of the other span. Returns true if the spans intersect, false otherwise.
+         * @param The span to check.
+         */
         intersectsWithTextSpan(span: TextSpan): boolean;
         intersectsWith(start: number, length: number): boolean;
+        /**
+         * Determines whether the given position intersects this span.
+         * A position is considered to intersect if it is between the start and
+         * end positions (inclusive) of this span. Returns true if the position intersects, false otherwise.
+         * @param position The position to check.
+         */
         intersectsWithPosition(position: number): boolean;
+        /**
+         * Returns the intersection with the given span, or null if there is no intersection.
+         * @param span The span to check.
+         */
         intersection(span: TextSpan): TextSpan;
+        /**
+         * Creates a new TextSpan from the given start and end positions
+         * as opposed to a position and length.
+         */
         static fromBounds(start: number, end: number): TextSpan;
     }
 }
@@ -3454,11 +4031,28 @@ declare module TypeScript {
         static unchanged: TextChangeRange;
         private _span;
         private _newLength;
+        /**
+         * Initializes a new instance of TextChangeRange.
+         */
         constructor(span: TextSpan, newLength: number);
+        /**
+         * The span of text before the edit which is being changed
+         */
         span(): TextSpan;
+        /**
+         * Width of the span after the edit.  A 0 here would represent a delete
+         */
         newLength(): number;
         newSpan(): TextSpan;
         isUnchanged(): boolean;
+        /**
+         * Called to merge all the changes that occurred across several versions of a script snapshot
+         * into a single change.  i.e. if a user keeps making successive edits to a script we will
+         * have a text change from V1 to V2, V2 to V3, ..., Vn.
+         *
+         * This function will then merge those changes into a single change range valid between V1 and
+         * Vn.
+         */
         static collapseChangesAcrossMultipleVersions(changes: TextChangeRange[]): TextChangeRange;
     }
 }
@@ -3623,125 +4217,126 @@ declare module TypeScript {
         ConstructorType = 125,
         GenericType = 126,
         TypeQuery = 127,
-        InterfaceDeclaration = 128,
-        FunctionDeclaration = 129,
-        ModuleDeclaration = 130,
-        ClassDeclaration = 131,
-        EnumDeclaration = 132,
-        ImportDeclaration = 133,
-        ExportAssignment = 134,
-        MemberFunctionDeclaration = 135,
-        MemberVariableDeclaration = 136,
-        ConstructorDeclaration = 137,
-        IndexMemberDeclaration = 138,
-        GetAccessor = 139,
-        SetAccessor = 140,
-        PropertySignature = 141,
-        CallSignature = 142,
-        ConstructSignature = 143,
-        IndexSignature = 144,
-        MethodSignature = 145,
-        Block = 146,
-        IfStatement = 147,
-        VariableStatement = 148,
-        ExpressionStatement = 149,
-        ReturnStatement = 150,
-        SwitchStatement = 151,
-        BreakStatement = 152,
-        ContinueStatement = 153,
-        ForStatement = 154,
-        ForInStatement = 155,
-        EmptyStatement = 156,
-        ThrowStatement = 157,
-        WhileStatement = 158,
-        TryStatement = 159,
-        LabeledStatement = 160,
-        DoStatement = 161,
-        DebuggerStatement = 162,
-        WithStatement = 163,
-        PlusExpression = 164,
-        NegateExpression = 165,
-        BitwiseNotExpression = 166,
-        LogicalNotExpression = 167,
-        PreIncrementExpression = 168,
-        PreDecrementExpression = 169,
-        DeleteExpression = 170,
-        TypeOfExpression = 171,
-        VoidExpression = 172,
-        CommaExpression = 173,
-        AssignmentExpression = 174,
-        AddAssignmentExpression = 175,
-        SubtractAssignmentExpression = 176,
-        MultiplyAssignmentExpression = 177,
-        DivideAssignmentExpression = 178,
-        ModuloAssignmentExpression = 179,
-        AndAssignmentExpression = 180,
-        ExclusiveOrAssignmentExpression = 181,
-        OrAssignmentExpression = 182,
-        LeftShiftAssignmentExpression = 183,
-        SignedRightShiftAssignmentExpression = 184,
-        UnsignedRightShiftAssignmentExpression = 185,
-        ConditionalExpression = 186,
-        LogicalOrExpression = 187,
-        LogicalAndExpression = 188,
-        BitwiseOrExpression = 189,
-        BitwiseExclusiveOrExpression = 190,
-        BitwiseAndExpression = 191,
-        EqualsWithTypeConversionExpression = 192,
-        NotEqualsWithTypeConversionExpression = 193,
-        EqualsExpression = 194,
-        NotEqualsExpression = 195,
-        LessThanExpression = 196,
-        GreaterThanExpression = 197,
-        LessThanOrEqualExpression = 198,
-        GreaterThanOrEqualExpression = 199,
-        InstanceOfExpression = 200,
-        InExpression = 201,
-        LeftShiftExpression = 202,
-        SignedRightShiftExpression = 203,
-        UnsignedRightShiftExpression = 204,
-        MultiplyExpression = 205,
-        DivideExpression = 206,
-        ModuloExpression = 207,
-        AddExpression = 208,
-        SubtractExpression = 209,
-        PostIncrementExpression = 210,
-        PostDecrementExpression = 211,
-        MemberAccessExpression = 212,
-        InvocationExpression = 213,
-        ArrayLiteralExpression = 214,
-        ObjectLiteralExpression = 215,
-        ObjectCreationExpression = 216,
-        ParenthesizedExpression = 217,
-        ParenthesizedArrowFunctionExpression = 218,
-        SimpleArrowFunctionExpression = 219,
-        CastExpression = 220,
-        ElementAccessExpression = 221,
-        FunctionExpression = 222,
-        OmittedExpression = 223,
-        VariableDeclaration = 224,
-        VariableDeclarator = 225,
-        ArgumentList = 226,
-        ParameterList = 227,
-        TypeArgumentList = 228,
-        TypeParameterList = 229,
-        ExtendsHeritageClause = 230,
-        ImplementsHeritageClause = 231,
-        EqualsValueClause = 232,
-        CaseSwitchClause = 233,
-        DefaultSwitchClause = 234,
-        ElseClause = 235,
-        CatchClause = 236,
-        FinallyClause = 237,
-        TypeParameter = 238,
-        Constraint = 239,
-        SimplePropertyAssignment = 240,
-        FunctionPropertyAssignment = 241,
-        Parameter = 242,
-        EnumElement = 243,
-        TypeAnnotation = 244,
-        ExternalModuleReference = 245,
-        ModuleNameModuleReference = 246,
+        TupleType = 128,
+        InterfaceDeclaration = 129,
+        FunctionDeclaration = 130,
+        ModuleDeclaration = 131,
+        ClassDeclaration = 132,
+        EnumDeclaration = 133,
+        ImportDeclaration = 134,
+        ExportAssignment = 135,
+        MemberFunctionDeclaration = 136,
+        MemberVariableDeclaration = 137,
+        ConstructorDeclaration = 138,
+        IndexMemberDeclaration = 139,
+        GetAccessor = 140,
+        SetAccessor = 141,
+        PropertySignature = 142,
+        CallSignature = 143,
+        ConstructSignature = 144,
+        IndexSignature = 145,
+        MethodSignature = 146,
+        Block = 147,
+        IfStatement = 148,
+        VariableStatement = 149,
+        ExpressionStatement = 150,
+        ReturnStatement = 151,
+        SwitchStatement = 152,
+        BreakStatement = 153,
+        ContinueStatement = 154,
+        ForStatement = 155,
+        ForInStatement = 156,
+        EmptyStatement = 157,
+        ThrowStatement = 158,
+        WhileStatement = 159,
+        TryStatement = 160,
+        LabeledStatement = 161,
+        DoStatement = 162,
+        DebuggerStatement = 163,
+        WithStatement = 164,
+        PlusExpression = 165,
+        NegateExpression = 166,
+        BitwiseNotExpression = 167,
+        LogicalNotExpression = 168,
+        PreIncrementExpression = 169,
+        PreDecrementExpression = 170,
+        DeleteExpression = 171,
+        TypeOfExpression = 172,
+        VoidExpression = 173,
+        CommaExpression = 174,
+        AssignmentExpression = 175,
+        AddAssignmentExpression = 176,
+        SubtractAssignmentExpression = 177,
+        MultiplyAssignmentExpression = 178,
+        DivideAssignmentExpression = 179,
+        ModuloAssignmentExpression = 180,
+        AndAssignmentExpression = 181,
+        ExclusiveOrAssignmentExpression = 182,
+        OrAssignmentExpression = 183,
+        LeftShiftAssignmentExpression = 184,
+        SignedRightShiftAssignmentExpression = 185,
+        UnsignedRightShiftAssignmentExpression = 186,
+        ConditionalExpression = 187,
+        LogicalOrExpression = 188,
+        LogicalAndExpression = 189,
+        BitwiseOrExpression = 190,
+        BitwiseExclusiveOrExpression = 191,
+        BitwiseAndExpression = 192,
+        EqualsWithTypeConversionExpression = 193,
+        NotEqualsWithTypeConversionExpression = 194,
+        EqualsExpression = 195,
+        NotEqualsExpression = 196,
+        LessThanExpression = 197,
+        GreaterThanExpression = 198,
+        LessThanOrEqualExpression = 199,
+        GreaterThanOrEqualExpression = 200,
+        InstanceOfExpression = 201,
+        InExpression = 202,
+        LeftShiftExpression = 203,
+        SignedRightShiftExpression = 204,
+        UnsignedRightShiftExpression = 205,
+        MultiplyExpression = 206,
+        DivideExpression = 207,
+        ModuloExpression = 208,
+        AddExpression = 209,
+        SubtractExpression = 210,
+        PostIncrementExpression = 211,
+        PostDecrementExpression = 212,
+        MemberAccessExpression = 213,
+        InvocationExpression = 214,
+        ArrayLiteralExpression = 215,
+        ObjectLiteralExpression = 216,
+        ObjectCreationExpression = 217,
+        ParenthesizedExpression = 218,
+        ParenthesizedArrowFunctionExpression = 219,
+        SimpleArrowFunctionExpression = 220,
+        CastExpression = 221,
+        ElementAccessExpression = 222,
+        FunctionExpression = 223,
+        OmittedExpression = 224,
+        VariableDeclaration = 225,
+        VariableDeclarator = 226,
+        ArgumentList = 227,
+        ParameterList = 228,
+        TypeArgumentList = 229,
+        TypeParameterList = 230,
+        ExtendsHeritageClause = 231,
+        ImplementsHeritageClause = 232,
+        EqualsValueClause = 233,
+        CaseSwitchClause = 234,
+        DefaultSwitchClause = 235,
+        ElseClause = 236,
+        CatchClause = 237,
+        FinallyClause = 238,
+        TypeParameter = 239,
+        Constraint = 240,
+        SimplePropertyAssignment = 241,
+        FunctionPropertyAssignment = 242,
+        Parameter = 243,
+        EnumElement = 244,
+        TypeAnnotation = 245,
+        ExternalModuleReference = 246,
+        ModuleNameModuleReference = 247,
         FirstStandardKeyword,
         LastStandardKeyword,
         FirstFutureReservedKeyword,
@@ -3853,6 +4448,19 @@ declare module TypeScript {
     function syntaxTree(element: ISyntaxElement): SyntaxTree;
     function parsedInStrictMode(node: ISyntaxNode): boolean;
     function previousToken(token: ISyntaxToken, includeSkippedTokens?: boolean): ISyntaxToken;
+    /**
+     * Finds a token according to the following rules:
+     * 1) If position matches the End of the node/s FullSpan and the node is SourceUnitSyntax,
+     *    then the EOF token is returned.
+     *
+     *  2) If node.FullSpan.Contains(position) then the token that contains given position is
+     *     returned.
+     *
+     *  3) Otherwise an ArgumentOutOfRangeException is thrown
+     *
+     * Note: findToken will always return a non-missing token with width greater than or equal to
+     * 1 (except for EOF).  Empty tokens synthesized by the parser are never returned.
+     */
     function findToken(element: ISyntaxElement, position: number, includeSkippedTokens?: boolean): ISyntaxToken;
     function findSkippedTokenInPositionedToken(positionedToken: ISyntaxToken, position: number): ISyntaxToken;
     function findSkippedTokenInLeadingTriviaList(positionedToken: ISyntaxToken, position: number): ISyntaxToken;
@@ -3935,6 +4543,7 @@ declare module TypeScript.SyntaxFacts {
     function isDirectivePrologueElement(node: ISyntaxNodeOrToken): boolean;
     function isUseStrictDirective(node: ISyntaxNodeOrToken): boolean;
     function isIdentifierNameOrAnyKeyword(token: ISyntaxToken): boolean;
+    function isAccessibilityModifier(kind: SyntaxKind): boolean;
 }
 interface Array<T> {
     data: number;
@@ -4005,6 +4614,11 @@ declare module TypeScript {
     interface TypeQuerySyntax extends ISyntaxNode, ITypeSyntax {
         typeOfKeyword: ISyntaxToken;
         name: INameSyntax;
+    }
+    interface TupleTypeSyntax extends ISyntaxNode, ITypeSyntax {
+        openBracketToken: ISyntaxToken;
+        types: ITypeSyntax[];
+        closeBracketToken: ISyntaxToken;
     }
     interface InterfaceDeclarationSyntax extends ISyntaxNode, IModuleElementSyntax {
         modifiers: ISyntaxToken[];
@@ -4453,6 +5067,7 @@ declare module TypeScript {
             ConstructorTypeSyntax: new (data: number, newKeyword: ISyntaxToken, typeParameterList: TypeParameterListSyntax, parameterList: ParameterListSyntax, equalsGreaterThanToken: ISyntaxToken, type: ITypeSyntax) => ConstructorTypeSyntax;
             GenericTypeSyntax: new (data: number, name: INameSyntax, typeArgumentList: TypeArgumentListSyntax) => GenericTypeSyntax;
             TypeQuerySyntax: new (data: number, typeOfKeyword: ISyntaxToken, name: INameSyntax) => TypeQuerySyntax;
+            TupleTypeSyntax: new (data: number, openBracketToken: ISyntaxToken, types: ITypeSyntax[], closeBracketToken: ISyntaxToken) => TupleTypeSyntax;
             InterfaceDeclarationSyntax: new (data: number, modifiers: ISyntaxToken[], interfaceKeyword: ISyntaxToken, identifier: ISyntaxToken, typeParameterList: TypeParameterListSyntax, heritageClauses: HeritageClauseSyntax[], body: ObjectTypeSyntax) => InterfaceDeclarationSyntax;
             FunctionDeclarationSyntax: new (data: number, modifiers: ISyntaxToken[], functionKeyword: ISyntaxToken, identifier: ISyntaxToken, callSignature: CallSignatureSyntax, block: BlockSyntax, semicolonToken: ISyntaxToken) => FunctionDeclarationSyntax;
             ModuleDeclarationSyntax: new (data: number, modifiers: ISyntaxToken[], moduleKeyword: ISyntaxToken, name: INameSyntax, stringLiteral: ISyntaxToken, openBraceToken: ISyntaxToken, moduleElements: IModuleElementSyntax[], closeBraceToken: ISyntaxToken) => ModuleDeclarationSyntax;
@@ -4542,6 +5157,8 @@ declare module TypeScript {
         fullText(text?: ISimpleText): string;
         hasLeadingTrivia(): boolean;
         hasTrailingTrivia(): boolean;
+        hasLeadingComment(): boolean;
+        hasTrailingComment(): boolean;
         hasSkippedToken(): boolean;
         leadingTrivia(text?: ISimpleText): ISyntaxTriviaList;
         trailingTrivia(text?: ISimpleText): ISyntaxTriviaList;
@@ -4635,6 +5252,7 @@ declare module TypeScript {
         visitConstructorType(node: ConstructorTypeSyntax): any;
         visitGenericType(node: GenericTypeSyntax): any;
         visitTypeQuery(node: TypeQuerySyntax): any;
+        visitTupleType(node: TupleTypeSyntax): any;
         visitInterfaceDeclaration(node: InterfaceDeclarationSyntax): any;
         visitFunctionDeclaration(node: FunctionDeclarationSyntax): any;
         visitModuleDeclaration(node: ModuleDeclarationSyntax): any;
@@ -4732,6 +5350,7 @@ declare module TypeScript {
         visitConstructorType(node: ConstructorTypeSyntax): void;
         visitGenericType(node: GenericTypeSyntax): void;
         visitTypeQuery(node: TypeQuerySyntax): void;
+        visitTupleType(node: TupleTypeSyntax): void;
         visitInterfaceDeclaration(node: InterfaceDeclarationSyntax): void;
         visitFunctionDeclaration(node: FunctionDeclarationSyntax): void;
         visitModuleDeclaration(node: ModuleDeclarationSyntax): void;
@@ -4820,7 +5439,7 @@ declare module TypeScript {
     }
 }
 declare module TypeScript.Parser {
-    var syntaxFactory: TypeScript.Syntax.ISyntaxFactory;
+    var syntaxFactory: Syntax.ISyntaxFactory;
     interface IParserSource {
         text: ISimpleText;
         fileName: string;
@@ -4900,6 +5519,13 @@ declare module TypeScript.Syntax.Concrete {
         name: INameSyntax;
         _typeBrand: any;
         constructor(data: number, typeOfKeyword: ISyntaxToken, name: INameSyntax);
+    }
+    class TupleTypeSyntax extends SyntaxNode implements ITypeSyntax {
+        openBracketToken: ISyntaxToken;
+        types: ITypeSyntax[];
+        closeBracketToken: ISyntaxToken;
+        _typeBrand: any;
+        constructor(data: number, openBracketToken: ISyntaxToken, types: ITypeSyntax[], closeBracketToken: ISyntaxToken);
     }
     class InterfaceDeclarationSyntax extends SyntaxNode implements IModuleElementSyntax {
         modifiers: ISyntaxToken[];
@@ -5597,85 +6223,57 @@ declare module TypeScript {
 declare module TypeScript.IncrementalParser {
     function parse(oldSyntaxTree: SyntaxTree, textChangeRange: TextChangeRange, newText: ISimpleText): SyntaxTree;
 }
-declare module TypeScript.Services {
-    class OutliningElementsCollector extends DepthLimitedWalker {
-        private static MaximumDepth;
-        private inObjectLiteralExpression;
-        private elements;
-        constructor();
-        visitClassDeclaration(node: ClassDeclarationSyntax): void;
-        visitInterfaceDeclaration(node: InterfaceDeclarationSyntax): void;
-        visitModuleDeclaration(node: ModuleDeclarationSyntax): void;
-        visitEnumDeclaration(node: EnumDeclarationSyntax): void;
-        visitFunctionDeclaration(node: FunctionDeclarationSyntax): void;
-        visitFunctionExpression(node: FunctionExpressionSyntax): void;
-        visitConstructorDeclaration(node: ConstructorDeclarationSyntax): void;
-        visitMemberFunctionDeclaration(node: MemberFunctionDeclarationSyntax): void;
-        visitGetAccessor(node: GetAccessorSyntax): void;
-        visitSetAccessor(node: SetAccessorSyntax): void;
-        visitObjectLiteralExpression(node: ObjectLiteralExpressionSyntax): void;
-        private addOutlineRange(node, startElement, endElement);
-        static collectElements(node: SourceUnitSyntax): TextSpan[];
+declare module ts {
+    interface OutliningSpan {
+        /**
+         * @param textSpan The span of the document to actually collapse.
+         * @param hintSpan The span of the document to display when the user hovers over the
+         *       collapsed span.
+         * @param bannerText The text to display in the editor for the collapsed region.
+         * @param autoCollapse Whether or not this region should be automatically collapsed when
+         *        the 'Collapse to Definitions' command is invoked.
+         */
+        textSpan: TypeScript.TextSpan;
+        hintSpan: TypeScript.TextSpan;
+        bannerText: string;
+        autoCollapse: boolean;
+    }
+    module OutliningElementsCollector {
+        function collectElements(sourceFile: SourceFile): OutliningSpan[];
     }
 }
 declare module TypeScript.Services {
-    class GetScriptLexicalStructureWalker extends SyntaxWalker {
-        private fileName;
-        private nameStack;
-        private kindStack;
-        private parentScopes;
-        private currentScope;
-        private createScope();
-        private pushNewContainerScope(containerName, kind);
-        private popScope();
-        constructor(fileName: string);
-        private collectItems(items, scope?);
-        static getListsOfAllScriptLexicalStructure(items: ts.NavigateToItem[], fileName: string, unit: SourceUnitSyntax): void;
-        private createItem(node, modifiers, kind, name);
-        private addAdditionalSpan(node, key);
+    class NavigationBarItemGetter {
+        private hasGlobalNode;
+        private getIndent(node);
         private getKindModifiers(modifiers);
-        visitModuleDeclaration(node: ModuleDeclarationSyntax): void;
-        private visitModuleDeclarationWorker(node, names, nameIndex);
+        getItems(node: SourceUnitSyntax): ts.NavigationBarItem[];
+        private getChildNodes(nodes);
+        private getTopLevelNodes(node);
+        private addTopLevelNodes(nodes, topLevelNodes);
+        isTopLevelFunctionDeclaration(functionDeclaration: FunctionDeclarationSyntax): boolean;
+        private getItemsWorker(getNodes, createItem);
+        private merge(target, source);
+        private createChildItem(node);
+        private createTopLevelItem(node);
         private getModuleNames(node);
         private getModuleNamesHelper(name, result);
-        visitClassDeclaration(node: ClassDeclarationSyntax): void;
-        visitInterfaceDeclaration(node: InterfaceDeclarationSyntax): void;
-        visitObjectType(node: ObjectTypeSyntax): void;
-        visitEnumDeclaration(node: EnumDeclarationSyntax): void;
-        visitConstructorDeclaration(node: ConstructorDeclarationSyntax): void;
-        visitMemberFunctionDeclaration(node: MemberFunctionDeclarationSyntax): void;
-        visitGetAccessor(node: GetAccessorSyntax): void;
-        visitSetAccessor(node: SetAccessorSyntax): void;
-        visitVariableDeclarator(node: VariableDeclaratorSyntax): void;
-        visitIndexSignature(node: IndexSignatureSyntax): void;
-        visitEnumElement(node: EnumElementSyntax): void;
-        visitCallSignature(node: CallSignatureSyntax): void;
-        visitConstructSignature(node: ConstructSignatureSyntax): void;
-        visitMethodSignature(node: MethodSignatureSyntax): void;
-        visitPropertySignature(node: PropertySignatureSyntax): void;
-        visitFunctionDeclaration(node: FunctionDeclarationSyntax): void;
-        visitBlock(node: BlockSyntax): void;
-        visitIfStatement(node: IfStatementSyntax): void;
-        visitExpressionStatement(node: ExpressionStatementSyntax): void;
-        visitThrowStatement(node: ThrowStatementSyntax): void;
-        visitReturnStatement(node: ReturnStatementSyntax): void;
-        visitSwitchStatement(node: SwitchStatementSyntax): void;
-        visitWithStatement(node: WithStatementSyntax): void;
-        visitTryStatement(node: TryStatementSyntax): void;
-        visitLabeledStatement(node: LabeledStatementSyntax): void;
+        private createModuleItem(node);
+        private createFunctionItem(node);
+        private createSourceUnitItem(node);
+        private createClassItem(node);
+        private createEnumItem(node);
+        private createIterfaceItem(node);
     }
 }
 declare module TypeScript.Services {
     class BraceMatcher {
         static getMatchSpans(syntaxTree: SyntaxTree, position: number): TextSpan[];
-        private static getMatchingCloseBrace(currentToken, position, result);
-        private static getMatchingOpenBrace(currentToken, position, result);
-        private static getMatchingCloseBraceTokenKind(positionedElement);
-        private static getMatchingOpenBraceTokenKind(positionedElement);
+        private static getMatchingTokenKind(token);
     }
 }
 declare module TypeScript.Services.Breakpoints {
-    function getBreakpointLocation(syntaxTree: SyntaxTree, askedPos: number): ts.SpanInfo;
+    function getBreakpointLocation(syntaxTree: SyntaxTree, askedPos: number): TextSpan;
 }
 declare module TypeScript.Indentation {
     function columnForEndOfTokenAtPosition(syntaxTree: SyntaxTree, position: number, options: FormattingOptions): number;
@@ -5687,6 +6285,7 @@ declare module TypeScript.Indentation {
 }
 declare module TypeScript.Services.Formatting {
     interface ITextSnapshot {
+        getLength(): number;
         getText(span: TextSpan): string;
         getLineNumberFromPosition(position: number): number;
         getLineFromPosition(position: number): ITextSnapshotLine;
@@ -5696,6 +6295,7 @@ declare module TypeScript.Services.Formatting {
         private snapshot;
         private lines;
         constructor(snapshot: ISimpleText);
+        getLength(): number;
         getText(span: TextSpan): string;
         getLineNumberFromPosition(position: number): number;
         getLineFromPosition(position: number): ITextSnapshotLine;
@@ -5776,12 +6376,11 @@ declare module TypeScript.Services.Formatting {
         private rulesProvider;
         private options;
         constructor(syntaxTree: SyntaxTree, snapshot: ITextSnapshot, rulesProvider: RulesProvider, editorOptions: ts.EditorOptions);
-        formatSelection(minChar: number, limChar: number): ts.TextEdit[];
-        formatDocument(minChar: number, limChar: number): ts.TextEdit[];
-        formatOnPaste(minChar: number, limChar: number): ts.TextEdit[];
-        formatOnSemicolon(caretPosition: number): ts.TextEdit[];
-        formatOnClosingCurlyBrace(caretPosition: number): ts.TextEdit[];
-        formatOnEnter(caretPosition: number): ts.TextEdit[];
+        formatSelection(minChar: number, limChar: number): ts.TextChange[];
+        formatDocument(): ts.TextChange[];
+        formatOnSemicolon(caretPosition: number): ts.TextChange[];
+        formatOnClosingCurlyBrace(caretPosition: number): ts.TextChange[];
+        formatOnEnter(caretPosition: number): ts.TextChange[];
         private formatSpan(span, formattingRequestKind);
     }
 }
@@ -6171,15 +6770,6 @@ declare module TypeScript.Services.Formatting {
     }
 }
 declare module TypeScript.Services.Formatting {
-    class SingleTokenIndenter extends IndentationTrackingWalker {
-        private indentationAmount;
-        private indentationPosition;
-        constructor(indentationPosition: number, sourceUnit: SourceUnitSyntax, snapshot: ITextSnapshot, indentFirstToken: boolean, options: FormattingOptions);
-        static getIndentationAmount(position: number, sourceUnit: SourceUnitSyntax, snapshot: ITextSnapshot, options: FormattingOptions): number;
-        indentToken(token: ISyntaxToken, indentationAmount: number, commentIndentationAmount: number): void;
-    }
-}
-declare module TypeScript.Services.Formatting {
     class Formatter extends MultipleTokenIndenter {
         private previousTokenSpan;
         private previousTokenParent;
@@ -6200,40 +6790,18 @@ declare module TypeScript.Services.Formatting {
         private RecordRuleEdits(rule, t1, t2);
     }
 }
-declare module TypeScript {
-    class BloomFilter {
-        private bitArray;
-        private hashFunctionCount;
-        static falsePositiveProbability: number;
-        constructor(expectedCount: number);
-        static computeM(expectedCount: number): number;
-        static computeK(expectedCount: number): number;
-        private computeHash(key, seed);
-        addKeys(keys: ts.Map<any>): void;
-        add(value: string): void;
-        probablyContains(value: string): boolean;
-        isEquivalent(filter: BloomFilter): boolean;
-        static isEquivalent(array1: boolean[], array2: boolean[]): boolean;
+declare module ts.formatting {
+    module SmartIndenter {
+        function getIndentation(position: number, sourceFile: SourceFile, options: TypeScript.FormattingOptions): number;
     }
 }
 declare module TypeScript {
     interface Logger {
-        information(): boolean;
-        debug(): boolean;
-        warning(): boolean;
-        error(): boolean;
-        fatal(): boolean;
         log(s: string): void;
     }
     class NullLogger implements Logger {
-        information(): boolean;
-        debug(): boolean;
-        warning(): boolean;
-        error(): boolean;
-        fatal(): boolean;
         log(s: string): void;
     }
-    function timeFunction(logger: Logger, funcDescription: string, func: () => any): any;
 }
 declare module TypeScript {
     function createIntrinsicsObject<T>(): ts.Map<T>;
@@ -6298,7 +6866,7 @@ declare module TypeScript.ASTHelpers {
     function getEnclosingModuleDeclaration(ast: ISyntaxElement): ModuleDeclarationSyntax;
     function getModuleDeclarationFromNameAST(ast: ISyntaxElement): ModuleDeclarationSyntax;
     function isLastNameOfModule(ast: ModuleDeclarationSyntax, astName: ISyntaxElement): boolean;
-    function getNameOfIdenfierOrQualifiedName(name: ISyntaxElement): string;
+    function getNameOfIdentifierOrQualifiedName(name: ISyntaxElement): string;
     function getModuleNames(name: ISyntaxElement, result?: ISyntaxToken[]): ISyntaxToken[];
 }
 declare module TypeScript {
@@ -6353,18 +6921,18 @@ declare module TypeScript {
 declare module ts {
     interface Node {
         getSourceFile(): SourceFile;
-        getChildCount(): number;
-        getChildAt(index: number): Node;
-        getChildren(): Node[];
-        getStart(): number;
+        getChildCount(sourceFile?: SourceFile): number;
+        getChildAt(index: number, sourceFile?: SourceFile): Node;
+        getChildren(sourceFile?: SourceFile): Node[];
+        getStart(sourceFile?: SourceFile): number;
         getFullStart(): number;
         getEnd(): number;
-        getWidth(): number;
+        getWidth(sourceFile?: SourceFile): number;
         getFullWidth(): number;
-        getLeadingTriviaWidth(): number;
-        getFullText(): string;
-        getFirstToken(): Node;
-        getLastToken(): Node;
+        getLeadingTriviaWidth(sourceFile?: SourceFile): number;
+        getFullText(sourceFile?: SourceFile): string;
+        getFirstToken(sourceFile?: SourceFile): Node;
+        getLastToken(sourceFile?: SourceFile): Node;
     }
     interface Symbol {
         getFlags(): SymbolFlags;
@@ -6391,77 +6959,122 @@ declare module ts {
     interface SourceFile {
         getSourceUnit(): TypeScript.SourceUnitSyntax;
         getSyntaxTree(): TypeScript.SyntaxTree;
-        getBloomFilter(): TypeScript.BloomFilter;
-        update(scriptSnapshot: TypeScript.IScriptSnapshot, version: number, isOpen: boolean, textChangeRange: TypeScript.TextChangeRange): SourceFile;
+        getScriptSnapshot(): TypeScript.IScriptSnapshot;
+        getNamedDeclarations(): Declaration[];
+        update(scriptSnapshot: TypeScript.IScriptSnapshot, version: string, isOpen: boolean, textChangeRange: TypeScript.TextChangeRange): SourceFile;
     }
     interface Logger {
-        information(): boolean;
-        debug(): boolean;
-        warning(): boolean;
-        error(): boolean;
-        fatal(): boolean;
         log(s: string): void;
     }
     interface LanguageServiceHost extends Logger {
         getCompilationSettings(): CompilerOptions;
         getScriptFileNames(): string[];
-        getScriptVersion(fileName: string): number;
+        getScriptVersion(fileName: string): string;
         getScriptIsOpen(fileName: string): boolean;
-        getScriptByteOrderMark(fileName: string): ByteOrderMark;
         getScriptSnapshot(fileName: string): TypeScript.IScriptSnapshot;
         getLocalizedDiagnosticMessages(): any;
         getCancellationToken(): CancellationToken;
+        getCurrentDirectory(): string;
+        getDefaultLibFilename(): string;
     }
     interface LanguageService {
-        refresh(): void;
         cleanupSemanticCache(): void;
         getSyntacticDiagnostics(fileName: string): Diagnostic[];
         getSemanticDiagnostics(fileName: string): Diagnostic[];
         getCompilerOptionsDiagnostics(): Diagnostic[];
+        getSyntacticClassifications(fileName: string, span: TypeScript.TextSpan): ClassifiedSpan[];
+        getSemanticClassifications(fileName: string, span: TypeScript.TextSpan): ClassifiedSpan[];
         getCompletionsAtPosition(fileName: string, position: number, isMemberCompletion: boolean): CompletionInfo;
         getCompletionEntryDetails(fileName: string, position: number, entryName: string): CompletionEntryDetails;
         getTypeAtPosition(fileName: string, position: number): TypeInfo;
-        getNameOrDottedNameSpan(fileName: string, startPos: number, endPos: number): SpanInfo;
-        getBreakpointStatementAtPosition(fileName: string, position: number): SpanInfo;
-        getSignatureAtPosition(fileName: string, position: number): SignatureInfo;
+        getNameOrDottedNameSpan(fileName: string, startPos: number, endPos: number): TypeScript.TextSpan;
+        getBreakpointStatementAtPosition(fileName: string, position: number): TypeScript.TextSpan;
+        getSignatureHelpItems(fileName: string, position: number): SignatureHelpItems;
+        getSignatureHelpCurrentArgumentState(fileName: string, position: number, applicableSpanStart: number): SignatureHelpState;
+        getRenameInfo(fileName: string, position: number): RenameInfo;
         getDefinitionAtPosition(fileName: string, position: number): DefinitionInfo[];
         getReferencesAtPosition(fileName: string, position: number): ReferenceEntry[];
         getOccurrencesAtPosition(fileName: string, position: number): ReferenceEntry[];
         getImplementorsAtPosition(fileName: string, position: number): ReferenceEntry[];
         getNavigateToItems(searchValue: string): NavigateToItem[];
-        getScriptLexicalStructure(fileName: string): NavigateToItem[];
-        getOutliningRegions(fileName: string): TypeScript.TextSpan[];
+        getNavigationBarItems(fileName: string): NavigationBarItem[];
+        getOutliningSpans(fileName: string): OutliningSpan[];
+        getTodoComments(fileName: string, descriptors: TodoCommentDescriptor[]): TodoComment[];
         getBraceMatchingAtPosition(fileName: string, position: number): TypeScript.TextSpan[];
         getIndentationAtPosition(fileName: string, position: number, options: EditorOptions): number;
-        getFormattingEditsForRange(fileName: string, minChar: number, limChar: number, options: FormatCodeOptions): TextEdit[];
-        getFormattingEditsForDocument(fileName: string, minChar: number, limChar: number, options: FormatCodeOptions): TextEdit[];
-        getFormattingEditsOnPaste(fileName: string, minChar: number, limChar: number, options: FormatCodeOptions): TextEdit[];
-        getFormattingEditsAfterKeystroke(fileName: string, position: number, key: string, options: FormatCodeOptions): TextEdit[];
+        getFormattingEditsForRange(fileName: string, start: number, end: number, options: FormatCodeOptions): TextChange[];
+        getFormattingEditsForDocument(fileName: string, options: FormatCodeOptions): TextChange[];
+        getFormattingEditsAfterKeystroke(fileName: string, position: number, key: string, options: FormatCodeOptions): TextChange[];
         getEmitOutput(fileName: string): EmitOutput;
         dispose(): void;
     }
-    interface ReferenceEntry {
-        fileName: string;
-        minChar: number;
-        limChar: number;
-        isWriteAccess: boolean;
+    class ClassificationTypeNames {
+        static comment: string;
+        static identifier: string;
+        static keyword: string;
+        static numericLiteral: string;
+        static operator: string;
+        static stringLiteral: string;
+        static whiteSpace: string;
+        static text: string;
+        static punctuation: string;
+        static className: string;
+        static enumName: string;
+        static interfaceName: string;
+        static moduleName: string;
+        static typeParameterName: string;
     }
-    interface NavigateToItem {
+    class ClassifiedSpan {
+        textSpan: TypeScript.TextSpan;
+        classificationType: string;
+        constructor(textSpan: TypeScript.TextSpan, classificationType: string);
+    }
+    class NavigationBarItem {
+        text: string;
+        kind: string;
+        kindModifiers: string;
+        spans: TypeScript.TextSpan[];
+        childItems: NavigationBarItem[];
+        indent: number;
+        bolded: boolean;
+        grayed: boolean;
+        constructor(text: string, kind: string, kindModifiers: string, spans: TypeScript.TextSpan[], childItems?: NavigationBarItem[], indent?: number, bolded?: boolean, grayed?: boolean);
+    }
+    class TodoCommentDescriptor {
+        text: string;
+        priority: number;
+        constructor(text: string, priority: number);
+    }
+    class TodoComment {
+        descriptor: TodoCommentDescriptor;
+        message: string;
+        position: number;
+        constructor(descriptor: TodoCommentDescriptor, message: string, position: number);
+    }
+    class TextChange {
+        span: TypeScript.TextSpan;
+        newText: string;
+        constructor(span: TypeScript.TextSpan, newText: string);
+        static createInsert(pos: number, newText: string): TextChange;
+        static createDelete(start: number, end: number): TextChange;
+        static createReplace(start: number, end: number, newText: string): TextChange;
+    }
+    class ReferenceEntry {
+        fileName: string;
+        textSpan: TypeScript.TextSpan;
+        isWriteAccess: boolean;
+        constructor(fileName: string, textSpan: TypeScript.TextSpan, isWriteAccess: boolean);
+    }
+    class NavigateToItem {
         name: string;
         kind: string;
         kindModifiers: string;
         matchKind: string;
         fileName: string;
-        minChar: number;
-        limChar: number;
-        additionalSpans?: SpanInfo[];
+        textSpan: TypeScript.TextSpan;
         containerName: string;
         containerKind: string;
-    }
-    interface TextEdit {
-        minChar: number;
-        limChar: number;
-        text: string;
+        constructor(name: string, kind: string, kindModifiers: string, matchKind: string, fileName: string, textSpan: TypeScript.TextSpan, containerName: string, containerKind: string);
     }
     interface EditorOptions {
         IndentSize: number;
@@ -6479,61 +7092,76 @@ declare module ts {
         PlaceOpenBraceOnNewLineForFunctions: boolean;
         PlaceOpenBraceOnNewLineForControlBlocks: boolean;
     }
-    interface DefinitionInfo {
+    class DefinitionInfo {
         fileName: string;
-        minChar: number;
-        limChar: number;
+        textSpan: TypeScript.TextSpan;
         kind: string;
         name: string;
         containerKind: string;
         containerName: string;
+        constructor(fileName: string, textSpan: TypeScript.TextSpan, kind: string, name: string, containerKind: string, containerName: string);
     }
     interface MemberName {
         prefix: string;
         suffix: string;
         text: string;
     }
-    interface TypeInfo {
-        memberName: MemberName;
+    class TypeInfo {
+        memberName: TypeScript.MemberName;
         docComment: string;
         fullSymbolName: string;
         kind: string;
-        minChar: number;
-        limChar: number;
+        textSpan: TypeScript.TextSpan;
+        constructor(memberName: TypeScript.MemberName, docComment: string, fullSymbolName: string, kind: string, textSpan: TypeScript.TextSpan);
     }
-    interface SpanInfo {
-        minChar: number;
-        limChar: number;
+    class RenameInfo {
+        canRename: boolean;
+        localizedErrorMessage: string;
+        displayName: string;
+        fullDisplayName: string;
+        kind: string;
+        kindModifiers: string;
+        triggerSpan: TypeScript.TextSpan;
+        constructor(canRename: boolean, localizedErrorMessage: string, displayName: string, fullDisplayName: string, kind: string, kindModifiers: string, triggerSpan: TypeScript.TextSpan);
+        static CreateError(localizedErrorMessage: string): RenameInfo;
+        static Create(displayName: string, fullDisplayName: string, kind: string, kindModifiers: string, triggerSpan: TypeScript.TextSpan): RenameInfo;
     }
-    interface SignatureInfo {
-        actual: ActualSignatureInfo;
-        formal: FormalSignatureItemInfo[];
-        activeFormal: number;
-    }
-    interface FormalSignatureItemInfo {
-        signatureInfo: string;
-        typeParameters: FormalTypeParameterInfo[];
-        parameters: FormalParameterInfo[];
-        docComment: string;
-    }
-    interface FormalTypeParameterInfo {
+    class SignatureHelpParameter {
         name: string;
-        docComment: string;
-        minChar: number;
-        limChar: number;
+        documentation: string;
+        display: string;
+        isOptional: boolean;
+        constructor(name: string, documentation: string, display: string, isOptional: boolean);
     }
-    interface FormalParameterInfo {
-        name: string;
-        isVariable: boolean;
-        docComment: string;
-        minChar: number;
-        limChar: number;
+    /**
+     * Represents a single signature to show in signature help.
+     * The id is used for subsequent calls into the language service to ask questions about the
+     * signature help item in the context of any documents that have been updated.  i.e. after
+     * an edit has happened, while signature help is still active, the host can ask important
+     * questions like 'what parameter is the user currently contained within?'.
+     */
+    class SignatureHelpItem {
+        isVariadic: boolean;
+        prefix: string;
+        suffix: string;
+        separator: string;
+        parameters: SignatureHelpParameter[];
+        documentation: string;
+        constructor(isVariadic: boolean, prefix: string, suffix: string, separator: string, parameters: SignatureHelpParameter[], documentation: string);
     }
-    interface ActualSignatureInfo {
-        parameterMinChar: number;
-        parameterLimChar: number;
-        currentParameterIsTypeParameter: boolean;
-        currentParameter: number;
+    /**
+     * Represents a set of signature help items, and the preferred item that should be selected.
+     */
+    class SignatureHelpItems {
+        items: SignatureHelpItem[];
+        applicableSpan: TypeScript.TextSpan;
+        selectedItemIndex: number;
+        constructor(items: SignatureHelpItem[], applicableSpan: TypeScript.TextSpan, selectedItemIndex: number);
+    }
+    class SignatureHelpState {
+        argumentIndex: number;
+        argumentCount: number;
+        constructor(argumentIndex: number, argumentCount: number);
     }
     interface CompletionInfo {
         isMemberCompletion: boolean;
@@ -6552,15 +7180,9 @@ declare module ts {
         fullSymbolName: string;
         docComment: string;
     }
-    enum EmitOutputResult {
-        Succeeded = 0,
-        FailedBecauseOfSyntaxErrors = 1,
-        FailedBecauseOfCompilerOptionsErrors = 2,
-        FailedToGenerateDeclarationsBecauseOfSemanticErrors = 3,
-    }
     interface EmitOutput {
         outputFiles: OutputFile[];
-        emitOutputResult: EmitOutputResult;
+        emitOutputStatus: EmitReturnStatus;
     }
     enum OutputFileType {
         JavaScript = 0,
@@ -6571,8 +7193,6 @@ declare module ts {
         name: string;
         writeByteOrderMark: boolean;
         text: string;
-        fileType: OutputFileType;
-        sourceMapOutput: any;
     }
     enum EndOfLineState {
         Start = 0,
@@ -6603,8 +7223,8 @@ declare module ts {
         getClassificationsForLine(text: string, lexState: EndOfLineState): ClassificationResult;
     }
     interface DocumentRegistry {
-        acquireDocument(filename: string, compilationSettings: CompilerOptions, scriptSnapshot: TypeScript.IScriptSnapshot, byteOrderMark: ByteOrderMark, version: number, isOpen: boolean, referencedFiles: string[]): SourceFile;
-        updateDocument(soruceFile: SourceFile, filename: string, compilationSettings: CompilerOptions, scriptSnapshot: TypeScript.IScriptSnapshot, version: number, isOpen: boolean, textChangeRange: TypeScript.TextChangeRange): SourceFile;
+        acquireDocument(filename: string, compilationSettings: CompilerOptions, scriptSnapshot: TypeScript.IScriptSnapshot, version: string, isOpen: boolean): SourceFile;
+        updateDocument(sourceFile: SourceFile, filename: string, compilationSettings: CompilerOptions, scriptSnapshot: TypeScript.IScriptSnapshot, version: string, isOpen: boolean, textChangeRange: TypeScript.TextChangeRange): SourceFile;
         releaseDocument(filename: string, compilationSettings: CompilerOptions): void;
     }
     class ScriptElementKind {
@@ -6639,12 +7259,6 @@ declare module ts {
         static exportedModifier: string;
         static ambientModifier: string;
         static staticModifier: string;
-    }
-    class MatchKind {
-        static none: string;
-        static exact: string;
-        static subString: string;
-        static prefix: string;
     }
     function getDefaultCompilerOptions(): CompilerOptions;
     function compareDataObjects(dst: any, src: any): boolean;
@@ -6681,17 +7295,18 @@ declare module ts {
         getText(start: number, end: number): string;
         getLength(): number;
         getLineStartPositions(): string;
-        getTextChangeRangeSinceVersion(scriptVersion: number): string;
+        getChangeRange(oldSnapshot: ScriptSnapshotShim): string;
     }
     interface LanguageServiceShimHost extends Logger {
         getCompilationSettings(): string;
         getScriptFileNames(): string;
-        getScriptVersion(fileName: string): number;
+        getScriptVersion(fileName: string): string;
         getScriptIsOpen(fileName: string): boolean;
-        getScriptByteOrderMark(fileName: string): number;
         getScriptSnapshot(fileName: string): ScriptSnapshotShim;
         getLocalizedDiagnosticMessages(): string;
         getCancellationToken(): CancellationToken;
+        getCurrentDirectory(): string;
+        getDefaultLibFilename(): string;
     }
     interface ShimFactory {
         registerShim(shim: Shim): void;
@@ -6708,24 +7323,27 @@ declare module ts {
         getSyntacticDiagnostics(fileName: string): string;
         getSemanticDiagnostics(fileName: string): string;
         getCompilerOptionsDiagnostics(): string;
+        getSyntacticClassifications(fileName: string, start: number, length: number): string;
         getCompletionsAtPosition(fileName: string, position: number, isMemberCompletion: boolean): string;
         getCompletionEntryDetails(fileName: string, position: number, entryName: string): string;
         getTypeAtPosition(fileName: string, position: number): string;
         getNameOrDottedNameSpan(fileName: string, startPos: number, endPos: number): string;
         getBreakpointStatementAtPosition(fileName: string, position: number): string;
-        getSignatureAtPosition(fileName: string, position: number): string;
+        getSignatureHelpItems(fileName: string, position: number): string;
+        getSignatureHelpCurrentArgumentState(fileName: string, position: number, applicableSpanStart: number): string;
+        getRenameInfo(fileName: string, position: number): string;
         getDefinitionAtPosition(fileName: string, position: number): string;
         getReferencesAtPosition(fileName: string, position: number): string;
         getOccurrencesAtPosition(fileName: string, position: number): string;
         getImplementorsAtPosition(fileName: string, position: number): string;
         getNavigateToItems(searchValue: string): string;
-        getScriptLexicalStructure(fileName: string): string;
-        getOutliningRegions(fileName: string): string;
+        getNavigationBarItems(fileName: string): string;
+        getOutliningSpans(fileName: string): string;
+        getTodoComments(fileName: string, todoCommentDescriptors: string): string;
         getBraceMatchingAtPosition(fileName: string, position: number): string;
         getIndentationAtPosition(fileName: string, position: number, options: string): string;
-        getFormattingEditsForRange(fileName: string, minChar: number, limChar: number, options: string): string;
-        getFormattingEditsForDocument(fileName: string, minChar: number, limChar: number, options: string): string;
-        getFormattingEditsOnPaste(fileName: string, minChar: number, limChar: number, options: string): string;
+        getFormattingEditsForRange(fileName: string, start: number, end: number, options: string): string;
+        getFormattingEditsForDocument(fileName: string, options: string): string;
         getFormattingEditsAfterKeystroke(fileName: string, position: number, key: string, options: string): string;
         getEmitOutput(fileName: string): string;
     }
@@ -6736,12 +7354,53 @@ declare module ts {
         getPreProcessedFileInfo(fileName: string, sourceText: TypeScript.IScriptSnapshot): string;
         getDefaultCompilationSettings(): string;
     }
+    enum ModuleGenTarget {
+        Unspecified = 0,
+        Synchronous = 1,
+        Asynchronous = 2,
+    }
+    interface CompilationSettings {
+        propagateEnumConstants?: boolean;
+        removeComments?: boolean;
+        watch?: boolean;
+        noResolve?: boolean;
+        allowAutomaticSemicolonInsertion?: boolean;
+        noImplicitAny?: boolean;
+        noLib?: boolean;
+        codeGenTarget?: any;
+        moduleGenTarget?: ModuleGenTarget;
+        outFileOption?: string;
+        outDirOption?: string;
+        mapSourceFiles?: boolean;
+        mapRoot?: string;
+        sourceRoot?: string;
+        generateDeclarationFiles?: boolean;
+        useCaseSensitiveFileResolution?: boolean;
+        gatherDiagnostics?: boolean;
+        codepage?: number;
+        emitBOM?: boolean;
+        [index: string]: any;
+    }
+    class LanguageServiceShimHostAdapter implements LanguageServiceHost {
+        private shimHost;
+        constructor(shimHost: LanguageServiceShimHost);
+        log(s: string): void;
+        getCompilationSettings(): CompilerOptions;
+        getScriptFileNames(): string[];
+        getScriptSnapshot(fileName: string): TypeScript.IScriptSnapshot;
+        getScriptVersion(fileName: string): string;
+        getScriptIsOpen(fileName: string): boolean;
+        getLocalizedDiagnosticMessages(): any;
+        getCancellationToken(): CancellationToken;
+        getDefaultLibFilename(): string;
+        getCurrentDirectory(): string;
+    }
     class TypeScriptServicesFactory implements ShimFactory {
         private _shims;
         private documentRegistry;
         createLanguageServiceShim(host: LanguageServiceShimHost): LanguageServiceShim;
-        createClassifierShim(host: Logger): ClassifierShim;
-        createCoreServicesShim(host: Logger): CoreServicesShim;
+        createClassifierShim(logger: Logger): ClassifierShim;
+        createCoreServicesShim(logger: Logger): CoreServicesShim;
         close(): void;
         registerShim(shim: Shim): void;
         unregisterShim(shim: Shim): void;
