@@ -209,6 +209,7 @@ var teapo;
                         return this._editor;
                     };
                     TextDocumentHandler.prototype._onDocChange = function (changeObj) {
+                        this._text = null;
                         this._saveTimer.reset();
                     };
                     return TextDocumentHandler;
@@ -252,11 +253,21 @@ var teapo;
                 // TODO: do something if ul is null
                 this._rootNode = new Node(this._ul);
                 this.access = {
-                    update: function (byFullPath, timestamp) { return _this._update; },
+                    update: function (byFullPath, timestamp) { return _this._update(byFullPath, timestamp); },
                     read: function (fullPaths) { return _this._read(fullPaths); }
                 };
             }
             FileTree.prototype._update = function (byFullPath, timestamp) {
+                for (var f in byFullPath)
+                    if (byFullPath.hasOwnProperty(f)) {
+                        var nodeValues = byFullPath[f];
+                        if (nodeValues) {
+                            var node = this._rootNode.getNode(f, true);
+                            node.update(byFullPath[f]);
+                        }
+                        else {
+                        }
+                    }
             };
             FileTree.prototype._read = function (fullPaths) {
                 var result = {};
@@ -329,7 +340,18 @@ var teapo;
                 return result;
             };
             Node.prototype.update = function (values) {
-                // TODO: use this._propertyElementCache or create a new element
+                this._populatePropertyCache();
+                for (var propertyName in values)
+                    if (values.hasOwnProperty(propertyName)) {
+                        propertyName = propertyName || null;
+                        var elem = this._propertyElementCache[propertyName];
+                        if (!elem) {
+                            elem = document.createElement('pre');
+                            elem.className = 'data-teapo-property';
+                            this._propertyElementCache[propertyName] = elem;
+                        }
+                        elem.textContent = teapo.encodeForInnerHTML(values[propertyName]);
+                    }
             };
             Node.prototype.getNode = function (path, createIfAbsent) {
                 if (!this._ul)
@@ -1166,7 +1188,7 @@ body {
 
 .teapo-flyout-scroller {
   position: fixed;
-  left: 0px; top: 0px; right: 0px; bottom: -32px;
+  left: 0px; top: 0px; width: 100%; height: 100%;
   overflow-y: hidden;
   overflow-x: scroll;
 }
@@ -1178,6 +1200,7 @@ body {
 }
 
 .teapo-flyout {
+  border-top: solid 1px silver;
   position: relative;
   height: 100%;
   background: silver;
@@ -1765,33 +1788,32 @@ window.onerror = function(errObj, file, line, ch, err) {
 </head>
 <body>
   
-<div class=teapo-flyout-scroller>
-  <div class=teapo-flyout-scroller-bg>
-    <div class=teapo-main-content
-       data-bind="attr: { once: initWithMainContent($element) }">
-    </div>
-    <div class=teapo-flyout
-       data-bind="attr: { once: initWithFlyout($element) }">
+<div class="teapo-flyout-scroller">
+  <div class="teapo-flyout-scroller-bg">
+
+    <div class="teapo-main-content" data-bind="attr: { once: initWithMainContent($element) }"></div>
+
+    <div class="teapo-flyout" data-bind="attr: { once: initWithFlyout($element) }">
       <ul>
         <li>
           app
           <ul>
             <li>
               FileTree.ts
-              <pre class=teapo-file-content>Some file ok</pre>
+              <pre class="teapo-file-content">Some file ok ok ok</pre>
             </li>
             <li>
               FileTree1.ts
-              <pre class=teapo-file-content>Some file one OK</pre>
+              <pre class="teapo-file-content">Some file one OK</pre>
             </li>
             <li>
               src
               <ul>
                 <li>sub.txt
-                  <pre class=teapo-file-content>sub.txt content</pre>
+                  <pre class="teapo-file-content">sub.txt content</pre>
                 </li>
                 <li>zero.txt
-                  <pre class=teapo-file-content>sub.txt content</pre>
+                  <pre class="teapo-file-content">sub.txt content</pre>
                 </li>
               </ul>
             </li>
@@ -1800,10 +1822,12 @@ window.onerror = function(errObj, file, line, ch, err) {
         
       </ul>
     </div>
+
   </div>
 </div>
      
      
 <script>teapo.app.start();</script>
-</body>
-</html>
+
+
+</body></html>
