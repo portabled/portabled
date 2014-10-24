@@ -44,10 +44,10 @@ module teapo.storage.attached.dom {
       fileCount = 0;
       for (var i = 0; i < this._parentElement.children.length; i++) {
         var fileElement = this._parentElement.children[i];
-        if (this._loadFromElement(fileElement, recipient))
+        if (this._loadFromElement(<any>fileElement, recipient))
           fileCount++;
         else
-          dodgyElements.push(fileElement);
+          dodgyElements.push(<any>fileElement);
       }
 
       for (var i = 0; i < dodgyElements.length; i++) {

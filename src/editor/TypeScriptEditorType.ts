@@ -451,17 +451,32 @@ module teapo {
           'Building ' + this.docState.fullPath() + ' ' + ts.EmitReturnStatus[emits.emitOutputStatus] + '\n' +
           this._typescript.log.map(msg => msg.logLevel + ' ' + msg.text).join('\n');
 
-        if (typeof (<any>this._typescript.service).getAllSyntacticDiagnostics === 'function') {
-          // a hack
-          try {
-            var diag: TypeScript.Diagnostic[] = (<any>this._typescript.service).getAllSyntacticDiagnostics();
-            if (diag && diag.length) {
-              msg = 'Building ' + this.docState.fullPath() + ' ' + ts.EmitReturnStatus[emits.emitOutputStatus] + '\n' +
-                diag.map(d => d.fileName() + ' ' + d.line() + ':' + d.character() + ' ' + d.message()).join('\n');
+        var allFiles = 0;
+        var filesWithErrors = 0;
+        var allErrors: any = [];
+        for (var s in this._typescript.scripts) if (this._typescript.scripts.hasOwnProperty(s)) {
+          allFiles++;
+          var diags = this._typescript.service.getSyntacticDiagnostics(s).concat(
+            this._typescript.service.getSemanticDiagnostics(s));
+          if (diags.length)
+            filesWithErrors++;
+          for (var i = 0; i < diags.length; i++) {
+            if (diags[i].file) { 
+              var po = diags[i].file.getLineAndCharacterFromPosition(diags[i].start);
+              allErrors.push(
+                diags[i].file.filename + ' ' +
+                po.line + ' ' +
+                diags[i].messageText);
+            }
+            else {
+              allErrors.push(
+                '<unknown> ' +
+                diags[i].messageText);
             }
           }
-          catch (error) {  }
         }
+        
+        msg += '\n' + allErrors.length + ' errors in ' + filesWithErrors + ' files out of ' + allFiles + ':\n' + allErrors.join('\n');
         
         alert(msg);
       }
@@ -498,7 +513,7 @@ module teapo {
     private _formatOptions() {
       var opt: ts.FormatCodeOptions = {
         IndentSize: 2,
-        TabSize: 4,
+        TabSize: 2,
         NewLineCharacter: '\n',
         ConvertTabsToSpaces: true,
 
@@ -533,19 +548,21 @@ module teapo {
 
     private _applyEdits(doc: CodeMirror.Doc, edits: ts.TextChange[]) {
       if (!edits.length) return;
-
-      //console.log('_applyEdits('+edits.length+')...');
-      this._applyingEdits = true;
-      var orderedEdits = edits.sort((e1, e2) => e1.span.start() < e2.span.start() ? +1 : e1.span.start() == e2.span.start() ? 0 : -1);
-      for (var i = 0; i < orderedEdits.length; i++) {
-        var e = orderedEdits[i];
-        doc.replaceRange(
-          e.newText,
-          doc.posFromIndex(e.span.start()),
-          doc.posFromIndex(e.span.start()));
-      }
-      this._applyingEdits = false;
-      //console.log('_applyEdits('+edits.length+') - complete.');
+      
+      this.editor().operation(() => { 
+        //console.log('_applyEdits('+edits.length+')...');
+        this._applyingEdits = true;
+        var orderedEdits = edits.sort((e1, e2) => e1.span.start() < e2.span.start() ? +1 : e1.span.start() == e2.span.start() ? 0 : -1);
+        for (var i = 0; i < orderedEdits.length; i++) {
+          var e = orderedEdits[i];
+          doc.replaceRange(
+            e.newText,
+            doc.posFromIndex(e.span.start()),
+            doc.posFromIndex(e.span.start()));
+        }
+        this._applyingEdits = false;
+        //console.log('_applyEdits('+edits.length+') - complete.');
+      });
     }
 
     /**
@@ -660,33 +677,41 @@ module teapo {
 
     private _updateDocDiagnostics() {
       var doc = this.doc();
-      for (var i = 0; i < this._docErrorMarks.length; i++) {
-        this._docErrorMarks[i].clear();
-      }
-      this._docErrorMarks = [];
-
-      if (this._syntacticDiagnostics) {
-        for (var i = 0; i < this._syntacticDiagnostics.length; i++) {
-          this._markDocError(this._syntacticDiagnostics[i], 'teapo-syntax-error', doc);
+      this.editor().operation(() => { 
+        for (var i = 0; i < this._docErrorMarks.length; i++) {
+          this._docErrorMarks[i].clear();
         }
-      }
+        this._docErrorMarks = [];
 
-      if (this._semanticDiagnostics) {
-        for (var i = 0; i < this._semanticDiagnostics.length; i++) {
-          this._markDocError(this._semanticDiagnostics[i], 'teapo-semantic-error', doc);
+        if (this._syntacticDiagnostics) {
+          for (var i = 0; i < this._syntacticDiagnostics.length; i++) {
+            this._markDocError(this._syntacticDiagnostics[i], 'teapo-syntax-error', doc);
+          }
         }
-      }
+
+        if (this._semanticDiagnostics) {
+          for (var i = 0; i < this._semanticDiagnostics.length; i++) {
+            this._markDocError(this._semanticDiagnostics[i], 'teapo-semantic-error', doc);
+          }
+        }
+      });
     }
 
     private _clearSymbolMarks() {
-      for (var i = 0; i < this._docSymbolMarks.length; i++) {
-        this._docSymbolMarks[i].clear();
-      }
-      this._docSymbolMarks = [];
-      this._currentSymbolMarkIndex = -1;
+      this.editor().operation(() => {
+        for (var i = 0; i < this._docSymbolMarks.length; i++) {
+          this._docSymbolMarks[i].clear();
+        }
+        this._docSymbolMarks = [];
+        this._currentSymbolMarkIndex = -1;
+      });
     }
 
     private _updateSymbolMarks() {
+      this.editor().operation(() => this._updateSymbolMarksCore());
+    }
+
+    private _updateSymbolMarksCore() {
       this._updateSymbolMarksTimeout = 0;
 
       var doc = this.doc();
@@ -786,6 +811,10 @@ module teapo {
     }
 
     private _updateGutter() {
+      this.editor().operation(() => this._updateGutterCore());
+    }
+
+    private _updateGutterCore() {
       var editor = this.editor();
       var doc = this.doc();
 

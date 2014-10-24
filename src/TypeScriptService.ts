@@ -145,21 +145,21 @@ module teapo {
       
     }
     
-    getCompilationSettings(): CompilerOptions {
-      return this.compilationSettings;
+    getCompilationSettings(): ts.CompilerOptions {
+      return this._tss.compilationSettings;
     }
 
     getScriptFileNames(): string[] {
-      var result = Object.keys(this.scripts).filter(k => this.scripts.hasOwnProperty(k)).sort();
+      var result = Object.keys(this._tss.scripts).filter(k => this._tss.scripts.hasOwnProperty(k)).sort();
       //console.log('...getScriptFileNames():',result);
       return result;
      }
     
     getScriptVersion(fileName: string): string {
-      var script = this.scripts[fileName];
+      var script = this._tss.scripts[fileName];
       if (script.changes)
-        return script.changes().length;
-      return 0;
+        return script.changes().length + '';
+      return '0';
     }
 
     getScriptIsOpen(fileName: string): boolean {
@@ -167,7 +167,7 @@ module teapo {
     }
 
     getScriptSnapshot(fileName: string): TypeScript.IScriptSnapshot {
-      var script = this.scripts[fileName];
+      var script = this._tss.scripts[fileName];
       var snapshot = <TypeScriptDocumentSnapshot>script._cachedSnapshot;
 
       // checking if snapshot is out of date
@@ -183,7 +183,7 @@ module teapo {
       return null;
     }
 
-    getCancellationToken(): CancellationToken {
+    getCancellationToken(): ts.CancellationToken {
       return null;
     }
 

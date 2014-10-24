@@ -1,6 +1,3 @@
-// CodeMirror, copyright (c) by Marijn Haverbeke and others
-// Distributed under an MIT license: http://codemirror.net/LICENSE
-
 (function(mod) {
   if (typeof exports == "object" && typeof module == "object") // CommonJS
     mod(require("../../lib/codemirror"));
@@ -12,14 +9,10 @@
   "use strict";
 
   function doFold(cm, pos, options, force) {
-    if (options && options.call) {
-      var finder = options;
-      options = null;
-    } else {
-      var finder = getOption(cm, options, "rangeFinder");
-    }
+    var finder = options && (options.call ? options : options.rangeFinder);
+    if (!finder) finder = CodeMirror.fold.auto;
     if (typeof pos == "number") pos = CodeMirror.Pos(pos, 0);
-    var minSize = getOption(cm, options, "minFoldSize");
+    var minSize = options && options.minFoldSize || 0;
 
     function getRange(allowFolded) {
       var range = finder(cm, pos);
@@ -36,17 +29,14 @@
     }
 
     var range = getRange(true);
-    if (getOption(cm, options, "scanUp")) while (!range && pos.line > cm.firstLine()) {
+    if (options && options.scanUp) while (!range && pos.line > cm.firstLine()) {
       pos = CodeMirror.Pos(pos.line - 1, 0);
       range = getRange(false);
     }
     if (!range || range.cleared || force === "unfold") return;
 
-    var myWidget = makeWidget(cm, options);
-    CodeMirror.on(myWidget, "mousedown", function(e) {
-      myRange.clear();
-      CodeMirror.e_preventDefault(e);
-    });
+    var myWidget = makeWidget(options);
+    CodeMirror.on(myWidget, "mousedown", function() { myRange.clear(); });
     var myRange = cm.markText(range.from, range.to, {
       replacedWith: myWidget,
       clearOnEnter: true,
@@ -58,8 +48,8 @@
     CodeMirror.signal(cm, "fold", cm, range.from, range.to);
   }
 
-  function makeWidget(cm, options) {
-    var widget = getOption(cm, options, "widget");
+  function makeWidget(options) {
+    var widget = (options && options.widget) || "\u2194";
     if (typeof widget == "string") {
       var text = document.createTextNode(widget);
       widget = document.createElement("span");
@@ -124,22 +114,4 @@
       if (cur) return cur;
     }
   });
-
-  var defaultOptions = {
-    rangeFinder: CodeMirror.fold.auto,
-    widget: "\u2194",
-    minFoldSize: 0,
-    scanUp: false
-  };
-
-  CodeMirror.defineOption("foldOptions", null);
-
-  function getOption(cm, options, name) {
-    if (options && options[name] !== undefined)
-      return options[name];
-    var editorOptions = cm.options.foldOptions;
-    if (editorOptions && editorOptions[name] !== undefined)
-      return editorOptions[name];
-    return defaultOptions[name];
-  }
 });

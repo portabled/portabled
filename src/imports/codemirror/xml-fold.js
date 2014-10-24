@@ -1,6 +1,3 @@
-// CodeMirror, copyright (c) by Marijn Haverbeke and others
-// Distributed under an MIT license: http://codemirror.net/LICENSE
-
 (function(mod) {
   if (typeof exports == "object" && typeof module == "object") // CommonJS
     mod(require("../../lib/codemirror"));
@@ -151,9 +148,8 @@
     if (iter.text.indexOf(">") == -1 && iter.text.indexOf("<") == -1) return;
     var end = toTagEnd(iter), to = end && Pos(iter.line, iter.ch);
     var start = end && toTagStart(iter);
-    if (!end || !start || cmp(iter, pos) > 0) return;
+    if (!end || end == "selfClose" || !start || cmp(iter, pos) > 0) return;
     var here = {from: Pos(iter.line, iter.ch), to: to, tag: start[2]};
-    if (end == "selfClose") return {open: here, close: null, at: "open"};
 
     if (start[1]) { // closing tag
       return {open: findMatchingOpen(iter, start[2]), close: here, at: "close"};
@@ -177,6 +173,6 @@
   // Used by addon/edit/closetag.js
   CodeMirror.scanForClosingTag = function(cm, pos, name, end) {
     var iter = new Iter(cm, pos.line, pos.ch, end ? {from: 0, to: end} : null);
-    return findMatchingClose(iter, name);
+    return !!findMatchingClose(iter, name);
   };
 });

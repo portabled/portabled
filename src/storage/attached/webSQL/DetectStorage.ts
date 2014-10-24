@@ -9,7 +9,7 @@ module teapo.storage.attached.webSQL {
           displayName: string,
           size: number,
           upgrade?: DatabaseCallback): Database;
-      } = window) {
+      } = <any>window) {
     }
 
     detectStorageAsync(uniqueKey: string, callback: (error: Error, load: LoadStorage) => void) {

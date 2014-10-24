@@ -1,6 +1,3 @@
-// CodeMirror, copyright (c) by Marijn Haverbeke and others
-// Distributed under an MIT license: http://codemirror.net/LICENSE
-
 (function(mod) {
   if (typeof exports == "object" && typeof module == "object") // CommonJS
     mod(require("../../lib/codemirror"), require("../xml/xml"), require("../javascript/javascript"), require("../css/css"));
@@ -30,7 +27,6 @@ CodeMirror.defineMode("htmlmixed", function(config, parserConfig) {
 
   function html(stream, state) {
     var tagName = state.htmlState.tagName;
-    if (tagName) tagName = tagName.toLowerCase();
     var style = htmlMode.token(stream, state.htmlState);
     if (tagName == "script" && /\btag\b/.test(style) && stream.current() == ">") {
       // Script block: mode to change to depends on type attribute

@@ -1,7 +1,7 @@
 module teapo {
 
   /**
-   * Hadles high-level application behavior,
+   * Handles high-level application behavior,
    * creates and holds DocumentStorage and FileList,
    * that in turn manage persistence and file list/tree.
    *
@@ -233,8 +233,17 @@ module teapo {
           if (!filename)
             return;
 
-          var fileEntry = this.fileList.createFileEntry(filename);
-          var docStorage = this._storage.createDocument(fileEntry.fullPath());
+          var docStorage = this._storage.getDocument(filename);
+            if (docStorage) {
+            var fileEntry = this.fileList.getFileEntry(docStorage.fullPath());
+            var text = docStorage.getProperty(null).slice(0, 100);
+            if (!confirm('Overwriting existing file at ' + filename + '\n' + '  old: ' + text + '\n  new: ' + (data + '').slice(0, 100)))
+              return;
+          }
+          else {
+            var fileEntry = this.fileList.createFileEntry(filename);
+            var docStorage = this._storage.createDocument(fileEntry.fullPath());
+          }
 
           applyData(data, docStorage);
 

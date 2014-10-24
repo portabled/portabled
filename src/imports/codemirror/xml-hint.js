@@ -1,6 +1,3 @@
-// CodeMirror, copyright (c) by Marijn Haverbeke and others
-// Distributed under an MIT license: http://codemirror.net/LICENSE
-
 (function(mod) {
   if (typeof exports == "object" && typeof module == "object") // CommonJS
     mod(require("../../lib/codemirror"));
@@ -68,16 +65,9 @@
         if (typeof atValues == 'function') atValues = atValues.call(this, cm); // Functions can be used to supply values for autocomplete widget
         if (token.type == "string") {
           prefix = token.string;
-          var n = 0;
           if (/['"]/.test(token.string.charAt(0))) {
             quote = token.string.charAt(0);
             prefix = token.string.slice(1);
-            n++;
-          }
-          var len = token.string.length;
-          if (/['"]/.test(token.string.charAt(len - 1))) {
-            quote = token.string.charAt(len - 1);
-            prefix = token.string.substr(n, len - 2);
           }
           replaceToken = true;
         }
