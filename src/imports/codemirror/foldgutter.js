@@ -1,11 +1,4 @@
-(function(mod) {
-  if (typeof exports == "object" && typeof module == "object") // CommonJS
-    mod(require("../../lib/codemirror"), require("./foldcode"));
-  else if (typeof define == "function" && define.amd) // AMD
-    define(["../../lib/codemirror", "./foldcode"], mod);
-  else // Plain browser env
-    mod(CodeMirror);
-})(function(CodeMirror) {
+(function() {
   "use strict";
 
   CodeMirror.defineOption("foldGutter", false, function(cm, val, old) {
@@ -17,7 +10,6 @@
       cm.off("viewportChange", onViewportChange);
       cm.off("fold", onFold);
       cm.off("unfold", onFold);
-      cm.off("swapDoc", updateInViewport);
     }
     if (val) {
       cm.state.foldGutter = new State(parseOptions(val));
@@ -27,7 +19,6 @@
       cm.on("viewportChange", onViewportChange);
       cm.on("fold", onFold);
       cm.on("unfold", onFold);
-      cm.on("swapDoc", updateInViewport);
     }
   });
 
@@ -69,7 +60,7 @@
       if (isFolded(cm, cur)) {
         mark = marker(opts.indicatorFolded);
       } else {
-        var pos = Pos(cur, 0), func = opts.rangeFinder || CodeMirror.fold.auto;
+        var pos = Pos(cur, 0), func = opts.rangeFinder || cm.getHelper(pos, "fold");
         var range = func && func(cm, pos);
         if (range && range.from.line + 1 < range.to.line)
           mark = marker(opts.indicatorOpen);
@@ -95,14 +86,14 @@
   }
 
   function onChange(cm) {
-    var state = cm.state.foldGutter, opts = cm.state.foldGutter.options;
+    var state = cm.state.foldGutter;
     state.from = state.to = 0;
     clearTimeout(state.changeUpdate);
-    state.changeUpdate = setTimeout(function() { updateInViewport(cm); }, opts.foldOnChangeTimeSpan || 600);
+    state.changeUpdate = setTimeout(function() { updateInViewport(cm); }, 600);
   }
 
   function onViewportChange(cm) {
-    var state = cm.state.foldGutter, opts = cm.state.foldGutter.options;
+    var state = cm.state.foldGutter;
     clearTimeout(state.changeUpdate);
     state.changeUpdate = setTimeout(function() {
       var vp = cm.getViewport();
@@ -120,7 +111,7 @@
           }
         });
       }
-    }, opts.updateViewportTimeSpan || 400);
+    }, 400);
   }
 
   function onFold(cm, from) {
@@ -128,4 +119,4 @@
     if (line >= state.from && line < state.to)
       updateFoldInfo(cm, line, line + 1);
   }
-});
+})();
