@@ -154,27 +154,6 @@ module teapo {
     private _initFromOpenDatabase(openDatabase, forceLoadFromDom: boolean, pathElements: { [name: string]: HTMLScriptElement; }) {
       var dbName = this.handler.uniqueKey ? this.handler.uniqueKey : getUniqueKey();
 
-      var detectIndexedDB = new teapo.storage.attached.indexedDB.DetectStorage();
-      detectIndexedDB.detectStorageAsync(dbName, (errorIndexedDB, load) => {
-        if (errorIndexedDB) {
-          var detectWebSQL = new teapo.storage.attached.webSQL.DetectStorage();
-          detectWebSQL.detectStorageAsync(dbName, (errorWebSQL, load) => {
-            if (errorWebSQL) {
-              alert(
-                'Persistent storage is not stable\n'+
-                'indexedDB ' + errorIndexedDB + '\n' +
-                'webSQL ' + errorWebSQL);
-              return;
-            }
-
-            this._initWithStorage(load, forceLoadFromDom, pathElements);
-          });
-          return;
-        }
-        
-        this._initWithStorage(load, forceLoadFromDom, pathElements);
-      });
-
       var db = openDatabase(dbName, 1, null, 1024 * 1024 * 5);
 
       this._executeSql = (

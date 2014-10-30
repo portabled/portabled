@@ -84,7 +84,7 @@ module teapo {
 
 
     treeClick(data_unused, event: MouseEvent) {
-      var src = event.srcElement;
+      var src = event.srcElement || event.target;
       while (src) {
         var data = ko.dataFor(src);
         if (data && typeof data.handleClick === 'function') {

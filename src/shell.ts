@@ -161,30 +161,6 @@ module teapo {
     }
 
     showTests() {
-      var testContainer = document.createElement('div');
-      testContainer.style.position = 'fixed';
-      testContainer.style.left = testContainer.style.top = testContainer.style.right = testContainer.style.bottom = '2em';
-      testContainer.style.border = 'solid 1px silver';
-      testContainer.style.background = 'white';
-      testContainer.style.overflow = 'auto';
-      testContainer.style.padding = '1em';
-      var closeButton = document.createElement('button');
-      closeButton.textContent = closeButton.innerText = ' x ';
-      (<any>closeButton.style).float = 'right';
-      testContainer.appendChild(closeButton);
-      var host = document.body;
-      host.appendChild(testContainer);
-      closeButton.onclick = () => {
-        host.removeChild(testContainer);
-      }
-
-      var testbed = document.createElement('div');
-      testContainer.appendChild(testbed);
-      testbed.textContent = 'ok ok ok';
-
-      var tests = new teapo.tests.TestPage();
-      
-      ko.renderTemplate('TestPage', tests, null, testbed);
 
       this.toolbarExpanded(false);
 
