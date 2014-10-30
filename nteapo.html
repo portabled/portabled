@@ -3,47 +3,111 @@
 (function (teapo) {
     var app;
     (function (app) {
-        var PageModel = (function () {
-            function PageModel() {
-                this._drive = null;
-                this._fileTree = null;
-                this._docHost = null;
-                this.mainContentHost = null;
-                this.fileTreeHost = null;
-                this.flyoutScroller = null;
-            }
-            PageModel.prototype.loadFromDOM = function () {
-                var _this = this;
-                var fileTree = new teapo.files.FileTree(this.fileTreeHost);
-                var uniqueKey = this._getUniqueKey();
-                var domTimestamp = fileTree.timestamp;
-                teapo.persistence.mountDrive(fileTree, uniqueKey, domTimestamp, teapo.persistence, function (mountedDrive) {
-                    var docHost = new teapo.docs.DocHost(_this.mainContentHost, mountedDrive);
-                    // everything loaded, now assign to state
-                    _this._fileTree = fileTree;
-                    _this._docHost = docHost;
-                    _this._drive = mountedDrive;
-                    _this._fileTree.selectedFile.subscribe(function (newSelectedFile) { return _this._docHost.show(newSelectedFile); });
-                });
-            };
-            PageModel.prototype.keydown = function (unused, e) {
-                if (e.keyCode === 220 || e.which === 220 || e.keyCode === 79 || e.which === 79) {
-                    if (e.ctrlKey || e.altKey || e.metaKey) {
-                        this.moreClick();
-                        return;
-                    }
+        var appRoot;
+        (function (appRoot) {
+            var PageModel = (function () {
+                function PageModel() {
+                    this._drive = null;
+                    this._fileTree = null;
+                    this._docHost = null;
+                    this.mainContentHost = null;
+                    this.fileTreeHost = null;
+                    this.flyoutScroller = null;
                 }
-                return true;
-            };
-            PageModel.prototype.thickbarMouseDown = function (unused, e) {
-                var _this = this;
+                PageModel.prototype.loadFromDOM = function () {
+                    var _this = this;
+                    var fileTree = new teapo.files.FileTree(this.fileTreeHost);
+                    var uniqueKey = this._getUniqueKey();
+                    var domTimestamp = fileTree.timestamp;
+                    teapo.persistence.mountDrive(fileTree, uniqueKey, domTimestamp, teapo.persistence, function (mountedDrive) {
+                        var docHost = new teapo.docs.DocHost(_this.mainContentHost, mountedDrive);
+                        // everything loaded, now assign to state
+                        _this._fileTree = fileTree;
+                        _this._docHost = docHost;
+                        _this._drive = mountedDrive;
+                        _this._fileTree.selectedFile.subscribe(function (newSelectedFile) { return _this._docHost.show(newSelectedFile); });
+                    });
+                };
+                PageModel.prototype.keydown = function (unused, e) {
+                    if (e.keyCode === 220 || e.which === 220 || e.keyCode === 79 || e.which === 79) {
+                        if (e.ctrlKey || e.altKey || e.metaKey) {
+                            this.moreClick();
+                            return;
+                        }
+                    }
+                    return true;
+                };
+                PageModel.prototype.thickbarMouseDown = function (unused, e) {
+                    appRoot.dragScrollMouseDown(e, this.flyoutScroller);
+                };
+                PageModel.prototype.moreClick = function () {
+                    var _this = this;
+                    if (!this._fileTree)
+                        return;
+                    var currentSelectedText = '';
+                    var moreDlg = new app.moreDialog.Model(this._fileTree.selectedFile(), currentSelectedText, this._drive.files(), function (typedFilename) {
+                        document.body.removeChild(div);
+                        if (!typedFilename)
+                            return;
+                        var newFile = teapo.files.normalizePath(typedFilename);
+                        if (_this._drive.read(newFile) === null) {
+                            _this._drive.write(newFile, '');
+                            _this._docHost.add(newFile);
+                        }
+                        _this._fileTree.selectedFile(newFile);
+                    });
+                    var div = document.createElement('div');
+                    document.body.appendChild(div);
+                    ko.applyBindingsToNode(div, { template: { name: 'MoreDialogView' } }, moreDlg);
+                    moreDlg.loadFromDOM();
+                };
+                PageModel.prototype.addClick = function () {
+                    var typedFilename = prompt('Create file:', this._fileTree.selectedFile() || '/');
+                    if (!typedFilename)
+                        return;
+                    var newFile = teapo.files.normalizePath(typedFilename);
+                    if (this._drive.read(newFile) === null) {
+                        this._drive.write(newFile, '');
+                        this._docHost.add(newFile);
+                    }
+                    this._fileTree.selectedFile(newFile);
+                };
+                PageModel.prototype.deleteClick = function () {
+                    var removeFile = this._fileTree.selectedFile();
+                    if (!removeFile)
+                        return;
+                    if (!confirm('Remove file\n  ' + removeFile + '  ?'))
+                        this._drive.write(removeFile, null);
+                    this._docHost.remove(removeFile);
+                };
+                PageModel.prototype._getUniqueKey = function () {
+                    var key = window.location.pathname;
+                    key = key.split('?')[0];
+                    key = key.split('#')[0];
+                    key = key.toLowerCase();
+                    var ignoreSuffix = '/index.html';
+                    if (key.length > ignoreSuffix.length && key.slice(key.length - ignoreSuffix.length) === ignoreSuffix)
+                        key = key.slice(0, key.length - ignoreSuffix.length);
+                    return key;
+                };
+                return PageModel;
+            })();
+            appRoot.PageModel = PageModel;
+        })(appRoot = app.appRoot || (app.appRoot = {}));
+    })(app = teapo.app || (teapo.app = {}));
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    var app;
+    (function (app) {
+        var appRoot;
+        (function (appRoot) {
+            function dragScrollMouseDown(e, scroller) {
                 var start = e.clientX;
-                var startScroll = this.flyoutScroller.scrollLeft;
+                var startScroll = scroller.scrollLeft;
                 var move = function (e) {
                     var offset = e.clientX - start;
-                    var s = _this.flyoutScroller.scrollLeft;
-                    _this.flyoutScroller.scrollLeft = startScroll - offset;
-                    console.log(offset, s, '->', _this.flyoutScroller.scrollLeft);
+                    scroller.scrollLeft = startScroll - offset;
                 };
                 var up = function (e) {
                     teapo.removeEventListener(window, 'mousemove', move);
@@ -51,56 +115,9 @@
                 };
                 teapo.addEventListener(window, 'mousemove', move);
                 teapo.addEventListener(window, 'mouseup', up);
-            };
-            PageModel.prototype.moreClick = function () {
-                var _this = this;
-                var moreDlg = new app.moreDialog.Model(this._drive.files(), function (typedFilename) {
-                    document.body.removeChild(div);
-                    if (!typedFilename)
-                        return;
-                    var newFile = teapo.files.normalizePath(typedFilename);
-                    if (_this._drive.read(newFile) === null) {
-                        _this._drive.write(newFile, '');
-                        _this._docHost.add(newFile);
-                    }
-                    _this._fileTree.selectedFile(newFile);
-                });
-                var div = document.createElement('div');
-                document.body.appendChild(div);
-                ko.applyBindingsToNode(div, { template: { name: 'MoreDialogView' } }, moreDlg);
-            };
-            PageModel.prototype.addClick = function () {
-                var typedFilename = prompt('Create file:', this._fileTree.selectedFile() || '/');
-                if (!typedFilename)
-                    return;
-                var newFile = teapo.files.normalizePath(typedFilename);
-                if (this._drive.read(newFile) === null) {
-                    this._drive.write(newFile, '');
-                    this._docHost.add(newFile);
-                }
-                this._fileTree.selectedFile(newFile);
-            };
-            PageModel.prototype.deleteClick = function () {
-                var removeFile = this._fileTree.selectedFile();
-                if (!removeFile)
-                    return;
-                if (!confirm('Remove file\n  ' + removeFile + '  ?'))
-                    this._drive.write(removeFile, null);
-                this._docHost.remove(removeFile);
-            };
-            PageModel.prototype._getUniqueKey = function () {
-                var key = window.location.pathname;
-                key = key.split('?')[0];
-                key = key.split('#')[0];
-                key = key.toLowerCase();
-                var ignoreSuffix = '/index.html';
-                if (key.length > ignoreSuffix.length && key.slice(key.length - ignoreSuffix.length) === ignoreSuffix)
-                    key = key.slice(0, key.length - ignoreSuffix.length);
-                return key;
-            };
-            return PageModel;
-        })();
-        app.PageModel = PageModel;
+            }
+            appRoot.dragScrollMouseDown = dragScrollMouseDown;
+        })(appRoot = app.appRoot || (app.appRoot = {}));
     })(app = teapo.app || (teapo.app = {}));
 })(teapo || (teapo = {}));
 var teapo;
@@ -161,15 +178,42 @@ var teapo;
         var moreDialog;
         (function (moreDialog) {
             var Model = (function () {
-                function Model(_files, _completed) {
+                function Model(currentFile, currentSelection, _files, _completed) {
+                    var _this = this;
                     this._files = _files;
                     this._completed = _completed;
                     this.text = ko.observable(null);
                     this.matchItems = ko.observableArray([]);
-                    this.matchItems.push('one');
-                    this.matchItems.push('two');
-                    this.matchItems.push('three');
+                    this.textInput = null;
+                    this._selectedItem = -1;
+                    this._allMatchItems = [];
+                    for (var i = 0; i < this._files.length; i++) {
+                        var m = new Model.MatchItem(this._files[i], 'file', this._completed);
+                        this._allMatchItems.push(m);
+                    }
+                    this._allMatchItems.sort(function (m1, m2) {
+                        if (m1.text > m2.text)
+                            return 1;
+                        else if (m1.text < m2.text)
+                            return -1;
+                        else
+                            return 0;
+                    });
+                    this.text(currentSelection || (currentFile ? currentFile.slice(1) : ''));
+                    this._updateList();
+                    var updateTimeout = 0;
+                    this.text.subscribe(function () {
+                        if (updateTimeout)
+                            clearTimeout(updateTimeout);
+                        updateTimeout = setTimeout(function () { return _this._updateList(); }, 300);
+                    });
                 }
+                Model.prototype.loadFromDOM = function () {
+                    if (this.textInput)
+                        this.textInput.select();
+                    else
+                        alert('textInput is not there!');
+                };
                 Model.prototype.keydown = function (unused, e) {
                     if (e.keyCode === 13 || e.which === 13 || e.key === 'Enter') {
                         this._keyEnter();
@@ -188,17 +232,79 @@ var teapo;
                     }
                 };
                 Model.prototype.acceptClick = function () {
-                    this._completed(this.text());
+                    var sel = this._selectedItem >= 0 ? this.matchItems()[this._selectedItem] : null;
+                    if (sel)
+                        this._completed(sel.text);
+                    else
+                        this._completed(this.text());
                 };
                 Model.prototype.dismiss = function () {
                     this._completed(null);
                 };
                 Model.prototype._keyEnter = function () {
-                    this._completed(this.text()); // TODO: pass back the result
+                    this.acceptClick();
                 };
                 Model.prototype._keyUp = function () {
+                    this._moveSelection(-1);
                 };
                 Model.prototype._keyDown = function () {
+                    this._moveSelection(+1);
+                };
+                Model.prototype._moveSelection = function (delta) {
+                    if (this._selectedItem >= 0) {
+                        var old = this.matchItems()[this._selectedItem];
+                        if (old)
+                            old.selected(false);
+                    }
+                    var newSelection = this._selectedItem + delta;
+                    if (newSelection < 0)
+                        newSelection = this.matchItems().length - 1;
+                    if (newSelection >= this.matchItems().length)
+                        newSelection = 0;
+                    this._selectedItem = newSelection;
+                    var sel = this.matchItems()[newSelection];
+                    if (sel)
+                        sel.selected(true);
+                    console.log('sel ', sel, ' this.selectedItem ', this._selectedItem);
+                };
+                Model.prototype._updateList = function () {
+                    var list = [];
+                    var fullMatch = -1;
+                    var text = this.text();
+                    var textLower = (text || '').toLowerCase();
+                    for (var i = 0; i < this._allMatchItems.length; i++) {
+                        var m = this._allMatchItems[i];
+                        if (text) {
+                            if (m.text === text) {
+                                if (fullMatch === -1) {
+                                    m.selected(true);
+                                    fullMatch = i;
+                                }
+                                else {
+                                    m.selected(false);
+                                    list.push(m);
+                                }
+                            }
+                            else if (m.text.toLowerCase().indexOf(textLower) >= 0) {
+                                m.selected(false);
+                                list.push(m);
+                            }
+                            else {
+                                m.selected(false);
+                            }
+                        }
+                        else {
+                            m.selected(false);
+                            list.push(m);
+                        }
+                    }
+                    if (!list.length) {
+                        var m = new Model.MatchItem(text, 'create', this._completed);
+                        m.display = 'Create new file ' + text;
+                        fullMatch = 0;
+                    }
+                    this.matchItems(list);
+                    this._selectedItem = fullMatch;
                 };
                 return Model;
             })();
@@ -206,8 +312,16 @@ var teapo;
             var Model;
             (function (Model) {
                 var MatchItem = (function () {
-                    function MatchItem() {
+                    function MatchItem(text, type, _completed) {
+                        this.text = text;
+                        this.type = type;
+                        this._completed = _completed;
+                        this.selected = ko.observable(false);
+                        this.display = text;
                     }
+                    MatchItem.prototype.clickSelect = function () {
+                        this._completed(this.text);
+                    };
                     return MatchItem;
                 })();
                 Model.MatchItem = MatchItem;
@@ -223,7 +337,7 @@ var teapo;
             removeSpyScripts();
             app.koBindingHandlers.register(ko);
             try {
-                var layout = new teapo.app.PageModel();
+                var layout = new teapo.app.appRoot.PageModel();
                 ko.applyBindings(layout, document.body);
                 layout.loadFromDOM();
             }
@@ -9712,9 +9826,11 @@ window.onerror = function(errObj, file, line, ch, err) {
   <div class=teapo-more-dialog
      data-bind="click: function() { }, clickBubble: false">
     
-    <input data-bind="hasFocus: true, textInput: text">
-    <div data-bind="foreach: matchItems">
-      <div data-bind="text: $data"></div>
+    <input data-bind="hasFocus: true, textInput: text, load: textInput=$element">
+    <div class=teapo-more-dialog-list data-bind="foreach: matchItems">
+      <div class=teapo-more-dialog-item
+         data-bind="text: display, css: { selected: selected }, click: clickSelect "></div>
+      </div>
     </div>
     
   </div>
@@ -9742,11 +9858,26 @@ window.onerror = function(errObj, file, line, ch, err) {
 
 }
 
+.teapo-more-dialog-list {
+  height: 80%;
+  overflow: auto;
+}
+
 .teapo-more-dialog input {
   
   width: 100%;
   font-size: 200%;
   
+}
+
+.teapo-more-dialog .teapo-more-dialog-item {
+  font-size: 140%;
+  padding: 0.25em;
+}
+
+.teapo-more-dialog .teapo-more-dialog-item.selected {
+  background: cornflowerblue;
+  color: white;
 }</style>
 
 </head>
