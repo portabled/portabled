@@ -783,12 +783,13 @@ var teapo;
                         }
                         this.textDoc.editor.on('changes', this._closures.cm_changes);
                         this.textDoc.editor.on('cursorActivity', this._closures.cm_cursorActivity);
+                        this.textDoc.editor.on('viewportChange', this._closures.cm_viewportChange);
                         this.textDoc.editor.swapDoc(this.textDoc.doc);
                         if (!this.textDoc.scroller) {
                             var scroller = document.createElement('div');
                             scroller.style.width = '100%';
                             scroller.style.height = '100%';
-                            scroller.style.background = '#' + Math.floor(Math.random() * 0x1000000).toString(16);
+                            scroller.style.background = 'whitesmoke';
                             this.textDoc.scroller = scroller;
                             ko.renderTemplate('ScrollerView', this._scroller, null, scroller);
                         }
@@ -842,7 +843,8 @@ var teapo;
                         if (this.textDoc.onViewportMoved) {
                             this.textDoc.onViewportMoved(from, to);
                         }
-                        // TODO: update thickBar scroller
+                        if (this._scroller)
+                            this._scroller.viewportMoved(from, to);
                     };
                     CodeMirrorDocHandler.prototype._save = function () {
                         this.storage.write(this.textDoc.doc.getValue());
@@ -953,8 +955,11 @@ var teapo;
                             this._doc = _doc;
                             this._viewLineNumber = _viewLineNumber;
                             this.lines = ko.observableArray([]);
+                            this.viewportFrom = ko.observable('0');
+                            this.viewportHeight = ko.observable('0');
                             this._recreateTimeout = 0;
-                            this.lineHeight = (100 / this._viewLineNumber) + '%';
+                            this._lineHeightNum = 100 / this._viewLineNumber;
+                            this.lineHeight = this._lineHeightNum + '%';
                             this._recreateLines();
                         }
                         ScrollerModel.prototype.docChanges = function (docChanges) {
@@ -962,6 +967,12 @@ var teapo;
                             if (this._recreateTimeout)
                                 clearTimeout(this._recreateTimeout);
                             this._recreateTimeout = setTimeout(function () { return _this._recreateLines(); }, 200);
+                        };
+                        ScrollerModel.prototype.viewportMoved = function (from, to) {
+                            var docLineCount = this._doc.lineCount();
+                            var maxLinesPerRun = Math.max(1, (docLineCount / this._viewLineNumber) | 0);
+                            this.viewportFrom(this._lineHeightNum * ((from / maxLinesPerRun) | 0) + '%');
+                            this.viewportHeight(this._lineHeightNum * (((to - from) / maxLinesPerRun) | 0) + '%');
                         };
                         ScrollerModel.prototype._recreateLines = function () {
                             var newLines = [];
@@ -15211,7 +15222,8 @@ body {
   height: 100%;
   font-family: inherit;
   font-size: inherit;
-}</style>
+}
+</style>
 <script data-legit="teapo">var _errorCache = [];
 _errorCache.byText = {};
 
@@ -15296,7 +15308,13 @@ window.onerror = function(errObj, file, line, ch, err) {
   color: white;
 }</style>
 
-<script type="text/html" id="ScrollerView" data-legit="teapo"><!-- ko foreach: lines -->
+<script type="text/html" id="ScrollerView" data-legit="teapo"><div style="float: left; width: 0px; height: 100%; padding-bottom: 1em;">
+  <div style="position: relative; z-index: 400; border: solid 1px red; width: 2.1em; margin: -0.05px;"
+     data-bind="style: { top: viewportFrom, height: viewportHeight }, click: function() { alert(viewportFrom()+' '+viewportHeight()) }">
+  </div>
+</div>
+
+<!-- ko foreach: lines -->
 <div
    class=teapo-scroller-line
    data-bind="style: { width: lineWidth, height: $parent.lineHeight }"></div>
@@ -15313,21 +15331,92 @@ window.onerror = function(errObj, file, line, ch, err) {
 <div class="teapo-flyout-scroller" data-bind="load: flyoutScroller = $element">
   <div class="teapo-flyout-scroller-bg">
 
-    <div class="teapo-main-content" data-bind="loadRaw: mainContentHost = $element"><div style="height: 100%;"><div class="CodeMirror cm-s-default "><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 212px; left: 55px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" tabindex="0" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;"></textarea></div><div class="CodeMirror-hscrollbar" style="left: 29px; min-height: 18px; right: 0px;"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-vscrollbar" style="min-width: 18px; bottom: 0px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-scrollbar-filler" style="width: 0px; height: 0px;"></div><div class="CodeMirror-gutter-filler"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; min-width: 60.671875px; min-height: 232px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><pre>x</pre><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>1</div></div><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>10</div></div></div><div class="CodeMirror-measure"><pre><span style="padding-right: 0.1px;">&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;title&gt;Teapo - [teapo v0.5a]&lt;/title&gt;&lt;script data-legit=teapo&gt;try { ###functions.ts:build### } catch(bootError) { alert(bootError+' '+bootError.stack) }&lt;/script&gt;</span></pre></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 26px; top: 208px; height: 16px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;">1</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre class=""><span style="padding-right: 0.1px;">222</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre class=""><span style="padding-right: 0.1px;">3333</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">4</div></div><pre class=""><span style="padding-right: 0.1px;">444444</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">5</div></div><pre class=""><span style="padding-right: 0.1px;"><span>​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">6</div></div><pre class=""><span style="padding-right: 0.1px;">5</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">7</div></div><pre class=""><span style="padding-right: 0.1px;"><span>​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">8</div></div><pre class=""><span style="padding-right: 0.1px;">6</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">9</div></div><pre class=""><span style="padding-right: 0.1px;"> 7</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">10</div></div><pre class=""><span style="padding-right: 0.1px;"> 7</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">11</div></div><pre class=""><span style="padding-right: 0.1px;"> 8</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">12</div></div><pre class=""><span style="padding-right: 0.1px;"> </span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">13</div></div><pre class=""><span style="padding-right: 0.1px;"> 88</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">14</div></div><pre><span style="padding-right: 0.1px;"> 12</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 30px; width: 1px; top: 232px;"></div><div class="CodeMirror-gutters" style="left: 0px; height: 763px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div></div>
+    <div class="teapo-main-content" data-bind="loadRaw: mainContentHost = $element"><div style="height: 100%;"><div class="CodeMirror cm-s-default "><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 436px; left: 190.71875px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" tabindex="0" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;"></textarea></div><div class="CodeMirror-hscrollbar" style="left: 29px; min-height: 18px;"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-vscrollbar" style="min-width: 18px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-scrollbar-filler"></div><div class="CodeMirror-gutter-filler"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; min-width: 278px; min-height: 456px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><span><span>​</span>x</span><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>10</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 161.71875px; top: 432px; height: 16px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;">mihailik@gmail.com</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre class=""><span style="padding-right: 0.1px;"><span>​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre class=""><span style="padding-right: 0.1px;"><span>​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">4</div></div><pre class=""><span style="padding-right: 0.1px;"><span>​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">5</div></div><pre class=""><span style="padding-right: 0.1px;"><span>​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">6</div></div><pre class=""><span style="padding-right: 0.1px;"><span>​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">7</div></div><pre class=""><span style="padding-right: 0.1px;">mihailik@gmail.com</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">8</div></div><pre class=""><span style="padding-right: 0.1px;">mihailik@gmail.com</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">9</div></div><pre class=""><span style="padding-right: 0.1px;">mihailik@gmail.com</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">10</div></div><pre class=""><span style="padding-right: 0.1px;">mihailik@gmail.com</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">11</div></div><pre class=""><span style="padding-right: 0.1px;">mihailik@gmail.com</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">12</div></div><pre class=""><span style="padding-right: 0.1px;">mihailik@gmail.com</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">13</div></div><pre class=""><span style="padding-right: 0.1px;">mihailik@gmail.com</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">14</div></div><pre class=""><span style="padding-right: 0.1px;">mihailik@gmail.com</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">15</div></div><pre class=""><span style="padding-right: 0.1px;">mihailik@gmail.com</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">16</div></div><pre class=""><span style="padding-right: 0.1px;"><span>​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">17</div></div><pre class=""><span style="padding-right: 0.1px;"><span>​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">18</div></div><pre class=""><span style="padding-right: 0.1px;"><span>​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">19</div></div><pre class=""><span style="padding-right: 0.1px;"><span>​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">20</div></div><pre class=""><span style="padding-right: 0.1px;">mihailik@gmail.com</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">21</div></div><pre class=""><span style="padding-right: 0.1px;">mihailik@gmail.com</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">22</div></div><pre class=""><span style="padding-right: 0.1px;">mihailik@gmail.com</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">23</div></div><pre class=""><span style="padding-right: 0.1px;">mihailik@gmail.com</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">24</div></div><pre class=""><span style="padding-right: 0.1px;"><span>​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">25</div></div><pre class=""><span style="padding-right: 0.1px;"><span>​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">26</div></div><pre class=""><span style="padding-right: 0.1px;">mihailik@gmail.comsub.txt content</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">27</div></div><pre class=""><span style="padding-right: 0.1px;"><span>​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">28</div></div><pre><span style="padding-right: 0.1px;">mihailik@gmail.com</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 30px; width: 1px; top: 456px;"></div><div class="CodeMirror-gutters" style="left: 0px; height: 763px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div></div>
 
     <div class="teapo-flyout">
 
       <div class="teapo-thick-bar-host">
         <button class="teapo-more-button" data-bind="click: moreClick"> ... </button>
         <div class="teapo-thick-bar-bg">
-          <div class="teapo-thick-bar" data-bind="event: { mousedown: thickbarMouseDown }, loadRaw: thickBar = $element"><div style="width: 100%; height: 100%;"><!-- ko foreach: lines -->
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 16%; height: 0.333333333333333%;"></div>
+          <div class="teapo-thick-bar" data-bind="event: { mousedown: thickbarMouseDown }, loadRaw: thickBar = $element"><div style="width: 100%; height: 100%; background: rgb(245, 245, 245);"><div style="float: left; width: 0px; height: 100%; padding-bottom: 1em;">
+  <div style="position: relative; z-index: 400; border: 1px solid red; width: 2.1em; margin: -0.05px; top: 0%; height: 9.33333333333333%;" data-bind="style: { top: viewportFrom, height: viewportHeight }, click: function() { alert(viewportFrom()+' '+viewportHeight()) }">
+  </div>
+</div>
+
+<!-- ko foreach: lines -->
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 54%; height: 0.333333333333333%;"></div>
 
 
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 50%; height: 0.333333333333333%;"></div>
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 0%; height: 0.333333333333333%;"></div>
 
 
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 66%; height: 0.333333333333333%;"></div>
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 0%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 0%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 0%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 0%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 54%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 54%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 54%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 54%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 54%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 54%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 54%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 54%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 54%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 0%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 0%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 0%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 0%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 54%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 54%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 54%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 54%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 0%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 0%; height: 0.333333333333333%;"></div>
 
 
 <div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 100%; height: 0.333333333333333%;"></div>
@@ -15336,38 +15425,14 @@ window.onerror = function(errObj, file, line, ch, err) {
 <div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 0%; height: 0.333333333333333%;"></div>
 
 
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 16%; height: 0.333333333333333%;"></div>
-
-
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 0%; height: 0.333333333333333%;"></div>
-
-
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 16%; height: 0.333333333333333%;"></div>
-
-
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 33%; height: 0.333333333333333%;"></div>
-
-
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 33%; height: 0.333333333333333%;"></div>
-
-
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 33%; height: 0.333333333333333%;"></div>
-
-
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 16%; height: 0.333333333333333%;"></div>
-
-
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 50%; height: 0.333333333333333%;"></div>
-
-
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 50%; height: 0.333333333333333%;"></div>
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 54%; height: 0.333333333333333%;"></div>
 
 <!-- /ko --></div></div>
         </div>
       </div>
 
 
-      <div class="teapo-file-tree" data-bind="loadRaw: fileTreeHost = $element" timestamp="1414965116598">
+      <div class="teapo-file-tree" data-bind="loadRaw: fileTreeHost = $element" timestamp="1415040410930">
 
         <ul>
           <li>
@@ -15378,20 +15443,34 @@ window.onerror = function(errObj, file, line, ch, err) {
                 <ul>
                   <li class="teapo-file-selected teapo-file-selected">
                     <div class="teapo-file-name">sub.txt</div>
-                    <pre class="teapo-file-content">1
-222
-3333
-444444
+                    <pre class="teapo-file-content">mihailik@gmail.com
 
-5
 
-6
- 7
- 7
- 8
- 
- 88
- 12</pre>
+
+
+
+mihailik@gmail.com
+mihailik@gmail.com
+mihailik@gmail.com
+mihailik@gmail.com
+mihailik@gmail.com
+mihailik@gmail.com
+mihailik@gmail.com
+mihailik@gmail.com
+mihailik@gmail.com
+
+
+
+
+mihailik@gmail.com
+mihailik@gmail.com
+mihailik@gmail.com
+mihailik@gmail.com
+
+
+mihailik@gmail.comsub.txt content
+
+mihailik@gmail.com</pre>
                   </li>
                   <li>
                     <div class="teapo-file-name">zero.txt</div>
