@@ -464,7 +464,6 @@ var teapo;
                     var sel = this.matchItems()[newSelection];
                     if (sel)
                         sel.selected(true);
-                    console.log('sel ', sel, ' this.selectedItem ', this._selectedItem);
                 };
                 Model.prototype._updateList = function () {
                     var list = [];
@@ -1134,8 +1133,6 @@ var teapo;
                 if (lastSlashPos) {
                     var parentDir = file.slice(1, lastSlashPos);
                     var fileName = file = file.slice(lastSlashPos + 1);
-                    console.log('this/FileTree ', this);
-                    console.log('this._virtualRoot/Node ', this._virtualRoot);
                     var parent = this._virtualRoot.findOrCreateDir(parentDir);
                     var node = parent.createFile(fileName);
                     this._allFiles[node.fullPath] = node;
@@ -1374,7 +1371,7 @@ var teapo;
             Node.prototype._insertChildNode = function (nodeList, node, forceRerootingEvenIfOrdered, insertBeforeElement) {
                 var insertIndex = this._binarySearchNode(node.name, nodeList);
                 if (insertIndex >= 0)
-                    console.error('Node should not exist: we are inserting it.');
+                    alert('Node should not exist: we are inserting it.');
                 insertIndex = -insertIndex - 100;
                 if (insertIndex >= nodeList.length) {
                     nodeList.push(node);
@@ -15814,7 +15811,8 @@ body {
 }
 </style>
 <style>.teapo-main-content {
-  position: fixed;
+  position: fixed !important;
+  position: absolute;
   left: 0px; top: 0px;
   height: 100%;
   width: 90%;
@@ -15823,7 +15821,8 @@ body {
 
 
 .teapo-flyout-scroller {
-  position: fixed;
+  position: fixed !important;
+  position: absolute;
   left: 0px; top: 0px; width: 100%; height: 100%;
   overflow-y: hidden;
   overflow-x: scroll;
@@ -15931,7 +15930,8 @@ body {
 
 </style>
 <style>.teapo-status-bar {
-  position: fixed;
+  position: fixed !important;
+  position: absolute;
   left: 0px;
   bottom: 0px;
   height: 2em;
@@ -15995,7 +15995,8 @@ window.onerror = function(errObj, file, line, ch, err) {
 </div></script>
 <style>.teapo-more-dialog-background {
   
-  position: fixed;
+  position: fixed !important;
+  position: absolute;
   left: 0px; top: 0px;
   width: 100%; height: 100%;
   background: rgba(1,1,1,0.6);
@@ -16005,7 +16006,8 @@ window.onerror = function(errObj, file, line, ch, err) {
 
 .teapo-more-dialog {
   
-  position: fixed;
+  position: fixed !important;
+  position: absolute;
   left: 15%;
   width: 70%;
   top: 20%;
@@ -16180,15 +16182,15 @@ window.onerror = function(errObj, file, line, ch, err) {
 
 <script data-legit="teapo">try { teapo.app.start(); } catch (err) { alert(err+' '+err.stack); }</script>
 
-
-<script data-legit="teapo" type="text/javascript" src="https://getfirebug.com/firebug-lite.js">
+<!--
+<script data-legit=teapo type="text/javascript" src="https://getfirebug.com/firebug-lite.js">
 {
     overrideConsole: true,
     startInNewWindow: false,
     startOpened: true
 }
 </script>
-
+-->
 
 
 
