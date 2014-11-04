@@ -941,6 +941,53 @@ var teapo;
         (function (types) {
             var text;
             (function (_text) {
+                var html;
+                (function (html) {
+                    html.expectsFile = /.*\.(html|htm)/g;
+                    html.acceptsFile = /.*\.(html|htm)/g;
+                    function loadText(path, storage) {
+                        return new HtmlDocHandler();
+                    }
+                    html.loadText = loadText;
+                    var HtmlDocHandler = (function () {
+                        function HtmlDocHandler() {
+                        }
+                        HtmlDocHandler.prototype.open = function () {
+                        };
+                        HtmlDocHandler.prototype.edit = function (change) {
+                        };
+                        HtmlDocHandler.prototype.close = function () {
+                        };
+                        HtmlDocHandler.prototype.remove = function () {
+                        };
+                        HtmlDocHandler.prototype.onCursorMoved = function (cursorPos) {
+                        };
+                        HtmlDocHandler.prototype.onViewportMoved = function (from, to) {
+                        };
+                        HtmlDocHandler.prototype.onChanges = function (docChanges) {
+                        };
+                        HtmlDocHandler.prototype.onSave = function () {
+                        };
+                        return HtmlDocHandler;
+                    })();
+                    html.HtmlDocHandler = HtmlDocHandler;
+                    function createCodeMirrorDoc(text) {
+                        return new CodeMirror.Doc(text || '', 'text/html');
+                    }
+                    html.createCodeMirrorDoc = createCodeMirrorDoc;
+                })(html = _text.html || (_text.html = {}));
+            })(text = types.text || (types.text = {}));
+        })(types = docs.types || (docs.types = {}));
+    })(docs = teapo.docs || (teapo.docs = {}));
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    var docs;
+    (function (docs) {
+        var types;
+        (function (types) {
+            var text;
+            (function (_text) {
                 var js;
                 (function (js) {
                     js.expectsFile = /.*\.js/g;
@@ -976,6 +1023,53 @@ var teapo;
                     }
                     js.createCodeMirrorDoc = createCodeMirrorDoc;
                 })(js = _text.js || (_text.js = {}));
+            })(text = types.text || (types.text = {}));
+        })(types = docs.types || (docs.types = {}));
+    })(docs = teapo.docs || (teapo.docs = {}));
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    var docs;
+    (function (docs) {
+        var types;
+        (function (types) {
+            var text;
+            (function (_text) {
+                var json;
+                (function (json) {
+                    json.expectsFile = /.*\.json/g;
+                    json.acceptsFile = /.*\.json/g;
+                    function loadText(path, storage) {
+                        return new JsonDocHandler();
+                    }
+                    json.loadText = loadText;
+                    var JsonDocHandler = (function () {
+                        function JsonDocHandler() {
+                        }
+                        JsonDocHandler.prototype.open = function () {
+                        };
+                        JsonDocHandler.prototype.edit = function (change) {
+                        };
+                        JsonDocHandler.prototype.close = function () {
+                        };
+                        JsonDocHandler.prototype.remove = function () {
+                        };
+                        JsonDocHandler.prototype.onCursorMoved = function (cursorPos) {
+                        };
+                        JsonDocHandler.prototype.onViewportMoved = function (from, to) {
+                        };
+                        JsonDocHandler.prototype.onChanges = function (docChanges) {
+                        };
+                        JsonDocHandler.prototype.onSave = function () {
+                        };
+                        return JsonDocHandler;
+                    })();
+                    json.JsonDocHandler = JsonDocHandler;
+                    function createCodeMirrorDoc(text) {
+                        return new CodeMirror.Doc(text || '', 'json');
+                    }
+                    json.createCodeMirrorDoc = createCodeMirrorDoc;
+                })(json = _text.json || (_text.json = {}));
             })(text = types.text || (types.text = {}));
         })(types = docs.types || (docs.types = {}));
     })(docs = teapo.docs || (teapo.docs = {}));
@@ -1062,6 +1156,53 @@ var teapo;
                     return new text.CodeMirrorDocHandler(path, storage, textDoc, null, null);
                 }
                 text.load = load;
+            })(text = types.text || (types.text = {}));
+        })(types = docs.types || (docs.types = {}));
+    })(docs = teapo.docs || (teapo.docs = {}));
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    var docs;
+    (function (docs) {
+        var types;
+        (function (types) {
+            var text;
+            (function (_text) {
+                var sass;
+                (function (sass) {
+                    sass.expectsFile = /.*\.sass/g;
+                    sass.acceptsFile = /.*\.sass/g;
+                    function loadText(path, storage) {
+                        return new SassDocHandler();
+                    }
+                    sass.loadText = loadText;
+                    var SassDocHandler = (function () {
+                        function SassDocHandler() {
+                        }
+                        SassDocHandler.prototype.open = function () {
+                        };
+                        SassDocHandler.prototype.edit = function (change) {
+                        };
+                        SassDocHandler.prototype.close = function () {
+                        };
+                        SassDocHandler.prototype.remove = function () {
+                        };
+                        SassDocHandler.prototype.onCursorMoved = function (cursorPos) {
+                        };
+                        SassDocHandler.prototype.onViewportMoved = function (from, to) {
+                        };
+                        SassDocHandler.prototype.onChanges = function (docChanges) {
+                        };
+                        SassDocHandler.prototype.onSave = function () {
+                        };
+                        return SassDocHandler;
+                    })();
+                    sass.SassDocHandler = SassDocHandler;
+                    function createCodeMirrorDoc(text) {
+                        return new CodeMirror.Doc(text || '', 'text/x-sass');
+                    }
+                    sass.createCodeMirrorDoc = createCodeMirrorDoc;
+                })(sass = _text.sass || (_text.sass = {}));
             })(text = types.text || (types.text = {}));
         })(types = docs.types || (docs.types = {}));
     })(docs = teapo.docs || (teapo.docs = {}));
@@ -1164,8 +1305,8 @@ var teapo;
             (function (_text) {
                 var scss;
                 (function (scss) {
-                    scss.expectsFile = /.*\.(scss|sass)/g;
-                    scss.acceptsFile = /.*\.(scss|sass)/g;
+                    scss.expectsFile = /.*\.scss/g;
+                    scss.acceptsFile = /.*\.scss/g;
                     function loadText(path, storage) {
                         return new ScssDocHandler();
                     }
@@ -11270,6 +11411,928 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
 
 });
 </script>
+<script data-legit="teapo">// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod(require("../../lib/codemirror"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
+"use strict";
+
+CodeMirror.defineMode("sass", function(config) {
+  function tokenRegexp(words) {
+    return new RegExp("^" + words.join("|"));
+  }
+
+  var keywords = ["true", "false", "null", "auto"];
+  var keywordsRegexp = new RegExp("^" + keywords.join("|"));
+
+  var operators = ["\\(", "\\)", "=", ">", "<", "==", ">=", "<=", "\\+", "-", "\\!=", "/", "\\*", "%", "and", "or", "not"];
+  var opRegexp = tokenRegexp(operators);
+
+  var pseudoElementsRegexp = /^::?[\w\-]+/;
+
+  function urlTokens(stream, state) {
+    var ch = stream.peek();
+
+    if (ch === ")") {
+      stream.next();
+      state.tokenizer = tokenBase;
+      return "operator";
+    } else if (ch === "(") {
+      stream.next();
+      stream.eatSpace();
+
+      return "operator";
+    } else if (ch === "'" || ch === '"') {
+      state.tokenizer = buildStringTokenizer(stream.next());
+      return "string";
+    } else {
+      state.tokenizer = buildStringTokenizer(")", false);
+      return "string";
+    }
+  }
+  function comment(indentation, multiLine) {
+    return function(stream, state) {
+      if (stream.sol() && stream.indentation() <= indentation) {
+        state.tokenizer = tokenBase;
+        return tokenBase(stream, state);
+      }
+
+      if (multiLine && stream.skipTo("*/")) {
+        stream.next();
+        stream.next();
+        state.tokenizer = tokenBase;
+      } else {
+        stream.next();
+      }
+
+      return "comment";
+    };
+  }
+
+  function buildStringTokenizer(quote, greedy) {
+    if(greedy == null) { greedy = true; }
+
+    function stringTokenizer(stream, state) {
+      var nextChar = stream.next();
+      var peekChar = stream.peek();
+      var previousChar = stream.string.charAt(stream.pos-2);
+
+      var endingString = ((nextChar !== "\\" && peekChar === quote) || (nextChar === quote && previousChar !== "\\"));
+
+      if (endingString) {
+        if (nextChar !== quote && greedy) { stream.next(); }
+        state.tokenizer = tokenBase;
+        return "string";
+      } else if (nextChar === "#" && peekChar === "{") {
+        state.tokenizer = buildInterpolationTokenizer(stringTokenizer);
+        stream.next();
+        return "operator";
+      } else {
+        return "string";
+      }
+    }
+
+    return stringTokenizer;
+  }
+
+  function buildInterpolationTokenizer(currentTokenizer) {
+    return function(stream, state) {
+      if (stream.peek() === "}") {
+        stream.next();
+        state.tokenizer = currentTokenizer;
+        return "operator";
+      } else {
+        return tokenBase(stream, state);
+      }
+    };
+  }
+
+  function indent(state) {
+    if (state.indentCount == 0) {
+      state.indentCount++;
+      var lastScopeOffset = state.scopes[0].offset;
+      var currentOffset = lastScopeOffset + config.indentUnit;
+      state.scopes.unshift({ offset:currentOffset });
+    }
+  }
+
+  function dedent(state) {
+    if (state.scopes.length == 1) return;
+
+    state.scopes.shift();
+  }
+
+  function tokenBase(stream, state) {
+    var ch = stream.peek();
+
+    // Comment
+    if (stream.match("/*")) {
+      state.tokenizer = comment(stream.indentation(), true);
+      return state.tokenizer(stream, state);
+    }
+    if (stream.match("//")) {
+      state.tokenizer = comment(stream.indentation(), false);
+      return state.tokenizer(stream, state);
+    }
+
+    // Interpolation
+    if (stream.match("#{")) {
+      state.tokenizer = buildInterpolationTokenizer(tokenBase);
+      return "operator";
+    }
+
+    if (ch === ".") {
+      stream.next();
+
+      // Match class selectors
+      if (stream.match(/^[\w-]+/)) {
+        indent(state);
+        return "atom";
+      } else if (stream.peek() === "#") {
+        indent(state);
+        return "atom";
+      } else {
+        return "operator";
+      }
+    }
+
+    if (ch === "#") {
+      stream.next();
+
+      // Hex numbers
+      if (stream.match(/[0-9a-fA-F]{6}|[0-9a-fA-F]{3}/))
+        return "number";
+
+      // ID selectors
+      if (stream.match(/^[\w-]+/)) {
+        indent(state);
+        return "atom";
+      }
+
+      if (stream.peek() === "#") {
+        indent(state);
+        return "atom";
+      }
+    }
+
+    // Numbers
+    if (stream.match(/^-?[0-9\.]+/))
+      return "number";
+
+    // Units
+    if (stream.match(/^(px|em|in)\b/))
+      return "unit";
+
+    if (stream.match(keywordsRegexp))
+      return "keyword";
+
+    if (stream.match(/^url/) && stream.peek() === "(") {
+      state.tokenizer = urlTokens;
+      return "atom";
+    }
+
+    // Variables
+    if (ch === "$") {
+      stream.next();
+      stream.eatWhile(/[\w-]/);
+
+      if (stream.peek() === ":") {
+        stream.next();
+        return "variable-2";
+      } else {
+        return "variable-3";
+      }
+    }
+
+    if (ch === "!") {
+      stream.next();
+      return stream.match(/^[\w]+/) ? "keyword": "operator";
+    }
+
+    if (ch === "=") {
+      stream.next();
+
+      // Match shortcut mixin definition
+      if (stream.match(/^[\w-]+/)) {
+        indent(state);
+        return "meta";
+      } else {
+        return "operator";
+      }
+    }
+
+    if (ch === "+") {
+      stream.next();
+
+      // Match shortcut mixin definition
+      if (stream.match(/^[\w-]+/))
+        return "variable-3";
+      else
+        return "operator";
+    }
+
+    // Indent Directives
+    if (stream.match(/^@(else if|if|media|else|for|each|while|mixin|function)/)) {
+      indent(state);
+      return "meta";
+    }
+
+    // Other Directives
+    if (ch === "@") {
+      stream.next();
+      stream.eatWhile(/[\w-]/);
+      return "meta";
+    }
+
+    // Strings
+    if (ch === '"' || ch === "'") {
+      stream.next();
+      state.tokenizer = buildStringTokenizer(ch);
+      return "string";
+    }
+
+    // Pseudo element selectors
+    if (ch == ":" && stream.match(pseudoElementsRegexp))
+      return "keyword";
+
+    // atoms
+    if (stream.eatWhile(/[\w-&]/)) {
+      // matches a property definition
+      if (stream.peek() === ":" && !stream.match(pseudoElementsRegexp, false))
+        return "property";
+      else
+        return "atom";
+    }
+
+    if (stream.match(opRegexp))
+      return "operator";
+
+    // If we haven't returned by now, we move 1 character
+    // and return an error
+    stream.next();
+    return null;
+  }
+
+  function tokenLexer(stream, state) {
+    if (stream.sol()) state.indentCount = 0;
+    var style = state.tokenizer(stream, state);
+    var current = stream.current();
+
+    if (current === "@return")
+      dedent(state);
+
+    if (style === "atom")
+      indent(state);
+
+    if (style !== null) {
+      var startOfToken = stream.pos - current.length;
+      var withCurrentIndent = startOfToken + (config.indentUnit * state.indentCount);
+
+      var newScopes = [];
+
+      for (var i = 0; i < state.scopes.length; i++) {
+        var scope = state.scopes[i];
+
+        if (scope.offset <= withCurrentIndent)
+          newScopes.push(scope);
+      }
+
+      state.scopes = newScopes;
+    }
+
+
+    return style;
+  }
+
+  return {
+    startState: function() {
+      return {
+        tokenizer: tokenBase,
+        scopes: [{offset: 0, type: "sass"}],
+        indentCount: 0,
+        definedVars: [],
+        definedMixins: []
+      };
+    },
+    token: function(stream, state) {
+      var style = tokenLexer(stream, state);
+
+      state.lastToken = { style: style, content: stream.current() };
+
+      return style;
+    },
+
+    indent: function(state) {
+      return state.scopes[0].offset;
+    }
+  };
+});
+
+CodeMirror.defineMIME("text/x-sass", "sass");
+
+});
+</script>
+<script data-legit="teapo">// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod(require("../../lib/codemirror"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
+"use strict";
+
+CodeMirror.defineMode("xml", function(config, parserConfig) {
+  var indentUnit = config.indentUnit;
+  var multilineTagIndentFactor = parserConfig.multilineTagIndentFactor || 1;
+  var multilineTagIndentPastTag = parserConfig.multilineTagIndentPastTag;
+  if (multilineTagIndentPastTag == null) multilineTagIndentPastTag = true;
+
+  var Kludges = parserConfig.htmlMode ? {
+    autoSelfClosers: {'area': true, 'base': true, 'br': true, 'col': true, 'command': true,
+                      'embed': true, 'frame': true, 'hr': true, 'img': true, 'input': true,
+                      'keygen': true, 'link': true, 'meta': true, 'param': true, 'source': true,
+                      'track': true, 'wbr': true, 'menuitem': true},
+    implicitlyClosed: {'dd': true, 'li': true, 'optgroup': true, 'option': true, 'p': true,
+                       'rp': true, 'rt': true, 'tbody': true, 'td': true, 'tfoot': true,
+                       'th': true, 'tr': true},
+    contextGrabbers: {
+      'dd': {'dd': true, 'dt': true},
+      'dt': {'dd': true, 'dt': true},
+      'li': {'li': true},
+      'option': {'option': true, 'optgroup': true},
+      'optgroup': {'optgroup': true},
+      'p': {'address': true, 'article': true, 'aside': true, 'blockquote': true, 'dir': true,
+            'div': true, 'dl': true, 'fieldset': true, 'footer': true, 'form': true,
+            'h1': true, 'h2': true, 'h3': true, 'h4': true, 'h5': true, 'h6': true,
+            'header': true, 'hgroup': true, 'hr': true, 'menu': true, 'nav': true, 'ol': true,
+            'p': true, 'pre': true, 'section': true, 'table': true, 'ul': true},
+      'rp': {'rp': true, 'rt': true},
+      'rt': {'rp': true, 'rt': true},
+      'tbody': {'tbody': true, 'tfoot': true},
+      'td': {'td': true, 'th': true},
+      'tfoot': {'tbody': true},
+      'th': {'td': true, 'th': true},
+      'thead': {'tbody': true, 'tfoot': true},
+      'tr': {'tr': true}
+    },
+    doNotIndent: {"pre": true},
+    allowUnquoted: true,
+    allowMissing: true,
+    caseFold: true
+  } : {
+    autoSelfClosers: {},
+    implicitlyClosed: {},
+    contextGrabbers: {},
+    doNotIndent: {},
+    allowUnquoted: false,
+    allowMissing: false,
+    caseFold: false
+  };
+  var alignCDATA = parserConfig.alignCDATA;
+
+  // Return variables for tokenizers
+  var type, setStyle;
+
+  function inText(stream, state) {
+    function chain(parser) {
+      state.tokenize = parser;
+      return parser(stream, state);
+    }
+
+    var ch = stream.next();
+    if (ch == "<") {
+      if (stream.eat("!")) {
+        if (stream.eat("[")) {
+          if (stream.match("CDATA[")) return chain(inBlock("atom", "]]>"));
+          else return null;
+        } else if (stream.match("--")) {
+          return chain(inBlock("comment", "-->"));
+        } else if (stream.match("DOCTYPE", true, true)) {
+          stream.eatWhile(/[\w\._\-]/);
+          return chain(doctype(1));
+        } else {
+          return null;
+        }
+      } else if (stream.eat("?")) {
+        stream.eatWhile(/[\w\._\-]/);
+        state.tokenize = inBlock("meta", "?>");
+        return "meta";
+      } else {
+        type = stream.eat("/") ? "closeTag" : "openTag";
+        state.tokenize = inTag;
+        return "tag bracket";
+      }
+    } else if (ch == "&") {
+      var ok;
+      if (stream.eat("#")) {
+        if (stream.eat("x")) {
+          ok = stream.eatWhile(/[a-fA-F\d]/) && stream.eat(";");
+        } else {
+          ok = stream.eatWhile(/[\d]/) && stream.eat(";");
+        }
+      } else {
+        ok = stream.eatWhile(/[\w\.\-:]/) && stream.eat(";");
+      }
+      return ok ? "atom" : "error";
+    } else {
+      stream.eatWhile(/[^&<]/);
+      return null;
+    }
+  }
+
+  function inTag(stream, state) {
+    var ch = stream.next();
+    if (ch == ">" || (ch == "/" && stream.eat(">"))) {
+      state.tokenize = inText;
+      type = ch == ">" ? "endTag" : "selfcloseTag";
+      return "tag bracket";
+    } else if (ch == "=") {
+      type = "equals";
+      return null;
+    } else if (ch == "<") {
+      state.tokenize = inText;
+      state.state = baseState;
+      state.tagName = state.tagStart = null;
+      var next = state.tokenize(stream, state);
+      return next ? next + " tag error" : "tag error";
+    } else if (/[\'\"]/.test(ch)) {
+      state.tokenize = inAttribute(ch);
+      state.stringStartCol = stream.column();
+      return state.tokenize(stream, state);
+    } else {
+      stream.match(/^[^\s\u00a0=<>\"\']*[^\s\u00a0=<>\"\'\/]/);
+      return "word";
+    }
+  }
+
+  function inAttribute(quote) {
+    var closure = function(stream, state) {
+      while (!stream.eol()) {
+        if (stream.next() == quote) {
+          state.tokenize = inTag;
+          break;
+        }
+      }
+      return "string";
+    };
+    closure.isInAttribute = true;
+    return closure;
+  }
+
+  function inBlock(style, terminator) {
+    return function(stream, state) {
+      while (!stream.eol()) {
+        if (stream.match(terminator)) {
+          state.tokenize = inText;
+          break;
+        }
+        stream.next();
+      }
+      return style;
+    };
+  }
+  function doctype(depth) {
+    return function(stream, state) {
+      var ch;
+      while ((ch = stream.next()) != null) {
+        if (ch == "<") {
+          state.tokenize = doctype(depth + 1);
+          return state.tokenize(stream, state);
+        } else if (ch == ">") {
+          if (depth == 1) {
+            state.tokenize = inText;
+            break;
+          } else {
+            state.tokenize = doctype(depth - 1);
+            return state.tokenize(stream, state);
+          }
+        }
+      }
+      return "meta";
+    };
+  }
+
+  function Context(state, tagName, startOfLine) {
+    this.prev = state.context;
+    this.tagName = tagName;
+    this.indent = state.indented;
+    this.startOfLine = startOfLine;
+    if (Kludges.doNotIndent.hasOwnProperty(tagName) || (state.context && state.context.noIndent))
+      this.noIndent = true;
+  }
+  function popContext(state) {
+    if (state.context) state.context = state.context.prev;
+  }
+  function maybePopContext(state, nextTagName) {
+    var parentTagName;
+    while (true) {
+      if (!state.context) {
+        return;
+      }
+      parentTagName = state.context.tagName;
+      if (!Kludges.contextGrabbers.hasOwnProperty(parentTagName) ||
+          !Kludges.contextGrabbers[parentTagName].hasOwnProperty(nextTagName)) {
+        return;
+      }
+      popContext(state);
+    }
+  }
+
+  function baseState(type, stream, state) {
+    if (type == "openTag") {
+      state.tagStart = stream.column();
+      return tagNameState;
+    } else if (type == "closeTag") {
+      return closeTagNameState;
+    } else {
+      return baseState;
+    }
+  }
+  function tagNameState(type, stream, state) {
+    if (type == "word") {
+      state.tagName = stream.current();
+      setStyle = "tag";
+      return attrState;
+    } else {
+      setStyle = "error";
+      return tagNameState;
+    }
+  }
+  function closeTagNameState(type, stream, state) {
+    if (type == "word") {
+      var tagName = stream.current();
+      if (state.context && state.context.tagName != tagName &&
+          Kludges.implicitlyClosed.hasOwnProperty(state.context.tagName))
+        popContext(state);
+      if (state.context && state.context.tagName == tagName) {
+        setStyle = "tag";
+        return closeState;
+      } else {
+        setStyle = "tag error";
+        return closeStateErr;
+      }
+    } else {
+      setStyle = "error";
+      return closeStateErr;
+    }
+  }
+
+  function closeState(type, _stream, state) {
+    if (type != "endTag") {
+      setStyle = "error";
+      return closeState;
+    }
+    popContext(state);
+    return baseState;
+  }
+  function closeStateErr(type, stream, state) {
+    setStyle = "error";
+    return closeState(type, stream, state);
+  }
+
+  function attrState(type, _stream, state) {
+    if (type == "word") {
+      setStyle = "attribute";
+      return attrEqState;
+    } else if (type == "endTag" || type == "selfcloseTag") {
+      var tagName = state.tagName, tagStart = state.tagStart;
+      state.tagName = state.tagStart = null;
+      if (type == "selfcloseTag" ||
+          Kludges.autoSelfClosers.hasOwnProperty(tagName)) {
+        maybePopContext(state, tagName);
+      } else {
+        maybePopContext(state, tagName);
+        state.context = new Context(state, tagName, tagStart == state.indented);
+      }
+      return baseState;
+    }
+    setStyle = "error";
+    return attrState;
+  }
+  function attrEqState(type, stream, state) {
+    if (type == "equals") return attrValueState;
+    if (!Kludges.allowMissing) setStyle = "error";
+    return attrState(type, stream, state);
+  }
+  function attrValueState(type, stream, state) {
+    if (type == "string") return attrContinuedState;
+    if (type == "word" && Kludges.allowUnquoted) {setStyle = "string"; return attrState;}
+    setStyle = "error";
+    return attrState(type, stream, state);
+  }
+  function attrContinuedState(type, stream, state) {
+    if (type == "string") return attrContinuedState;
+    return attrState(type, stream, state);
+  }
+
+  return {
+    startState: function() {
+      return {tokenize: inText,
+              state: baseState,
+              indented: 0,
+              tagName: null, tagStart: null,
+              context: null};
+    },
+
+    token: function(stream, state) {
+      if (!state.tagName && stream.sol())
+        state.indented = stream.indentation();
+
+      if (stream.eatSpace()) return null;
+      type = null;
+      var style = state.tokenize(stream, state);
+      if ((style || type) && style != "comment") {
+        setStyle = null;
+        state.state = state.state(type || style, stream, state);
+        if (setStyle)
+          style = setStyle == "error" ? style + " error" : setStyle;
+      }
+      return style;
+    },
+
+    indent: function(state, textAfter, fullLine) {
+      var context = state.context;
+      // Indent multi-line strings (e.g. css).
+      if (state.tokenize.isInAttribute) {
+        if (state.tagStart == state.indented)
+          return state.stringStartCol + 1;
+        else
+          return state.indented + indentUnit;
+      }
+      if (context && context.noIndent) return CodeMirror.Pass;
+      if (state.tokenize != inTag && state.tokenize != inText)
+        return fullLine ? fullLine.match(/^(\s*)/)[0].length : 0;
+      // Indent the starts of attribute names.
+      if (state.tagName) {
+        if (multilineTagIndentPastTag)
+          return state.tagStart + state.tagName.length + 2;
+        else
+          return state.tagStart + indentUnit * multilineTagIndentFactor;
+      }
+      if (alignCDATA && /<!\[CDATA\[/.test(textAfter)) return 0;
+      var tagAfter = textAfter && /^<(\/)?([\w_:\.-]*)/.exec(textAfter);
+      if (tagAfter && tagAfter[1]) { // Closing tag spotted
+        while (context) {
+          if (context.tagName == tagAfter[2]) {
+            context = context.prev;
+            break;
+          } else if (Kludges.implicitlyClosed.hasOwnProperty(context.tagName)) {
+            context = context.prev;
+          } else {
+            break;
+          }
+        }
+      } else if (tagAfter) { // Opening tag spotted
+        while (context) {
+          var grabbers = Kludges.contextGrabbers[context.tagName];
+          if (grabbers && grabbers.hasOwnProperty(tagAfter[2]))
+            context = context.prev;
+          else
+            break;
+        }
+      }
+      while (context && !context.startOfLine)
+        context = context.prev;
+      if (context) return context.indent + indentUnit;
+      else return 0;
+    },
+
+    electricInput: /<\/[\s\w:]+>$/,
+    blockCommentStart: "<!--",
+    blockCommentEnd: "-->",
+
+    configuration: parserConfig.htmlMode ? "html" : "xml",
+    helperType: parserConfig.htmlMode ? "html" : "xml"
+  };
+});
+
+CodeMirror.defineMIME("text/xml", "xml");
+CodeMirror.defineMIME("application/xml", "xml");
+if (!CodeMirror.mimeModes.hasOwnProperty("text/html"))
+  CodeMirror.defineMIME("text/html", {name: "xml", htmlMode: true});
+
+});
+</script>
+<script data-legit="teapo">// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod(require("../../lib/codemirror"), require("../xml/xml"), require("../javascript/javascript"), require("../css/css"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror", "../xml/xml", "../javascript/javascript", "../css/css"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
+"use strict";
+
+CodeMirror.defineMode("htmlmixed", function(config, parserConfig) {
+  var htmlMode = CodeMirror.getMode(config, {name: "xml",
+                                             htmlMode: true,
+                                             multilineTagIndentFactor: parserConfig.multilineTagIndentFactor,
+                                             multilineTagIndentPastTag: parserConfig.multilineTagIndentPastTag});
+  var cssMode = CodeMirror.getMode(config, "css");
+
+  var scriptTypes = [], scriptTypesConf = parserConfig && parserConfig.scriptTypes;
+  scriptTypes.push({matches: /^(?:text|application)\/(?:x-)?(?:java|ecma)script$|^$/i,
+                    mode: CodeMirror.getMode(config, "javascript")});
+  if (scriptTypesConf) for (var i = 0; i < scriptTypesConf.length; ++i) {
+    var conf = scriptTypesConf[i];
+    scriptTypes.push({matches: conf.matches, mode: conf.mode && CodeMirror.getMode(config, conf.mode)});
+  }
+  scriptTypes.push({matches: /./,
+                    mode: CodeMirror.getMode(config, "text/plain")});
+
+  function html(stream, state) {
+    var tagName = state.htmlState.tagName;
+    if (tagName) tagName = tagName.toLowerCase();
+    var style = htmlMode.token(stream, state.htmlState);
+    if (tagName == "script" && /\btag\b/.test(style) && stream.current() == ">") {
+      // Script block: mode to change to depends on type attribute
+      var scriptType = stream.string.slice(Math.max(0, stream.pos - 100), stream.pos).match(/\btype\s*=\s*("[^"]+"|'[^']+'|\S+)[^<]*$/i);
+      scriptType = scriptType ? scriptType[1] : "";
+      if (scriptType && /[\"\']/.test(scriptType.charAt(0))) scriptType = scriptType.slice(1, scriptType.length - 1);
+      for (var i = 0; i < scriptTypes.length; ++i) {
+        var tp = scriptTypes[i];
+        if (typeof tp.matches == "string" ? scriptType == tp.matches : tp.matches.test(scriptType)) {
+          if (tp.mode) {
+            state.token = script;
+            state.localMode = tp.mode;
+            state.localState = tp.mode.startState && tp.mode.startState(htmlMode.indent(state.htmlState, ""));
+          }
+          break;
+        }
+      }
+    } else if (tagName == "style" && /\btag\b/.test(style) && stream.current() == ">") {
+      state.token = css;
+      state.localMode = cssMode;
+      state.localState = cssMode.startState(htmlMode.indent(state.htmlState, ""));
+    }
+    return style;
+  }
+  function maybeBackup(stream, pat, style) {
+    var cur = stream.current();
+    var close = cur.search(pat), m;
+    if (close > -1) stream.backUp(cur.length - close);
+    else if (m = cur.match(/<\/?$/)) {
+      stream.backUp(cur.length);
+      if (!stream.match(pat, false)) stream.match(cur);
+    }
+    return style;
+  }
+  function script(stream, state) {
+    if (stream.match(/^<\/\s*script\s*>/i, false)) {
+      state.token = html;
+      state.localState = state.localMode = null;
+      return html(stream, state);
+    }
+    return maybeBackup(stream, /<\/\s*script\s*>/,
+                       state.localMode.token(stream, state.localState));
+  }
+  function css(stream, state) {
+    if (stream.match(/^<\/\s*style\s*>/i, false)) {
+      state.token = html;
+      state.localState = state.localMode = null;
+      return html(stream, state);
+    }
+    return maybeBackup(stream, /<\/\s*style\s*>/,
+                       cssMode.token(stream, state.localState));
+  }
+
+  return {
+    startState: function() {
+      var state = htmlMode.startState();
+      return {token: html, localMode: null, localState: null, htmlState: state};
+    },
+
+    copyState: function(state) {
+      if (state.localState)
+        var local = CodeMirror.copyState(state.localMode, state.localState);
+      return {token: state.token, localMode: state.localMode, localState: local,
+              htmlState: CodeMirror.copyState(htmlMode, state.htmlState)};
+    },
+
+    token: function(stream, state) {
+      return state.token(stream, state);
+    },
+
+    indent: function(state, textAfter) {
+      if (!state.localMode || /^\s*<\//.test(textAfter))
+        return htmlMode.indent(state.htmlState, textAfter);
+      else if (state.localMode.indent)
+        return state.localMode.indent(state.localState, textAfter);
+      else
+        return CodeMirror.Pass;
+    },
+
+    innerMode: function(state) {
+      return {state: state.localState || state.htmlState, mode: state.localMode || htmlMode};
+    }
+  };
+}, "xml", "javascript", "css");
+
+CodeMirror.defineMIME("text/html", "htmlmixed");
+
+});
+</script>
+<script data-legit="teapo">// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod(require("../../lib/codemirror"), require("../htmlmixed/htmlmixed"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror", "../htmlmixed/htmlmixed"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
+"use strict";
+
+CodeMirror.defineMode("htmlembedded", function(config, parserConfig) {
+
+  //config settings
+  var scriptStartRegex = parserConfig.scriptStartRegex || /^<%/i,
+      scriptEndRegex = parserConfig.scriptEndRegex || /^%>/i;
+
+  //inner modes
+  var scriptingMode, htmlMixedMode;
+
+  //tokenizer when in html mode
+  function htmlDispatch(stream, state) {
+      if (stream.match(scriptStartRegex, false)) {
+          state.token=scriptingDispatch;
+          return scriptingMode.token(stream, state.scriptState);
+          }
+      else
+          return htmlMixedMode.token(stream, state.htmlState);
+    }
+
+  //tokenizer when in scripting mode
+  function scriptingDispatch(stream, state) {
+      if (stream.match(scriptEndRegex, false))  {
+          state.token=htmlDispatch;
+          return htmlMixedMode.token(stream, state.htmlState);
+         }
+      else
+          return scriptingMode.token(stream, state.scriptState);
+         }
+
+
+  return {
+    startState: function() {
+      scriptingMode = scriptingMode || CodeMirror.getMode(config, parserConfig.scriptingModeSpec);
+      htmlMixedMode = htmlMixedMode || CodeMirror.getMode(config, "htmlmixed");
+      return {
+          token :  parserConfig.startOpen ? scriptingDispatch : htmlDispatch,
+          htmlState : CodeMirror.startState(htmlMixedMode),
+          scriptState : CodeMirror.startState(scriptingMode)
+      };
+    },
+
+    token: function(stream, state) {
+      return state.token(stream, state);
+    },
+
+    indent: function(state, textAfter) {
+      if (state.token == htmlDispatch)
+        return htmlMixedMode.indent(state.htmlState, textAfter);
+      else if (scriptingMode.indent)
+        return scriptingMode.indent(state.scriptState, textAfter);
+    },
+
+    copyState: function(state) {
+      return {
+       token : state.token,
+       htmlState : CodeMirror.copyState(htmlMixedMode, state.htmlState),
+       scriptState : CodeMirror.copyState(scriptingMode, state.scriptState)
+      };
+    },
+
+    innerMode: function(state) {
+      if (state.token == scriptingDispatch) return {state: state.scriptState, mode: scriptingMode};
+      else return {state: state.htmlState, mode: htmlMixedMode};
+    }
+  };
+}, "htmlmixed");
+
+CodeMirror.defineMIME("application/x-ejs", { name: "htmlembedded", scriptingModeSpec:"javascript"});
+CodeMirror.defineMIME("application/x-aspx", { name: "htmlembedded", scriptingModeSpec:"text/x-csharp"});
+CodeMirror.defineMIME("application/x-jsp", { name: "htmlembedded", scriptingModeSpec:"text/x-java"});
+CodeMirror.defineMIME("application/x-erb", { name: "htmlembedded", scriptingModeSpec:"ruby"});
+
+});
+</script>
 <style>/* BASICS */
 
 .CodeMirror {
@@ -16921,7 +17984,7 @@ window.onerror = function(errObj, file, line, ch, err) {
 <div class="teapo-flyout-scroller" data-bind="load: flyoutScroller = $element">
   <div class="teapo-flyout-scroller-bg">
 
-    <div class="teapo-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default "><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 20px; left: 200.2265625px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-hscrollbar" style="left: 29px; min-height: 18px;"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-vscrollbar" style="min-width: 18px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-scrollbar-filler"></div><div class="CodeMirror-gutter-filler"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; min-width: 174.2265625px; min-height: 56px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>1</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 171.2265625px; top: 16px; height: 16px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-tag">html</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-property">background</span>: <span class="cm-keyword">tomato</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre><span style="padding-right: 0.1px;">}</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 30px; width: 1px; top: 56px;"></div><div class="CodeMirror-gutters" style="height: 731px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div>
+    <div class="teapo-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default "><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 84px; left: 214.609375px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-hscrollbar" style="left: 29px; min-height: 18px;"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-vscrollbar" style="min-width: 18px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-scrollbar-filler"></div><div class="CodeMirror-gutter-filler"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; min-width: 188.609375px; min-height: 152px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>1</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 185.609375px; top: 80px; height: 16px;">&nbsp;</div></div><div class="CodeMirror-code "><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">html</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">head</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-tag cm-bracket">&lt;/</span><span class="cm-tag">head</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">4</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">body</span> <span class="cm-attribute">bgcolor</span>=<span class="cm-string">"red"</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">5</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">script</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">6</div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">var</span> <span class="cm-variable">s</span> <span class="cm-operator">=</span> <span class="cm-keyword">function</span>() { };</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">7</div></div><pre><span style="padding-right: 0.1px;">    <span class="cm-tag cm-bracket">&lt;/</span><span class="cm-tag">script</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">8</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-tag cm-bracket">&lt;/</span><span class="cm-tag">body</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">9</div></div><pre><span style="padding-right: 0.1px;"><span class="cm-tag cm-bracket">&lt;/</span><span class="cm-tag">html</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div></div></div></div></div></div><div style="position: absolute; height: 30px; width: 1px; top: 152px;"></div><div class="CodeMirror-gutters" style="height: 731px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div>
 
     <div class="teapo-flyout">
 
@@ -16931,25 +17994,43 @@ window.onerror = function(errObj, file, line, ch, err) {
           <div class="teapo-thick-bar" data-bind="event: { mousedown: thickbarMouseDown }, loadRaw: docHostRegions.scroller = $element">
             &nbsp;
           <div style="width: 100%; height: 100%;"><div style="float: left; width: 0px; height: 100%; padding-bottom: 1em;">
-  <div style="position: relative; z-index: 400; border: 1px solid red; width: 2.1em; margin: -0.05px; top: 0%; height: 1%;" data-bind="style: { top: viewportFrom, height: viewportHeight }, click: function() { alert(viewportFrom()+' '+viewportHeight()) }">
+  <div style="position: relative; z-index: 400; border: 1px solid red; width: 2.1em; margin: -0.05px; top: 0%; height: 2%;" data-bind="style: { top: viewportFrom, height: viewportHeight }, click: function() { alert(viewportFrom()+' '+viewportHeight()) }">
   </div>
 </div>
 
 <!-- ko foreach: lines -->
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 28%; height: 0.333333333333333%;"></div>
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 20%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 27%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 31%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 75%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 41%; height: 0.333333333333333%;"></div>
 
 
 <div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 100%; height: 0.333333333333333%;"></div>
 
 
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 4%; height: 0.333333333333333%;"></div>
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 44%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 31%; height: 0.333333333333333%;"></div>
+
+
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 24%; height: 0.333333333333333%;"></div>
 
 <!-- /ko --></div></div>
         </div>
       </div>
 
 
-      <div class="teapo-file-tree" data-bind="loadRaw: fileTreeHost = $element" timestamp="1415143709723">
+      <div class="teapo-file-tree" data-bind="loadRaw: fileTreeHost = $element" timestamp="1415144944254">
 
         <ul>
           <li>
@@ -16993,9 +18074,15 @@ window.onerror = function(errObj, file, line, ch, err) {
           </li>
 
           
-        <li class=" teapo-file-selected"><div class="teapo-file-name">some.sass</div><pre class="teapo-file-content">html {
-  background: tomato;
-}</pre></li></ul>
+        <li class=" teapo-file-selected"><div class="teapo-file-name">some.html</div><pre class="teapo-file-content">&lt;html&gt;
+  &lt;head&gt;
+  &lt;/head&gt;
+  &lt;body bgcolor="red"&gt;
+    &lt;script&gt;
+      var s = function() { };
+    &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</pre></li></ul>
       </div>
       
       <div class="teapo-extra-content">
@@ -17044,7 +18131,7 @@ window.onerror = function(errObj, file, line, ch, err) {
 </div>
 
 <div class="teapo-status-bar" data-bind="loadRaw: docHostRegions.status = $element">
-<div style="width: 100%; height: 100%;">/some.sass</div></div>
+<div style="width: 100%; height: 100%;">/some.html</div></div>
      
 
 <script data-legit="teapo">try { teapo.app.start(); } catch (err) { alert(err+' '+err.stack); }</script>
