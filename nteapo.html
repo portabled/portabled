@@ -747,6 +747,7 @@ var teapo;
                         this._saveTimer.ontick = function () { return _this._save(); };
                     }
                     CodeMirrorDocHandler.prototype.showEditor = function (regions) {
+                        var _this = this;
                         var cmPool = CodeMirrorDocHandler.codeMirrorEditorPools[this.moduleName || ''] || (CodeMirrorDocHandler.codeMirrorEditorPools[this.moduleName || ''] = []);
                         if (cmPool.length) {
                             this.textDoc.editor = cmPool.pop();
@@ -776,8 +777,12 @@ var teapo;
                         regions.scroller.appendChild(this.textDoc.scroller);
                         if (this.textDoc.open)
                             this.textDoc.open();
-                        this.textDoc.editor.refresh();
-                        this.textDoc.editor.focus();
+                        setTimeout(function () {
+                            if (_this.textDoc.editor && _this.textDoc.editor.getDoc() === _this.textDoc.doc) {
+                                _this.textDoc.editor.refresh();
+                                _this.textDoc.editor.focus();
+                            }
+                        }, 2);
                     };
                     CodeMirrorDocHandler.prototype.hideEditor = function () {
                         this._saveTimer.endWaiting();
@@ -15302,7 +15307,7 @@ window.onerror = function(errObj, file, line, ch, err) {
 <div class="teapo-flyout-scroller" data-bind="load: flyoutScroller = $element">
   <div class="teapo-flyout-scroller-bg">
 
-    <div class="teapo-main-content" data-bind="loadRaw: mainContentHost = $element"><div class="CodeMirror cm-s-default "><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 4px; left: 33px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-hscrollbar" style="left: 29px; min-height: 18px;"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-vscrollbar" style="min-width: 18px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-scrollbar-filler"></div><div class="CodeMirror-gutter-filler"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; min-width: 120px; min-height: 24px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>1</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 4px; top: 0px; height: 16px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;">sub.txt content</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 30px; width: 1px; top: 24px;"></div><div class="CodeMirror-gutters" style="height: 1130px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div>
+    <div class="teapo-main-content" data-bind="loadRaw: mainContentHost = $element"><div class="CodeMirror cm-s-default     "><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 4px; left: 33px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-hscrollbar" style="left: 29px; min-height: 18px;"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-vscrollbar" style="min-width: 18px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-scrollbar-filler"></div><div class="CodeMirror-gutter-filler"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; min-width: 147.90625px; min-height: 24px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>1</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 4px; top: 0px; height: 16px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;">What is this TWO?</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 30px; width: 1px; top: 24px;"></div><div class="CodeMirror-gutters" style="height: 1130px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div>
 
     <div class="teapo-flyout">
 
@@ -15333,20 +15338,20 @@ window.onerror = function(errObj, file, line, ch, err) {
               <li>
                 <div class="teapo-dir-name">src</div>
                 <ul>
-                  <li class="teapo-file-selected teapo-file-selected">
+                  <li class=" ">
                     <div class="teapo-file-name">sub.txt</div>
                     <pre class="teapo-file-content">sub.txt content</pre>
                   </li>
-                  <li>
+                  <li class=" ">
                     <div class="teapo-file-name">zero.txt</div>
                     <pre class="teapo-file-content">sub-zero content</pre>
                   </li>
                 </ul>
-              </li><li>
+              </li><li class=" ">
                 <div class="teapo-file-name">FileTree.ts</div>
                 <pre class="teapo-file-content">Some file ok</pre>
               </li>
-              <li>
+              <li class=" ">
                 <div class="teapo-file-name">FileTree1.ts</div>
                 <pre class="teapo-file-content">Some file one OK</pre>
               </li>
@@ -15354,7 +15359,7 @@ window.onerror = function(errObj, file, line, ch, err) {
             </ul>
           </li>
 
-          <li>
+          <li class=" ">
             <div class="teapo-file-name">boom.txt</div>
             <pre class="teapo-file-content">What is this?</pre>
           </li>
@@ -15362,7 +15367,7 @@ window.onerror = function(errObj, file, line, ch, err) {
             <div class="teapo-file-name">boom1.txt</div>
             <pre class="teapo-file-content">What is this ONE?</pre>
           </li>
-          <li>
+          <li class=" teapo-file-selected">
             <div class="teapo-file-name">boom2.txt</div>
             <pre class="teapo-file-content">What is this TWO?</pre>
           </li>
