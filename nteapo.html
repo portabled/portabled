@@ -987,6 +987,53 @@ var teapo;
         var types;
         (function (types) {
             var text;
+            (function (_text) {
+                var less;
+                (function (less) {
+                    less.expectsFile = /.*\.less/g;
+                    less.acceptsFile = /.*\.less/g;
+                    function loadText(path, storage) {
+                        return new LessDocHandler();
+                    }
+                    less.loadText = loadText;
+                    var LessDocHandler = (function () {
+                        function LessDocHandler() {
+                        }
+                        LessDocHandler.prototype.open = function () {
+                        };
+                        LessDocHandler.prototype.edit = function (change) {
+                        };
+                        LessDocHandler.prototype.close = function () {
+                        };
+                        LessDocHandler.prototype.remove = function () {
+                        };
+                        LessDocHandler.prototype.onCursorMoved = function (cursorPos) {
+                        };
+                        LessDocHandler.prototype.onViewportMoved = function (from, to) {
+                        };
+                        LessDocHandler.prototype.onChanges = function (docChanges) {
+                        };
+                        LessDocHandler.prototype.onSave = function () {
+                        };
+                        return LessDocHandler;
+                    })();
+                    less.LessDocHandler = LessDocHandler;
+                    function createCodeMirrorDoc(text) {
+                        return new CodeMirror.Doc(text || '', 'text/x-less');
+                    }
+                    less.createCodeMirrorDoc = createCodeMirrorDoc;
+                })(less = _text.less || (_text.less = {}));
+            })(text = types.text || (types.text = {}));
+        })(types = docs.types || (docs.types = {}));
+    })(docs = teapo.docs || (teapo.docs = {}));
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    var docs;
+    (function (docs) {
+        var types;
+        (function (types) {
+            var text;
             (function (text) {
                 text.expectsFile = /.*\.txt/g;
                 text.acceptsFile = /.*/g;
@@ -1103,6 +1150,53 @@ var teapo;
                         ScrollerModel.LineModel = LineModel;
                     })(ScrollerModel = scrollerView.ScrollerModel || (scrollerView.ScrollerModel = {}));
                 })(scrollerView = text.scrollerView || (text.scrollerView = {}));
+            })(text = types.text || (types.text = {}));
+        })(types = docs.types || (docs.types = {}));
+    })(docs = teapo.docs || (teapo.docs = {}));
+})(teapo || (teapo = {}));
+var teapo;
+(function (teapo) {
+    var docs;
+    (function (docs) {
+        var types;
+        (function (types) {
+            var text;
+            (function (_text) {
+                var scss;
+                (function (scss) {
+                    scss.expectsFile = /.*\.(scss|sass)/g;
+                    scss.acceptsFile = /.*\.(scss|sass)/g;
+                    function loadText(path, storage) {
+                        return new ScssDocHandler();
+                    }
+                    scss.loadText = loadText;
+                    var ScssDocHandler = (function () {
+                        function ScssDocHandler() {
+                        }
+                        ScssDocHandler.prototype.open = function () {
+                        };
+                        ScssDocHandler.prototype.edit = function (change) {
+                        };
+                        ScssDocHandler.prototype.close = function () {
+                        };
+                        ScssDocHandler.prototype.remove = function () {
+                        };
+                        ScssDocHandler.prototype.onCursorMoved = function (cursorPos) {
+                        };
+                        ScssDocHandler.prototype.onViewportMoved = function (from, to) {
+                        };
+                        ScssDocHandler.prototype.onChanges = function (docChanges) {
+                        };
+                        ScssDocHandler.prototype.onSave = function () {
+                        };
+                        return ScssDocHandler;
+                    })();
+                    scss.ScssDocHandler = ScssDocHandler;
+                    function createCodeMirrorDoc(text) {
+                        return new CodeMirror.Doc(text || '', 'text/x-scss');
+                    }
+                    scss.createCodeMirrorDoc = createCodeMirrorDoc;
+                })(scss = _text.scss || (_text.scss = {}));
             })(text = types.text || (types.text = {}));
         })(types = docs.types || (docs.types = {}));
     })(docs = teapo.docs || (teapo.docs = {}));
@@ -16827,7 +16921,7 @@ window.onerror = function(errObj, file, line, ch, err) {
 <div class="teapo-flyout-scroller" data-bind="load: flyoutScroller = $element">
   <div class="teapo-flyout-scroller-bg">
 
-    <div class="teapo-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default "><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 36px; left: 150.3984375px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-hscrollbar" style="left: 29px; min-height: 18px;"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-vscrollbar" style="min-width: 18px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-scrollbar-filler"></div><div class="CodeMirror-gutter-filler"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; min-width: 174.2265625px; min-height: 72px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>1</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 121.3984375px; top: 32px; height: 16px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-qualifier">.html</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-property">background</span>: <span class="cm-keyword">tomato</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-property">position</span>: <span class="cm-atom">fixed</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">4</div></div><pre><span style="padding-right: 0.1px;">}</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 30px; width: 1px; top: 72px;"></div><div class="CodeMirror-gutters" style="height: 731px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div>
+    <div class="teapo-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default "><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 20px; left: 200.2265625px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-hscrollbar" style="left: 29px; min-height: 18px;"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-vscrollbar" style="min-width: 18px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-scrollbar-filler"></div><div class="CodeMirror-gutter-filler"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; min-width: 174.2265625px; min-height: 56px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>1</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 171.2265625px; top: 16px; height: 16px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-tag">html</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-property">background</span>: <span class="cm-keyword">tomato</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre><span style="padding-right: 0.1px;">}</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 30px; width: 1px; top: 56px;"></div><div class="CodeMirror-gutters" style="height: 731px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div>
 
     <div class="teapo-flyout">
 
@@ -16842,13 +16936,10 @@ window.onerror = function(errObj, file, line, ch, err) {
 </div>
 
 <!-- ko foreach: lines -->
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 33%; height: 0.333333333333333%;"></div>
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 28%; height: 0.333333333333333%;"></div>
 
 
 <div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 100%; height: 0.333333333333333%;"></div>
-
-
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 85%; height: 0.333333333333333%;"></div>
 
 
 <div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 4%; height: 0.333333333333333%;"></div>
@@ -16858,7 +16949,7 @@ window.onerror = function(errObj, file, line, ch, err) {
       </div>
 
 
-      <div class="teapo-file-tree" data-bind="loadRaw: fileTreeHost = $element" timestamp="1415142912399">
+      <div class="teapo-file-tree" data-bind="loadRaw: fileTreeHost = $element" timestamp="1415143709723">
 
         <ul>
           <li>
@@ -16902,9 +16993,8 @@ window.onerror = function(errObj, file, line, ch, err) {
           </li>
 
           
-        <li class=" teapo-file-selected"><div class="teapo-file-name">some.css</div><pre class="teapo-file-content">.html {
+        <li class=" teapo-file-selected"><div class="teapo-file-name">some.sass</div><pre class="teapo-file-content">html {
   background: tomato;
-  position: fixed;
 }</pre></li></ul>
       </div>
       
@@ -16954,7 +17044,7 @@ window.onerror = function(errObj, file, line, ch, err) {
 </div>
 
 <div class="teapo-status-bar" data-bind="loadRaw: docHostRegions.status = $element">
-<div style="width: 100%; height: 100%;">/some.css</div></div>
+<div style="width: 100%; height: 100%;">/some.sass</div></div>
      
 
 <script data-legit="teapo">try { teapo.app.start(); } catch (err) { alert(err+' '+err.stack); }</script>
