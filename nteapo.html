@@ -810,12 +810,33 @@ var teapo;
                         this.textDoc.doc = null;
                     };
                     CodeMirrorDocHandler.prototype._docChanges = function (docChanges) {
+                        var _this = this;
                         if (this.textDoc.onChanges)
                             this.textDoc.onChanges(docChanges);
                         if (this._scrollerModel)
                             this._scrollerModel.docChanges(docChanges);
                         this._saveTimer.interval = (this.moduleObj && this.moduleObj.saveDelay) || text.saveDelay;
                         this._saveTimer.reset();
+                        if (docChanges.length) {
+                            var latestChange = docChanges[docChanges.length - 1];
+                            if (latestChange.text && latestChange.text.length) {
+                                var latestChangeText = latestChange.text[latestChange.text.length - 1];
+                                var triggers = this.moduleObj && this.moduleObj.completionTriggers ? this.moduleObj.completionTriggers : text.completionTriggers;
+                                if (ko.utils.arrayIndexOf(triggers, latestChangeText.charAt(latestChangeText.length - 1)) >= 0) {
+                                    if (this.textDoc.onCompletion) {
+                                        var asyncContinueCompletion = function (callback) { return _this._continueCompletion(callback); };
+                                        asyncContinueCompletion.async = true;
+                                        CodeMirror.showHint({
+                                            hint: asyncContinueCompletion,
+                                            completeSingle: false
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    };
+                    CodeMirrorDocHandler.prototype._continueCompletion = function (callback) {
+                        this.textDoc.onCompletion(callback);
                     };
                     CodeMirrorDocHandler.prototype._cursorActivity = function () {
                         if (this.textDoc.onCursorMoved) {
@@ -860,7 +881,8 @@ var teapo;
                         open: null,
                         edit: null,
                         close: null,
-                        remove: null
+                        remove: null,
+                        onCompletion: null
                     };
                 }
                 _text.loadText = loadText;
@@ -882,6 +904,8 @@ var teapo;
                     return new CodeMirror.Doc(text || '');
                 }
                 _text.createCodeMirrorDoc = createCodeMirrorDoc;
+                _text.completionTriggers = ['.', '='];
+                _text.completionCompleters = ['.'];
             })(text = types.text || (types.text = {}));
         })(types = docs.types || (docs.types = {}));
     })(docs = teapo.docs || (teapo.docs = {}));
@@ -920,6 +944,10 @@ var teapo;
                         CssDocHandler.prototype.onChanges = function (docChanges) {
                         };
                         CssDocHandler.prototype.onSave = function () {
+                        };
+                        CssDocHandler.prototype.onCompletion = function (callback) {
+                            var completions = CodeMirror.hint.css(this.editor);
+                            callback(completions);
                         };
                         return CssDocHandler;
                     })();
@@ -10011,6 +10039,396 @@ var teapo;
 <script data-legit="teapo">// CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: http://codemirror.net/LICENSE
 
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod(require("../../lib/codemirror"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
+  "use strict";
+
+  var HINT_ELEMENT_CLASS        = "CodeMirror-hint";
+  var ACTIVE_HINT_ELEMENT_CLASS = "CodeMirror-hint-active";
+
+  // This is the old interface, kept around for now to stay
+  // backwards-compatible.
+  CodeMirror.showHint = function(cm, getHints, options) {
+    if (!getHints) return cm.showHint(options);
+    if (options && options.async) getHints.async = true;
+    var newOpts = {hint: getHints};
+    if (options) for (var prop in options) newOpts[prop] = options[prop];
+    return cm.showHint(newOpts);
+  };
+
+  CodeMirror.defineExtension("showHint", function(options) {
+    // We want a single cursor position.
+    if (this.listSelections().length > 1 || this.somethingSelected()) return;
+
+    if (this.state.completionActive) this.state.completionActive.close();
+    var completion = this.state.completionActive = new Completion(this, options);
+    var getHints = completion.options.hint;
+    if (!getHints) return;
+
+    CodeMirror.signal(this, "startCompletion", this);
+    if (getHints.async)
+      getHints(this, function(hints) { completion.showHints(hints); }, completion.options);
+    else
+      return completion.showHints(getHints(this, completion.options));
+  });
+
+  function Completion(cm, options) {
+    this.cm = cm;
+    this.options = this.buildOptions(options);
+    this.widget = this.onClose = null;
+  }
+
+  Completion.prototype = {
+    close: function() {
+      if (!this.active()) return;
+      this.cm.state.completionActive = null;
+
+      if (this.widget) this.widget.close();
+      if (this.onClose) this.onClose();
+      CodeMirror.signal(this.cm, "endCompletion", this.cm);
+    },
+
+    active: function() {
+      return this.cm.state.completionActive == this;
+    },
+
+    pick: function(data, i) {
+      var completion = data.list[i];
+      if (completion.hint) completion.hint(this.cm, data, completion);
+      else this.cm.replaceRange(getText(completion), completion.from || data.from,
+                                completion.to || data.to, "complete");
+      CodeMirror.signal(data, "pick", completion);
+      this.close();
+    },
+
+    showHints: function(data) {
+      if (!data || !data.list.length || !this.active()) return this.close();
+
+      if (this.options.completeSingle && data.list.length == 1)
+        this.pick(data, 0);
+      else
+        this.showWidget(data);
+    },
+
+    showWidget: function(data) {
+      this.widget = new Widget(this, data);
+      CodeMirror.signal(data, "shown");
+
+      var debounce = 0, completion = this, finished;
+      var closeOn = this.options.closeCharacters;
+      var startPos = this.cm.getCursor(), startLen = this.cm.getLine(startPos.line).length;
+
+      var requestAnimationFrame = window.requestAnimationFrame || function(fn) {
+        return setTimeout(fn, 1000/60);
+      };
+      var cancelAnimationFrame = window.cancelAnimationFrame || clearTimeout;
+
+      function done() {
+        if (finished) return;
+        finished = true;
+        completion.close();
+        completion.cm.off("cursorActivity", activity);
+        if (data) CodeMirror.signal(data, "close");
+      }
+
+      function update() {
+        if (finished) return;
+        CodeMirror.signal(data, "update");
+        var getHints = completion.options.hint;
+        if (getHints.async)
+          getHints(completion.cm, finishUpdate, completion.options);
+        else
+          finishUpdate(getHints(completion.cm, completion.options));
+      }
+      function finishUpdate(data_) {
+        data = data_;
+        if (finished) return;
+        if (!data || !data.list.length) return done();
+        if (completion.widget) completion.widget.close();
+        completion.widget = new Widget(completion, data);
+      }
+
+      function clearDebounce() {
+        if (debounce) {
+          cancelAnimationFrame(debounce);
+          debounce = 0;
+        }
+      }
+
+      function activity() {
+        clearDebounce();
+        var pos = completion.cm.getCursor(), line = completion.cm.getLine(pos.line);
+        if (pos.line != startPos.line || line.length - pos.ch != startLen - startPos.ch ||
+            pos.ch < startPos.ch || completion.cm.somethingSelected() ||
+            (pos.ch && closeOn.test(line.charAt(pos.ch - 1)))) {
+          completion.close();
+        } else {
+          debounce = requestAnimationFrame(update);
+          if (completion.widget) completion.widget.close();
+        }
+      }
+      this.cm.on("cursorActivity", activity);
+      this.onClose = done;
+    },
+
+    buildOptions: function(options) {
+      var editor = this.cm.options.hintOptions;
+      var out = {};
+      for (var prop in defaultOptions) out[prop] = defaultOptions[prop];
+      if (editor) for (var prop in editor)
+        if (editor[prop] !== undefined) out[prop] = editor[prop];
+      if (options) for (var prop in options)
+        if (options[prop] !== undefined) out[prop] = options[prop];
+      return out;
+    }
+  };
+
+  function getText(completion) {
+    if (typeof completion == "string") return completion;
+    else return completion.text;
+  }
+
+  function buildKeyMap(completion, handle) {
+    var baseMap = {
+      Up: function() {handle.moveFocus(-1);},
+      Down: function() {handle.moveFocus(1);},
+      PageUp: function() {handle.moveFocus(-handle.menuSize() + 1, true);},
+      PageDown: function() {handle.moveFocus(handle.menuSize() - 1, true);},
+      Home: function() {handle.setFocus(0);},
+      End: function() {handle.setFocus(handle.length - 1);},
+      Enter: handle.pick,
+      Tab: handle.pick,
+      Esc: handle.close
+    };
+    var custom = completion.options.customKeys;
+    var ourMap = custom ? {} : baseMap;
+    function addBinding(key, val) {
+      var bound;
+      if (typeof val != "string")
+        bound = function(cm) { return val(cm, handle); };
+      // This mechanism is deprecated
+      else if (baseMap.hasOwnProperty(val))
+        bound = baseMap[val];
+      else
+        bound = val;
+      ourMap[key] = bound;
+    }
+    if (custom)
+      for (var key in custom) if (custom.hasOwnProperty(key))
+        addBinding(key, custom[key]);
+    var extra = completion.options.extraKeys;
+    if (extra)
+      for (var key in extra) if (extra.hasOwnProperty(key))
+        addBinding(key, extra[key]);
+    return ourMap;
+  }
+
+  function getHintElement(hintsElement, el) {
+    while (el && el != hintsElement) {
+      if (el.nodeName.toUpperCase() === "LI" && el.parentNode == hintsElement) return el;
+      el = el.parentNode;
+    }
+  }
+
+  function Widget(completion, data) {
+    this.completion = completion;
+    this.data = data;
+    var widget = this, cm = completion.cm;
+
+    var hints = this.hints = document.createElement("ul");
+    hints.className = "CodeMirror-hints";
+    this.selectedHint = data.selectedHint || 0;
+
+    var completions = data.list;
+    for (var i = 0; i < completions.length; ++i) {
+      var elt = hints.appendChild(document.createElement("li")), cur = completions[i];
+      var className = HINT_ELEMENT_CLASS + (i != this.selectedHint ? "" : " " + ACTIVE_HINT_ELEMENT_CLASS);
+      if (cur.className != null) className = cur.className + " " + className;
+      elt.className = className;
+      if (cur.render) cur.render(elt, data, cur);
+      else elt.appendChild(document.createTextNode(cur.displayText || getText(cur)));
+      elt.hintId = i;
+    }
+
+    var pos = cm.cursorCoords(completion.options.alignWithWord ? data.from : null);
+    var left = pos.left, top = pos.bottom, below = true;
+    hints.style.left = left + "px";
+    hints.style.top = top + "px";
+    // If we're at the edge of the screen, then we want the menu to appear on the left of the cursor.
+    var winW = window.innerWidth || Math.max(document.body.offsetWidth, document.documentElement.offsetWidth);
+    var winH = window.innerHeight || Math.max(document.body.offsetHeight, document.documentElement.offsetHeight);
+    (completion.options.container || document.body).appendChild(hints);
+    var box = hints.getBoundingClientRect(), overlapY = box.bottom - winH;
+    if (overlapY > 0) {
+      var height = box.bottom - box.top, curTop = pos.top - (pos.bottom - box.top);
+      if (curTop - height > 0) { // Fits above cursor
+        hints.style.top = (top = pos.top - height) + "px";
+        below = false;
+      } else if (height > winH) {
+        hints.style.height = (winH - 5) + "px";
+        hints.style.top = (top = pos.bottom - box.top) + "px";
+        var cursor = cm.getCursor();
+        if (data.from.ch != cursor.ch) {
+          pos = cm.cursorCoords(cursor);
+          hints.style.left = (left = pos.left) + "px";
+          box = hints.getBoundingClientRect();
+        }
+      }
+    }
+    var overlapX = box.left - winW;
+    if (overlapX > 0) {
+      if (box.right - box.left > winW) {
+        hints.style.width = (winW - 5) + "px";
+        overlapX -= (box.right - box.left) - winW;
+      }
+      hints.style.left = (left = pos.left - overlapX) + "px";
+    }
+
+    cm.addKeyMap(this.keyMap = buildKeyMap(completion, {
+      moveFocus: function(n, avoidWrap) { widget.changeActive(widget.selectedHint + n, avoidWrap); },
+      setFocus: function(n) { widget.changeActive(n); },
+      menuSize: function() { return widget.screenAmount(); },
+      length: completions.length,
+      close: function() { completion.close(); },
+      pick: function() { widget.pick(); },
+      data: data
+    }));
+
+    if (completion.options.closeOnUnfocus) {
+      var closingOnBlur;
+      cm.on("blur", this.onBlur = function() { closingOnBlur = setTimeout(function() { completion.close(); }, 100); });
+      cm.on("focus", this.onFocus = function() { clearTimeout(closingOnBlur); });
+    }
+
+    var startScroll = cm.getScrollInfo();
+    cm.on("scroll", this.onScroll = function() {
+      var curScroll = cm.getScrollInfo(), editor = cm.getWrapperElement().getBoundingClientRect();
+      var newTop = top + startScroll.top - curScroll.top;
+      var point = newTop - (window.pageYOffset || (document.documentElement || document.body).scrollTop);
+      if (!below) point += hints.offsetHeight;
+      if (point <= editor.top || point >= editor.bottom) return completion.close();
+      hints.style.top = newTop + "px";
+      hints.style.left = (left + startScroll.left - curScroll.left) + "px";
+    });
+
+    CodeMirror.on(hints, "dblclick", function(e) {
+      var t = getHintElement(hints, e.target || e.srcElement);
+      if (t && t.hintId != null) {widget.changeActive(t.hintId); widget.pick();}
+    });
+
+    CodeMirror.on(hints, "click", function(e) {
+      var t = getHintElement(hints, e.target || e.srcElement);
+      if (t && t.hintId != null) {
+        widget.changeActive(t.hintId);
+        if (completion.options.completeOnSingleClick) widget.pick();
+      }
+    });
+
+    CodeMirror.on(hints, "mousedown", function() {
+      setTimeout(function(){cm.focus();}, 20);
+    });
+
+    CodeMirror.signal(data, "select", completions[0], hints.firstChild);
+    return true;
+  }
+
+  Widget.prototype = {
+    close: function() {
+      if (this.completion.widget != this) return;
+      this.completion.widget = null;
+      this.hints.parentNode.removeChild(this.hints);
+      this.completion.cm.removeKeyMap(this.keyMap);
+
+      var cm = this.completion.cm;
+      if (this.completion.options.closeOnUnfocus) {
+        cm.off("blur", this.onBlur);
+        cm.off("focus", this.onFocus);
+      }
+      cm.off("scroll", this.onScroll);
+    },
+
+    pick: function() {
+      this.completion.pick(this.data, this.selectedHint);
+    },
+
+    changeActive: function(i, avoidWrap) {
+      if (i >= this.data.list.length)
+        i = avoidWrap ? this.data.list.length - 1 : 0;
+      else if (i < 0)
+        i = avoidWrap ? 0  : this.data.list.length - 1;
+      if (this.selectedHint == i) return;
+      var node = this.hints.childNodes[this.selectedHint];
+      node.className = node.className.replace(" " + ACTIVE_HINT_ELEMENT_CLASS, "");
+      node = this.hints.childNodes[this.selectedHint = i];
+      node.className += " " + ACTIVE_HINT_ELEMENT_CLASS;
+      if (node.offsetTop < this.hints.scrollTop)
+        this.hints.scrollTop = node.offsetTop - 3;
+      else if (node.offsetTop + node.offsetHeight > this.hints.scrollTop + this.hints.clientHeight)
+        this.hints.scrollTop = node.offsetTop + node.offsetHeight - this.hints.clientHeight + 3;
+      CodeMirror.signal(this.data, "select", this.data.list[this.selectedHint], node);
+    },
+
+    screenAmount: function() {
+      return Math.floor(this.hints.clientHeight / this.hints.firstChild.offsetHeight) || 1;
+    }
+  };
+
+  CodeMirror.registerHelper("hint", "auto", function(cm, options) {
+    var helpers = cm.getHelpers(cm.getCursor(), "hint"), words;
+    if (helpers.length) {
+      for (var i = 0; i < helpers.length; i++) {
+        var cur = helpers[i](cm, options);
+        if (cur && cur.list.length) return cur;
+      }
+    } else if (words = cm.getHelper(cm.getCursor(), "hintWords")) {
+      if (words) return CodeMirror.hint.fromList(cm, {words: words});
+    } else if (CodeMirror.hint.anyword) {
+      return CodeMirror.hint.anyword(cm, options);
+    }
+  });
+
+  CodeMirror.registerHelper("hint", "fromList", function(cm, options) {
+    var cur = cm.getCursor(), token = cm.getTokenAt(cur);
+    var found = [];
+    for (var i = 0; i < options.words.length; i++) {
+      var word = options.words[i];
+      if (word.slice(0, token.string.length) == token.string)
+        found.push(word);
+    }
+
+    if (found.length) return {
+      list: found,
+      from: CodeMirror.Pos(cur.line, token.start),
+            to: CodeMirror.Pos(cur.line, token.end)
+    };
+  });
+
+  CodeMirror.commands.autocomplete = CodeMirror.showHint;
+
+  var defaultOptions = {
+    hint: CodeMirror.hint.auto,
+    completeSingle: true,
+    alignWithWord: true,
+    closeCharacters: /[\s()\[\]{};:>,]/,
+    closeOnUnfocus: true,
+    completeOnSingleClick: false,
+    container: null,
+    customKeys: null,
+    extraKeys: null
+  };
+
+  CodeMirror.defineOption("hintOptions", null);
+});
+</script>
+<script data-legit="teapo">// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
 // TODO actually recognize syntax of TypeScript constructs
 
 (function(mod) {
@@ -11416,6 +11834,63 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
 
 (function(mod) {
   if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod(require("../../lib/codemirror"), require("../../mode/css/css"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror", "../../mode/css/css"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
+  "use strict";
+
+  var pseudoClasses = {link: 1, visited: 1, active: 1, hover: 1, focus: 1,
+                       "first-letter": 1, "first-line": 1, "first-child": 1,
+                       before: 1, after: 1, lang: 1};
+
+  CodeMirror.registerHelper("hint", "css", function(cm) {
+    var cur = cm.getCursor(), token = cm.getTokenAt(cur);
+    var inner = CodeMirror.innerMode(cm.getMode(), token.state);
+    if (inner.mode.name != "css") return;
+
+    var word = token.string, start = token.start, end = token.end;
+    if (/[^\w$_-]/.test(word)) {
+      word = ""; start = end = cur.ch;
+    }
+
+    var spec = CodeMirror.resolveMode("text/css");
+
+    var result = [];
+    function add(keywords) {
+      for (var name in keywords)
+        if (!word || name.lastIndexOf(word, 0) == 0)
+          result.push(name);
+    }
+
+    var st = inner.state.state;
+    if (st == "pseudo" || token.type == "variable-3") {
+      add(pseudoClasses);
+    } else if (st == "block" || st == "maybeprop") {
+      add(spec.propertyKeywords);
+    } else if (st == "prop" || st == "parens" || st == "at" || st == "params") {
+      add(spec.valueKeywords);
+      add(spec.colorKeywords);
+    } else if (st == "media" || st == "media_parens") {
+      add(spec.mediaTypes);
+      add(spec.mediaFeatures);
+    }
+
+    if (result.length) return {
+      list: result,
+      from: CodeMirror.Pos(cur.line, start),
+      to: CodeMirror.Pos(cur.line, end)
+    };
+  });
+});
+</script>
+<script data-legit="teapo">// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
     mod(require("../../lib/codemirror"));
   else if (typeof define == "function" && define.amd) // AMD
     define(["../../lib/codemirror"], mod);
@@ -12643,6 +13118,45 @@ div.CodeMirror-cursors {
 
 /* Help users use markselection to safely style text background */
 span.CodeMirror-selectedtext { background: none; }
+</style>
+<style>.CodeMirror-hints {
+  position: absolute;
+  z-index: 10;
+  overflow: hidden;
+  list-style: none;
+
+  margin: 0;
+  padding: 2px;
+
+  -webkit-box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+  -moz-box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+  box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+  border-radius: 3px;
+  border: 1px solid silver;
+
+  background: white;
+  font-size: 90%;
+  font-family: monospace;
+
+  max-height: 20em;
+  overflow-y: auto;
+}
+
+.CodeMirror-hint {
+  margin: 0;
+  padding: 0 4px;
+  border-radius: 2px;
+  max-width: 19em;
+  overflow: hidden;
+  white-space: pre;
+  color: black;
+  cursor: pointer;
+}
+
+li.CodeMirror-hint-active {
+  background: #08f;
+  color: white;
+}
 </style>
 
 <script data-legit="teapo">(function(){(function(p){var s=this||(0,eval)("this"),v=s.document,L=s.navigator,w=s.jQuery,D=s.JSON;(function(p){"function"===typeof require&&"object"===typeof exports&&"object"===typeof module?p(module.exports||exports,require):"function"===typeof define&&define.amd?define(["exports","require"],p):p(s.ko={})})(function(M,N){function H(a,d){return null===a||typeof a in R?a===d:!1}function S(a,d){var c;return function(){c||(c=setTimeout(function(){c=p;a()},d))}}function T(a,d){var c;return function(){clearTimeout(c);c=setTimeout(a,d)}}function I(b,d,c,e){a.d[b]={init:function(b,h,k,f,m){var l,q;a.s(function(){var f=a.a.c(h()),k=!c!==!f,z=!q;if(z||d||k!==l)z&&a.Y.la()&&(q=a.a.ia(a.f.childNodes(b),!0)),k?(z||a.f.T(b,a.a.ia(q)),a.Ca(e?e(m,f):m,b)):a.f.ja(b),l=k},null,{o:b});return{controlsDescendantBindings:!0}}};a.h.ha[b]=!1;a.f.Q[b]=!0}var a="undefined"!==typeof M?M:{};a.b=function(b,d){for(var c=b.split("."),e=a,g=0;g<c.length-1;g++)e=e[c[g]];e[c[c.length-1]]=d};a.A=function(a,d,c){a[d]=c};a.version="3.2.0";a.b("version",a.version);a.a=function(){function b(a,b){for(var c in a)a.hasOwnProperty(c)&&b(c,a[c])}function d(a,b){if(b)for(var c in b)b.hasOwnProperty(c)&&(a[c]=b[c]);return a}function c(a,b){a.__proto__=b;return a}var e={__proto__:[]}instanceof Array,g={},h={};g[L&&/Firefox\/2/i.test(L.userAgent)?"KeyboardEvent":"UIEvents"]=["keyup","keydown","keypress"];g.MouseEvents="click dblclick mousedown mouseup mousemove mouseover mouseout mouseenter mouseleave".split(" ");b(g,function(a,b){if(b.length)for(var c=0,d=b.length;c<d;c++)h[b[c]]=a});var k={propertychange:!0},f=v&&function(){for(var a=3,b=v.createElement("div"),c=b.getElementsByTagName("i");b.innerHTML="\x3c!--[if gt IE "+ ++a+"]><i></i><![endif]--\x3e",c[0];);return 4<a?a:p}();return{vb:["authenticity_token",/^__RequestVerificationToken(_.*)?$/],u:function(a,b){for(var c=0,d=a.length;c<d;c++)b(a[c],c)},m:function(a,b){if("function"==typeof Array.prototype.indexOf)return Array.prototype.indexOf.call(a,b);for(var c=0,d=a.length;c<d;c++)if(a[c]===b)return c;return-1},qb:function(a,b,c){for(var d=0,f=a.length;d<f;d++)if(b.call(c,a[d],d))return a[d];return null},ua:function(m,b){var c=a.a.m(m,b);0<c?m.splice(c,1):0===c&&m.shift()},rb:function(m){m=m||[];for(var b=[],c=0,d=m.length;c<d;c++)0>a.a.m(b,m[c])&&b.push(m[c]);return b},Da:function(a,b){a=a||[];for(var c=[],d=0,f=a.length;d<f;d++)c.push(b(a[d],d));return c},ta:function(a,b){a=a||[];for(var c=[],d=0,f=a.length;d<f;d++)b(a[d],d)&&c.push(a[d]);return c},ga:function(a,b){if(b instanceof
@@ -17984,7 +18498,7 @@ window.onerror = function(errObj, file, line, ch, err) {
 <div class="teapo-flyout-scroller" data-bind="load: flyoutScroller = $element">
   <div class="teapo-flyout-scroller-bg">
 
-    <div class="teapo-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default "><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 84px; left: 214.609375px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-hscrollbar" style="left: 29px; min-height: 18px;"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-vscrollbar" style="min-width: 18px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-scrollbar-filler"></div><div class="CodeMirror-gutter-filler"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; min-width: 188.609375px; min-height: 152px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>1</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 185.609375px; top: 80px; height: 16px;">&nbsp;</div></div><div class="CodeMirror-code "><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">html</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">head</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-tag cm-bracket">&lt;/</span><span class="cm-tag">head</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">4</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">body</span> <span class="cm-attribute">bgcolor</span>=<span class="cm-string">"red"</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">5</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">script</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">6</div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">var</span> <span class="cm-variable">s</span> <span class="cm-operator">=</span> <span class="cm-keyword">function</span>() { };</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">7</div></div><pre><span style="padding-right: 0.1px;">    <span class="cm-tag cm-bracket">&lt;/</span><span class="cm-tag">script</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">8</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-tag cm-bracket">&lt;/</span><span class="cm-tag">body</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">9</div></div><pre><span style="padding-right: 0.1px;"><span class="cm-tag cm-bracket">&lt;/</span><span class="cm-tag">html</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div></div></div></div></div></div><div style="position: absolute; height: 30px; width: 1px; top: 152px;"></div><div class="CodeMirror-gutters" style="height: 731px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div>
+    <div class="teapo-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default "><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 20px; left: 187.390625px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-hscrollbar" style="left: 29px; min-height: 18px;"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-vscrollbar" style="min-width: 18px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-scrollbar-filler"></div><div class="CodeMirror-gutter-filler"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; min-width: 161.390625px; min-height: 56px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><pre>x</pre></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors" style="visibility: hidden;"><div class="CodeMirror-cursor" style="left: 158.390625px; top: 16px; height: 16px;">&nbsp;</div></div><div class="CodeMirror-code "><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-tag">html</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-property">background</span>: <span class="cm-keyword">black</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre><span style="padding-right: 0.1px;">}</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 30px; width: 1px; top: 56px;"></div><div class="CodeMirror-gutters" style="height: 731px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div>
 
     <div class="teapo-flyout">
 
@@ -17994,43 +18508,25 @@ window.onerror = function(errObj, file, line, ch, err) {
           <div class="teapo-thick-bar" data-bind="event: { mousedown: thickbarMouseDown }, loadRaw: docHostRegions.scroller = $element">
             &nbsp;
           <div style="width: 100%; height: 100%;"><div style="float: left; width: 0px; height: 100%; padding-bottom: 1em;">
-  <div style="position: relative; z-index: 400; border: 1px solid red; width: 2.1em; margin: -0.05px; top: 0%; height: 2%;" data-bind="style: { top: viewportFrom, height: viewportHeight }, click: function() { alert(viewportFrom()+' '+viewportHeight()) }">
+  <div style="position: relative; z-index: 400; border: 1px solid red; width: 2.1em; margin: -0.05px; top: 0%; height: 1%;" data-bind="style: { top: viewportFrom, height: viewportHeight }, click: function() { alert(viewportFrom()+' '+viewportHeight()) }">
   </div>
 </div>
 
 <!-- ko foreach: lines -->
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 20%; height: 0.333333333333333%;"></div>
-
-
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 27%; height: 0.333333333333333%;"></div>
-
-
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 31%; height: 0.333333333333333%;"></div>
-
-
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 75%; height: 0.333333333333333%;"></div>
-
-
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 41%; height: 0.333333333333333%;"></div>
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 30%; height: 0.333333333333333%;"></div>
 
 
 <div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 100%; height: 0.333333333333333%;"></div>
 
 
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 44%; height: 0.333333333333333%;"></div>
-
-
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 31%; height: 0.333333333333333%;"></div>
-
-
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 24%; height: 0.333333333333333%;"></div>
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 5%; height: 0.333333333333333%;"></div>
 
 <!-- /ko --></div></div>
         </div>
       </div>
 
 
-      <div class="teapo-file-tree" data-bind="loadRaw: fileTreeHost = $element" timestamp="1415144944254">
+      <div class="teapo-file-tree" data-bind="loadRaw: fileTreeHost = $element" timestamp="1415217690881">
 
         <ul>
           <li>
@@ -18074,15 +18570,9 @@ window.onerror = function(errObj, file, line, ch, err) {
           </li>
 
           
-        <li class=" teapo-file-selected"><div class="teapo-file-name">some.html</div><pre class="teapo-file-content">&lt;html&gt;
-  &lt;head&gt;
-  &lt;/head&gt;
-  &lt;body bgcolor="red"&gt;
-    &lt;script&gt;
-      var s = function() { };
-    &lt;/script&gt;
-  &lt;/body&gt;
-&lt;/html&gt;</pre></li></ul>
+        <li class=" teapo-file-selected"><div class="teapo-file-name">some.css</div><pre class="teapo-file-content">html {
+  background: black;
+}</pre></li></ul>
       </div>
       
       <div class="teapo-extra-content">
@@ -18131,7 +18621,7 @@ window.onerror = function(errObj, file, line, ch, err) {
 </div>
 
 <div class="teapo-status-bar" data-bind="loadRaw: docHostRegions.status = $element">
-<div style="width: 100%; height: 100%;">/some.html</div></div>
+<div style="width: 100%; height: 100%;">/some.css</div></div>
      
 
 <script data-legit="teapo">try { teapo.app.start(); } catch (err) { alert(err+' '+err.stack); }</script>
