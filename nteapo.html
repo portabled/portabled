@@ -746,6 +746,7 @@ var teapo;
                             cm_viewportChange: function (cm, from, to) { return _this._viewportChange(from, to); }
                         };
                         this._saveTimer = new teapo.Timer();
+                        this._appliedKeyMap = null;
                         this._scrollerModel = null;
                         this._saveTimer.ontick = function () { return _this._save(); };
                     }
@@ -758,6 +759,10 @@ var teapo;
                         }
                         else {
                             this.textDoc.editor = (this.moduleObj && this.moduleObj.createCodeMirrorEditor) ? this.moduleObj.createCodeMirrorEditor(regions.content) : text.createCodeMirrorEditor(regions.content);
+                            this._appliedKeyMap = this.textDoc.keyMap;
+                            if (this._appliedKeyMap) {
+                                this.textDoc.editor.addKeyMap(this._appliedKeyMap);
+                            }
                         }
                         if (!this.textDoc.doc) {
                             this.textDoc.doc = (this.moduleObj && this.moduleObj.createCodeMirrorDoc) ? this.moduleObj.createCodeMirrorDoc(this.storage.read()) : text.createCodeMirrorDoc(this.storage.read());
@@ -797,6 +802,10 @@ var teapo;
                         this.textDoc.editor.off('changes', this._closures.cm_changes);
                         this.textDoc.editor.off('cursorActivity', this._closures.cm_cursorActivity);
                         this.textDoc.editor.off('viewportChange', this._closures.cm_viewportChange);
+                        if (this._appliedKeyMap) {
+                            this.textDoc.editor.removeKeyMap(this._appliedKeyMap);
+                            this._appliedKeyMap = null;
+                        }
                         if (this.textDoc.close)
                             this.textDoc.close();
                         var editor = this.textDoc.editor;
@@ -810,33 +819,12 @@ var teapo;
                         this.textDoc.doc = null;
                     };
                     CodeMirrorDocHandler.prototype._docChanges = function (docChanges) {
-                        var _this = this;
                         if (this.textDoc.onChanges)
                             this.textDoc.onChanges(docChanges);
                         if (this._scrollerModel)
                             this._scrollerModel.docChanges(docChanges);
                         this._saveTimer.interval = (this.moduleObj && this.moduleObj.saveDelay) || text.saveDelay;
                         this._saveTimer.reset();
-                        if (docChanges.length) {
-                            var latestChange = docChanges[docChanges.length - 1];
-                            if (latestChange.text && latestChange.text.length) {
-                                var latestChangeText = latestChange.text[latestChange.text.length - 1];
-                                var triggers = this.moduleObj && this.moduleObj.completionTriggers ? this.moduleObj.completionTriggers : text.completionTriggers;
-                                if (ko.utils.arrayIndexOf(triggers, latestChangeText.charAt(latestChangeText.length - 1)) >= 0) {
-                                    if (this.textDoc.onCompletion) {
-                                        var asyncContinueCompletion = function (callback) { return _this._continueCompletion(callback); };
-                                        asyncContinueCompletion.async = true;
-                                        CodeMirror.showHint({
-                                            hint: asyncContinueCompletion,
-                                            completeSingle: false
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                    };
-                    CodeMirrorDocHandler.prototype._continueCompletion = function (callback) {
-                        this.textDoc.onCompletion(callback);
                     };
                     CodeMirrorDocHandler.prototype._cursorActivity = function () {
                         if (this.textDoc.onCursorMoved) {
@@ -904,8 +892,6 @@ var teapo;
                     return new CodeMirror.Doc(text || '');
                 }
                 _text.createCodeMirrorDoc = createCodeMirrorDoc;
-                _text.completionTriggers = ['.', '='];
-                _text.completionCompleters = ['.'];
             })(text = types.text || (types.text = {}));
         })(types = docs.types || (docs.types = {}));
     })(docs = teapo.docs || (teapo.docs = {}));
@@ -928,6 +914,14 @@ var teapo;
                     css.loadText = loadText;
                     var CssDocHandler = (function () {
                         function CssDocHandler() {
+                            var _this = this;
+                            this.keyMap = {
+                                "Ctrl-Enter": function () { return _this._triggerCompletion(true); },
+                                "Alt-Enter": function () { return _this._triggerCompletion(true); },
+                                "Ctrl-J": function () { return _this._triggerCompletion(true); },
+                                "Alt-J": function () { return _this._triggerCompletion(true); }
+                            };
+                            this._isCompleting = false;
                         }
                         CssDocHandler.prototype.open = function () {
                         };
@@ -942,8 +936,26 @@ var teapo;
                         CssDocHandler.prototype.onViewportMoved = function (from, to) {
                         };
                         CssDocHandler.prototype.onChanges = function (docChanges) {
+                            if (!this._isCompleting) {
+                                var cur = this.doc.getCursor();
+                                var line = this.doc.getLine(cur.line);
+                                var latestChangeText = line.slice(0, cur.ch);
+                                if (latestChangeText.slice(latestChangeText.length - 2) === ': ') {
+                                    this._triggerCompletion(true);
+                                }
+                            }
                         };
                         CssDocHandler.prototype.onSave = function () {
+                        };
+                        CssDocHandler.prototype._triggerCompletion = function (implicitly) {
+                            var _this = this;
+                            this._isCompleting = true;
+                            var hintData = {
+                                hint: function () { return CodeMirror.hint.css(_this.editor); },
+                                completeSingle: implicitly ? false : true
+                            };
+                            CodeMirror.on(hintData, 'close', function () { return _this._isCompleting = false; });
+                            this.editor.showHint(hintData);
                         };
                         CssDocHandler.prototype.onCompletion = function (callback) {
                             var completions = CodeMirror.hint.css(this.editor);
@@ -18498,7 +18510,7 @@ window.onerror = function(errObj, file, line, ch, err) {
 <div class="teapo-flyout-scroller" data-bind="load: flyoutScroller = $element">
   <div class="teapo-flyout-scroller-bg">
 
-    <div class="teapo-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default "><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 20px; left: 187.390625px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-hscrollbar" style="left: 29px; min-height: 18px;"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-vscrollbar" style="min-width: 18px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-scrollbar-filler"></div><div class="CodeMirror-gutter-filler"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; min-width: 161.390625px; min-height: 56px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><pre>x</pre></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors" style="visibility: hidden;"><div class="CodeMirror-cursor" style="left: 158.390625px; top: 16px; height: 16px;">&nbsp;</div></div><div class="CodeMirror-code "><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-tag">html</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-property">background</span>: <span class="cm-keyword">black</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre><span style="padding-right: 0.1px;">}</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 30px; width: 1px; top: 56px;"></div><div class="CodeMirror-gutters" style="height: 731px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div>
+    <div class="teapo-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default "><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 20px; left: 171.765625px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-hscrollbar" style="left: 29px; min-height: 18px;"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-vscrollbar" style="min-width: 18px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-scrollbar-filler"></div><div class="CodeMirror-gutter-filler"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; min-width: 145.765625px; min-height: 56px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>1</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 142.765625px; top: 16px; height: 16px;">&nbsp;</div></div><div class="CodeMirror-code "><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-qualifier">.teapo-bg</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-property">background</span>: <span class="cm-variable">tom</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre><span style="padding-right: 0.1px;">}</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 30px; width: 1px; top: 56px;"></div><div class="CodeMirror-gutters" style="height: 731px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div>
 
     <div class="teapo-flyout">
 
@@ -18513,7 +18525,7 @@ window.onerror = function(errObj, file, line, ch, err) {
 </div>
 
 <!-- ko foreach: lines -->
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 30%; height: 0.333333333333333%;"></div>
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 64%; height: 0.333333333333333%;"></div>
 
 
 <div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 100%; height: 0.333333333333333%;"></div>
@@ -18526,7 +18538,7 @@ window.onerror = function(errObj, file, line, ch, err) {
       </div>
 
 
-      <div class="teapo-file-tree" data-bind="loadRaw: fileTreeHost = $element" timestamp="1415217690881">
+      <div class="teapo-file-tree" data-bind="loadRaw: fileTreeHost = $element" timestamp="1415263780644">
 
         <ul>
           <li>
@@ -18570,8 +18582,8 @@ window.onerror = function(errObj, file, line, ch, err) {
           </li>
 
           
-        <li class=" teapo-file-selected"><div class="teapo-file-name">some.css</div><pre class="teapo-file-content">html {
-  background: black;
+        <li class=" teapo-file-selected"><div class="teapo-file-name">some.css</div><pre class="teapo-file-content">.teapo-bg {
+  background: tom
 }</pre></li></ul>
       </div>
       
@@ -18638,4 +18650,4 @@ window.onerror = function(errObj, file, line, ch, err) {
 
 
 
-</body></html>
+<ul class="CodeMirror-hints" style="left: 142px; top: 36px;"><li class="CodeMirror-hint CodeMirror-hint-active">tomato</li></ul></body></html>
