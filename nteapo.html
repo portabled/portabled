@@ -869,8 +869,7 @@ var teapo;
                         open: null,
                         edit: null,
                         close: null,
-                        remove: null,
-                        onCompletion: null
+                        remove: null
                     };
                 }
                 _text.loadText = loadText;
@@ -903,17 +902,11 @@ var teapo;
         var types;
         (function (types) {
             var text;
-            (function (_text) {
-                var css;
-                (function (css) {
-                    css.expectsFile = /.*\.css/g;
-                    css.acceptsFile = /.*\.css/g;
-                    function loadText(path, storage) {
-                        return new CssDocHandler();
-                    }
-                    css.loadText = loadText;
-                    var CssDocHandler = (function () {
-                        function CssDocHandler() {
+            (function (text) {
+                var base;
+                (function (base) {
+                    var SimpleCodeMirrorDocHandler = (function () {
+                        function SimpleCodeMirrorDocHandler() {
                             var _this = this;
                             this.keyMap = {
                                 "Ctrl-Enter": function () { return _this._triggerCompletion(true); },
@@ -923,46 +916,126 @@ var teapo;
                             };
                             this._isCompleting = false;
                         }
-                        CssDocHandler.prototype.open = function () {
+                        SimpleCodeMirrorDocHandler.prototype.open = function () {
                         };
-                        CssDocHandler.prototype.edit = function (change) {
+                        SimpleCodeMirrorDocHandler.prototype.edit = function (change) {
                         };
-                        CssDocHandler.prototype.close = function () {
+                        SimpleCodeMirrorDocHandler.prototype.close = function () {
                         };
-                        CssDocHandler.prototype.remove = function () {
+                        SimpleCodeMirrorDocHandler.prototype.remove = function () {
                         };
-                        CssDocHandler.prototype.onCursorMoved = function (cursorPos) {
+                        SimpleCodeMirrorDocHandler.prototype.onCursorMoved = function (cursorPos) {
                         };
-                        CssDocHandler.prototype.onViewportMoved = function (from, to) {
+                        SimpleCodeMirrorDocHandler.prototype.onViewportMoved = function (from, to) {
                         };
-                        CssDocHandler.prototype.onChanges = function (docChanges) {
-                            if (!this._isCompleting) {
-                                var cur = this.doc.getCursor();
-                                var line = this.doc.getLine(cur.line);
-                                var latestChangeText = line.slice(0, cur.ch);
-                                if (latestChangeText.slice(latestChangeText.length - 2) === ': ') {
-                                    this._triggerCompletion(true);
+                        SimpleCodeMirrorDocHandler.prototype.shouldTriggerCompletion = function (textBeforeCursor) {
+                            return false;
+                        };
+                        SimpleCodeMirrorDocHandler.prototype.getCompletions = function () {
+                            return null;
+                        };
+                        SimpleCodeMirrorDocHandler.prototype.onChanges = function (docChanges) {
+                            if (this.getCompletions) {
+                                if (!this._isCompleting) {
+                                    var cur = this.doc.getCursor();
+                                    var line = this.doc.getLine(cur.line);
+                                    var latestChangeText = line.slice(0, cur.ch);
+                                    if (!this.shouldTriggerCompletion || this.shouldTriggerCompletion(latestChangeText)) {
+                                        this._triggerCompletion(true);
+                                    }
                                 }
                             }
                         };
-                        CssDocHandler.prototype.onSave = function () {
+                        SimpleCodeMirrorDocHandler.prototype.onSave = function () {
                         };
-                        CssDocHandler.prototype._triggerCompletion = function (implicitly) {
+                        SimpleCodeMirrorDocHandler.prototype._triggerCompletion = function (implicitly) {
                             var _this = this;
-                            this._isCompleting = true;
+                            var lastResult;
+                            var close = function () {
+                                CodeMirror.off(lastResult, 'close', close);
+                                _this._isCompleting = false;
+                            };
                             var hintData = {
-                                hint: function () { return CodeMirror.hint.css(_this.editor); },
+                                hint: function () {
+                                    var result = _this.getCompletions();
+                                    if (result && result.list && implicitly) {
+                                        var chunk = _this.doc.getRange(result.from, result.to);
+                                        for (var i = 0; i < result.list.length; i++) {
+                                            if (result.list[i] == chunk) {
+                                                result = null;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (result) {
+                                        _this._isCompleting = true;
+                                        lastResult = result;
+                                        CodeMirror.on(lastResult, 'close', close);
+                                    }
+                                    else {
+                                        _this._isCompleting = false;
+                                        if (lastResult)
+                                            CodeMirror.off(lastResult, 'close', close);
+                                    }
+                                    return result;
+                                },
                                 completeSingle: implicitly ? false : true
                             };
-                            CodeMirror.on(hintData, 'close', function () { return _this._isCompleting = false; });
                             this.editor.showHint(hintData);
                         };
-                        CssDocHandler.prototype.onCompletion = function (callback) {
+                        SimpleCodeMirrorDocHandler.prototype.onCompletion = function (callback) {
                             var completions = CodeMirror.hint.css(this.editor);
                             callback(completions);
                         };
-                        return CssDocHandler;
+                        return SimpleCodeMirrorDocHandler;
                     })();
+                    base.SimpleCodeMirrorDocHandler = SimpleCodeMirrorDocHandler;
+                })(base = text.base || (text.base = {}));
+            })(text = types.text || (types.text = {}));
+        })(types = docs.types || (docs.types = {}));
+    })(docs = teapo.docs || (teapo.docs = {}));
+})(teapo || (teapo = {}));
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
+var teapo;
+(function (teapo) {
+    var docs;
+    (function (docs) {
+        var types;
+        (function (types) {
+            var text;
+            (function (_text) {
+                var css;
+                (function (css) {
+                    css.expectsFile = /.*\.css/g;
+                    css.acceptsFile = /.*\.css/g;
+                    function loadText(path, storage) {
+                        return new CssDocHandler();
+                    }
+                    css.loadText = loadText;
+                    var CssDocHandler = (function (_super) {
+                        __extends(CssDocHandler, _super);
+                        function CssDocHandler() {
+                            _super.call(this);
+                        }
+                        CssDocHandler.prototype.shouldTriggerCompletion = function (textBeforeCursor) {
+                            if (textBeforeCursor.slice(textBeforeCursor.length - 2) === ': ')
+                                return true;
+                            if (textBeforeCursor.charAt(textBeforeCursor.length - 1) === '-')
+                                return true;
+                            var lastChar = textBeforeCursor.charAt(textBeforeCursor.length - 1);
+                            if (lastChar.toLowerCase() !== lastChar.toUpperCase())
+                                return true;
+                        };
+                        CssDocHandler.prototype.getCompletions = function () {
+                            return CodeMirror.hint.css(this.editor);
+                        };
+                        return CssDocHandler;
+                    })(_text.base.SimpleCodeMirrorDocHandler);
                     css.CssDocHandler = CssDocHandler;
                     function createCodeMirrorDoc(text) {
                         return new CodeMirror.Doc(text || '', 'css');
@@ -18510,7 +18583,7 @@ window.onerror = function(errObj, file, line, ch, err) {
 <div class="teapo-flyout-scroller" data-bind="load: flyoutScroller = $element">
   <div class="teapo-flyout-scroller-bg">
 
-    <div class="teapo-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default "><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 20px; left: 171.765625px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-hscrollbar" style="left: 29px; min-height: 18px;"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-vscrollbar" style="min-width: 18px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-scrollbar-filler"></div><div class="CodeMirror-gutter-filler"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; min-width: 145.765625px; min-height: 56px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>1</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 142.765625px; top: 16px; height: 16px;">&nbsp;</div></div><div class="CodeMirror-code "><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-qualifier">.teapo-bg</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-property">background</span>: <span class="cm-variable">tom</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre><span style="padding-right: 0.1px;">}</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 30px; width: 1px; top: 56px;"></div><div class="CodeMirror-gutters" style="height: 731px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div>
+    <div class="teapo-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default "><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 36px; left: 39.8515625px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-hscrollbar" style="left: 29px; min-height: 18px;"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-vscrollbar" style="min-width: 18px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-scrollbar-filler"></div><div class="CodeMirror-gutter-filler"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; min-width: 154.9140625px; min-height: 56px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>1</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 10.8515625px; top: 32px; height: 16px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-tag">html</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-property">position</span>: <span class="cm-atom">absolute</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="position: absolute; left: -29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre><span style="padding-right: 0.1px;">}</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 30px; width: 1px; top: 56px;"></div><div class="CodeMirror-gutters" style="height: 731px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div>
 
     <div class="teapo-flyout">
 
@@ -18525,20 +18598,20 @@ window.onerror = function(errObj, file, line, ch, err) {
 </div>
 
 <!-- ko foreach: lines -->
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 64%; height: 0.333333333333333%;"></div>
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 28%; height: 0.333333333333333%;"></div>
 
 
 <div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 100%; height: 0.333333333333333%;"></div>
 
 
-<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 5%; height: 0.333333333333333%;"></div>
+<div class="teapo-scroller-line" data-bind="style: { width: lineWidth, height: $parent.lineHeight }" style="width: 4%; height: 0.333333333333333%;"></div>
 
 <!-- /ko --></div></div>
         </div>
       </div>
 
 
-      <div class="teapo-file-tree" data-bind="loadRaw: fileTreeHost = $element" timestamp="1415263780644">
+      <div class="teapo-file-tree" data-bind="loadRaw: fileTreeHost = $element" timestamp="1415301885586">
 
         <ul>
           <li>
@@ -18582,8 +18655,8 @@ window.onerror = function(errObj, file, line, ch, err) {
           </li>
 
           
-        <li class=" teapo-file-selected"><div class="teapo-file-name">some.css</div><pre class="teapo-file-content">.teapo-bg {
-  background: tom
+        <li class=" teapo-file-selected"><div class="teapo-file-name">some.css</div><pre class="teapo-file-content">html {
+  position: absolute;
 }</pre></li></ul>
       </div>
       
@@ -18650,4 +18723,4 @@ window.onerror = function(errObj, file, line, ch, err) {
 
 
 
-<ul class="CodeMirror-hints" style="left: 142px; top: 36px;"><li class="CodeMirror-hint CodeMirror-hint-active">tomato</li></ul></body></html>
+</body></html>
