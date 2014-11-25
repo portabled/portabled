@@ -1,0 +1,50 @@
+.teapo-completion-icon {
+  border: solid 1px black;
+  font-size: 0.8;
+  display: inline-block;
+  width: 1.5em;
+  margin: 2px;
+  margin-right: 0.3em;
+  text-align: center;
+  border-radius: 3px;
+}
+
+.teapo-completion-icon-local {
+  border-color: fuchsia;
+  color: fuchsia;
+  background: lavenderblush;
+}
+
+.teapo-completion-icon-function {
+  border-color: green;
+  color: green;
+  background: honeydew;
+}
+
+.teapo-completion-syntax-moduleName {
+  opacity: 0.3;
+}
+
+.teapo-completion-syntax-className {
+  opacity: 0.5;
+}
+
+.teapo-completion-syntax-propertyName {
+  font-weight: bold;
+}
+
+.teapo-completion-syntax-methodName {
+  font-weight: bold;
+}
+
+.teapo-completion-syntax-keyword {
+  opacity: 0.7;
+}
+
+.teapo-diag-syntactic {
+  background: coral;
+}
+
+.teapo-diag-semantic {
+  background: gold;
+}

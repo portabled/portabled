@@ -1,0 +1,16 @@
+<div class=teapo-more-dialog-background
+   data-bind="click: dismiss, event: { keydown: keydown }">
+  
+  <div class=teapo-more-dialog
+     data-bind="click: function() { }, clickBubble: false">
+    
+    <input data-bind="hasFocus: true, textInput: text, load: textInput=$element">
+    <div class=teapo-more-dialog-list data-bind="foreach: matchItems">
+      <div class=teapo-more-dialog-item
+         data-bind="text: display, css: { selected: selected }, click: clickSelect "></div>
+      </div>
+    </div>
+    
+  </div>
+  
+</div>

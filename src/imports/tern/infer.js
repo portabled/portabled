@@ -1,6 +1,6 @@
 // Main type inference engine
 
-// Walks an AST, building up a graph of abstract values and contraints
+// Walks an AST, building up a graph of abstract values and constraints
 // that cause types to flow from one node to another. Also defines a
 // number of utilities for accessing ASTs and scopes.
 
@@ -12,14 +12,14 @@
 // thus be used in place abstract values that only ever contain a
 // single type.
 
-(function(mod) {
+(function(root, mod) {
   if (typeof exports == "object" && typeof module == "object") // CommonJS
     return mod(exports, require("acorn/acorn"), require("acorn/acorn_loose"), require("acorn/util/walk"),
                require("./def"), require("./signal"));
   if (typeof define == "function" && define.amd) // AMD
     return define(["exports", "acorn/acorn", "acorn/acorn_loose", "acorn/util/walk", "./def", "./signal"], mod);
-  mod(self.tern || (self.tern = {}), acorn, acorn, acorn.walk, tern.def, tern.signal); // Plain browser env
-})(function(exports, acorn, acorn_loose, walk, def, signal) {
+  mod(root.tern || (root.tern = {}), acorn, acorn, acorn.walk, tern.def, tern.signal); // Plain browser env
+})(this, function(exports, acorn, acorn_loose, walk, def, signal) {
   "use strict";
 
   var toString = exports.toString = function(type, maxDepth, parent) {
@@ -91,7 +91,7 @@
     },
 
     getProp: function(prop) {
-      if (prop == "__proto__" || prop == String.fromCharCode(0x2716)) return ANull;
+      if (prop == "__proto__" || prop == "✖") return ANull;
       var found = (this.props || (this.props = Object.create(null)))[prop];
       if (!found) {
         found = this.props[prop] = new AVal;
@@ -107,19 +107,29 @@
     hasType: function(type) {
       return this.types.indexOf(type) > -1;
     },
-    isEmpty: function() { return this.types.length == 0; },
+    isEmpty: function() { return this.types.length === 0; },
     getFunctionType: function() {
       for (var i = this.types.length - 1; i >= 0; --i)
         if (this.types[i] instanceof Fn) return this.types[i];
     },
 
     getType: function(guess) {
-      if (this.types.length == 0 && guess !== false) return this.makeupType();
-      if (this.types.length == 1) return this.types[0];
+      if (this.types.length === 0 && guess !== false) return this.makeupType();
+      if (this.types.length === 1) return this.types[0];
       return canonicalType(this.types);
     },
 
+    computedPropType: function() {
+      if (!this.propertyOf || !this.propertyOf.hasProp("<i>")) return null;
+      var computedProp = this.propertyOf.getProp("<i>");
+      if (computedProp == this) return null;
+      return computedProp.getType();
+    },
+
     makeupType: function() {
+      var computed = this.computedPropType();
+      if (computed) return computed;
+
       if (!this.forward) return null;
       for (var i = this.forward.length - 1; i >= 0; --i) {
         var hint = this.forward[i].typeHint();
@@ -129,7 +139,7 @@
       var props = Object.create(null), foundProp = null;
       for (var i = 0; i < this.forward.length; ++i) {
         var prop = this.forward[i].propHint();
-        if (prop && prop != "length" && prop != "<i>" && prop != String.fromCharCode(0x2716)) {
+        if (prop && prop != "length" && prop != "<i>" && prop != "✖" && prop != cx.completingProperty) {
           props[prop] = true;
           foundProp = prop;
         }
@@ -163,6 +173,8 @@
         var prop = this.forward[i].propHint();
         if (prop) f(prop, null, 0);
       }
+      var guessed = this.makeupType();
+      if (guessed) guessed.gatherProperties(f);
     }
   });
 
@@ -193,8 +205,6 @@
         if (!tp.retval.isEmpty()) ++score;
       } else if (objs) {
         score = tp.name ? 100 : 2;
-      } else if (prims) {
-        score = 1;
       }
       if (score >= maxScore) { maxScore = score; maxTp = tp; }
     }
@@ -226,7 +236,8 @@
     },
     propHint: function() { return this.prop; },
     propagatesTo: function() {
-      return {target: this.target, pathExt: "." + this.prop};
+      if (this.prop == "<i>" || !/[^\w_]/.test(this.prop))
+        return {target: this.target, pathExt: "." + this.prop};
     }
   });
 
@@ -257,7 +268,7 @@
   }
   var IsCallee = exports.IsCallee = constraint("self, args, argNodes, retval", {
     init: function() {
-      Constraint.prototype.init();
+      Constraint.prototype.init.call(this);
       this.disabled = cx.disabledComputing;
     },
     addType: function(fn, weight) {
@@ -287,7 +298,7 @@
 
   var HasMethodCall = constraint("propName, args, argNodes, retval", {
     init: function() {
-      Constraint.prototype.init();
+      Constraint.prototype.init.call(this);
       this.disabled = cx.disabledComputing;
     },
     addType: function(obj, weight) {
@@ -301,6 +312,7 @@
   var IsCtor = exports.IsCtor = constraint("target, noReuse", {
     addType: function(f, weight) {
       if (!(f instanceof Fn)) return;
+      if (cx.parent && !cx.parent.options.reuseInstances) this.noReuse = true;
       f.getProp("prototype").propagate(new IsProto(this.noReuse ? false : f, this.target), weight);
     }
   });
@@ -354,7 +366,7 @@
     typeHint: function() { return this.other; }
   });
 
-  var IfObj = constraint("target", {
+  var IfObj = exports.IfObj = constraint("target", {
     addType: function(t, weight) {
       if (t instanceof Obj) this.target.addType(t, weight);
     },
@@ -381,6 +393,7 @@
 
   var Type = exports.Type = function() {};
   Type.prototype = extend(ANull, {
+    constructor: Type,
     propagate: function(c, w) { c.addType(this, w); },
     hasType: function(other) { return other == this; },
     isEmpty: function() { return false; },
@@ -390,6 +403,7 @@
 
   var Prim = exports.Prim = function(proto, name) { this.name = name; this.proto = proto; };
   Prim.prototype = extend(Type.prototype, {
+    constructor: Prim,
     toString: function() { return this.name; },
     getProp: function(prop) {return this.proto.hasProp(prop) || ANull;},
     gatherProperties: function(f, depth) {
@@ -409,6 +423,7 @@
     this.origin = cx.curOrigin;
   };
   Obj.prototype = extend(Type.prototype, {
+    constructor: Obj,
     toString: function(maxDepth) {
       if (!maxDepth && this.name) return this.name;
       var props = [], etc = false;
@@ -435,7 +450,7 @@
         if (originNode && !found.originNode) found.originNode = originNode;
         return found;
       }
-      if (prop == "__proto__" || prop == String.fromCharCode(0x2716)) return ANull;
+      if (prop == "__proto__" || prop == "✖") return ANull;
 
       var av = this.maybeProps && this.maybeProps[prop];
       if (av) {
@@ -443,6 +458,7 @@
         this.maybeUnregProtoPropHandler();
       } else {
         av = new AVal;
+        av.propertyOf = this;
       }
 
       this.props[prop] = av;
@@ -454,8 +470,10 @@
     getProp: function(prop) {
       var found = this.hasProp(prop, true) || (this.maybeProps && this.maybeProps[prop]);
       if (found) return found;
-      if (prop == "__proto__" || prop == String.fromCharCode(0x2716)) return ANull;
-      return this.ensureMaybeProps()[prop] = new AVal;
+      if (prop == "__proto__" || prop == "✖") return ANull;
+      var av = this.ensureMaybeProps()[prop] = new AVal;
+      av.propertyOf = this;
+      return av;
     },
     broadcastProp: function(prop, val, local) {
       if (local) {
@@ -489,6 +507,7 @@
       var av = this.props[prop];
       delete this.props[prop];
       this.ensureMaybeProps()[prop] = av;
+      av.types.length = 0;
     },
     forAllProps: function(c) {
       if (!this.onNewProp) {
@@ -531,6 +550,7 @@
     this.retval = retval;
   };
   Fn.prototype = extend(Obj.prototype, {
+    constructor: Fn,
     toString: function(maxDepth) {
       if (maxDepth) maxDepth--;
       var str = "fn(";
@@ -578,6 +598,7 @@
     if (contentType) contentType.propagate(content);
   };
   Arr.prototype = extend(Obj.prototype, {
+    constructor: Arr,
     toString: function(maxDepth) {
       return "[" + toString(this.getProp("<i>").getType(), maxDepth, this) + "]";
     }
@@ -600,7 +621,6 @@
     this.parent = parent;
     this.props = Object.create(null);
     this.protos = Object.create(null);
-    this.prim = Object.create(null);
     this.origins = [];
     this.curOrigin = "ecma5";
     this.paths = Object.create(null);
@@ -624,12 +644,8 @@
       cx.num = new Prim(cx.protos.Number, "number");
       cx.curOrigin = null;
 
-      var passes = parent && parent.passes;
-      if (defs) for (var i = 0; i < defs.length; ++i) {
-        runPasses(passes, "preLoadDef", defs[i]);
+      if (defs) for (var i = 0; i < defs.length; ++i)
         def.load(defs[i]);
-        runPasses(passes, "postLoadDef", defs[i]);
-      }
     });
   };
 
@@ -643,11 +659,28 @@
     finally { cx = old; }
   };
 
+  exports.TimedOut = function() {
+    this.message = "Timed out";
+    this.stack = (new Error()).stack;
+  };
+  exports.TimedOut.prototype = Object.create(Error.prototype);
+  exports.TimedOut.prototype.name = "infer.TimedOut";
+
+  var timeout;
+  exports.withTimeout = function(ms, f) {
+    var end = +new Date + ms;
+    var oldEnd = timeout;
+    if (oldEnd && oldEnd < end) return f();
+    timeout = end;
+    try { return f(); }
+    finally { timeout = oldEnd; }
+  };
+
   exports.addOrigin = function(origin) {
     if (cx.origins.indexOf(origin) < 0) cx.origins.push(origin);
   };
 
-  var baseMaxWorkDepth = 20, reduceMaxWorkDepth = .0001;
+  var baseMaxWorkDepth = 20, reduceMaxWorkDepth = 0.0001;
   function withWorklist(f) {
     if (cx.workList) return f(cx.workList);
 
@@ -659,6 +692,8 @@
     try {
       var ret = f(add);
       for (var i = 0; i < list.length; i += 4) {
+        if (timeout && +new Date >= timeout)
+          throw new exports.TimedOut();
         depth = list[i + 3] + 1;
         list[i + 1].addType(list[i], list[i + 2]);
       }
@@ -675,6 +710,7 @@
     this.prev = prev;
   };
   Scope.prototype = extend(Obj.prototype, {
+    constructor: Scope,
     defVar: function(name, originNode) {
       for (var s = this; ; s = s.proto) {
         var found = s.props[name];
@@ -724,8 +760,9 @@
         var oldOrigin = cx.curOrigin;
         cx.curOrigin = fn.origin;
         var scopeCopy = new Scope(scope.prev);
+        scopeCopy.originNode = scope.originNode;
         for (var v in scope.props) {
-          var local = scopeCopy.defProp(v);
+          var local = scopeCopy.defProp(v, scope.props[v].originNode);
           for (var i = 0; i < args.length; ++i) if (fn.argNames[i] == v && i < args.length)
             args[i].propagate(local);
         }
@@ -787,15 +824,13 @@
   // SCOPE GATHERING PASS
 
   function addVar(scope, nameNode) {
-    var val = scope.defProp(nameNode.name, nameNode);
-    if (val.maybePurge) val.maybePurge = false;
-    return val;
+    return scope.defProp(nameNode.name, nameNode);
   }
 
   var scopeGatherer = walk.make({
     Function: function(node, scope, c) {
       var inner = node.body.scope = new Scope(scope);
-      inner.node = node;
+      inner.originNode = node;
       var argVals = [], argNames = [];
       for (var i = 0; i < node.params.length; ++i) {
         var param = node.params[i];
@@ -859,6 +894,7 @@
     case "number": return cx.num;
     case "string": return cx.str;
     case "object":
+    case "function":
       if (!val) return ANull;
       return getInstance(cx.protos.RegExp);
     }
@@ -894,7 +930,9 @@
 
       for (var i = 0; i < node.properties.length; ++i) {
         var prop = node.properties[i], key = prop.key, name;
-        if (key.type == "Identifier") {
+        if (prop.value.name == "✖") {
+          continue;
+        } else if (key.type == "Identifier") {
           name = key.name;
         } else if (typeof key.value == "string") {
           name = key.value;
@@ -983,9 +1021,7 @@
         }
         obj.propagate(new PropHasSubset(pName, rhs, node.left.property));
       } else { // Identifier
-        var v = scope.defVar(node.left.name, node.left);
-        if (v.maybePurge) v.maybePurge = false;
-        rhs.propagate(v);
+        rhs.propagate(scope.defVar(node.left.name, node.left));
       }
       return rhs;
     }),
@@ -1081,10 +1117,13 @@
     },
 
     ReturnStatement: function(node, scope, c) {
-      if (node.argument && scope.fnType) {
+      if (!node.argument) return;
+      var output = ANull;
+      if (scope.fnType) {
         if (scope.fnType.retval == ANull) scope.fnType.retval = new AVal;
-        infer(node.argument, scope, c, scope.fnType.retval);
+        output = scope.fnType.retval;
       }
+      infer(node.argument, scope, c, output);
     },
 
     ForInStatement: function(node, scope, c) {
@@ -1142,7 +1181,7 @@
 
   // PURGING
 
-  exports.purgeTypes = function(origins, start, end) {
+  exports.purge = function(origins, start, end) {
     var test = makePredicate(origins, start, end);
     ++cx.purgeGen;
     cx.topScope.purge(test);
@@ -1204,22 +1243,6 @@
     this.self.purge(test);
     this.retval.purge(test);
     for (var i = 0; i < this.args.length; ++i) this.args[i].purge(test);
-  };
-
-  exports.markVariablesDefinedBy = function(scope, origins, start, end) {
-    var test = makePredicate(origins, start, end);
-    for (var s = scope; s; s = s.prev) for (var p in s.props) {
-      var prop = s.props[p];
-      if (test(prop, prop.originNode)) {
-        prop.maybePurge = true;
-        if (start == null && prop.originNode) prop.originNode = null;
-      }
-    }
-  };
-
-  exports.purgeMarkedVariables = function(scope) {
-    for (var s = scope; s; s = s.prev) for (var p in s.props)
-      if (s.props[p].maybePurge) delete s.props[p];
   };
 
   // EXPRESSION TYPE DETERMINATION

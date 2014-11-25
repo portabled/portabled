@@ -1,5 +1,89 @@
 module teapo {
 
+  export class Timer {
+
+    private _timeout = 0;
+    private _maxTimeout = 0;
+    private _tickClosure = () => this._tick();
+
+    constructor() {
+    }
+
+    interval = 300;
+    maxInterval = 1000;
+  
+    ontick: () => void = null;
+  
+    reset() {
+      if (this._timeout)
+        clearTimeout(this._timeout);
+
+      if (!this._maxTimeout && this.maxInterval)
+        this._maxTimeout = setTimeout(this._tickClosure, this.maxInterval);
+
+      if (this.interval)
+        this._timeout = setTimeout(this._tickClosure, this.interval);
+    }
+
+    stop() {
+      if (this._timeout)
+        clearTimeout(this._timeout);
+      if (this._maxTimeout)
+        clearTimeout(this._maxTimeout);
+      this._timeout = 0;
+      this._maxTimeout = 0;
+    }
+  
+    endWaiting() {
+      if (this.isWaiting())
+        this._tick();
+    }
+  
+    isWaiting() {
+      return this._timeout || this._maxTimeout ? true : false;
+    }
+
+    private _tick() {
+      this.stop();
+      if (this.ontick) {
+        var t = this.ontick;
+        t();
+      }
+    }
+    
+  }
+  
+  export function asyncForEach<T, TResult>(
+    array: T[], 
+    handleElement: (element: T, index: number , callback: (error: Error, res: TResult) => void) => void,
+    callback: (error: Error, res: TResult[]) => void) {
+    
+    if (!array || !array.length) {
+      callback(null, []);
+      return;
+    }
+      
+    var res: TResult[] = [];
+    var stop = false;
+    var completeCount = 0;
+    forEach(array, (element, index) => {
+      if (stop) return;
+      handleElement(element[index], index, (error, resElement) => {
+        if (stop) return;
+        if (error) {
+          stop = true;
+          callback(error, null);
+          return;
+        }
+        res[index] = resElement;
+        completeCount++;
+        if (completeCount === array.length) {
+          stop = true;
+          callback(null, res);
+        }
+      });
+    });
+  }
 
   export function forEach<T>(array: T[], callback: (x: T, index: number) => void) {
     if (array.forEach) {
@@ -93,6 +177,21 @@ module teapo {
       return new Date().valueOf();
   }
 
+  export var objectKeys = (obj: any): string[] => {
+    if (typeof Object.keys === 'function')
+      objectKeys = Object.keys;
+    else
+      objectKeys = (obj: any): string[] => {
+        var result: string[] = [];
+        for (var k in obj) if (obj.hasOwnProperty(k)) {
+          result.push(k);
+        }
+        return result;
+      };
+    
+    return objectKeys(obj);
+  };
+
   export function saveCurrentHtmlAsIs() {
     var blob: Blob = new (<any>Blob)(['<!doctype html>\n', document.documentElement.outerHTML], { type: 'application/octet-stream' });
     var url = URL.createObjectURL(blob);
@@ -114,7 +213,7 @@ module teapo {
     
   export function addEventListener(element: any, type: string, listener: (event: Event) => void) {
     if (element.addEventListener) {
-      element.addEventListener(type, listener);
+      element.addEventListener(type, listener, true);
     }
     else {
       var ontype = 'on' + type;
@@ -122,32 +221,26 @@ module teapo {
       if (element.attachEvent) {
         element.attachEvent('on' + type, listener);
       }
-      else if (element[ontype]) {
+      else if (ontype in element) {
         element[ontype] = listener;
       }
     }
   }
 
-  export function addEventListenerWithDelay(element: any, type: string, listener: (event: Event) => void) {
-    var queued = false;
-    var storedEvent: Event;
+  export function removeEventListener(element: any, type: string, listener: (event: Event) => void) {
+    if (element.addEventListener) {
+      element.removeEventListener(type, listener, true);
+    }
+    else {
+      var ontype = 'on' + type;
 
-    var listenerClosure = () => {
-      queued = false;
-      listener(storedEvent);
-      storedEvent = null;
-    };
-
-    addEventListener(element, type, event => {
-      storedEvent = event;
-      if (!queued) {
-        queued = true;
-        if (typeof requestAnimationFrame === 'function')
-          requestAnimationFrame(listenerClosure);
-        else
-          setTimeout(listenerClosure, 1);
+      if (element.detachEvent) {
+        element.detachEvent('on' + type, listener);
       }
-    });
+      else if (ontype in element) {
+        element[ontype] = null;
+      }
+    }
   }
 
 }

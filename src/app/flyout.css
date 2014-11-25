@@ -1,0 +1,34 @@
+.teapo-main-content {
+  position: fixed !important;
+  position: absolute;
+  left: 0px; top: 0px;
+  height: 100%;
+  width: 80%;
+  padding-bottom: 2em;
+}
+
+
+.teapo-flyout-scroller {
+  position: fixed !important;
+  position: absolute;
+  left: 0px; top: 0px; width: 100%; height: 100%;
+  overflow-y: hidden;
+  overflow-x: scroll;
+}
+
+.teapo-flyout-scroller-bg {
+  height: 100%;
+  width: 150%;
+  padding-left: 80%;
+}
+
+.teapo-flyout {
+  border-top: solid 1px silver;
+  position: relative;
+  height: 100%;
+  background: #A6D785;
+  z-index: 100;
+  overflow: hidden;
+  padding-bottom: 2em;
+}
+

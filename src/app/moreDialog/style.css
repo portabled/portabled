@@ -1,0 +1,45 @@
+.teapo-more-dialog-background {
+  
+  position: fixed !important;
+  position: absolute;
+  left: 0px; top: 0px;
+  width: 100%; height: 100%;
+  background: rgba(1,1,1,0.6);
+  z-index: 200;
+  
+}
+
+.teapo-more-dialog {
+  
+  position: fixed !important;
+  position: absolute;
+  left: 15%;
+  width: 70%;
+  top: 20%;
+  height: 70%;
+
+  background: gold;
+
+}
+
+.teapo-more-dialog-list {
+  height: 80%;
+  overflow: auto;
+}
+
+.teapo-more-dialog input {
+  
+  width: 100%;
+  font-size: 200%;
+  
+}
+
+.teapo-more-dialog .teapo-more-dialog-item {
+  font-size: 140%;
+  padding: 0.25em;
+}
+
+.teapo-more-dialog .teapo-more-dialog-item.selected {
+  background: cornflowerblue;
+  color: white;
+}

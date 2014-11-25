@@ -239,7 +239,7 @@ declare module ko {
   export function computed<T>(definition: computed.Definition<T>): Computed<T>;
   export function computed(options?: any): Computed<any>;
 
-  export interface Computed<T> {
+  export interface Computed<T> extends subscribable<T> {
     (): T;
     (value: T): void;
 

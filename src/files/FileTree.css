@@ -1,0 +1,57 @@
+.teapo-file-tree {
+  padding-left: 1.5em;
+}
+
+.teapo-file-tree ul {
+  margin: 1px;
+  margin-left: 0px;
+  padding-left: 0.4em;
+}
+
+.teapo-file-tree ul li {
+  margin: 0px;
+  padding: 0px;
+}
+
+.teapo-file-tree li .teapo-file-name {
+  padding: 2px;
+}
+
+.teapo-file-tree li .teapo-dir-name {
+  padding: 2px;
+  font-weight: bold;
+}
+
+.teapo-file-tree ul li .teapo-file-name:hover {
+  padding: 1px;
+  border: solid 1px gold;
+}
+
+.teapo-file-tree ul li .teapo-dir-name:hover {
+  padding: 1px;
+  border: solid 1px gold;
+}
+
+
+.teapo-file-tree li.teapo-dir {
+  list-style: circle;
+  cursor: default;
+}
+
+.teapo-file-tree .teapo-dir-collapsed ul {
+  display: none;
+}
+
+
+.teapo-file-tree li.teapo-file {
+  list-style: square;
+}
+
+.teapo-file-tree .teapo-file-selected {
+  background: cornflowerblue;
+}
+
+
+.teapo-file-content {
+  display: none;
+}

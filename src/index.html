@@ -1,0 +1,201 @@
+<!doctype html><html><head>
+<meta charset="utf-8">
+<title>Teapo - [teapo v0.5a]</title>
+
+<style><%=embedFile('imports/codemirror/codemirror.css')%></style>
+<style><%=embedFile('imports/codemirror/show-hint.css')%></style>
+<style><%=embedFile('imports/codemirror/tern.css')%></style>
+<style><%=embedFile('imports/codemirror/dialog.css')%></style>
+
+
+<style><%=embedFile('app/body.css')%></style>
+<style><%=embedFile('app/flyout.css')%></style>
+<style><%=embedFile('app/flyout-branding.css')%></style>
+<style><%=embedFile('app/tree-and-bar.css')%></style>
+<style><%=embedFile('app/status.css')%></style>
+
+<style><%=embedFile('files/FileTree.css')%></style>
+<style><%=embedFile('docs/types/text/CodeMirror-ext.css')%></style>
+<style><%=embedFile('app/moreDialog/style.css')%></style>
+
+<style><%=embedFile('docs/types/text/scrollerView/style.css')%></style>
+
+
+
+<style><%=embedFile('docs/types/text/ts/style.css')%></style>
+
+<style><%=embedFile('app/loading.css')%></style>
+
+
+</head>
+<body
+    data-bind="event: {keydown:keydown}">
+
+<div id=teapo-loading-host>
+  <div id=teapo-loading-title>
+    Booting...
+  </div>
+  <div id=teapo-loading-progress>
+  </div>
+</div>
+
+<script data-legit=teapo>try { <%=typescriptBuild()%> } catch(bootError) { alert(bootError+' '+bootError.stack) }</script>
+
+<script data-legit=teapo>try { teapo.app.loading('Page layout...'); } catch (err) { alert(err+' '+err.stack); }</script>
+
+<div class=teapo-flyout-scroller
+   data-bind="load: flyoutScroller = $element">
+  <div class=teapo-flyout-scroller-bg>
+
+    <div class=teapo-main-content
+       data-bind="loadRaw: docHostRegions.content = $element"></div>
+
+    <div class=teapo-flyout>
+
+      <div class=teapo-thick-bar-host>
+        <button class=teapo-more-button data-bind="click: moreClick"> ... </button>
+        <div class=teapo-thick-bar-bg>
+          <div class=teapo-thick-bar
+               data-bind="event: { mousedown: thickbarMouseDown }, loadRaw: docHostRegions.scroller = $element">
+          </div>
+        </div>
+      </div>
+
+<script data-legit=teapo>try { teapo.app.loading('Files...'); } catch (err) { alert(err+' '+err.stack); }</script>
+
+      <div class=teapo-file-tree
+         data-bind="loadRaw: fileTreeHost = $element">
+
+        <ul>
+
+<!--
+-->
+          <%=embedTree()%>
+          
+        </ul>
+      </div>
+
+<script data-legit=teapo>try { teapo.app.loading('Controls...'); } catch (err) { alert(err+' '+err.stack); }</script>
+
+      <div class=teapo-extra-content>
+        
+        <div class=teapo-branding-area
+             data-bind="loadRaw: brandingArea=$element "></div>
+
+
+       <div class=teapo-scrollable-bottom>
+
+          <div class=teapo-links>
+            <button data-bind="click: deleteClick" style="min-width: 7em; margin-bottom: 0.3em;"> Delete </button> <br>
+            <button data-bind="click: buildClick" style="min-width: 7em;"> Build </button> <br>
+            <br>
+            <a href=# data-bind="click: exportAllHTML"> Save whole page </a><br>
+            <a href=# data-bind="click: exportAllZIP"> Export to ZIP </a><br>
+            <a href=# data-bind="click: exportCurrentFile"> Save current file </a><br>
+            <br>
+            <a href=# data-bind="click: importText"> Add file </a><br>
+            <a href=# data-bind="click: importBase64"> Add binary (base64) </a><br>
+            <a href=# data-bind="click: importZIP"> Import files from ZIP </a><br>
+
+          </div>
+
+          <div class=teapo-credits>
+
+            Teapo v0.5a by Oleg Mihailik. <br>
+            <br>
+
+            <div style="font-size: 90%;">
+              Used Open Source libraries:<br>
+              <a href="https://github.com/Microsoft/TypeScript">TypeScript</a> (Microsoft, with Apache 2.0 license) <br>
+              <a href="https://github.com/codemirror/CodeMirror">CodeMirror</a> (Marijn Haverbeke, with MIT license) <br>
+              <a href="https://github.com/knockout/knockout">Knockout.js</a> (Ryan Niemeyer, with MIT license) <br>
+              <a href="https://github.com/gildas-lormeau/zip.js">Zip.js</a> (Gildas Lormeau, with BSD license) <br>
+              <a href="https://github.com/chjj/marked">Marked</a> (Christopher Jeffrey, with MIT license) <br>
+              - main contributors mentioned where applicable.
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      
+      
+    </div>
+
+  </div>
+</div>
+
+<div class=teapo-status-bar
+   data-bind="loadRaw: docHostRegions.status = $element">
+</div>
+
+<script data-legit=teapo>try { teapo.app.loading('Libraries...'); } catch (err) { alert(err+' '+err.stack); }</script>
+
+
+<script data-legit=teapo><%=embedFile('imports/acorn/acorn.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/acorn/acorn_loose.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/acorn/walk.js')%></script>
+
+<script data-legit=teapo><%=embedFile('imports/tern/signal.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/tern/tern.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/tern/def.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/tern/comment.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/tern/infer.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/tern/doc_comment.js')%></script>
+
+
+
+<script data-legit=teapo><%=embedFile('imports/codemirror/codemirror.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/dialog.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/search.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/searchcursor.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/show-hint.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/javascript.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/tern.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/javascript-hint.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/css.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/css-hint.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/sass.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/xml.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/xml-hint.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/htmlmixed.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/htmlembedded.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/html-hint.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/codemirror/markdown.js')%></script>
+
+<script data-legit=teapo><%=embedFile('imports/knockout/knockout-3.2.0.js')%></script>
+
+<script data-legit=teapo><%=embedFile('imports/zip.js/zip.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/zip.js/deflate.js')%></script>
+<script data-legit=teapo><%=embedFile('imports/zip.js/inflate.js')%></script>
+
+<script data-legit=teapo><%=embedFile('imports/marked/marked.js')%></script>
+
+<script data-legit=teapo><%=embedFile('errors.js')%></script>
+
+<script type=text/html id=MoreDialogView data-legit=teapo><%=embedFile('app/moreDialog/layout.html')%></script>
+<script type=text/html id=ScrollerView data-legit=teapo><%=embedFile('docs/types/text/scrollerView/ScrollerView.html')%></script>
+
+<script data-legit=teapo><%=embedFile('imports/typescript/typescriptServices.js')%></script>
+<script data-legit=teapo id=lib.d.ts type=text/typescriptdefinition><%=embedFile('imports/typescript/lib.d.ts.text')%></script>
+
+
+<script data-legit=teapo>try { teapo.app.start(); } catch (err) { alert(err+' '+err.stack); }</script>
+
+<!--
+<script data-legit=teapo type="text/javascript" src="https://getfirebug.com/firebug-lite.js">
+{
+    overrideConsole: true,
+    startInNewWindow: false,
+    startOpened: true
+}
+</script>
+-->
+
+
+<div id=teapo-last-element></div>
+
+</body>
+</html>

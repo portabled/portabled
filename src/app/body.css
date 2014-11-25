@@ -1,0 +1,23 @@
+html {
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+html {
+  height: 100%;
+  margin: 0px;
+  padding: 0px;
+  border: none;
+  overflow: hidden;
+}
+
+body {
+  height: 100%;
+  margin: 0px;
+  padding: 0px;
+  border: none;
+  overflow: hidden;
+}

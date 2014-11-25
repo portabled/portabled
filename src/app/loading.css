@@ -1,0 +1,16 @@
+#teapo-loading-host {
+
+  position: absolute;
+  left: 12%;
+  top: 25%;
+  z-index: 5000;
+  
+}
+
+#teapo-loading-title {
+  
+  font-size: 200%;
+  font-weight: 100;
+  opacity: 0.6;
+  
+}

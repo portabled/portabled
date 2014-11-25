@@ -1,0 +1,13 @@
+<div class=teapo-scroller-outer
+     data-bind="load: bindHandlers($element)">
+  <div class=teapo-scroller-thumb
+     data-bind="style: { top: viewportFrom, height: viewportHeight }">
+  </div>
+</div>
+
+<!-- ko foreach: lines -->
+<div class=teapo-scroller-line
+   data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }">
+</div>
+
+<!-- /ko -->

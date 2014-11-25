@@ -1,0 +1,17 @@
+.CodeMirror {
+  height: 100%;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.CodeMirror-hints {
+  font-family: inherit;
+}
+.CodeMirror-hint {
+  max-width: 52em;
+  max-height: 4.5em;
+  overflow-x: inherit;
+  overflow-y: hidden;
+  white-space: normal;
+}
+
