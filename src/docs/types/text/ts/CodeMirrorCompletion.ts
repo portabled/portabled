@@ -30,23 +30,15 @@ module teapo.docs.types.text.ts_ {
         this._entry.kind.charAt(0),
         'teapo-completion-icon teapo-completion-icon-' + this._entry.kind));
 
-      var skipUntilName = true;
-      for (var i = skipVerbose; i < this._details.displayParts.length; i++) {
-        if (skipUntilName) {
-          if (this._details.displayParts[i].text === this.text)
-            skipUntilName = false;
-          else
-            continue;
-        }
-        
-        element.appendChild(createSpan(
-          this._details.displayParts[i].text,
-          'teapo-completion-syntax-' + this._details.displayParts[i].kind));
+      renderSyntaxPart(this._details.displayParts, element, this.text);
+
+      if (this._details.documentation && this._details.documentation.length) {
+        var docSpan = document.createElement('span');
+        docSpan.className = 'teapo-syntax-docs';
+        setTextContent(docSpan, ' // ');
+        renderSyntaxPart(this._details.documentation, docSpan);
+        element.appendChild(docSpan);
       }
-      
-      //element.appendChild(createSpan('' + this.lineNum, '456'));
-      //element.appendChild(createSpan(' --' + this.lead + '[' + this.prefix + '|' + this.suffix + ']' + this.trail, '123'));
-      
     }
     
   }

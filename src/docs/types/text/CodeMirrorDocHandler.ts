@@ -244,11 +244,11 @@ module teapo.docs.types.text {
       };
       changeSummary.newmid = changeSummary.mid + deltaLength;
 
+      this._totalLength = newTotalLength;
+
       if (this.textDoc.onChanges) {
         this.textDoc.onChanges(docChanges, changeSummary);
       }
-
-      this._totalLength = newTotalLength;
 
       if (this._scrollerModel)
         this._scrollerModel.docChanges(docChanges);

@@ -1,8 +1,8 @@
 module teapo.typescript {
   
-  export class ScriptDocumentSnapshot implements TypeScript.IScriptSnapshot {
+  export class ScriptDocumentSnapshot implements ts.IScriptSnapshot {
 
-    changes: TypeScript.TextChangeRange[];
+    changes: ts.TextChangeRange[];
 
     private _text: string;
     private _lineStartPositions: number[] = null;
@@ -22,21 +22,21 @@ module teapo.typescript {
 
     getLineStartPositions(): number[] {
       if (!this._lineStartPositions)
-        this._lineStartPositions = TypeScript.TextUtilities.parseLineStarts(this._text);
+        this._lineStartPositions = ts.computeLineStarts(this._text);
       return this._lineStartPositions;
     }
 
-    getChangeRange(oldSnapshot: TypeScript.IScriptSnapshot): TypeScript.TextChangeRange {
+    getChangeRange(oldSnapshot: ts.IScriptSnapshot): ts.TextChangeRange {
 
       if (!this.changes.length)
-        return TypeScript.TextChangeRange.unchanged;
+        return ts.TextChangeRange.unchanged;
 
       var typedOldSnapshot = <ScriptDocumentSnapshot>oldSnapshot;
       var chunk = typedOldSnapshot.changes ?
         this.changes.slice(typedOldSnapshot.changes.length) :
         this.changes;
 
-      var result = TypeScript.TextChangeRange.collapseChangesAcrossMultipleVersions(chunk);
+      var result = ts.TextChangeRange.collapseChangesAcrossMultipleVersions(chunk);
 
       return result;
 

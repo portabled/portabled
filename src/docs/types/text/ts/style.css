@@ -21,30 +21,58 @@
   background: honeydew;
 }
 
-.teapo-completion-syntax-moduleName {
+.teapo-syntax-moduleName {
   opacity: 0.3;
 }
 
-.teapo-completion-syntax-className {
+.teapo-syntax-className {
   opacity: 0.5;
 }
 
-.teapo-completion-syntax-propertyName {
+.teapo-syntax-propertyName {
   font-weight: bold;
 }
 
-.teapo-completion-syntax-methodName {
+.teapo-syntax-methodName {
   font-weight: bold;
 }
 
-.teapo-completion-syntax-keyword {
+.teapo-syntax-keyword {
   opacity: 0.7;
 }
 
+.teapo-syntax-current {
+  font-weight: bold;
+}
+
+.teapo-syntax-docs {
+  opacity: 0.8;
+}
+
+
+.teapo-match {
+  background: silver;
+  background: rgba(20, 120, 0, 0.08);
+  background: linear-gradient(rgba(20,120,0,0), rgba(20,120,0,0.02), rgba(20,120,0,0.2));
+  border-bottom: solid 2px rgba(20,120,0,0.3);
+}
+
+.teapo-match-current {
+  background: silver;
+  background: rgba(20, 120, 0, 0.08);
+  background: linear-gradient(rgba(20,120,0,0), rgba(20,120,0,0.01), rgba(20,120,0,0.2));
+  border-bottom: solid 3px rgba(20,120,0,0.3);
+}
+
+
 .teapo-diag-syntactic {
-  background: coral;
+  background: solid coral 3px;
+  background: rgba(255, 127, 80, 0.4);
+  border-bottom: solid 4px tomato;
 }
 
 .teapo-diag-semantic {
   background: gold;
+  background: rgba(255, 215, 0, 0.4);
+  border-bottom: solid 4px orange;
 }

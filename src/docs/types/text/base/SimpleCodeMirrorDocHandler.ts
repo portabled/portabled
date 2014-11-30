@@ -8,7 +8,7 @@ module teapo.docs.types.text.base {
     text: () => string = null;
     scroller: HTMLElement = null;
     status: HTMLElement = null;
-    keyMap = {
+    keyMap: any = {
       "Ctrl-Enter": () => this._triggerCompletion(true),
       "Alt-Enter": () => this._triggerCompletion(true),
       "Ctrl-J": () => this._triggerCompletion(true),

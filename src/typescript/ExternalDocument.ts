@@ -3,7 +3,7 @@ module teapo.typescript {
   export interface ExternalDocument {
     
     text(): string;
-    changes(): TypeScript.TextChangeRange[];
+    changes(): ts.TextChangeRange[];
     
   }
   

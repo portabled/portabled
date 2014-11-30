@@ -15,7 +15,7 @@ module teapo.typescript {
 
     private _scriptFileNames: string[] = null;
     private _scripts: { [fullPath: string]: ScriptDocumentState; } = {};
-    private _defaultLibSnapshot: TypeScript.IScriptSnapshot = null;
+    private _defaultLibSnapshot: ts.IScriptSnapshot = null;
 
     private _preloadScriptFileNames: string[] = [this.defaultLibFilename];
     private _preloadPendingScriptFileNames: string[] = [];
@@ -130,10 +130,10 @@ module teapo.typescript {
         getScriptSnapshot: (file) => {
           if (file === this.defaultLibFilename) {
             if (!this._defaultLibSnapshot) {
-              var scriptElement = document.getElementById('lib.d.ts');
+              var scriptElement = <HTMLScriptElement>document.getElementById('lib.d.ts');
               if (scriptElement == null)
                 return null;
-              this._defaultLibSnapshot = TypeScript.ScriptSnapshot.fromString(scriptElement.innerText);
+              this._defaultLibSnapshot = ts.ScriptSnapshot.fromString(scriptElement.text || scriptElement.textContent || scriptElement.innerText);
             }
             return this._defaultLibSnapshot;
           }

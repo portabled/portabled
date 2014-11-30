@@ -6,9 +6,11 @@ The idea, all of the painstaking implementation and the vision by [Oleg Mihailik
 See the credits section for the used libraries and respective licences. 
 
 ### Outstanding tasks:
+ * Better internal API for doc handler and for the app itself
+ * Highlight of the changed files (comparing local storage and the original DOM)
  * Styles and colours (planning for pale seaside 'Whitstable' blue).
- * Scrollbar to simply show coloured rendering of the CodeMirror document.
- * TypeScript extra features: current signature/symbol in the status, tooltips.
+ * Scrollbar to use syntax-highlighted document lines.
+ * TypeScript extra features: current signature/symbol in the status, navigate to, search integration, tooltips.
  * More local storage adapters.
  * Delete folder.
  * Rename file/folder.

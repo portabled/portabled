@@ -1,5 +1,6 @@
 module teapo {
 
+  /** Stoppable timer with methods specifically targeting debouncing. */
   export class Timer {
 
     private _timeout = 0;
@@ -11,7 +12,7 @@ module teapo {
 
     interval = 300;
     maxInterval = 1000;
-  
+
     ontick: () => void = null;
   
     reset() {
@@ -191,25 +192,6 @@ module teapo {
     
     return objectKeys(obj);
   };
-
-  export function saveCurrentHtmlAsIs() {
-    var blob: Blob = new (<any>Blob)(['<!doctype html>\n', document.documentElement.outerHTML], { type: 'application/octet-stream' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.setAttribute('download', 'nteapo.html');
-    try {
-      // safer save method, supposed to work with FireFox
-      var evt_ = document.createEvent("MouseEvents");
-      (<any>evt_).initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-      a.dispatchEvent(evt_);
-    }
-    catch (e) {
-      a.click();
-    }
-  }
-    
-    
     
   export function addEventListener(element: any, type: string, listener: (event: Event) => void) {
     if (element.addEventListener) {
@@ -242,5 +224,23 @@ module teapo {
       }
     }
   }
+
+  export function setTextContent(element: HTMLElement, textContent: string) {
+    if (!_textContent)
+      _textContent = detectTextContent(element);
+    if (_textContent === 1)
+      element.textContent = textContent;
+    else
+      element.innerText = textContent;
+  }
+
+  var _textContent = 0;
+  function detectTextContent(element: HTMLElement) {
+    if ('textContent' in element)
+      return 1;
+    else      
+      return 2;
+  }
+  
 
 }
