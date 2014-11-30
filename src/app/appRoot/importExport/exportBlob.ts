@@ -1,4 +1,4 @@
-module teapo.app.appRoot.importExport { 
+module portabled.app.appRoot.importExport { 
 
 
   export function exportBlob(filename: string, textChunks: string[]) { 

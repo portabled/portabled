@@ -1,4 +1,4 @@
-module teapo.app.appRoot.importExport {
+module portabled.app.appRoot.importExport {
 
   export function exportAllZIP(drive: persistence.Drive) {
     zip.useWebWorkers = false;

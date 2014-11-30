@@ -1,9 +1,9 @@
-module teapo.app.koBindingHandlers {
+module portabled.app.koBindingHandlers {
 
   export function register(ko) {
 
-    for (var k in teapo.app.koBindingHandlers) if (teapo.app.koBindingHandlers.hasOwnProperty(k)) {
-      var bindingHandler = teapo.app.koBindingHandlers[k];
+    for (var k in portabled.app.koBindingHandlers) if (portabled.app.koBindingHandlers.hasOwnProperty(k)) {
+      var bindingHandler = portabled.app.koBindingHandlers[k];
       if (bindingHandler && typeof bindingHandler === 'object')
         ko.bindingHandlers[k] = bindingHandler;
     }

@@ -1,4 +1,4 @@
-module teapo {
+module portabled {
 
   /** Stoppable timer with methods specifically targeting debouncing. */
   export class Timer {

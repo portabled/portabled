@@ -1,9 +1,9 @@
-module teapo.app.appRoot.importExport {
+module portabled.app.appRoot.importExport {
   
   export function saveFileName() {
 
     if (window.location.protocol.toLowerCase() === 'blob:')
-      return 'nteapo.html';
+      return 'nportabled.html';
 
     var urlParts = window.location.pathname.split('/');
     var currentFileName = decodeURI(urlParts[urlParts.length - 1]);

@@ -1,4 +1,4 @@
-module teapo.app.importDialog {
+module portabled.app.importDialog {
   
   export class Model {
 

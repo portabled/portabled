@@ -1,4 +1,4 @@
-module teapo.docs.types {
+module portabled.docs.types {
   
   export function listSubmodules<T>(
     parentModule: any,

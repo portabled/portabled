@@ -1,28 +1,28 @@
-.teapo-extra-content {
+.portabled-extra-content {
   float: left;
   width: 75%;
   height: 100%;
   margin-right: -1em;
 }
 
-.teapo-extra-content .teapo-branding-area {
+.portabled-extra-content .portabled-branding-area {
   height: 60%;
   padding: 1em;
   overflow: auto;
 }
 
-.teapo-extra-content .teapo-scrollable-bottom {
+.portabled-extra-content .portabled-scrollable-bottom {
   height: 36%;
   overflow: auto;
 }
 
-.teapo-extra-content .teapo-links {
+.portabled-extra-content .portabled-links {
   float: left;
   font-size: 90%;
   width: 50%;
 }
 
-.teapo-extra-content .teapo-credits {
+.portabled-extra-content .portabled-credits {
   float: left;
   height: 36%;
   width: 50%;

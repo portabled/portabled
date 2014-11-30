@@ -1,4 +1,4 @@
-.teapo-more-dialog-background {
+.portabled-more-dialog-background {
   
   position: fixed !important;
   position: absolute;
@@ -9,7 +9,7 @@
   
 }
 
-.teapo-more-dialog {
+.portabled-more-dialog {
   
   position: fixed !important;
   position: absolute;
@@ -22,24 +22,24 @@
 
 }
 
-.teapo-more-dialog-list {
+.portabled-more-dialog-list {
   height: 80%;
   overflow: auto;
 }
 
-.teapo-more-dialog input {
+.portabled-more-dialog input {
   
   width: 100%;
   font-size: 200%;
   
 }
 
-.teapo-more-dialog .teapo-more-dialog-item {
+.portabled-more-dialog .portabled-more-dialog-item {
   font-size: 140%;
   padding: 0.25em;
 }
 
-.teapo-more-dialog .teapo-more-dialog-item.selected {
+.portabled-more-dialog .portabled-more-dialog-item.selected {
   background: cornflowerblue;
   color: white;
 }

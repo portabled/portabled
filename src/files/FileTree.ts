@@ -1,4 +1,4 @@
-module teapo.files {
+module portabled.files {
   
   export class FileTree implements persistence.Drive {
 
@@ -123,7 +123,7 @@ module teapo.files {
     
     private _getNode(elem: HTMLElement): Node {
       while (elem) {
-        var node = (<any>elem)._teapo_node;
+        var node = (<any>elem)._portabled_node;
         if (node) return node;
         elem = elem.parentElement;
         if (!elem)
@@ -150,7 +150,7 @@ module teapo.files {
       allFiles: { [file: string]: Node; },
       selection: { selectedFile: string; }) {
         
-      (<any>li)._teapo_node = this;
+      (<any>li)._portabled_node = this;
       
       var childLIs: HTMLLIElement[] = [];
       for (var i = 0; i < this.li.children.length; i++) {
@@ -167,18 +167,18 @@ module teapo.files {
         
 
         if ((<HTMLDivElement>child).tagName === 'DIV' && (<HTMLDivElement>child).className) {
-          if ((<HTMLDivElement>child).className.indexOf('teapo-file-name') >= 0) {
+          if ((<HTMLDivElement>child).className.indexOf('portabled-file-name') >= 0) {
             this.isDir = false;
             this.name = child.textContent || (<HTMLDivElement>child).innerText;
           }
-          else if ((<HTMLDivElement>child).className.indexOf('teapo-dir-name') >= 0) {
+          else if ((<HTMLDivElement>child).className.indexOf('portabled-dir-name') >= 0) {
             this.isDir = true;
             this.name = child.textContent || (<HTMLDivElement>child).innerText;
           }
         }
 
         if ((<HTMLPreElement>child).tagName === 'PRE' && (<HTMLPreElement>child).className 
-          && (<HTMLPreElement>child).className.indexOf('teapo-file-content') >= 0) {
+          && (<HTMLPreElement>child).className.indexOf('portabled-file-content') >= 0) {
           
           if (this._contentPRE) {
             // double content?
@@ -200,16 +200,16 @@ module teapo.files {
       }
       
       if (selection) {
-        if (li.className.indexOf('teapo-file-selected') >= 0) {
+        if (li.className.indexOf('portabled-file-selected') >= 0) {
           if (selection.selectedFile)
-            li.className = li.className.replace(/teapo\-file\-selected/g, '');
+            li.className = li.className.replace(/portabled\-file\-selected/g, '');
           else
             selection.selectedFile = this.fullPath;
         }
       }
       else { 
-        if (li.className.indexOf('teapo-file-selected') >= 0)
-          li.className = li.className.replace(/teapo\-file\-selected/g, '');
+        if (li.className.indexOf('portabled-file-selected') >= 0)
+          li.className = li.className.replace(/portabled\-file\-selected/g, '');
       }
 
       if (allFiles)
@@ -230,7 +230,7 @@ module teapo.files {
 
       if (!this._contentPRE) {
         this._contentPRE = document.createElement('pre');
-        this._contentPRE.className = 'teapo-file-content';
+        this._contentPRE.className = 'portabled-file-content';
         this.li.appendChild(this._contentPRE);
       }
       
@@ -291,7 +291,7 @@ module teapo.files {
 
         var newLI = document.createElement('li');
         var fnameDIV = document.createElement('div');
-        fnameDIV.className = 'teapo-dir-name';
+        fnameDIV.className = 'portabled-dir-name';
         if ('textContent' in fnameDIV)
           fnameDIV.textContent = subdirName;
         else
@@ -324,7 +324,7 @@ module teapo.files {
     createFile(fileName: string): Node {
       var newLI = document.createElement('li');
       var fnameDIV = document.createElement('div');
-      fnameDIV.className = 'teapo-file-name';
+      fnameDIV.className = 'portabled-file-name';
       if ('textContent' in fnameDIV)
         fnameDIV.textContent = fileName;
       else
@@ -341,20 +341,20 @@ module teapo.files {
     }
   
     toggleCollapse() {
-      if (this.li.className && this.li.className.indexOf('teapo-dir-collapsed') >= 0) {
-        this.li.className = this.li.className.replace(/teapo\-dir\-collapsed/g, '');
+      if (this.li.className && this.li.className.indexOf('portabled-dir-collapsed') >= 0) {
+        this.li.className = this.li.className.replace(/portabled\-dir\-collapsed/g, '');
       }
       else { 
-        this.li.className = (this.li.className || '') + ' teapo-dir-collapsed';
+        this.li.className = (this.li.className || '') + ' portabled-dir-collapsed';
       }
     }
   
     setSelectClass(selected: boolean) {
       if (selected) {
-        this.li.className = (this.li.className || '') + ' teapo-file-selected';
+        this.li.className = (this.li.className || '') + ' portabled-file-selected';
       }
       else { 
-        this.li.className = this.li.className ? this.li.className.replace(/teapo\-file\-selected/g, '') : null;
+        this.li.className = this.li.className ? this.li.className.replace(/portabled\-file\-selected/g, '') : null;
       }
     }
 

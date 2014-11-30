@@ -1,4 +1,4 @@
-# teapo v0.5a
+# portabled v0.5a
 
 Self-editing filesystem embedded in a single HTML file.
 
@@ -17,7 +17,7 @@ See the credits section for the used libraries and respective licences.
  * Upload to GitHub, GDrive, Dropbox etc.
  * Stronger browser support (the target is ALL).
  * FS integration in Chrome app, node-webkit, HTMLA-ie7.
- * node emulation over teapo-Drive.
+ * node emulation over portabled-Drive.
  * Toast popup/fadeout messages for key events: opening, building, import-export completion.
  * Sub-domains for doc handlers (separate contexts in TS/JS for selected subdirectories)
  * Demos in the repository: itself, TypeScript whole, PE.js, dummy sample

@@ -1,4 +1,4 @@
-module teapo.docs.types.text.html {
+module portabled.docs.types.text.html {
 
   export var expectsFile = /.*\.(html|htm)/g;
   export var acceptsFile = /.*\.(html|htm)/g;

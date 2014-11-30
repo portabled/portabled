@@ -1,18 +1,18 @@
-.teapo-file-tree {
+.portabled-file-tree {
   float: left;
   width: 20%;
   height: 100%;
   overflow: auto;
 }
 
-.teapo-thick-bar-host {
+.portabled-thick-bar-host {
   float: left;
   width: 2em;
   height: 100%;
   overflow: hidden;
 }
 
-.teapo-thick-bar-host .teapo-more-button {
+.portabled-thick-bar-host .portabled-more-button {
   width: 2em;
   height: 2em;
   font-size: inherit;
@@ -21,13 +21,13 @@
   opacity: 0.8;
 }
 
-.teapo-thick-bar-host .teapo-thick-bar-bg {
+.portabled-thick-bar-host .portabled-thick-bar-bg {
   height: 100%;
   margin-top: 2em;
   padding-bottom: 2em;
 }
 
-.teapo-thick-bar-host .teapo-thick-bar-bg .teapo-thick-bar {
+.portabled-thick-bar-host .portabled-thick-bar-bg .portabled-thick-bar {
   height: 100%;
   background: #F0FFF0;
   cursor: move;

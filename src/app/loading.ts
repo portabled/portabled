@@ -1,4 +1,4 @@
-module teapo.app {
+module portabled.app {
   
   var loadingHostDIV: HTMLElement;
   var loadingTitleDIV: HTMLElement;
@@ -12,9 +12,9 @@ module teapo.app {
   export function loading(description) {
 
     if (!loadingHostDIV) {
-      loadingHostDIV = document.getElementById('teapo-loading-host');
-      loadingTitleDIV = document.getElementById('teapo-loading-title');
-      loadingProgressDIV = document.getElementById('teapo-loading-progress');
+      loadingHostDIV = document.getElementById('portabled-loading-host');
+      loadingTitleDIV = document.getElementById('portabled-loading-title');
+      loadingProgressDIV = document.getElementById('portabled-loading-progress');
     }
 
     if (description) {

@@ -1,4 +1,4 @@
-module teapo.docs.types.text {
+module portabled.docs.types.text {
 
   export var expectsFile = /.*\.txt/g;
   export var acceptsFile = /.*/g;
@@ -7,7 +7,7 @@ module teapo.docs.types.text {
 
   export function load(path: string, storage: DocState): DocHandler {
 
-    var submodules = listSubmodules<TextHandlerModule>(teapo.docs.types.text, 'loadText');
+    var submodules = listSubmodules<TextHandlerModule>(portabled.docs.types.text, 'loadText');
     for (var i = 0; i < submodules.length; i++) {
 
       var match = path.match(submodules[i].moduleObj.expectsFile);
@@ -31,7 +31,7 @@ module teapo.docs.types.text {
         return new CodeMirrorDocHandler(path, storage, textDoc, submodules[i].moduleName, submodules[i].moduleObj);
     }
 
-    var textDoc = teapo.docs.types.text.loadText(path, storage);
+    var textDoc = portabled.docs.types.text.loadText(path, storage);
     return new CodeMirrorDocHandler(
       path, storage, textDoc,
       null, null);

@@ -1,4 +1,4 @@
-module teapo.build.functions {
+module portabled.build.functions {
   
   export function embedTree() {
 
@@ -25,12 +25,12 @@ module teapo.build.functions {
         for (var k in dir) if (dir.hasOwnProperty(k)) {
           var child = dir[k];
           if (typeof child === 'string') {
-            output.push('<li class=teapo-file><div class=teapo-file-name>' + k + '</div>');
+            output.push('<li class=portabled-file><div class=portabled-file-name>' + k + '</div>');
             tmp.textContent = child;
-            output.push('<pre class=teapo-file-content>' + tmp.innerHTML + '</pre></li>');
+            output.push('<pre class=portabled-file-content>' + tmp.innerHTML + '</pre></li>');
           }
           else {
-            output.push('<li class="teapo-dir teapo-dir-collapsed"><div class=teapo-dir-name>' + k + '</div><ul>');
+            output.push('<li class="portabled-dir portabled-dir-collapsed"><div class=portabled-dir-name>' + k + '</div><ul>');
             addDir(child);
             output.push('</ul></li>');
           }

@@ -1,4 +1,4 @@
-module teapo.docs {
+module portabled.docs {
   
   export class DocHost {
 

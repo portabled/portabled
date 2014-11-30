@@ -1,4 +1,4 @@
-module teapo.typescript {
+module portabled.typescript {
 
   export class TypeScriptService {
 

@@ -1,4 +1,4 @@
-module teapo.build {
+module portabled.build {
   
   export function processTemplate(template: string, scopes: any[]): string {
     // <%= expr %>

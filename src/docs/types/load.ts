@@ -1,8 +1,8 @@
-module teapo.docs.types {
+module portabled.docs.types {
   
   export function load(path: string, storage: DocState): DocHandler {
    
-    var submodules = listSubmodules<DocHandlerModule>(teapo.docs.types, 'load');
+    var submodules = listSubmodules<DocHandlerModule>(portabled.docs.types, 'load');
     for (var i = 0; i < submodules.length; i++) {
 
       var match = path.match(submodules[i].moduleObj.expectsFile);

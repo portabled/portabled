@@ -1,4 +1,4 @@
-module teapo.docs.types.text.scrollerView {
+module portabled.docs.types.text.scrollerView {
   
   export class ScrollerModel {
 

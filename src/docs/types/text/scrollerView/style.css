@@ -1,10 +1,10 @@
-.teapo-scroller-outer {
+.portabled-scroller-outer {
   float: left;
   width: 0px;
   height: 100%;
 }
 
-.teapo-scroller-thumb {
+.portabled-scroller-thumb {
   position: relative;
   border: solid 3px red;
   width: 2.2em;
@@ -12,11 +12,11 @@
   opacity: 0.5;
 }
 
-.teapo-scroller-line-host {
+.portabled-scroller-line-host {
   width: 2em;
 }
 
-.teapo-scroller-line {
+.portabled-scroller-line {
   background: gray;
   font-size: 3pt;
 }

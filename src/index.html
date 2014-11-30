@@ -1,6 +1,6 @@
 <!doctype html><html><head>
 <meta charset="utf-8">
-<title>Teapo - [teapo v0.5a]</title>
+<title>portabled - [portabled v0.5a]</title>
 
 <style><%=embedFile('imports/codemirror/codemirror.css')%></style>
 <style><%=embedFile('imports/codemirror/show-hint.css')%></style>
@@ -31,39 +31,39 @@
 <body
     data-bind="event: {keydown:keydown}">
 
-<div id=teapo-loading-host>
-  <div id=teapo-loading-title>
+<div id=portabled-loading-host>
+  <div id=portabled-loading-title>
     Booting...
   </div>
-  <div id=teapo-loading-progress>
+  <div id=portabled-loading-progress>
   </div>
 </div>
 
-<script data-legit=teapo>try { <%=typescriptBuild()%> } catch(bootError) { alert(bootError+' '+bootError.stack) }</script>
+<script data-legit=portabled>try { <%=typescriptBuild()%> } catch(bootError) { alert(bootError+' '+bootError.stack) }</script>
 
-<script data-legit=teapo>try { teapo.app.loading('Page layout...'); } catch (err) { alert(err+' '+err.stack); }</script>
+<script data-legit=portabled>try { portabled.app.loading('Page layout...'); } catch (err) { alert(err+' '+err.stack); }</script>
 
-<div class=teapo-flyout-scroller
+<div class=portabled-flyout-scroller
    data-bind="load: flyoutScroller = $element">
-  <div class=teapo-flyout-scroller-bg>
+  <div class=portabled-flyout-scroller-bg>
 
-    <div class=teapo-main-content
+    <div class=portabled-main-content
        data-bind="loadRaw: docHostRegions.content = $element"></div>
 
-    <div class=teapo-flyout>
+    <div class=portabled-flyout>
 
-      <div class=teapo-thick-bar-host>
-        <button class=teapo-more-button data-bind="click: moreClick"> ... </button>
-        <div class=teapo-thick-bar-bg>
-          <div class=teapo-thick-bar
+      <div class=portabled-thick-bar-host>
+        <button class=portabled-more-button data-bind="click: moreClick"> ... </button>
+        <div class=portabled-thick-bar-bg>
+          <div class=portabled-thick-bar
                data-bind="event: { mousedown: thickbarMouseDown }, loadRaw: docHostRegions.scroller = $element">
           </div>
         </div>
       </div>
 
-<script data-legit=teapo>try { teapo.app.loading('Files...'); } catch (err) { alert(err+' '+err.stack); }</script>
+<script data-legit=portabled>try { portabled.app.loading('Files...'); } catch (err) { alert(err+' '+err.stack); }</script>
 
-      <div class=teapo-file-tree
+      <div class=portabled-file-tree
          data-bind="loadRaw: fileTreeHost = $element">
 
         <ul>
@@ -75,17 +75,17 @@
         </ul>
       </div>
 
-<script data-legit=teapo>try { teapo.app.loading('Controls...'); } catch (err) { alert(err+' '+err.stack); }</script>
+<script data-legit=portabled>try { portabled.app.loading('Controls...'); } catch (err) { alert(err+' '+err.stack); }</script>
 
-      <div class=teapo-extra-content>
+      <div class=portabled-extra-content>
         
-        <div class=teapo-branding-area
+        <div class=portabled-branding-area
              data-bind="loadRaw: brandingArea=$element "></div>
 
 
-       <div class=teapo-scrollable-bottom>
+       <div class=portabled-scrollable-bottom>
 
-          <div class=teapo-links>
+          <div class=portabled-links>
             <button data-bind="click: deleteClick" style="min-width: 7em; margin-bottom: 0.3em;"> Delete </button> <br>
             <button data-bind="click: buildClick" style="min-width: 7em;"> Build </button> <br>
             <br>
@@ -99,9 +99,9 @@
 
           </div>
 
-          <div class=teapo-credits>
+          <div class=portabled-credits>
 
-            Teapo v0.5a by Oleg Mihailik. <br>
+            portabled v0.5a by Oleg Mihailik. <br>
             <br>
 
             <div style="font-size: 90%;">
@@ -127,67 +127,67 @@
   </div>
 </div>
 
-<div class=teapo-status-bar
+<div class=portabled-status-bar
    data-bind="loadRaw: docHostRegions.status = $element">
 </div>
 
-<script data-legit=teapo>try { teapo.app.loading('Libraries...'); } catch (err) { alert(err+' '+err.stack); }</script>
+<script data-legit=portabled>try { portabled.app.loading('Libraries...'); } catch (err) { alert(err+' '+err.stack); }</script>
 
 
-<script data-legit=teapo><%=embedFile('imports/acorn/acorn.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/acorn/acorn_loose.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/acorn/walk.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/acorn/acorn.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/acorn/acorn_loose.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/acorn/walk.js')%></script>
 
-<script data-legit=teapo><%=embedFile('imports/tern/signal.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/tern/tern.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/tern/def.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/tern/comment.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/tern/infer.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/tern/doc_comment.js')%></script>
-
-
-
-<script data-legit=teapo><%=embedFile('imports/codemirror/codemirror.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/dialog.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/search.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/searchcursor.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/show-hint.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/javascript.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/tern.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/javascript-hint.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/css.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/css-hint.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/sass.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/xml.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/xml-hint.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/htmlmixed.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/htmlembedded.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/html-hint.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/markdown.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/matchbrackets.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/codemirror/active-line.js')%></script>
-
-<script data-legit=teapo><%=embedFile('imports/knockout/knockout-3.2.0.js')%></script>
-
-<script data-legit=teapo><%=embedFile('imports/zip.js/zip.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/zip.js/deflate.js')%></script>
-<script data-legit=teapo><%=embedFile('imports/zip.js/inflate.js')%></script>
-
-<script data-legit=teapo><%=embedFile('imports/marked/marked.js')%></script>
-
-<script data-legit=teapo><%=embedFile('errors.js')%></script>
-
-<script type=text/html id=MoreDialogView data-legit=teapo><%=embedFile('app/moreDialog/layout.html')%></script>
-<script type=text/html id=ScrollerView data-legit=teapo><%=embedFile('docs/types/text/scrollerView/ScrollerView.html')%></script>
-
-<script data-legit=teapo><%=embedFile('imports/typescript/typescriptServices.js')%></script>
-<script data-legit=teapo id=lib.d.ts type=text/typescriptdefinition><%=embedFile('imports/typescript/lib.d.ts.text')%></script>
+<script data-legit=portabled><%=embedFile('imports/tern/signal.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/tern/tern.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/tern/def.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/tern/comment.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/tern/infer.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/tern/doc_comment.js')%></script>
 
 
-<script data-legit=teapo>try { teapo.app.start(); } catch (err) { alert(err+' '+err.stack); }</script>
+
+<script data-legit=portabled><%=embedFile('imports/codemirror/codemirror.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/dialog.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/search.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/searchcursor.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/show-hint.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/javascript.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/tern.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/javascript-hint.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/css.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/css-hint.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/sass.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/xml.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/xml-hint.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/htmlmixed.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/htmlembedded.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/html-hint.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/markdown.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/matchbrackets.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/codemirror/active-line.js')%></script>
+
+<script data-legit=portabled><%=embedFile('imports/knockout/knockout-3.2.0.js')%></script>
+
+<script data-legit=portabled><%=embedFile('imports/zip.js/zip.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/zip.js/deflate.js')%></script>
+<script data-legit=portabled><%=embedFile('imports/zip.js/inflate.js')%></script>
+
+<script data-legit=portabled><%=embedFile('imports/marked/marked.js')%></script>
+
+<script data-legit=portabled><%=embedFile('errors.js')%></script>
+
+<script type=text/html id=MoreDialogView data-legit=portabled><%=embedFile('app/moreDialog/layout.html')%></script>
+<script type=text/html id=ScrollerView data-legit=portabled><%=embedFile('docs/types/text/scrollerView/ScrollerView.html')%></script>
+
+<script data-legit=portabled><%=embedFile('imports/typescript/typescriptServices.js')%></script>
+<script data-legit=portabled id=lib.d.ts type=text/typescriptdefinition><%=embedFile('imports/typescript/lib.d.ts.text')%></script>
+
+
+<script data-legit=portabled>try { portabled.app.start(); } catch (err) { alert(err+' '+err.stack); }</script>
 
 <!--
-<script data-legit=teapo type="text/javascript" src="https://getfirebug.com/firebug-lite.js">
+<script data-legit=portabled type="text/javascript" src="https://getfirebug.com/firebug-lite.js">
 {
     overrideConsole: true,
     startInNewWindow: false,
@@ -197,7 +197,7 @@
 -->
 
 
-<div id=teapo-last-element></div>
+<div id=portabled-last-element></div>
 
 </body>
 </html>

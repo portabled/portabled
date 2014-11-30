@@ -1,4 +1,4 @@
-module teapo.docs.types.text.ts_ {
+module portabled.docs.types.text.ts_ {
   
   export class CodeMirrorCompletion implements CodeMirror.showHint.Completion {
 
@@ -28,13 +28,13 @@ module teapo.docs.types.text.ts_ {
 
       element.appendChild(createSpan(
         this._entry.kind.charAt(0),
-        'teapo-completion-icon teapo-completion-icon-' + this._entry.kind));
+        'portabled-completion-icon portabled-completion-icon-' + this._entry.kind));
 
       renderSyntaxPart(this._details.displayParts, element, this.text);
 
       if (this._details.documentation && this._details.documentation.length) {
         var docSpan = document.createElement('span');
-        docSpan.className = 'teapo-syntax-docs';
+        docSpan.className = 'portabled-syntax-docs';
         setTextContent(docSpan, ' // ');
         renderSyntaxPart(this._details.documentation, docSpan);
         element.appendChild(docSpan);

@@ -1,4 +1,4 @@
-module teapo.app.appRoot {
+module portabled.app.appRoot {
   
   export function dragScrollMouseDown(e: MouseEvent, scroller: HTMLElement) {
     var start = e.clientX;

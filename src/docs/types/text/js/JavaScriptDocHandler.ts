@@ -1,4 +1,4 @@
-module teapo.docs.types.text.js {
+module portabled.docs.types.text.js {
   
   export var expectsFile = /.*\.js/g;
   export var acceptsFile = /.*\.js/g;

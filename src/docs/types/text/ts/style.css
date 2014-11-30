@@ -1,4 +1,4 @@
-.teapo-completion-icon {
+.portabled-completion-icon {
   border: solid 1px black;
   font-size: 0.8;
   display: inline-block;
@@ -9,55 +9,55 @@
   border-radius: 3px;
 }
 
-.teapo-completion-icon-local {
+.portabled-completion-icon-local {
   border-color: fuchsia;
   color: fuchsia;
   background: lavenderblush;
 }
 
-.teapo-completion-icon-function {
+.portabled-completion-icon-function {
   border-color: green;
   color: green;
   background: honeydew;
 }
 
-.teapo-syntax-moduleName {
+.portabled-syntax-moduleName {
   opacity: 0.3;
 }
 
-.teapo-syntax-className {
+.portabled-syntax-className {
   opacity: 0.5;
 }
 
-.teapo-syntax-propertyName {
+.portabled-syntax-propertyName {
   font-weight: bold;
 }
 
-.teapo-syntax-methodName {
+.portabled-syntax-methodName {
   font-weight: bold;
 }
 
-.teapo-syntax-keyword {
+.portabled-syntax-keyword {
   opacity: 0.7;
 }
 
-.teapo-syntax-current {
+.portabled-syntax-current {
   font-weight: bold;
 }
 
-.teapo-syntax-docs {
+.portabled-syntax-docs {
   opacity: 0.8;
 }
 
 
-.teapo-match {
+.portabled-match {
   background: silver;
   background: rgba(20, 120, 0, 0.08);
   background: linear-gradient(rgba(20,120,0,0), rgba(20,120,0,0.02), rgba(20,120,0,0.2));
   border-bottom: solid 2px rgba(20,120,0,0.3);
 }
 
-.teapo-match-current {
+.portabled-match-current {
   background: silver;
   background: rgba(20, 120, 0, 0.08);
   background: linear-gradient(rgba(20,120,0,0), rgba(20,120,0,0.01), rgba(20,120,0,0.2));
@@ -65,13 +65,13 @@
 }
 
 
-.teapo-diag-syntactic {
+.portabled-diag-syntactic {
   background: solid coral 3px;
   background: rgba(255, 127, 80, 0.4);
   border-bottom: solid 4px tomato;
 }
 
-.teapo-diag-semantic {
+.portabled-diag-semantic {
   background: gold;
   background: rgba(255, 215, 0, 0.4);
   border-bottom: solid 4px orange;

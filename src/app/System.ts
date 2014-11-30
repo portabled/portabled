@@ -1,4 +1,4 @@
-module teapo.app {
+module portabled.app {
 
   export interface System {
 

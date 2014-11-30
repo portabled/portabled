@@ -1,4 +1,4 @@
-module teapo.docs.types.text.json {
+module portabled.docs.types.text.json {
   
   export var expectsFile = /.*\.json/g;
   export var acceptsFile = /.*\.json/g;

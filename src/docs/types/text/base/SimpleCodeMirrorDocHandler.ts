@@ -1,4 +1,4 @@
-module teapo.docs.types.text.base {
+module portabled.docs.types.text.base {
 
   export class SimpleCodeMirrorDocHandler implements CodeMirrorTextDoc {
 

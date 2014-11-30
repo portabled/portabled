@@ -1,4 +1,4 @@
-.teapo-main-content {
+.portabled-main-content {
   position: fixed !important;
   position: absolute;
   left: 0px; top: 0px;
@@ -8,7 +8,7 @@
 }
 
 
-.teapo-flyout-scroller {
+.portabled-flyout-scroller {
   position: fixed !important;
   position: absolute;
   left: 0px; top: 0px; width: 100%; height: 100%;
@@ -16,13 +16,13 @@
   overflow-x: scroll;
 }
 
-.teapo-flyout-scroller-bg {
+.portabled-flyout-scroller-bg {
   height: 100%;
   width: 150%;
   padding-left: 80%;
 }
 
-.teapo-flyout {
+.portabled-flyout {
   border-top: solid 1px silver;
   position: relative;
   height: 100%;

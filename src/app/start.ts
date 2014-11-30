@@ -1,4 +1,4 @@
-module teapo.app {
+module portabled.app {
 
   export function start() {
 
@@ -15,7 +15,7 @@ module teapo.app {
       loading('Restoring the setup...');
 
       try { 
-        var layout = new teapo.app.appRoot.PageModel();
+        var layout = new portabled.app.appRoot.PageModel();
 
         loading('Rendering...');
 
@@ -33,7 +33,7 @@ module teapo.app {
         });
       }
       catch (error) { 
-        alert('teapo.start ' + error + ' ' + error.stack); 
+        alert('portabled.start ' + error + ' ' + error.stack); 
       }
 
     });
@@ -77,7 +77,7 @@ module teapo.app {
   function removeSpyScripts() {
     var spyScripts: Element[] = [];
     for (var i = 0; i < document.scripts.length; i++) {
-      if (document.scripts[i].getAttribute('data-legit') !== 'teapo')
+      if (document.scripts[i].getAttribute('data-legit') !== 'portabled')
         spyScripts.push(document.scripts[i]);
     }
     
@@ -87,7 +87,7 @@ module teapo.app {
   }
   
   function removeTrailElements() {
-    var lastDIV = document.getElementById('teapo-last-element');
+    var lastDIV = document.getElementById('portabled-last-element');
     while (lastDIV.nextSibling) {
       lastDIV.nextSibling.parentNode.removeChild(lastDIV.nextSibling);
     }

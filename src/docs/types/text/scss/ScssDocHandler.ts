@@ -1,4 +1,4 @@
-module teapo.docs.types.text.scss {
+module portabled.docs.types.text.scss {
 
   export var expectsFile = /.*\.scss/g;
   export var acceptsFile = /.*\.scss/g;

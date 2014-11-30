@@ -1,4 +1,4 @@
-module teapo.docs.types.text.sass {
+module portabled.docs.types.text.sass {
 
   export var expectsFile = /.*\.sass/g;
   export var acceptsFile = /.*\.sass/g;

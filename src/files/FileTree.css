@@ -1,57 +1,57 @@
-.teapo-file-tree {
+.portabled-file-tree {
   padding-left: 1.5em;
 }
 
-.teapo-file-tree ul {
+.portabled-file-tree ul {
   margin: 1px;
   margin-left: 0px;
   padding-left: 0.4em;
 }
 
-.teapo-file-tree ul li {
+.portabled-file-tree ul li {
   margin: 0px;
   padding: 0px;
 }
 
-.teapo-file-tree li .teapo-file-name {
+.portabled-file-tree li .portabled-file-name {
   padding: 2px;
 }
 
-.teapo-file-tree li .teapo-dir-name {
+.portabled-file-tree li .portabled-dir-name {
   padding: 2px;
   font-weight: bold;
 }
 
-.teapo-file-tree ul li .teapo-file-name:hover {
+.portabled-file-tree ul li .portabled-file-name:hover {
   padding: 1px;
   border: solid 1px gold;
 }
 
-.teapo-file-tree ul li .teapo-dir-name:hover {
+.portabled-file-tree ul li .portabled-dir-name:hover {
   padding: 1px;
   border: solid 1px gold;
 }
 
 
-.teapo-file-tree li.teapo-dir {
+.portabled-file-tree li.portabled-dir {
   list-style: circle;
   cursor: default;
 }
 
-.teapo-file-tree .teapo-dir-collapsed ul {
+.portabled-file-tree .portabled-dir-collapsed ul {
   display: none;
 }
 
 
-.teapo-file-tree li.teapo-file {
+.portabled-file-tree li.portabled-file {
   list-style: square;
 }
 
-.teapo-file-tree .teapo-file-selected {
+.portabled-file-tree .portabled-file-selected {
   background: cornflowerblue;
 }
 
 
-.teapo-file-content {
+.portabled-file-content {
   display: none;
 }

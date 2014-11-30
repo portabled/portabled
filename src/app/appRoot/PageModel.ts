@@ -1,9 +1,9 @@
-module teapo.app.appRoot {
+module portabled.app.appRoot {
   
   export class PageModel {
 
     private _drive: persistence.Drive = null;
-    private _fileTree: teapo.files.FileTree = null;
+    private _fileTree: portabled.files.FileTree = null;
     private _docHost: docs.DocHost = null;
 
     docHostRegions: docs.types.DocHostRegions = <any>{};
@@ -15,7 +15,7 @@ module teapo.app.appRoot {
     }
 
     loadFromDOM(completed: () => void) {
-      var fileTree = new teapo.files.FileTree(this.fileTreeHost);
+      var fileTree = new portabled.files.FileTree(this.fileTreeHost);
 
       app.loading('Retrieving cached files...');
 
@@ -68,7 +68,7 @@ module teapo.app.appRoot {
         fileTree,
         uniqueKey,
         domTimestamp,
-        <any>teapo.persistence,
+        <any>portabled.persistence,
         mountedDriveCallback);
     }
 

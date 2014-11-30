@@ -1,4 +1,4 @@
-module teapo.docs.types.text.ts_ {
+module portabled.docs.types.text.ts_ {
 
   export var expectsFile = /.*\.ts/g;
   export var acceptsFile = /.*\.ts/g;
@@ -272,7 +272,7 @@ module teapo.docs.types.text.ts_ {
         CodeMirror.Pos(tsFrom.line-1, tsFrom.character-1),
         CodeMirror.Pos(tsTo.line-1, tsTo.character-1),
         {
-          className: 'teapo-diag teapo-diag-'+kind+' teapo-diag-'+ts.DiagnosticCategory[d.category]
+          className: 'portabled-diag portabled-diag-'+kind+' portabled-diag-'+ts.DiagnosticCategory[d.category]
         });
       marker['__error'] = d;
       this._diagMarkers.push(marker);
@@ -325,7 +325,7 @@ module teapo.docs.types.text.ts_ {
             from,
             to,
             {
-              className: isCurrent ? 'teapo-match teapo-match-current' : 'teapo-match'
+              className: isCurrent ? 'portabled-match portabled-match-current' : 'portabled-match'
             });
           this._matchMarkers.push({ marker: marker, offset: m.textSpan.start(), isCurrent: isCurrent });
 
@@ -398,7 +398,7 @@ module teapo.docs.types.text.ts_ {
             else
               errSpan.innerText = '? '+d.messageText + ' ';
             
-            errSpan.className = 'teapo-diag-'+ts.DiagnosticCategory[d.category];
+            errSpan.className = 'portabled-diag-'+ts.DiagnosticCategory[d.category];
 
             setTextContent(this.status, '');
 
@@ -424,7 +424,7 @@ module teapo.docs.types.text.ts_ {
               renderSyntaxPart(si.separatorDisplayParts, this.status);
             if (i === signature.argumentIndex) {
               var paramHighlight = document.createElement('span');
-              paramHighlight.className = 'teapo-syntax-current';
+              paramHighlight.className = 'portabled-syntax-current';
             	renderSyntaxPart(si.parameters[i].displayParts, paramHighlight);
               this.status.appendChild(paramHighlight);
             }
@@ -438,7 +438,7 @@ module teapo.docs.types.text.ts_ {
 
         if (si.documentation && si.documentation.length) {
           var docSpan = document.createElement('span');
-          docSpan.className = 'teapo-syntax-docs';
+          docSpan.className = 'portabled-syntax-docs';
           setTextContent(docSpan, ' // ');
           renderSyntaxPart(si.documentation, docSpan);
           this.status.appendChild(docSpan);
@@ -466,7 +466,7 @@ module teapo.docs.types.text.ts_ {
               sp.textContent = dip.text;
             else
               sp.innerText = dip.text;
-            sp.className = 'teapo-syntax-'+dip.kind;
+            sp.className = 'portabled-syntax-'+dip.kind;
             
             this.status.appendChild(sp);
           }
@@ -478,7 +478,7 @@ module teapo.docs.types.text.ts_ {
               sp.textContent = ' // ';
             else
               sp.innerText = ' // ';
-            sp.className = 'teapo-syntax-comment';
+            sp.className = 'portabled-syntax-comment';
             this.status.appendChild(sp);
 
             for (var i = 0; i < qi.documentation.length; i++) {
@@ -492,7 +492,7 @@ module teapo.docs.types.text.ts_ {
                 sp.textContent = dip.text;
               else
                 sp.innerText = dip.text;
-              sp.className = 'teapo-syntax-'+dip.kind;
+              sp.className = 'portabled-syntax-'+dip.kind;
 
               this.status.appendChild(sp);
             }

@@ -1,4 +1,4 @@
-module teapo.build.functions {
+module portabled.build.functions {
 
   export function typescriptBuild() {
     

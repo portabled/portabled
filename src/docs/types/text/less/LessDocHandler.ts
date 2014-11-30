@@ -1,4 +1,4 @@
-module teapo.docs.types.text.less {
+module portabled.docs.types.text.less {
   
   export var expectsFile = /.*\.less/g;
   export var acceptsFile = /.*\.less/g;

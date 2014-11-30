@@ -1,4 +1,4 @@
-module teapo.docs.types.text.md {
+module portabled.docs.types.text.md {
   
   export var expectsFile = /.*\.md/g;
   export var acceptsFile = /.*\.md/g;

@@ -1,4 +1,4 @@
-module teapo {
+module portabled {
   
   function getIndexedDB() {
     return typeof indexedDB === 'undefined' ? null : indexedDB;
@@ -13,7 +13,7 @@ module teapo {
         return;
       }
 
-      var dbName = uniqueKey || 'teapo';
+      var dbName = uniqueKey || 'portabled';
 
       var openRequest = indexedDBInstance.open(dbName, 1);
       openRequest.onerror = (errorEvent) => callback(null);

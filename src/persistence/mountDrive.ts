@@ -1,4 +1,4 @@
-module teapo.persistence {
+module portabled.persistence {
   
   export function mountDrive(
     dom: Drive,
