@@ -1,6 +1,5 @@
-<!DOCTYPE html>
-<!-- saved from url=(0037)file:///home/omi/portabled/empty.html -->
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!doctype html>
+<html><head>
 <meta charset="utf-8">
 <title>portabled - [portabled v0.5a]</title>
 
@@ -1130,7 +1129,12 @@ body {
                     var user = gitHubURLParts[0].slice(0, gitHubURLParts[0].length - '.github.io'.length);
                     var repo = gitHubURLParts[1];
                     var path = gitHubURLParts.length === 2 ? 'index.html' : gitHubURLParts.slice(3).join('/');
+                    function commitViaJSAPI() {
+                        //        var gh = new Github();
+                        //        gh.Repo;
+                    }
                     var xhr = new XMLHttpRequest();
+                    xhr.withCredentials = true;
                     xhr.open('PUT', 'https://api.github.com/repos/' + user + '/' + repo + '/contents/' + path);
                     xhr.onreadystatechange = function () {
                         if (xhr.readyState == 4 && xhr.status == 200) {
@@ -3431,13 +3435,7 @@ var portabled;
                             return result;
                         };
                         TypeScriptDocHandler.prototype.onChanges = function (docChanges, summary) {
-                            this._changes.push({
-                                span: {
-                                    start: summary.lead,
-                                    length: summary.mid
-                                },
-                                newLength: summary.newmid
-                            });
+                            this._changes.push(ts.createTextChangeRange(ts.createTextSpan(summary.lead, summary.mid), summary.newmid));
                             this._diagsTimer.reset();
                             this._matchHighlightTimer.reset();
                             this._matchMarkersInvalidated = true;
@@ -5097,7 +5095,7 @@ var portabled;
             function ScriptDocumentSnapshot(doc) {
                 this._lineStartPositions = null;
                 this._text = doc.text();
-                this.changes = doc.changes();
+                this.changes = doc.changes().slice(0);
             }
             ScriptDocumentSnapshot.prototype.getText = function (start, end) {
                 return this._text.slice(start, end);
@@ -5133,8 +5131,8 @@ var portabled;
                 this._snapshot = null;
             }
             ScriptDocumentState.prototype.getScriptSnapshot = function () {
-                //if (!this._snapshot || this._snapshot.changes.length != this.doc.changes().length)
-                this._snapshot = new typescript.ScriptDocumentSnapshot(this.doc);
+                if (!this._snapshot || this._snapshot.changes.length != this.doc.changes().length)
+                    this._snapshot = new typescript.ScriptDocumentSnapshot(this.doc);
                 return this._snapshot;
             };
             ScriptDocumentState.prototype.getScriptVersion = function () {
@@ -5296,7 +5294,7 @@ var portabled;
  } catch(bootError) { alert(bootError+' '+bootError.stack) }</script>
 
 <div id="portabled-loading-host" style="display: none;">
-  <div id="portabled-loading-title">Opening...</div>
+  <div id="portabled-loading-title">Opening readme...</div>
   <div id="portabled-loading-progress">
   </div>
 </div>
@@ -5318,7 +5316,7 @@ var portabled;
 <div class="portabled-flyout-scroller" data-bind="load: flyoutScroller = $element">
   <div class="portabled-flyout-scroller-bg">
 
-    <div class="portabled-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default"><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 40px; left: 240.953125px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-vscrollbar" cm-not-content="true"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-hscrollbar" cm-not-content="true"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-scrollbar-filler" cm-not-content="true"></div><div class="CodeMirror-gutter-filler" cm-not-content="true"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; margin-bottom: -15px; border-right-width: 15px; min-width: 214.953125px; min-height: 62px; padding-right: 0px; padding-bottom: 0px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>3</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 211.953125px; top: 36px; height: 18px;">&nbsp;</div></div><div class="CodeMirror-code"><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-header cm-header-1"># Empty filesystem</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="CodeMirror-activeline" style="position: relative;"><div class="CodeMirror-activeline-background CodeMirror-linebackground"></div><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre class=""><span style="padding-right: 0.1px;">This is an empty portable editor.</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 15px; width: 1px; top: 62px;"></div><div class="CodeMirror-gutters" style="height: 582px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div>
+    <div class="portabled-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default"><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 40px; left: 240.953125px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-vscrollbar" cm-not-content="true"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-hscrollbar" cm-not-content="true"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-scrollbar-filler" cm-not-content="true"></div><div class="CodeMirror-gutter-filler" cm-not-content="true"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; margin-bottom: -15px; border-right-width: 15px; min-width: 214.953125px; min-height: 62px; padding-right: 0px; padding-bottom: 0px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><pre>x</pre><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>3</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 211.953125px; top: 36px; height: 18px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-header cm-header-1"># Empty filesystem</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="CodeMirror-activeline" style="position: relative;"><div class="CodeMirror-activeline-background CodeMirror-linebackground"></div><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre class=""><span style="padding-right: 0.1px;">This is an empty portable editor.</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 15px; width: 1px; top: 62px;"></div><div class="CodeMirror-gutters" style="height: 582px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div>
 
     <div class="portabled-flyout">
 
@@ -5346,7 +5344,7 @@ var portabled;
 
 <script data-legit="portabled">try { portabled.app.loading('Files...'); } catch (err) { alert(err+' '+err.stack); }</script>
 
-      <div class="portabled-file-tree" timestamp="1421273305265" data-bind="loadRaw: fileTreeHost = $element">
+      <div class="portabled-file-tree" timestamp="1421277860553" data-bind="loadRaw: fileTreeHost = $element">
 
         <ul>
 
@@ -5354,7 +5352,7 @@ var portabled;
 -->
           
           
-        <li class="portabled-file  portabled-file-selected portabled-file-selected"><span class="portabled-file-name">readme.md</span><pre class="portabled-file-content"># Empty filesystem
+        <li class="portabled-file"><span class="portabled-file-name">readme.md</span><pre class="portabled-file-content"># Empty filesystem
 
 This is an empty portable editor.</pre></li></ul>
       </div>
@@ -5363,8 +5361,30 @@ This is an empty portable editor.</pre></li></ul>
 
       <div class="portabled-extra-content">
         
-        <div class="portabled-branding-area" data-bind="loadRaw: brandingArea=$element "><h1 id="empty-filesystem">Empty filesystem</h1>
-<p>This is an empty portable editor.</p>
+        <div class="portabled-branding-area" data-bind="loadRaw: brandingArea=$element "><h1 id="portabled-v0-6h">portabled v0.6h</h1>
+<p>Self-editing filesystem embedded in a single HTML file.</p>
+<p>The idea, all of the painstaking implementation and the vision by <a href="mihailik@gmail.com">Oleg Mihailik</a>.
+See the credits section for the used libraries and respective licences. </p>
+<h3 id="outstanding-tasks-">Outstanding tasks:</h3>
+<ul>
+<li>Unifying of all import/export into 'moreDialog'</li>
+<li>Saving current position in documents</li>
+<li>Better internal API for doc handler and for the app itself</li>
+<li>Highlight of the changed files (comparing local storage and the original DOM)</li>
+<li>Styles and colours (planning for pale seaside 'Whitstable' blue, maybe black theme too).</li>
+<li>Scrollbar to use syntax-highlighted document lines.</li>
+<li>TypeScript extra features: navigate to, search integration, tooltips.</li>
+<li>More local storage adapters.</li>
+<li>Delete folder.</li>
+<li>Rename file/folder.</li>
+<li>Upload to GitHub, GDrive, Dropbox etc.</li>
+<li>Stronger browser support (the target is ALL).</li>
+<li>Filesystem integration in Chrome app, node-webkit, HTMLA-ie7.</li>
+<li>node.js fs API emulation over portabled-Drive.</li>
+<li>Toast popup/fadeout messages for key events: opening, building, import-export completion.</li>
+<li>Sub-domains for doc handlers (separate contexts in TS/JS for selected subdirectories)</li>
+<li>Demos in the repository: itself, TypeScript whole, PE.js, dummy sample</li>
+</ul>
 </div>
 
 
@@ -5374,14 +5394,14 @@ This is an empty portable editor.</pre></li></ul>
             <button data-bind="click: deleteClick" style="min-width: 7em; margin-bottom: 0.3em;"> Delete </button> <br>
             <button data-bind="click: buildClick" style="min-width: 7em;"> Build </button> <br>
             <br>
-            <a href="file:///home/omi/portabled/empty.html#" data-bind="click: exportAllHTML"> Save whole page </a><br>
-            <a href="file:///home/omi/portabled/empty.html#" data-bind="click: commitToGitHub"> Commit to GitHub </a><br>
-            <a href="file:///home/omi/portabled/empty.html#" data-bind="click: exportAllZIP"> Export to ZIP </a><br>
-            <a href="file:///home/omi/portabled/empty.html#" data-bind="click: exportCurrentFile"> Save current file </a><br>
+            <a href="#" data-bind="click: exportAllHTML"> Save whole page </a><br>
+            <a href="#" data-bind="click: commitToGitHub"> Commit to GitHub </a><br>
+            <a href="#" data-bind="click: exportAllZIP"> Export to ZIP </a><br>
+            <a href="#" data-bind="click: exportCurrentFile"> Save current file </a><br>
             <br>
-            <a href="file:///home/omi/portabled/empty.html#" data-bind="click: importText"> Add file </a><br>
-            <a href="file:///home/omi/portabled/empty.html#" data-bind="click: importBase64"> Add binary (base64) </a><br>
-            <a href="file:///home/omi/portabled/empty.html#" data-bind="click: importZIP"> Import files from ZIP </a><br>
+            <a href="#" data-bind="click: importText"> Add file </a><br>
+            <a href="#" data-bind="click: importBase64"> Add binary (base64) </a><br>
+            <a href="#" data-bind="click: importZIP"> Import files from ZIP </a><br>
 
           </div>
 
@@ -45335,7 +45355,10 @@ var ts;
                 }
             }
             else {
-                if (!(findSourceFile(filename + ".ts", isDefaultLib, refFile, refPos, refEnd) || findSourceFile(filename + ".d.ts", isDefaultLib, refFile, refPos, refEnd))) {
+                if (options.allowNonTsExtensions && !findSourceFile(filename, isDefaultLib, refFile, refPos, refEnd)) {
+                    diagnostic = ts.Diagnostics.File_0_not_found;
+                }
+                else if (!findSourceFile(filename + ".ts", isDefaultLib, refFile, refPos, refEnd) && !findSourceFile(filename + ".d.ts", isDefaultLib, refFile, refPos, refEnd)) {
                     diagnostic = ts.Diagnostics.File_0_not_found;
                     filename += ".ts";
                 }
