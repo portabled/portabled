@@ -5162,26 +5162,22 @@ var portabled;
 
 <script data-legit="portabled">try { portabled.app.loading('Files...'); } catch (err) { alert(err+' '+err.stack); }</script>
 
-      <div class="portabled-file-tree" timestamp="1424718673972" data-bind="loadRaw: fileTreeHost = $element">
+      <div class="portabled-file-tree" timestamp="1424719002151" data-bind="loadRaw: fileTreeHost = $element">
 
         <ul>
 
 <!--
 -->
-          <li class="portabled-dir "><span class="portabled-dir-name">docs</span><ul><li class="portabled-dir "><span class="portabled-dir-name">types</span><ul><li class="portabled-dir "><span class="portabled-dir-name">text</span><ul><li class="portabled-dir portabled-dir-collapsed"><span class="portabled-dir-name">base</span><ul><li class="portabled-file"><span class="portabled-file-name">SimpleCodeMirrorDocHandler.ts</span><pre class="portabled-file-content"></pre></li></ul></li><li class="portabled-dir portabled-dir-collapsed"><span class="portabled-dir-name">css</span><ul><li class="portabled-file"><span class="portabled-file-name">CssDocHandler.ts</span><pre class="portabled-file-content"></pre></li></ul></li></ul></li></ul></li></ul></li><li class="portabled-file"><span class="portabled-file-name">base.ts</span><pre class="portabled-file-content">module portabled.docs.types.text.base {
+          <li class="portabled-file"><span class="portabled-file-name">base.ts</span><pre class="portabled-file-content">module portabled.docs.types.text.base {
 
-  export class SimpleCodeMirrorDocHandler implements CodeMirrorTextDoc {
+  export class SimpleCodeMirrorDocHandler {
 
     constructor() {
     }
 
-    shouldTriggerCompletion(textBeforeCursor: string): boolean {
-      return false;
+    shouldTriggerCompletion() {
     }
 
-    getCompletions(callback?: Function): any {
-      return null;
-    }
 
   }
 
@@ -5193,8 +5189,7 @@ var portabled;
       super();
     }
 
-    shouldTriggerCompletion(textBeforeCursor: string) {
-      return true;
+    shouldTriggerCompletion() {
     }
 
     getCompletions() {
