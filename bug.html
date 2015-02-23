@@ -5162,7 +5162,7 @@ var portabled;
 
 <script data-legit="portabled">try { portabled.app.loading('Files...'); } catch (err) { alert(err+' '+err.stack); }</script>
 
-      <div class="portabled-file-tree" timestamp="1424717735536" data-bind="loadRaw: fileTreeHost = $element">
+      <div class="portabled-file-tree" timestamp="1424718138016" data-bind="loadRaw: fileTreeHost = $element">
 
         <ul>
 
@@ -5178,19 +5178,10 @@ var portabled;
     text: () =&gt; string = null;
     scroller: HTMLElement = null;
     status: HTMLElement = null;
-    keyMap: any = {
-      "Ctrl-Enter": () =&gt; this._triggerCompletion(true),
-      "Alt-Enter": () =&gt; this._triggerCompletion(true),
-      "Ctrl-J": () =&gt; this._triggerCompletion(true),
-      "Alt-J": () =&gt; this._triggerCompletion(true)
-    };
+    keyMap: any = {};
     removed = false;
 
     state: any = null;
-
-    private _completionTimer: Timer = null;
-    private _completionLastChangeText = null;
-    private _isCompleting = false;
 
     constructor() {
     }
@@ -5199,8 +5190,6 @@ var portabled;
     }
 
     close() {
-      if (this._completionTimer)
-	      this._completionTimer.stop();
     }
 
     remove() { 
@@ -5219,114 +5208,16 @@ var portabled;
 
     onChanges(docChanges: CodeMirror.EditorChange[], summary: { lead: number; mid: number; trail: number; }) {
 
-      // awkward workaround to an apparent TS emit bug (super.method() instead of _super.instance.method())
-      this.onChangesCore(docChanges, summary);
-
-      if (this.getCompletions) {
-        if (!this._isCompleting) {
-          var cur = this.doc.getCursor();
-          var line = this.doc.getLine(cur.line);
-          this._completionLastChangeText = line.slice(0, cur.ch);
-
-          if (!this._completionTimer)
-            this._createCompletionTimer();
-          this._completionTimer.reset();
-        }
-      }
     }
     
     onChangesCore(docChanges: CodeMirror.EditorChange[], summary: { lead: number; mid: number; trail: number; }) {
-    }
-
-    private _createCompletionTimer() {
-      this._completionTimer = new Timer();
-      this._completionTimer.interval = 200;
-      this._completionTimer.ontick = () =&gt; {
-        if (this._isCompleting) return;
-        if (!this.editor)
-          return;
-
-        if (!this.shouldTriggerCompletion || this.shouldTriggerCompletion(this._completionLastChangeText)) {
-          this._triggerCompletion(/*implicitly*/ true);
-        }
-      };
     }
 
     onSave() {
       
     }
 
-    private _triggerCompletion(implicitly: boolean) {
-
-      this._completionTimer.stop();
-
-      var lastResult;
-      
-      var close = () =&gt; {
-        CodeMirror.off(lastResult, 'close', close);
-        this._isCompleting = false;
-      };
-      
-      var hintFn = (cm,callback,options) =&gt; {
-        
-        var processResults = (results: CodeMirror.showHint.CompletionResult) =&gt; { 
-          if (result &amp;&amp; result.list &amp;&amp; implicitly) {
-            var chunk = this.doc.getRange(result.from, result.to);
-            for (var i = 0; i &lt; result.list.length; i++) {
-              if (result.list[i] == &lt;any&gt;chunk) {
-                result = null;
-                break;
-              }
-            }
-          }
-
-          if (result) { 
-            this._isCompleting = true;
-
-            lastResult = result;
-            CodeMirror.on(lastResult, 'close', close);
-          }
-          else {
-            this._isCompleting = false;
-            if (lastResult)
-              CodeMirror.off(lastResult, 'close', close);
-          }
-
-          return result;
-        };
-        
-        if (this.asyncCompletion) {
-          (&lt;any&gt;this.getCompletions)(result =&gt; {
-            var res = processResults(result);
-            callback(res);
-          });
-        }
-        else {
-        
-          var result: CodeMirror.showHint.CompletionResult = this.getCompletions();
-          
-          var res = processResults(result);
-          return res;
-        }
-      };
-      
-      if (this.asyncCompletion) {
-        (&lt;any&gt;hintFn).async = true;
-      }
-      
-      var hintData: CodeMirror.showHint.Options = {
-        hint: hintFn,
-        completeSingle: implicitly ? false : true
-      };
-
-      // console.log('hintData ', hintData);
-      this.editor.showHint(hintData);
-
-    }
-    
     onCompletion(callback: (result: CodeMirror.showHint.CompletionResult) =&gt; void) {
-      var completions = &lt;CodeMirror.showHint.CompletionResult&gt;(&lt;any&gt;CodeMirror).hint.css(this.editor);
-      callback(completions);
     }
     
   }
@@ -5371,28 +5262,11 @@ var portabled;
   }
 
   
-}</pre></li></ul></li><li class="portabled-file"><span class="portabled-file-name">CodeMirrorDocHandler.ts</span><pre class="portabled-file-content">module portabled.docs.types.text {
+}</pre></li></ul></li><li class="portabled-file  "><span class="portabled-file-name">CodeMirrorDocHandler.ts</span><pre class="portabled-file-content">module portabled.docs.types.text {
 
   export class CodeMirrorDocHandler implements DocHandler {
 
     static codeMirrorEditorPools: { [moduleName: string]: CodeMirror[]; } = { };
-    
-    private _closures = {
-      cm_changes: (cm, docChanges) =&gt; this._docChanges(docChanges),
-      cm_cursorActivity: (cm) =&gt; this._cursorActivity(),
-      cm_scroll: (cm) =&gt; this._scroll()
-    };
-
-    private _saveTimer = new Timer();
-
-    private _appliedKeyMap = null;
-    
-    private _scrollerModel: scrollerView.ScrollerModel = null;
-
-    private _retrievedText: string = null;
-    private _validLead: number = -1;
-    private _validTrail: number = 0;
-    private _totalLength: number = 0;
 
     constructor(
       public path: string,
@@ -5400,286 +5274,31 @@ var portabled;
       public textDoc: CodeMirrorTextDoc,
       public moduleName: string,
       public moduleObj: TextHandlerModule) {
-      
-      this._saveTimer.ontick = () =&gt; this._save();
-      
-      this.textDoc.path = path;
-
-      this.textDoc.text = () =&gt; this.text();
-      
-      if (this.textDoc.load) {
-        var text = this.storage.read();
-        this.textDoc.load(text);
-      }
-      
+            
     }
 
     showEditor(regions: DocHostRegions): void {
 
-      if (!this.textDoc.doc) {
-        if (!this._retrievedText &amp;&amp; typeof this._retrievedText !== 'string') {
-          this._retrievedText = this.storage.read();
-          this._validLead = -1;
-          this._validTrail = 0;
-          this._totalLength = this._retrievedText.length;
-        }
-
-        this.textDoc.doc = (this.moduleObj &amp;&amp; this.moduleObj.createCodeMirrorDoc) ?
-          this.moduleObj.createCodeMirrorDoc(this.storage.read()) :
-          createCodeMirrorDoc(this._retrievedText);
-      }
-
-
-      var cmPool =
-        CodeMirrorDocHandler.codeMirrorEditorPools[this.moduleName || ''] ||
-        (CodeMirrorDocHandler.codeMirrorEditorPools[this.moduleName || ''] = []);
-
-      if (cmPool.length) {
-        this.textDoc.editor = cmPool.pop();
-      	// avoid zoom on focus
-      	this.textDoc.editor.getInputField().style.fontSize = '16px';
-
-        regions.content.appendChild(this.textDoc.editor.getWrapperElement());
-      }
-      else {
-        this.textDoc.editor = (this.moduleObj &amp;&amp; this.moduleObj.createCodeMirrorEditor) ?
-          this.moduleObj.createCodeMirrorEditor(regions.content) :
-          createCodeMirrorEditor(regions.content);
-
-        this._appliedKeyMap = this.textDoc.keyMap;
-        if (this._appliedKeyMap) {
-          this.textDoc.editor.addKeyMap(this._appliedKeyMap);
-        }
-      }
- 
-      if (this.textDoc.editor.getDoc()!==this.textDoc.doc)
-      	this.textDoc.editor.swapDoc(this.textDoc.doc);
-
-      try {
-        this.textDoc.editor.focus();
-      }
-      catch (e) { }
-      
-      setTimeout(() =&gt; {
-        if (this.textDoc.editor &amp;&amp; this.textDoc.editor.getDoc() === this.textDoc.doc) {
-          this.textDoc.editor.refresh();
-          this.textDoc.editor.focus();
-          this._scroll();
-        }
-      }, 2);
-
-
-      this.textDoc.editor.on('changes', this._closures.cm_changes);
-      this.textDoc.editor.on('cursorActivity', this._closures.cm_cursorActivity);
-      this.textDoc.editor.on('scroll', this._closures.cm_scroll);
-
-
-      if (!this._scrollerModel) {
-        this._scrollerModel = new scrollerView.ScrollerModel(this.textDoc.doc, 300);
-      }
-
-      if (!this.textDoc.scroller) {
-        this.textDoc.scroller = document.createElement('div');
-        this.textDoc.scroller.style.width = '100%';
-        this.textDoc.scroller.style.height = '100%';
-        ko.renderTemplate('ScrollerView', this._scrollerModel, null, this.textDoc.scroller);
-      }
-
-      regions.scroller.appendChild(this.textDoc.scroller);
-      
-      if (!this.textDoc.status) {
-        this.textDoc.status = document.createElement('div');
-        this.textDoc.status.style.width = '100%';
-        this.textDoc.status.style.height = '100%';
-        this.textDoc.status.textContent = this.path;
-      }
-
-      regions.status.appendChild(this.textDoc.status);
-
-      if (this.textDoc.open)
-        this.textDoc.open();
-      
 
     }
 
     hideEditor(): void {
 
-      this._saveTimer.endWaiting();
-      
-      this.textDoc.editor.off('changes', this._closures.cm_changes);
-      this.textDoc.editor.off('cursorActivity', this._closures.cm_cursorActivity);
-      this.textDoc.editor.off('scroll', this._closures.cm_scroll);
 
-      if (this._appliedKeyMap) {
-        this.textDoc.editor.removeKeyMap(this._appliedKeyMap);
-        this._appliedKeyMap = null;
-      }
-
-      if (this.textDoc.close)
-        this.textDoc.close();
-      
-      var editor = this.textDoc.editor;
-      this.textDoc.editor = null;
-      
-      editor.swapDoc(new CodeMirror.Doc(''));
-      
-      var cmPool =
-        CodeMirrorDocHandler.codeMirrorEditorPools[this.moduleName || ''];
-      
-      cmPool.push(editor);
     }
     
     remove() {
-      this._saveTimer.stop();
-      if (this.textDoc.remove)
-        this.textDoc.remove();
-
-      this.textDoc.doc = null;
     }
 
     text(): string {
-
-      var doc = this.textDoc.doc;
-      if (!this._retrievedText &amp;&amp; typeof this._retrievedText !== 'string') {
-        this._retrievedText = doc ? doc.getValue() : this.storage.read();
-        this._totalLength = this._retrievedText.length;
-        this._validLead = -1;
-        return this._retrievedText;
-      }
-
-      if (this._validLead &lt; 0)
-        return this._retrievedText;
-
-      var lineCount = doc.lineCount();
-      var totalLength = doc.indexFromPos({
-        line: lineCount - 1,
-        ch: doc.getLine(lineCount - 1).length
-      });
-
-      if (this._validLead + this._validTrail === this._retrievedText.length
-         &amp;&amp; this._retrievedText.length === totalLength)
-        return this._retrievedText;
-
-      if (this._validLead + this._validTrail &lt; totalLength / 4) { // if more than 0.75 of the document is modified
-        this._retrievedText = doc.getValue();
-        this._validLead = -1;
-        return this._retrievedText;
-      }
-
-      var mid = doc.getRange(
-        doc.posFromIndex(this._validLead),
-        doc.posFromIndex(totalLength - this._validTrail));
       
-      this._retrievedText =
-        this._retrievedText.slice(0, this._validLead) +
-        mid +
-        this._retrievedText.slice(this._retrievedText.length - this._validTrail);
-      this._validLead = -1;
+      return null;
 
-      
-      return this._retrievedText;
-    }
-
-    private _docChanges(docChanges: CodeMirror.EditorChange[]) {
-
-      var doc = this.textDoc.doc;
-
-      var lineCount = doc.lineCount();
-      var newTotalLength = doc.indexFromPos({
-        line: lineCount - 1,
-        ch: doc.getLine(lineCount - 1).length
-      });
-
-      var changeLead = -1;
-      var changeTrail = -1;
-      var deltaLength = 0;
-      for (var i = 0; i &lt; docChanges.length; i++) {
-        var ch = docChanges[i];
-        var removedLength = totalLength(ch.removed);
-        var addedLength = totalLength(ch.text);
-        var fromIndex = doc.indexFromPos(ch.from);
-        var trail = newTotalLength - fromIndex - addedLength;
-        
-        deltaLength += addedLength - removedLength;
-        
-        if (changeLead &lt; 0) {
-          changeLead = fromIndex;
-          changeTrail = trail;
-        }
-        else {
-          changeLead = Math.min(changeLead, fromIndex);
-          changeTrail = Math.min(changeTrail, trail);
-        }
-      }
-      
-      if (this._validLead &lt; 0) {
-        this._validLead = changeLead;
-        this._validTrail = changeTrail;
-      }
-      else {
-        this._validLead = Math.min(this._validLead, changeLead);
-        this._validTrail = Math.min(this._validTrail, changeTrail);
-      }
-
-      var changeSummary = {
-        lead: changeLead,
-        mid: this._totalLength - changeLead - changeTrail,
-        newmid: 0,
-        trail: changeTrail
-      };
-      changeSummary.newmid = changeSummary.mid + deltaLength;
-
-      this._totalLength = newTotalLength;
-
-      if (this.textDoc.onChanges) {
-        this.textDoc.onChanges(docChanges, changeSummary);
-      }
-
-      if (this._scrollerModel)
-        this._scrollerModel.docChanges(docChanges);
-
-      this._saveTimer.interval = (this.moduleObj &amp;&amp; this.moduleObj.saveDelay) || saveDelay;
-      this._saveTimer.reset();
-
-    }
-
-    private _cursorActivity() {
-      if (this.textDoc.onCursorMoved) {
-        var cursorPos = this.textDoc.doc.getCursor();
-        //this.textDoc.status.textContent = 'token '+this.textDoc.editor.getTokenAt(cursorPos).type;
-        this.textDoc.onCursorMoved(cursorPos);
-      }
-
-      // TODO: scroller/thickBar cursor activity
-
-    }
-    
-    private _scroll() {
-      var scr = this.textDoc.editor.getScrollInfo();
-      if (this.textDoc.onScroll)
-        this.textDoc.onScroll(scr);
-
-      if (this._scrollerModel)
-        this._scrollerModel.scroll(scr);
-      
-    }
-
-    private _save() {
-      this.storage.write(this.text());
     }
 
   }
 
-  function totalLength(lines: string[]): number {
-    var length = 0;
-    for (var i = 0 ; i &lt; lines.length; i++) {
-      length += lines[i].length;
-    }
-    if (lines.length &gt; 1)
-      length += lines.length - 1;
-    return length;
-  }
-}</pre></li><li class="portabled-file"><span class="portabled-file-name">api.ts</span><pre class="portabled-file-content">module portabled.docs.types.text {
+}</pre></li><li class="portabled-file "><span class="portabled-file-name">api.ts</span><pre class="portabled-file-content">module portabled.docs.types.text {
   
   export interface TextHandlerModule {
 
@@ -5748,68 +5367,14 @@ var portabled;
   }
 
   export function createCodeMirrorEditor(host: HTMLElement): CodeMirror {
-    return new CodeMirror(host, {
-        lineNumbers: true,
-        matchBrackets: true,
-        autoCloseBrackets: true,
-        matchTags: true,
-        showTrailingSpace: true,
-        autoCloseTags: true,
-        //highlightSelectionMatches: {showToken: /\w/},
-        styleActiveLine: true,
-        tabSize: 2
-      });
+    return null;
   }
   
   export function createCodeMirrorDoc(text: string): CodeMirror.Doc {
-    return new CodeMirror.Doc(text || '');
+    return null;
   }
 
-}</pre></li><li class="portabled-file"><span class="portabled-file-name">load.ts</span><pre class="portabled-file-content">module portabled.docs.types.text {
-
-  export var expectsFile = /.*\.txt/g;
-  export var acceptsFile = /.*/g;
-  
-  export var saveDelay = 700;
-
-  export function load(path: string, storage: DocState): DocHandler {
-
-    var submodules = listSubmodules&lt;TextHandlerModule&gt;(portabled.docs.types.text, 'loadText');
-    for (var i = 0; i &lt; submodules.length; i++) {
-
-      var match = path.match(submodules[i].moduleObj.expectsFile);
-      if (match &amp;&amp; match.length &amp;&amp; match[0] === path) {
-        var textDoc = submodules[i].moduleObj.loadText(path, storage);
-        if (textDoc)
-          return new CodeMirrorDocHandler(path, storage, textDoc, submodules[i].moduleName, submodules[i].moduleObj);
-      }
-
-    }
-    
-    for (var i = 0; i &lt; submodules.length; i++) {
-
-      if (submodules[i].moduleObj.acceptsFile) { 
-        var match = path.match(submodules[i].moduleObj.acceptsFile);
-        if (!match || !match.length || match[0] !== path) continue;
-      }
-
-      var textDoc = submodules[i].moduleObj.loadText(path, storage);
-      if (textDoc)
-        return new CodeMirrorDocHandler(path, storage, textDoc, submodules[i].moduleName, submodules[i].moduleObj);
-    }
-
-    var textDoc = portabled.docs.types.text.loadText(path, storage);
-    return new CodeMirrorDocHandler(
-      path, storage, textDoc,
-      null, null);
-    
-  }
-  
-  
-  
-
-  
-}</pre></li></ul></li><li class="portabled-file"><span class="portabled-file-name">api.ts</span><pre class="portabled-file-content">/**
+}</pre></li></ul></li><li class="portabled-file "><span class="portabled-file-name">api.ts</span><pre class="portabled-file-content">/**
  * Add your generic document type handlers to nested modules
  * inside 'types' module.
  * Define load function in the same way load function is defined here below.
@@ -5864,39 +5429,6 @@ module portabled.docs.types {
   }
 
 
-}</pre></li><li class="portabled-file"><span class="portabled-file-name">listSubmodules.ts</span><pre class="portabled-file-content">module portabled.docs.types {
-  
-  export function listSubmodules&lt;T&gt;(
-    parentModule: any,
-    loadFunctionName: string) {
-    
-    var result: { moduleName: string; moduleObj: T; }[] = parentModule.__cachedSubmoduleList;
-
-    if (!result) {
-      result = parentModule.__cachedSubmoduleList = [];
-
-      for (var moduleName in parentModule) if (parentModule.hasOwnProperty(moduleName)) {
-        var moduleObj = parentModule[moduleName];
-        if (moduleObj &amp;&amp; typeof moduleObj === 'object'
-          &amp;&amp; moduleName.charAt(0).toUpperCase() !== moduleName.charAt(0)
-          &amp;&amp; moduleObj[loadFunctionName] &amp;&amp; typeof moduleObj[loadFunctionName] === 'function'
-          &amp;&amp; moduleObj.expectsFile) {
-          result.push({ moduleName: moduleName, moduleObj: moduleObj });
-        }
-      }
-      
-      parentModule.__cachedSubmoduleList = result;
-    }
-
-    return result;
-  }
-  
-}</pre></li><li class="portabled-file "><span class="portabled-file-name">load.ts</span><pre class="portabled-file-content">module portabled.docs.types {
-  
-  export function load(path: string, storage: DocState): DocHandler {
-    return null;
-  }
-  
 }</pre></li></ul></li></ul></li><li class="portabled-dir portabled-dir-collapsed"><span class="portabled-dir-name">imports</span><ul><li class="portabled-dir portabled-dir-collapsed"><span class="portabled-dir-name">codemirror</span><ul><li class="portabled-dir portabled-dir-collapsed"><span class="portabled-dir-name">doc</span><ul><li class="portabled-file"><span class="portabled-file-name">logo.svg</span><pre class="portabled-file-content">&lt;?xml version="1.0" encoding="UTF-8" standalone="no"?&gt;
 &lt;!-- Created with Inkscape (http://www.inkscape.org/) --&gt;
 
@@ -16032,325 +15564,7 @@ declare module CodeMirror {
     By default, a marker appears only in its target document. */
     shared?: boolean;
   }
-}</pre></li></ul></li><li class="portabled-file"><span class="portabled-file-name">functions.ts</span><pre class="portabled-file-content">module portabled {
-
-  /** Stoppable timer with methods specifically targeting debouncing. */
-  export class Timer   {
-
-    private _timeout = 0;
-    private _maxTimeout = 0;
-    private _tickClosure = () =&gt; this._tick();
-
-    constructor() {
-    }
-
-    interval = 300;
-    maxInterval = 1000;
-
-    ontick: () =&gt; void = null;
-  
-    reset() {
-      if (this._timeout)
-        clearTimeout(this._timeout);
-
-      if (!this._maxTimeout &amp;&amp; this.maxInterval)
-        this._maxTimeout = setTimeout(this._tickClosure, this.maxInterval);
-
-      if (this.interval)
-        this._timeout = setTimeout(this._tickClosure, this.interval);
-    }
-
-    stop() {
-      if (this._timeout)
-        clearTimeout(this._timeout);
-      if (this._maxTimeout)
-        clearTimeout(this._maxTimeout);
-      this._timeout = 0;
-      this._maxTimeout = 0;
-    }
-  
-    endWaiting() {
-      if (this.isWaiting())
-        this._tick();
-    }
-  
-    isWaiting() {
-      return this._timeout || this._maxTimeout ? true : false;
-    }
-
-    private _tick() {
-      this.stop();
-      if (this.ontick) {
-        var t = this.ontick;
-        t();
-      }
-    }
-    
-  }
-  
-  export function asyncForEach&lt;T, TResult&gt;(
-    array: T[], 
-    handleElement: (element: T, index: number , callback: (error: Error, res: TResult) =&gt; void) =&gt; void,
-    callback: (error: Error, res: TResult[]) =&gt; void) {
-    
-    if (!array || !array.length) {
-      callback(null, []);
-      return;
-    }
-      
-    var res: TResult[] = [];
-    var stop = false;
-    var completeCount = 0;
-    forEach(array, (element, index) =&gt; {
-      if (stop) return;
-      handleElement(element[index], index, (error, resElement) =&gt; {
-        if (stop) return;
-        if (error) {
-          stop = true;
-          callback(error, null);
-          return;
-        }
-        res[index] = resElement;
-        completeCount++;
-        if (completeCount === array.length) {
-          stop = true;
-          callback(null, res);
-        }
-      });
-    });
-  }
-
-  export function forEach&lt;T&gt;(array: T[], callback: (x: T, index: number) =&gt; void) {
-    if (array.forEach) {
-      array.forEach(callback);
-    }
-    else {
-      for (var i = 0; i &lt; array.length; i++) {
-        callback(array[i], i);
-      }
-    }
-  }
-
-  export function find&lt;T, R&gt;(array: T[], predicate: (x: T, index: number) =&gt; R): R {
-    var result = null;
-    for (var i = 0; i &lt; array.length; i++) {
-      var x = array[i];
-      var p = predicate(x, i);
-      if (p) return p;
-    }
-  }
-
-  /**
- * Escape unsafe character sequences like a closing script tag.
- */
-  export function encodeForInnerHTML(content: string): string {
-    // matching script closing tag with *one* or more consequtive slashes
-    return content.replace(/&lt;\/+script/g, (match) =&gt; {
-      return '&lt;/' + match.slice(1); // skip angle bracket, inject bracket and extra slash
-    });
-  }
-
-  /**
-   * Unescape character sequences wrapped with encodeForInnerHTML for safety.
-   */
-  export function decodeFromInnerHTML(innerHTML: string): string {
-    // matching script closing tag with *t*wo or more consequtive slashes
-    return innerHTML.replace(/&lt;\/\/+script/g, (match) =&gt; {
-      return '&lt;' + match.slice(2); // skip angle bracket and one slash, inject bracket
-    });
-  }
-
-  export function encodeForAttributeName(value: string): string {
-    var codes: number[] = [];
-    var passableOnly = true;
-
-    for (var i = 0; i &lt; value.length; i++) {
-      var c = value.charAt(i);
-      var cc = value.charCodeAt(i);
-      codes.push(cc);
-      if (passableOnly)
-        passableOnly = (c &gt;= '0' &amp;&amp; c &lt;= '9') || (c &gt;= 'a' &amp;&amp; c &lt;= 'z' || c === '_' || c === '-');
-    }
-
-    if (passableOnly)
-      return 's-' + value;
-    else
-      return 'n-' + codes.join('-');
-  }
-
-  export function decodeFromAttributeName(attributeNamePart: string): string {
-    if (attributeNamePart.slice(0, 2) === 's-')
-      return attributeNamePart.slice(2);
-
-    var codes = attributeNamePart.slice(2).split('-');
-    var result: string[] = [];
-    for (var i = 0; i &lt; codes.length; i++) {
-      try {
-        result[i] = String.fromCharCode(parseInt(codes[i]));
-      }
-      catch (error) {
-        console.log('Parsing attribute name error: ' + attributeNamePart + ' has non-numeric chunk ' + i + ' (' + codes[i] + ').');
-        return null;
-      }
-    }
-    return result.join('');
-  }
-
-  export function startsWith(str: string, prefix: string) {
-    if (!str) return !prefix;
-    if (!prefix) return false;
-    if (str.length &lt; prefix.length) return false;
-    if (str.charCodeAt(0) !== prefix.charCodeAt(0)) return false;
-    if (str.slice(0, prefix.length) !== prefix) return false;
-    else return true;
-  }
-
-  export function dateNow(): number {
-    if (Date.now)
-      return Date.now();
-    else
-      return new Date().valueOf();
-  }
-
-  export var objectKeys = (obj: any): string[] =&gt; {
-    if (typeof Object.keys === 'function')
-      objectKeys = Object.keys;
-    else
-      objectKeys = (obj: any): string[] =&gt; {
-        var result: string[] = [];
-        for (var k in obj) if (obj.hasOwnProperty(k)) {
-          result.push(k);
-        }
-        return result;
-      };
-    
-    return objectKeys(obj);
-  };
-    
-  export function addEventListener(element: any, type: string, listener: (event: Event) =&gt; void) {
-    if (element.addEventListener) {
-      element.addEventListener(type, listener, true);
-    }
-    else {
-      var ontype = 'on' + type;
-
-      if (element.attachEvent) {
-        element.attachEvent('on' + type, listener);
-      }
-      else if (ontype in element) {
-        element[ontype] = listener;
-      }
-    }
-  }
-
-  export function removeEventListener(element: any, type: string, listener: (event: Event) =&gt; void) {
-    if (element.addEventListener) {
-      element.removeEventListener(type, listener, true);
-    }
-    else {
-      var ontype = 'on' + type;
-
-      if (element.detachEvent) {
-        element.detachEvent('on' + type, listener);
-      }
-      else if (ontype in element) {
-        element[ontype] = null;
-      }
-    }
-  }
-
-  export function setTextContent(element: HTMLElement, textContent: string) {
-    if (!_useTextContent)
-      _useTextContent = detectTextContent(element);
-    if (_useTextContent === 1)
-      element.textContent = textContent;
-    else
-      element.innerText = textContent;
-  }
-
-  var _useTextContent = 0;
-  function detectTextContent(element: HTMLElement) {
-    if ('textContent' in element)
-      return 1;
-    else      
-      return 2;
-  }
-
-	export function element(tag: string, style?: any, parent?: HTMLElement): HTMLElement {
-    var el = document.createElement(tag);
-    if (style) {
-      if (typeof style === 'string') {
-        setTextContent(el, style);
-      }
-      else if (!parent &amp;&amp; typeof style.scrollIntoView === 'function') {
-        parent = style;
-      }
-      else {
-        for (var k in style) if (style.hasOwnProperty(k)) {
-          if (k === 'text')
-            setTextContent(el, style.text);
-          else
-            el.style[k] = style[k];
-        }
-      }
-    }
-
-    if (parent)
-      parent.appendChild(el);
-
-    return el;
-  }
-  
-/**
- * JS Implementation of MurmurHash2
- * 
- * @author &lt;a href="mailto:gary.court@gmail.com"&gt;Gary Court&lt;/a&gt;
- * @see http://github.com/garycourt/murmurhash-js
- * @author &lt;a href="mailto:aappleby@gmail.com"&gt;Austin Appleby&lt;/a&gt;
- * @see http://sites.google.com/site/murmurhash/
- * 
- * @param {string} str ASCII only
- * @param {number} seed Positive integer only
- * @return {number} 32-bit positive integer hash
- */
-  export function murmurhash2_32_gc(str, seed) {
-    var
-      l = str.length,
-      h = seed ^ l,
-      i = 0,
-      k;
-
-    while (l &gt;= 4) {
-      k =
-      ((str.charCodeAt(i) &amp; 0xff)) |
-      ((str.charCodeAt(++i) &amp; 0xff) &lt;&lt; 8) |
-      ((str.charCodeAt(++i) &amp; 0xff) &lt;&lt; 16) |
-      ((str.charCodeAt(++i) &amp; 0xff) &lt;&lt; 24);
-
-      k = (((k &amp; 0xffff) * 0x5bd1e995) + ((((k &gt;&gt;&gt; 16) * 0x5bd1e995) &amp; 0xffff) &lt;&lt; 16));
-      k ^= k &gt;&gt;&gt; 24;
-      k = (((k &amp; 0xffff) * 0x5bd1e995) + ((((k &gt;&gt;&gt; 16) * 0x5bd1e995) &amp; 0xffff) &lt;&lt; 16));
-
-      h = (((h &amp; 0xffff) * 0x5bd1e995) + ((((h &gt;&gt;&gt; 16) * 0x5bd1e995) &amp; 0xffff) &lt;&lt; 16)) ^ k;
-
-      l -= 4;
-      ++i;
-    }
-
-    switch (l) {
-      case 3: h ^= (str.charCodeAt(i + 2) &amp; 0xff) &lt;&lt; 16;
-      case 2: h ^= (str.charCodeAt(i + 1) &amp; 0xff) &lt;&lt; 8;
-      case 1: h ^= (str.charCodeAt(i) &amp; 0xff);
-        h = (((h &amp; 0xffff) * 0x5bd1e995) + ((((h &gt;&gt;&gt; 16) * 0x5bd1e995) &amp; 0xffff) &lt;&lt; 16));
-    }
-
-    h ^= h &gt;&gt;&gt; 13;
-    h = (((h &amp; 0xffff) * 0x5bd1e995) + ((((h &gt;&gt;&gt; 16) * 0x5bd1e995) &amp; 0xffff) &lt;&lt; 16));
-    h ^= h &gt;&gt;&gt; 15;
-
-    return h &gt;&gt;&gt; 0;
-  }
-}</pre></li><li class="portabled-file "><span class="portabled-file-name">index.html</span><pre class="portabled-file-content">&lt;body&gt;
+}</pre></li></ul></li><li class="portabled-file "><span class="portabled-file-name">index.html</span><pre class="portabled-file-content">&lt;body&gt;
 &lt;script&gt;
   window.onerror = function(a,b,c) { 
     var err = document.createElement('pre');
