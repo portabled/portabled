@@ -449,11 +449,13 @@ var portabled;
                                 errorElem.style.fontWeight = 'bold';
                                 portabled.setTextContent(errorElem, error + '\n' + error.message + ' ' + error.stack);
                                 blankWindow.document.body.appendChild(errorElem);
+                                errorElem.scrollIntoView();
                                 if (processed) {
                                     var showResultButton = blankWindow.document.createElement('button');
                                     portabled.setTextContent(showResultButton, ' Show results ');
                                     showResultButton.onclick = showProcessed;
                                     blankWindow.document.body.appendChild(showResultButton);
+                                    showResultButton.scrollIntoView();
                                 }
                                 return;
                             }
@@ -1488,6 +1490,8 @@ var portabled;
             functions.typescriptBuild = typescriptBuild;
             function typescriptBuildCore() {
                 typescriptBuild.mainTS.compilerOptions.out = 'index.js';
+                // ensure preloading is stopped
+                typescriptBuild.mainTS.service();
                 var files = typescriptBuild.mainTS.host.getScriptFileNames();
                 var nonDeclFile = null;
                 for (var i = 0; i < files.length; i++) {
@@ -1497,28 +1501,25 @@ var portabled;
                     nonDeclFile = f;
                     break;
                 }
-                var emitOutput = typescriptBuild.mainTS.service().getEmitOutput(nonDeclFile);
-                if (emitOutput.emitSkipped || !emitOutput.outputFiles || !emitOutput.outputFiles.length) {
-                    var errors = [];
+                var program = typescriptBuild.mainTS.service().getProgram();
+                var emitOutputStr = null;
+                var res = program.emit(nonDeclFile, function (filename, data, orderMark) { return emitOutputStr = data; });
+                if (res.diagnostics && res.diagnostics.length) {
                     var errorFiles = 0;
-                    for (var i = 0; i < files.length; i++) {
-                        var syntactic = typescriptBuild.mainTS.service().getSyntacticDiagnostics(files[i]);
-                        var semantic = typescriptBuild.mainTS.service().getSemanticDiagnostics(files[i]);
-                        var both = syntactic ? (semantic ? syntactic.concat(semantic) : syntactic) : (semantic ? semantic : null);
-                        if (!both || !both.length)
-                            continue;
-                        errorFiles++;
-                        var fileSnapshot = typescriptBuild.mainTS.host.getScriptSnapshot(files[i]);
-                        for (var j = 0; j < both.length; j++) {
-                            var err = both[j];
-                            var pos = err.file ? err.file.getLineAndCharacterOfPosition(err.start) : null;
-                            errors.push(err.file.fileName + ' ' + (ts.DiagnosticCategory[err.category]) + (pos ? ' @' + pos.line + ':' + pos.character : ' @@' + err.start) + ' ' + err.messageText);
+                    var errorFileMap = {};
+                    var errors = [];
+                    for (var i = 0; i < res.diagnostics.length; i++) {
+                        var err = res.diagnostics[i];
+                        if (!errorFileMap.hasOwnProperty(err.file.fileName)) {
+                            errorFileMap[err.file.fileName] = 1;
+                            errorFiles++;
                         }
+                        var pos = err.file ? err.file.getLineAndCharacterOfPosition(err.start) : null;
+                        errors.push((err.file ? err.file.fileName + ' ' : '') + (ts.DiagnosticCategory[err.category]) + (pos ? ' @' + pos.line + ':' + pos.character : ' @@' + err.start) + ' ' + err.messageText);
                     }
-                    throw new Error('TypeScript compilation failed ' + nonDeclFile + ', ' + errors.length + ' errors in ' + errorFiles + ' files:\n' + errors.join('\n'));
+                    throw new Error('TypeScript compilation errors/warnings ' + nonDeclFile + ', ' + errors.length + ' errors in ' + errorFiles + ' files:\n' + errors.join('\n'));
                 }
-                if (emitOutput.outputFiles)
-                    return emitOutput.outputFiles[0].text;
+                return emitOutputStr;
             }
             var typescriptBuild;
             (function (typescriptBuild) {
@@ -1749,6 +1750,7 @@ var portabled;
                                     }
                                     catch (error) {
                                         callback(error);
+                                        return;
                                     }
                                     log('...OK [' + chunkResultText.length + ']');
                                     outputIndex++;
@@ -3218,14 +3220,14 @@ var portabled;
                             });
                         };
                         TypeScriptDocHandler.prototype._addDiag = function (d, kind) {
-                            var tsFrom = d.file.getLineAndCharacterOfPosition(d.start);
-                            var tsTo = d.file.getLineAndCharacterOfPosition(d.start + d.length);
-                            var marker = this.doc.markText(CodeMirror.Pos(tsFrom.line - 1, tsFrom.character - 1), CodeMirror.Pos(tsTo.line - 1, tsTo.character - 1), {
+                            var tsFrom = d.file.getLineAndCharacterOfPosition(d.start); // zero-based
+                            var tsTo = d.file.getLineAndCharacterOfPosition(d.start + d.length); // zero-based
+                            var marker = this.doc.markText(CodeMirror.Pos(tsFrom.line, tsFrom.character), CodeMirror.Pos(tsTo.line, tsTo.character), {
                                 className: 'portabled-diag portabled-diag-' + kind + ' portabled-diag-' + ts.DiagnosticCategory[d.category]
                             });
                             marker['__error'] = d;
                             this._diagMarkers.push(marker);
-                            // TODO: update rendering
+                            // TODO: overide CM rendering instead of using CM markers
                         };
                         TypeScriptDocHandler.prototype._updateMatchHighlight = function () {
                             var _this = this;
@@ -3245,6 +3247,7 @@ var portabled;
                                     }
                                 }
                             }
+                            var newMatches = typescriptService().service().getOccurrencesAtPosition(this.path, cursorOffset);
                             this.editor.operation(function () {
                                 if (_this._matchMarkers) {
                                     for (var i = 0; i < _this._matchMarkers.length; i++) {
@@ -3252,7 +3255,6 @@ var portabled;
                                     }
                                 }
                                 _this._matchMarkers = [];
-                                var newMatches = typescriptService().service().getOccurrencesAtPosition(_this.path, cursorOffset);
                                 if (!newMatches)
                                     return;
                                 for (var i = 0; i < newMatches.length; i++) {
@@ -4926,11 +4928,6 @@ var portabled;
             ScriptDocumentSnapshot.prototype.getLength = function () {
                 return this._text.length;
             };
-            ScriptDocumentSnapshot.prototype.getLineStartPositions = function () {
-                if (!this._lineStartPositions)
-                    this._lineStartPositions = ts.computeLineStarts(this._text);
-                return this._lineStartPositions;
-            };
             ScriptDocumentSnapshot.prototype.getChangeRange = function (oldSnapshot) {
                 if (!this.changes.length)
                     return ts.unchangedTextChangeRange;
@@ -4988,11 +4985,16 @@ var portabled;
                 this.host = this._createHost();
                 this._service = ts.createLanguageService(this.host, this._createRegistry());
             }
-            TypeScriptService.prototype.service = function () {
+            TypeScriptService.prototype.stopPreloading = function () {
                 if (this._preloadScriptFileNames) {
+                    console.log('stopPreloading at ', this._preloadScriptFileNames.join(', '));
+                    // from now on stop pretending only a subset of files exists, report all of them in host.getScriptFileNames()
                     this._preloadScriptFileNames = null;
                     this._preloadPendingScriptFileNames = null;
                 }
+            };
+            TypeScriptService.prototype.service = function () {
+                this.stopPreloading();
                 return this._service;
             };
             TypeScriptService.prototype.addFile = function (file, doc) {
@@ -5036,31 +5038,49 @@ var portabled;
                 this._preloadTimeout = 0;
                 if (!this._preloadScriptFileNames || !this._preloadPendingScriptFileNames)
                     return;
-                if (!this._preloadPendingScriptFileNames.length) {
-                    this._preloadScriptFileNames = null;
-                    this._preloadPendingScriptFileNames = null;
-                    return; // TODO: call some event to notify it's all clear now
+                if (this._preloadScriptFileNames.length < this.defaultLibFilenames.length) {
+                    // first work through the default libs
+                    var nextFile = this._preloadScriptFileNames[this._preloadScriptFileNames.length] = this.defaultLibFilenames[this._preloadScriptFileNames.length];
+                    console.log('_continuePreload - defaultLibs nextFile ', nextFile, ' all: ', this._preloadScriptFileNames.join(', '));
                 }
-                var nextFile = this._preloadPendingScriptFileNames.shift();
-                this._preloadScriptFileNames.push(nextFile);
-                if (!this._preloadScriptFileNames.length) {
-                    for (var i = 0; i < this.defaultLibFilenames.length; i++) {
-                        this._preloadPendingScriptFileNames.unshift(this.defaultLibFilenames.pop());
+                else {
+                    if (!this._preloadPendingScriptFileNames.length) {
+                        console.log('_continuePreload - stop at ', this._preloadScriptFileNames.join(', '));
+                        // finished preloading, from now on report all files instead of a subset
+                        this._preloadScriptFileNames = null;
+                        this._preloadPendingScriptFileNames = null;
+                        return; // TODO: call some event to notify it's all clear now
                     }
+                    // after default libs are preloaded, get the other ordinary files
+                    var nextFile = this._preloadPendingScriptFileNames.shift();
+                    this._preloadScriptFileNames.push(nextFile);
+                    console.log('_continuePreload - nextFile ', nextFile, ' all: ', this._preloadScriptFileNames.join(', '));
                 }
                 var startPreload = portabled.dateNow();
-                this._service.getSemanticDiagnostics(nextFile);
+                this._service.getSyntacticDiagnostics(nextFile);
                 var preloadTimeSpent = portabled.dateNow() - startPreload;
                 var idleQuantum = Math.max(10, Math.min(300, preloadTimeSpent * 2));
                 this._preloadTimeout = setTimeout(function () {
+                    if (!_this._preloadScriptFileNames)
+                        return; // preloading stopped in the meantime
                     var startPreload2 = portabled.dateNow();
-                    _this._service.getEmitOutput(nextFile);
+                    _this._service.getSemanticDiagnostics(nextFile);
                     var preloadTimeSpent2 = portabled.dateNow() - startPreload2;
-                    var idleQuantum = Math.max(10, Math.min(300, preloadTimeSpent2 * 2));
+                    var idleQuantum = Math.max(10, Math.min(200, preloadTimeSpent2 * 2));
                     _this._preloadTimeout = setTimeout(function () {
-                        if (typeof console !== 'undefined' && typeof console.log === 'function')
-                            console.log('TS preloaded ' + nextFile + ' ' + (preloadTimeSpent + preloadTimeSpent2) / 1000 + ' sec. ' + (_this._preloadPendingScriptFileNames && _this._preloadPendingScriptFileNames.length ? ' (' + _this._preloadPendingScriptFileNames.length + ' to go)' : ''));
-                        _this._continuePreload();
+                        if (!_this._preloadScriptFileNames)
+                            return; // preloading stopped in the meantime
+                        var startPreload3 = portabled.dateNow();
+                        _this._service.getEmitOutput(nextFile);
+                        var preloadTimeSpent3 = portabled.dateNow() - startPreload3;
+                        var idleQuantum = Math.max(10, Math.min(200, preloadTimeSpent3 * 2));
+                        _this._preloadTimeout = setTimeout(function () {
+                            if (!_this._preloadScriptFileNames)
+                                return; // preloading stopped in the meantime
+                            if (typeof console !== 'undefined' && typeof console.log === 'function')
+                                console.log('TS preloaded ' + nextFile + ' ' + (preloadTimeSpent + preloadTimeSpent2 + preloadTimeSpent3) / 1000 + ' sec. ' + Math.floor(preloadTimeSpent * 100 / (preloadTimeSpent + preloadTimeSpent2 + preloadTimeSpent3)) + '%:' + Math.floor(preloadTimeSpent2 * 100 / (preloadTimeSpent + preloadTimeSpent2 + preloadTimeSpent3)) + '%:' + (_this._preloadPendingScriptFileNames && _this._preloadPendingScriptFileNames.length ? ' (' + _this._preloadPendingScriptFileNames.length + ' to go)' : ''));
+                            _this._continuePreload();
+                        }, idleQuantum);
                     }, idleQuantum);
                 }, idleQuantum);
             };
@@ -5069,27 +5089,31 @@ var portabled;
             };
             TypeScriptService.prototype._createHost = function () {
                 var _this = this;
-                return {
+                var result = {
                     getCompilationSettings: function () { return _this.compilerOptions; },
                     getScriptFileNames: function () {
-                        if (_this._preloadScriptFileNames)
+                        if (_this._preloadScriptFileNames) {
                             return _this._preloadScriptFileNames;
+                        }
                         if (!_this._scriptFileNames) {
-                            _this._scriptFileNames = portabled.objectKeys(_this._scripts);
+                            _this._scriptFileNames = [];
+                            for (var k in _this._scripts)
+                                if (_this._scripts.hasOwnProperty(k) && _this._scripts[k])
+                                    _this._scriptFileNames.push(k);
                             for (var i = 0; i < _this.defaultLibFilenames.length; i++) {
                                 _this._scriptFileNames.push(_this.defaultLibFilenames[i]);
                             }
                             _this._scriptFileNames.sort();
+                            console.log('getScriptFileNames[all] - regenerated ', _this._scriptFileNames.join(', '));
                         }
                         return _this._scriptFileNames;
                     },
                     getScriptVersion: function (file) {
                         if (_this.defaultLibFilenames.indexOf(file) >= 0)
-                            return 0;
+                            return 'base';
                         var script = _this._scripts[file];
-                        return script.getScriptVersion();
+                        return 'v' + script.getScriptVersion();
                     },
-                    getScriptIsOpen: function () { return true; },
                     getScriptSnapshot: function (file) {
                         if (_this.defaultLibFilenames.indexOf(file) >= 0) {
                             if (!_this._defaultLibSnapshots[file]) {
@@ -5106,17 +5130,31 @@ var portabled;
                     getLocalizedDiagnosticMessages: function () { return null; },
                     getCancellationToken: function () { return _this.cancellation; },
                     getCurrentDirectory: function () { return _this.currentDirectory; },
+                    getNewLine: function () { return '\n'; },
                     getDefaultLibFileName: function () { return _this.defaultLibFilenames[0]; },
                     log: function (text) {
                         if (_this.log) {
                             _this.log(text);
                         }
                         else {
-                            if (typeof console !== 'undefined')
-                                console.log(text);
+                            if (typeof console != 'indefined') {
+                                if (typeof console.groupCollapsed === 'function' && typeof console.groupEnd === 'function') {
+                                    console.groupCollapsed('TS');
+                                    if (typeof console.log === 'function')
+                                        console.log(text);
+                                    console.groupEnd();
+                                }
+                                else if (typeof console.info === 'function') {
+                                    console.info('*** TS ' + text);
+                                }
+                                else if (typeof console.log === 'function') {
+                                    console.log('*** TS ' + text);
+                                }
+                            }
                         }
                     }
                 };
+                return result;
             };
             return TypeScriptService;
         })();
@@ -5148,7 +5186,7 @@ var portabled;
 <div class="portabled-flyout-scroller" data-bind="load: flyoutScroller = $element">
   <div class="portabled-flyout-scroller-bg">
 
-    <div class="portabled-main-content" data-bind="loadRaw: docHostRegions.content = $element"></div>
+    <div class="portabled-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default CodeMirror-focused"><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 4px; left: 33px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none; font-size: 16px;" tabindex="0"></textarea></div><div class="CodeMirror-vscrollbar" cm-not-content="true"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-hscrollbar" cm-not-content="true"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-scrollbar-filler" cm-not-content="true"></div><div class="CodeMirror-gutter-filler" cm-not-content="true"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 29px; margin-bottom: -15px; border-right-width: 15px; min-width: 451.9296875px; min-height: 314px; padding-right: 0px; padding-bottom: 0px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>17</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors" style=""><div class="CodeMirror-cursor" style="left: 4px; top: 0px; height: 18px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div></div><pre class=""><span style="padding-right: 0.1px;"> <span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">body</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">script</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-variable">window</span>.<span class="cm-property">onerror</span> <span class="cm-operator">=</span> <span class="cm-keyword">function</span>(<span class="cm-def">a</span>,<span class="cm-def">b</span>,<span class="cm-def">c</span>) { </span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">4</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-keyword">var</span> <span class="cm-def">err</span> <span class="cm-operator">=</span> <span class="cm-variable">document</span>.<span class="cm-property">createElement</span>(<span class="cm-string">'pre'</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">5</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-variable-2">err</span>.<span class="cm-property">style</span>.<span class="cm-property">color</span> <span class="cm-operator">=</span> <span class="cm-string">'tomato'</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">6</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-variable-2">err</span>.<span class="cm-property">style</span>.<span class="cm-property">fontSize</span> <span class="cm-operator">=</span> <span class="cm-string">'14pt'</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">7</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-variable-2">err</span>.<span class="cm-property">textContent</span> <span class="cm-operator">=</span> <span class="cm-variable-2">a</span><span class="cm-operator">+</span><span class="cm-string">' '</span><span class="cm-operator">+</span><span class="cm-variable-2">b</span><span class="cm-operator">+</span><span class="cm-string">' '</span><span class="cm-operator">+</span><span class="cm-variable-2">c</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">8</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-variable">document</span>.<span class="cm-property">body</span>.<span class="cm-property">appendChild</span>(<span class="cm-variable-2">err</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">9</div></div><pre class=""><span style="padding-right: 0.1px;">  }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">10</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-variable">window</span>.<span class="cm-property">onload</span> <span class="cm-operator">=</span> <span class="cm-keyword">function</span>() {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">11</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-keyword">var</span> <span class="cm-def">co</span> <span class="cm-operator">=</span> <span class="cm-variable">document</span>.<span class="cm-property">createElement</span>(<span class="cm-string">'pre'</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">12</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-variable-2">co</span>.<span class="cm-property">textContent</span> <span class="cm-operator">=</span> <span class="cm-variable">document</span>.<span class="cm-property">scripts</span>[<span class="cm-variable">document</span>.<span class="cm-property">scripts</span>.<span class="cm-property">length</span><span class="cm-operator">-</span><span class="cm-number">1</span>].<span class="cm-property">text</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">13</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-variable">document</span>.<span class="cm-property">body</span>.<span class="cm-property">appendChild</span>(<span class="cm-variable-2">co</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">14</div></div><pre class=""><span style="padding-right: 0.1px;">  }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">15</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-tag cm-bracket">&lt;/</span><span class="cm-tag">script</span><span class="cm-tag cm-bracket">&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">16</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">script</span><span class="cm-tag cm-bracket">&gt;</span><span class="cm-operator">&lt;%=</span><span class="cm-variable">typescriptBuild</span>()<span class="cm-operator">%&gt;&lt;</span><span class="cm-string-2">/script&gt;</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -29px; width: 29px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">17</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-operator">&lt;</span><span class="cm-string-2">/body&gt;</span></span></pre></div></div></div></div></div></div><div style="position: absolute; height: 15px; width: 1px; top: 314px;"></div><div class="CodeMirror-gutters" style="height: 582px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div></div></div></div></div>
 
     <div class="portabled-flyout">
 
@@ -5156,19 +5194,91 @@ var portabled;
         <button class="portabled-more-button" data-bind="click: moreClick"> ... </button>
         <div class="portabled-thick-bar-bg">
           <div class="portabled-thick-bar" data-bind="event: { mousedown: thickbarMouseDown }, loadRaw: docHostRegions.scroller = $element">
-          </div>
+          <div style="width: 100%; height: 100%;"><div class="portabled-scroller-outer" data-bind="load: bindHandlers($element)">
+  <div class="portabled-scroller-thumb" data-bind="style: { top: viewportFrom, height: viewportHeight }" style="top: 0%; height: 10.5%;">
+  </div>
+</div>
+
+<!-- ko foreach: lines -->
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 1%; width: 10%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 50%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 57%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 38%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 40%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 45%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 44%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 1%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 40%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 55%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 94%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 42%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 1%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 12%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 55%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 10%; height: 0.33%;">
+</div>
+
+<!-- /ko -->
+</div></div>
         </div>
       </div>
 
 <script data-legit="portabled">try { portabled.app.loading('Files...'); } catch (err) { alert(err+' '+err.stack); }</script>
 
-      <div class="portabled-file-tree" timestamp="1424719002151" data-bind="loadRaw: fileTreeHost = $element">
+      <div class="portabled-file-tree" timestamp="1424775176290" data-bind="loadRaw: fileTreeHost = $element">
 
         <ul>
 
 <!--
 -->
-          <li class="portabled-file"><span class="portabled-file-name">base.ts</span><pre class="portabled-file-content">module portabled.docs.types.text.base {
+          
+          
+        <li class="portabled-file"><span class="portabled-file-name">base.ts</span><pre class="portabled-file-content"> module portabled.docs.types.text.base {
 
   export class SimpleCodeMirrorDocHandler {
 
@@ -5181,7 +5291,7 @@ var portabled;
 
   }
 
-}</pre></li><li class="portabled-file"><span class="portabled-file-name">css.ts</span><pre class="portabled-file-content">module portabled.docs.types.text.css {
+}</pre></li><li class="portabled-file"><span class="portabled-file-name">css.ts</span><pre class="portabled-file-content"> module portabled.docs.types.text.css {
 
   export class CssDocHandler extends base.SimpleCodeMirrorDocHandler {
 
@@ -5199,7 +5309,7 @@ var portabled;
   }
 
 
-}</pre></li><li class="portabled-file "><span class="portabled-file-name">index.html</span><pre class="portabled-file-content">&lt;body&gt;
+}</pre></li><li class="portabled-file  portabled-file-selected"><span class="portabled-file-name">index.html</span><pre class="portabled-file-content"> &lt;body&gt;
 &lt;script&gt;
   window.onerror = function(a,b,c) { 
     var err = document.createElement('pre');
@@ -5215,9 +5325,7 @@ var portabled;
   }
 &lt;/script&gt;
 &lt;script&gt;&lt;%=typescriptBuild()%&gt;&lt;/script&gt;
-&lt;/body&gt;</pre></li>
-          
-        </ul>
+&lt;/body&gt;</pre></li></ul>
       </div>
 
 <script data-legit="portabled">try { portabled.app.loading('Controls...'); } catch (err) { alert(err+' '+err.stack); }</script>
@@ -5303,7 +5411,7 @@ See the credits section for the used libraries and respective licences. </p>
 </div>
 
 <div class="portabled-status-bar" data-bind="loadRaw: docHostRegions.status = $element">
-</div>
+<div style="width: 100%; height: 100%;">/index.html</div></div>
 
 <script data-legit="portabled">try { portabled.app.loading('Libraries...'); } catch (err) { alert(err+' '+err.stack); }</script>
 
