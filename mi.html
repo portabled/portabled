@@ -140,7 +140,7 @@ this.to=CodeMirror.Pos(r,t.length+e.length+i.length)}return n.prototype.render=f
 
 },this._matchHighlightTimer.interval=400,this._matchHighlightTimer.ontick=function(){return i._updateMatchHighlight()},this._statusUpdateTimer.interval=200,this._statusUpdateTimer.ontick=function(){return i._updateStatus()}}return __extends(r,e),r.prototype.load=function(){n().addFile(this.path,this)},r.prototype.open=function(){var t=this;this._matchHighlightTimer.reset(),this._statusUpdateTimer.reset();var e=this.editor.getOption("gutters");(!e||e.indexOf("CodeMirror-lint-markers")<0)&&(e||(e=[]),e.push("CodeMirror-lint-markers"),this.editor.setOption("gutters",e));var i=this.editor.getOption("foldOptions")||{};i.rangeFinder=function(e,i){if(t._foldData||(t._foldData=n().service().getOutliningSpans(t.path)),t._foldData){for(var r=t.doc.indexFromPos({line:i.line,ch:0}),o=t.doc.getLine(i.line).length,a=0;a<t._foldData.length;a++){var s=t._foldData[a];if(s.hintSpan.start>=r&&s.hintSpan.start<r+o){var l={from:t.doc.posFromIndex(s.textSpan.start),to:t.doc.posFromIndex(s.textSpan.start+s.textSpan.length)};return l;
 
-}}return null}},this.editor.setOption("foldOptions",i),this.editor.setOption("lint",function(){var e=[],i=function(i){var n,r,o=i.messageText;if("string"==typeof o)n=o,r=1===i.category?"error":"warning";else{n=a.messageText,r=1===a.category?"error":"warning";for(var a=o;a;)n="\n"+a.messageText,1===a.category&&(r="error"),a=a.next}e.push({message:n,severity:r,from:t.doc.posFromIndex(i.start),to:t.doc.posFromIndex(i.start+i.length)})},r=n().service().getSyntacticDiagnostics(t.path),o=n().service().getSemanticDiagnostics(t.path);if(r)for(var a=0;a<r.length;a++)i(r[a]);if(o)for(var a=0;a<o.length;a++)i(o[a]);return e})},r.prototype.close=function(){this._matchHighlightTimer.stop(),this._statusUpdateTimer.stop()},r.prototype.shouldTriggerCompletion=function(t){var e=t.charAt(t.length-1);return"."===e?!0:e.toLowerCase()!==e.toUpperCase()?!0:void 0},r.prototype.getCompletions=function(){var t=this.doc.getCursor(),e=this.doc.indexFromPos(t),r=n().service().getCompletionsAtPosition(this.path,e);if(r&&r.entries.length){
+}}return null}},this.editor.setOption("foldOptions",i),this.editor.setOption("lint",function(){var e=[],i=function(i){var n,r,o=i.messageText;if("string"==typeof o)n=o,r=1===i.category?"error":"warning";else{var a=o;for(n=a.messageText,r=1===a.category?"error":"warning";a;)n="\n"+a.messageText,1===a.category&&(r="error"),a=a.next}e.push({message:n,severity:r,from:t.doc.posFromIndex(i.start),to:t.doc.posFromIndex(i.start+i.length)})},r=n().service().getSyntacticDiagnostics(t.path),o=n().service().getSemanticDiagnostics(t.path);if(r)for(var a=0;a<r.length;a++)i(r[a]);if(o)for(var a=0;a<o.length;a++)i(o[a]);return e})},r.prototype.close=function(){this._matchHighlightTimer.stop(),this._statusUpdateTimer.stop()},r.prototype.shouldTriggerCompletion=function(t){var e=t.charAt(t.length-1);return"."===e?!0:e.toLowerCase()!==e.toUpperCase()?!0:void 0},r.prototype.getCompletions=function(){var t=this.doc.getCursor(),e=this.doc.indexFromPos(t),r=n().service().getCompletionsAtPosition(this.path,e);if(r&&r.entries.length){
 for(var o=this.doc.getLine(t.line),a=0;a<t.ch;){var l=o.charAt(t.ch-a-1);if(!s(l))break;a++}for(var c=0;t.ch+c<o.length;){var l=o.charAt(t.ch+c);if(!s(l))break;c++}for(var u=o.slice(0,t.ch-a),d=o.slice(t.ch-a,t.ch),h=o.slice(t.ch,t.ch+c),p=o.slice(t.ch+c),f=d.toLowerCase(),m=[],v=0;v<r.entries.length&&!(m.length>16);v++){var g=r.entries[v];if(!(a&&g.name.toLowerCase().indexOf(f)<0)){var _=n().service().getCompletionEntryDetails(this.path,e,g.name);m.push(new i.CodeMirrorCompletion(u,d,h,p,t.line,g,_))}}if(m.length&&(1!==m.length||m[m.length-1].text!==d)){var b={list:m,from:CodeMirror.Pos(t.line,t.ch-a),to:t};return b}}},r.prototype.onChangesCore=function(t,e){this._foldData=null;var i=ts.createTextChangeRange(ts.createTextSpan(e.lead,e.mid),e.newmid);this._changes.push(i),this._matchHighlightTimer.reset(),this._matchMarkersInvalidated=!0,this._statusUpdateTimer.reset(),this._autoformatAsNeeded(t)},r.prototype.onCursorMoved=function(){this._matchHighlightTimer.reset(),this._statusUpdateTimer.reset()},r.prototype.changes=function(){
 return this._changes},r.prototype._autoformatAsNeeded=function(t){var e=this;if(!this._autoformatInProgress){var i=t[t.length-1],r=i.text.length?i.text[i.text.length-1]:null;!r&&i.text.length>1&&(r="\n");var o=r.charAt(r.length-1);switch(o){case"}":case";":case"\n":break;default:return}var a=this.doc.getCursor(),s=this.doc.indexFromPos(a),l={IndentSize:2,TabSize:2,NewLineCharacter:"\n",ConvertTabsToSpaces:!0,InsertSpaceAfterCommaDelimiter:!0,InsertSpaceAfterSemicolonInForStatements:!0,InsertSpaceBeforeAndAfterBinaryOperators:!0,InsertSpaceAfterKeywordsInControlFlowStatements:!0,InsertSpaceAfterFunctionKeywordForAnonymousFunctions:!1,InsertSpaceAfterOpeningAndBeforeClosingNonemptyParenthesis:!1,PlaceOpenBraceOnNewLineForFunctions:!1,PlaceOpenBraceOnNewLineForControlBlocks:!1},c=n().service().getFormattingEditsAfterKeystroke(this.path,s,o,l);c&&c.length&&(this._autoformatInProgress=!0,this.editor.operation(function(){for(var t=c.length-1;t>=0;t--){var i=c[t],n=e.doc.posFromIndex(i.span.start),r=e.doc.posFromIndex(i.span.start+i.span.length);
 
@@ -183,14 +183,14 @@ t.executeSql('CREATE TABLE "'+i+'" (name PRIMARY KEY, value)',[],function(t){t.e
 height:"100%",border:"solid 1px white",padding:"0.25em"},this._leftHost),this._rightHost=t.element("div",{position:"fixed",left:"50.2%",width:"49.9%",top:"0px",bottom:"3em",padding:"0.25em",background:"cornflowerBlue",opacity:"0.5",zIndex:100},this._host),this._rightPanel=t.element("div",{width:"100%",height:"100%",border:"solid 1px white",padding:"0.25em"},this._rightHost),t.setTextContent(this._rightPanel,"one two")}return e}();e.Panels=i}(i=e.panels||(e.panels={}))}(e=t.shell||(t.shell={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){function i(){t.addEventListener(window,"load",function(){new e.consoleUI.ConsoleUI(document.body),new e.panels.Panels(document.body)})}e.start=i}(e=t.shell||(t.shell={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e=function(){function t(t){this._lineStartPositions=null,this._text=t.text(),this.changes=t.changes().slice(0)}return t.prototype.getText=function(t,e){return this._text?this._text.slice(t,e):""},t.prototype.getLength=function(){
 return this._text?this._text.length:0},t.prototype.getChangeRange=function(t){if(!this.changes.length)return ts.unchangedTextChangeRange;var e=t,i=e.changes?this.changes.slice(e.changes.length):this.changes,n=ts.collapseTextChangeRangesAcrossMultipleVersions(i);return n},t}();t.ScriptDocumentSnapshot=e}(e=t.typescript||(t.typescript={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e=function(){function e(t){this.doc=t,this._snapshot=null}return e.prototype.getScriptSnapshot=function(){return this._snapshot&&this._snapshot.changes.length==this.doc.changes().length||(this._snapshot=new t.ScriptDocumentSnapshot(this.doc)),this._snapshot},e.prototype.getScriptVersion=function(){var t=this.doc.changes();return t.length},e}();t.ScriptDocumentState=e}(e=t.typescript||(t.typescript={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){var i=function(){function i(){this.cancellation=null,this.currentDirectory="/",this.defaultLibFilenames=["#core.d.ts","#extensions.d.ts","#dom.generated.d.ts"],
 this.log=null,this._scriptFileNames=null,this._scripts={},this._defaultLibSnapshots={},this._preloadScriptFileNames=[],this._preloadPendingScriptFileNames=[],this._preloadTimeout=0,this.compilerOptions=ts.getDefaultCompilerOptions(),this.compilerOptions.target=1,this.host=this._createHost(),this._service=ts.createLanguageService(this.host,this._createRegistry())}return i.prototype.stopPreloading=function(){this._preloadScriptFileNames&&(this._preloadScriptFileNames=null,this._preloadPendingScriptFileNames=null)},i.prototype.service=function(){return this.stopPreloading(),this._service},i.prototype.addFile=function(t,i){var n=this,r=new e.ScriptDocumentState(i);this._scripts[t]=r,this._scriptFileNames=null,this._preloadPendingScriptFileNames&&(this._preloadPendingScriptFileNames.push(t),this._preloadTimeout&&clearTimeout(this._preloadTimeout),this._preloadTimeout=setTimeout(function(){n._preloadPendingScriptFileNames&&n._preloadPendingScriptFileNames.sort(),n._continuePreload()},2e3))},i.prototype.removeFile=function(t){
-if(delete this._scripts[t],this._scriptFileNames=null,this._preloadScriptFileNames)for(var e=0;e<this._preloadPendingScriptFileNames.length;e++)if(this._preloadPendingScriptFileNames[e]===t){delete this._preloadPendingScriptFileNames[e];break}if(this._preloadScriptFileNames)for(var e=0;e<this._preloadScriptFileNames.length;e++)if(this._preloadScriptFileNames[e]===t){delete this._preloadScriptFileNames[e];break}},i.prototype._continuePreload=function(){var e=this;if(this._preloadTimeout=0,this._preloadScriptFileNames&&this._preloadPendingScriptFileNames){var i;if(this._preloadScriptFileNames.length<this.defaultLibFilenames.length){var n=this._preloadScriptFileNames[this._preloadScriptFileNames.length]=this.defaultLibFilenames[this._preloadScriptFileNames.length];i=function(t){if("undefined"!=typeof console&&"function"==typeof console.error){console.error(n+" "+t.length+" errors:");for(var e=0;e<t.length;e++){var i=t[e];console.error(i.file.getLineAndCharacterOfPosition(i.start)," ",i.messageText)}}else for(var r=[],e=0;e<t.length;e++){
+if(delete this._scripts[t],this._scriptFileNames=null,this._preloadScriptFileNames)for(var e=0;e<this._preloadPendingScriptFileNames.length;e++)if(this._preloadPendingScriptFileNames[e]===t){delete this._preloadPendingScriptFileNames[e];break}if(this._preloadScriptFileNames)for(var e=0;e<this._preloadScriptFileNames.length;e++)if(this._preloadScriptFileNames[e]===t){delete this._preloadScriptFileNames[e];break}},i.prototype._continuePreload=function(){var e=this;if(this._preloadTimeout=0,this._preloadScriptFileNames&&this._preloadPendingScriptFileNames){var i;if(this._preloadScriptFileNames.length<this.defaultLibFilenames.length){var n=this._preloadScriptFileNames[this._preloadScriptFileNames.length]=this.defaultLibFilenames[this._preloadScriptFileNames.length];i=function(t){if(console&&"function"==typeof console.error){console.error(n+" "+t.length+" errors:");for(var e=0;e<t.length;e++){var i=t[e];console.error(i.file.getLineAndCharacterOfPosition(i.start)," ",i.messageText)}}else for(var r=[],e=0;e<t.length;e++){
 var i=t[e],o=i.file.getLineAndCharacterOfPosition(i.start);r.push(o.line+":"+o.character+" "+i.messageText),alert(n+" "+t.length+" errors:\n"+r.join("\n"))}}}else{if(!this._preloadPendingScriptFileNames.length)return this._preloadScriptFileNames=null,void(this._preloadPendingScriptFileNames=null);var n=this._preloadPendingScriptFileNames.shift();this._preloadScriptFileNames.push(n)}var r=t.dateNow(),o=this._service.getSyntacticDiagnostics(n),a=t.dateNow()-r;o&&o.length&&i&&i(o);var s=Math.max(10,Math.min(300,2*a));this._preloadTimeout=setTimeout(function(){if(e._preloadScriptFileNames){var r=t.dateNow(),o=e._service.getSemanticDiagnostics(n),s=t.dateNow()-r;o&&o.length&&i&&i(o);var l=Math.max(10,Math.min(200,2*s));e._preloadTimeout=setTimeout(function(){if(e._preloadScriptFileNames){var i=t.dateNow();e._service.getEmitOutput(n);var r=t.dateNow()-i,o=Math.max(10,Math.min(200,2*r));e._preloadTimeout=setTimeout(function(){e._preloadScriptFileNames&&("undefined"!=typeof console&&"function"==typeof console.log&&console.log("TS preloaded "+n+" "+(a+s+r)/1e3+" sec. "+Math.floor(100*a/(a+s+r))+":"+Math.floor(100*s/(a+s+r))+"%"+(e._preloadPendingScriptFileNames&&e._preloadPendingScriptFileNames.length?" ("+e._preloadPendingScriptFileNames.length+" to go)":"")),
 e._continuePreload())},o)}},l)}},s)}},i.prototype._createRegistry=function(){return ts.createDocumentRegistry()},i.prototype._createHost=function(){var t=this,e={getCompilationSettings:function(){return t.compilerOptions},getScriptFileNames:function(){if(t._preloadScriptFileNames)return t._preloadScriptFileNames;if(!t._scriptFileNames){t._scriptFileNames=[];for(var e in t._scripts)t._scripts.hasOwnProperty(e)&&t._scripts[e]&&t._scriptFileNames.push(e);for(var i=0;i<t.defaultLibFilenames.length;i++)t._scriptFileNames.push(t.defaultLibFilenames[i]);t._scriptFileNames.sort()}return t._scriptFileNames},getScriptVersion:function(e){if(t.defaultLibFilenames.indexOf(e)>=0)return"base";var i=t._scripts[e];return"v"+i.getScriptVersion()},getScriptSnapshot:function(e){if(t.defaultLibFilenames.indexOf(e)>=0){if(!t._defaultLibSnapshots[e]){var i="#"===e.charAt(0)?e.slice(1):e,n=document.getElementById(i);if(null==n)return null;t._defaultLibSnapshots[e]=ts.ScriptSnapshot.fromString(n.text||n.textContent||n.innerText)}return t._defaultLibSnapshots[e];
 
 }return t._scripts[e].getScriptSnapshot()},getLocalizedDiagnosticMessages:function(){return null},getCancellationToken:function(){return t.cancellation},getCurrentDirectory:function(){return t.currentDirectory},getNewLine:function(){return"\n"},getDefaultLibFileName:function(){return t.defaultLibFilenames[0]},log:function(e){t.log?t.log(e):"indefined"!=typeof console&&("function"==typeof console.groupCollapsed&&"function"==typeof console.groupEnd?(console.groupCollapsed("TS"),"function"==typeof console.log&&console.log(e),console.groupEnd()):"function"==typeof console.info?console.info("*** TS "+e):"function"==typeof console.log&&console.log("*** TS "+e))}};return e},i}();e.TypeScriptService=i}(e=t.typescript||(t.typescript={}))}(portabled||(portabled={}));</script>
 
 <div id="portabled-loading-host" style="display: none;">
-  <div id="portabled-loading-title">Opening...</div>
+  <div id="portabled-loading-title">Initialising document host...</div>
   <div id="portabled-loading-progress">
   </div>
 </div>
@@ -212,7 +212,7 @@ e._continuePreload())},o)}},l)}},s)}},i.prototype._createRegistry=function(){ret
 <div class="portabled-flyout-scroller" data-bind="load: flyoutScroller = $element">
   <div class="portabled-flyout-scroller-bg">
 
-    <div class="portabled-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default CodeMirror-focused"><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 148px; left: 446px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none;" tabindex="0"></textarea></div><div class="CodeMirror-vscrollbar" cm-not-content="true" style="display: block; bottom: 0px;"><div style="min-width: 1px; height: 728px;"></div></div><div class="CodeMirror-hscrollbar" cm-not-content="true"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-scrollbar-filler" cm-not-content="true"></div><div class="CodeMirror-gutter-filler" cm-not-content="true"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 40px; margin-bottom: -15px; border-right-width: 15px; min-width: 513.53125px; min-height: 728px; padding-right: 15px; padding-bottom: 0px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>40</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors" style=""><div class="CodeMirror-cursor" style="left: 406px; top: 144px; height: 18px;">&nbsp;</div></div><div class="CodeMirror-code"><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-keyword">function</span> <span class="cm-variable">bootShell</span>(<span class="cm-def">bootHTML</span>, <span class="cm-def">uiFrameReadyCallback</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-keyword">var</span> <span class="cm-def">bootStyle</span> <span class="cm-operator">=</span> <span class="cm-variable">elem</span>(</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">4</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-string">'style'</span>,</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">5</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-string">'iframe.ui{display:none;} '</span><span class="cm-operator">+</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">6</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-string">'iframe.boot{display:block;}'</span>,</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">7</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-variable">document</span>.<span class="cm-property">body</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">8</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="CodeMirror-activeline" style="position: relative;"><div class="CodeMirror-activeline-background CodeMirror-linebackground"></div><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">9</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-keyword">var</span> <span class="cm-def">bootIFR</span> <span class="cm-operator">=</span> <span class="cm-variable">createFrame</span>(<span class="cm-string">'boot'</span>, <span class="cm-keyword">function</span> <span class="cm-def">bootFrameReady</span><span class=" CodeMirror-matchingbracket">(</span><span class="cm-def">bootFrame</span><span class=" CodeMirror-matchingbracket">)</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">10</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">11</div></div><pre><span style="padding-right: 0.1px;">    <span class="cm-variable-2">bootFrame</span>.<span class="cm-property">global</span>.<span class="cm-property">require</span> <span class="cm-operator">=</span> <span class="cm-variable">require</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">12</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">13</div></div><pre><span style="padding-right: 0.1px;">    <span class="cm-variable-2">bootFrame</span>.<span class="cm-property">global</span>.<span class="cm-property">eval</span>(</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">14</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-variable">elem</span> <span class="cm-operator">+</span> <span class="cm-string">'\n'</span> <span class="cm-operator">+</span> <span class="cm-variable">setText</span> <span class="cm-operator">+</span> <span class="cm-string">'\n'</span> <span class="cm-operator">+</span> <span class="cm-variable">onEvent</span> <span class="cm-operator">+</span> <span class="cm-string">'\n'</span> <span class="cm-operator">+</span> <span class="cm-variable">offEvent</span><span class="cm-operator">+</span><span class="cm-string">'\n'</span><span class="cm-operator">+</span><span class="cm-variable">dateNow</span><span class="cm-operator">+</span><span class="cm-string">'\n'</span><span class="cm-operator">+</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">15</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-string">' //# sourceURL=inlines.js'</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">16</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">17</div></div><pre><span style="padding-right: 0.1px;">    <span class="cm-keyword">if</span> (<span class="cm-variable-2">bootFrame</span>.<span class="cm-property">document</span>.<span class="cm-property">open</span>) <span class="cm-variable-2">bootFrame</span>.<span class="cm-property">document</span>.<span class="cm-property">open</span>();</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">18</div></div><pre><span style="padding-right: 0.1px;">    <span class="cm-variable-2">bootFrame</span>.<span class="cm-property">document</span>.<span class="cm-property">write</span>(<span class="cm-variable-2">bootHTML</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">19</div></div><pre><span style="padding-right: 0.1px;">    <span class="cm-keyword">if</span> (<span class="cm-variable-2">bootFrame</span>.<span class="cm-property">document</span>.<span class="cm-property">close</span>) <span class="cm-variable-2">bootFrame</span>.<span class="cm-property">document</span>.<span class="cm-property">close</span>();</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">20</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">21</div></div><pre class=""><span style="padding-right: 0.1px;">  });</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">22</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">23</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-variable">onEvent</span>(<span class="cm-variable">window</span>, <span class="cm-string">'load'</span>, <span class="cm-keyword">function</span> <span class="cm-def">onloadCompleted</span>() {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">24</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-keyword">var</span> <span class="cm-def">uiFrame</span> <span class="cm-operator">=</span> <span class="cm-variable">createFrame</span>(<span class="cm-string">'ui'</span>, <span class="cm-keyword">function</span>(<span class="cm-def">uiDoc</span>, <span class="cm-def">uiGobal</span>, <span class="cm-def">uiFrame</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">25</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable">document</span>.<span class="cm-property">body</span>.<span class="cm-property">removeChild</span>(<span class="cm-variable-2">bootIFR</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">26</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable-2">uiFrameReadyCallback</span>(<span class="cm-variable-2">uiDoc</span>, <span class="cm-variable-2">uiGobal</span>, <span class="cm-variable-2">uiFrame</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">27</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable">document</span>.<span class="cm-property">body</span>.<span class="cm-property">removeChild</span>(<span class="cm-variable-2">bootStyle</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">28</div></div><pre class=""><span style="padding-right: 0.1px;">    });</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">29</div></div><pre class=""><span style="padding-right: 0.1px;">  });</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">30</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">31</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-keyword">function</span> <span class="cm-def">require</span>(<span class="cm-keyword">module</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">32</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-keyword">if</span> (<span class="cm-keyword">module</span><span class="cm-operator">===</span><span class="cm-string">'boot'</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">33</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-keyword">return</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">34</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">document</span>: <span class="cm-variable">document</span>,</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">35</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">window</span>: <span class="cm-variable">window</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">36</div></div><pre class=""><span style="padding-right: 0.1px;">      };</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">37</div></div><pre class=""><span style="padding-right: 0.1px;">    }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">38</div></div><pre class=""><span style="padding-right: 0.1px;">  }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">39</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">40</div></div><pre class=""><span style="padding-right: 0.1px;">}</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 15px; width: 1px; top: 728px;"></div><div class="CodeMirror-gutters" style="height: 743px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div><div class="CodeMirror-gutter CodeMirror-foldgutter"></div></div></div></div></div>
+    <div class="portabled-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default"><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 94px; left: 65px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none; font-size: 16px;" tabindex="0"></textarea></div><div class="CodeMirror-vscrollbar" cm-not-content="true" style="bottom: 0px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-hscrollbar" cm-not-content="true" style="right: 15px; left: 40px;"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-scrollbar-filler" cm-not-content="true" style="height: 15px; width: 15px;"></div><div class="CodeMirror-gutter-filler" cm-not-content="true"></div><div class="CodeMirror-scroll" tabindex="-1" draggable="false"><div class="CodeMirror-sizer" style="margin-left: 40px; margin-bottom: -15px; border-right-width: 15px; min-width: 454.578125px; min-height: 386px; padding-right: 0px; padding-bottom: 0px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><pre>x</pre></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors" style="visibility: hidden;"><div class="CodeMirror-cursor" style="left: 25px; top: 90px; height: 18px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;"><span class="cm-keyword">function</span> <span class="cm-variable">loadUIMod</span><span class=" CodeMirror-matchingbracket">(</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-def">options</span>: {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre><span style="padding-right: 0.1px;">    <span class="cm-variable">className</span><span class="cm-operator">?</span>: <span class="cm-variable-3">string</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">4</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-variable">scope</span><span class="cm-operator">?</span>: { [<span class="cm-variable">name</span>: <span class="cm-variable-3">string</span>]: <span class="cm-variable-3">any</span>; };</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">5</div></div><pre class=""><span style="padding-right: 0.1px;">   <span class="cm-tab" role="presentation" cm-text="	"> </span><span class="cm-variable">html</span>: <span class="cm-variable-3">string</span>;</span></pre></div><div class="CodeMirror-activeline" style="position: relative;"><div class="CodeMirror-activeline-background CodeMirror-linebackground"></div><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">6</div></div><pre><span style="padding-right: 0.1px;">  }<span class=" CodeMirror-matchingbracket">)</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">7</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">8</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-keyword">var</span> <span class="cm-def">frame</span> <span class="cm-operator">=</span> <span class="cm-variable">createFrame</span>(<span class="cm-variable-2">options</span>.<span class="cm-property">className</span>);</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">9</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-keyword">if</span> (<span class="cm-variable-2">options</span>.<span class="cm-property">scope</span>) {</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">10</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">    <span class="cm-keyword">for</span> (<span class="cm-keyword">var</span> <span class="cm-def">k</span> <span class="cm-keyword">in</span> <span class="cm-variable-2">options</span>.<span class="cm-property">scope</span>) <span class="cm-keyword">if</span> (<span class="cm-variable-2">options</span>.<span class="cm-property">scope</span>.<span class="cm-property">hasOwnProperty</span>(<span class="cm-variable-2">k</span>)) {</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">11</div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-variable-2">frame</span>.<span class="cm-property">global</span>[<span class="cm-variable-2">k</span>] <span class="cm-operator">=</span> <span class="cm-variable-2">options</span>.<span class="cm-property">scope</span>[<span class="cm-variable-2">k</span>];</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">12</div></div><pre><span style="padding-right: 0.1px;">    }</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">13</div></div><pre><span style="padding-right: 0.1px;">  }</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">14</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">15</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-keyword">if</span> (<span class="cm-variable-2">frame</span>.<span class="cm-property">document</span>.<span class="cm-property">open</span>) <span class="cm-variable-2">frame</span>.<span class="cm-property">document</span>.<span class="cm-property">open</span>();</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">16</div></div><pre><span style="padding-right: 0.1px;">    <span class="cm-variable-2">frame</span>.<span class="cm-property">document</span>.<span class="cm-property">write</span>(<span class="cm-variable-2">options</span>.<span class="cm-property">html</span>);</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">17</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-keyword">if</span> (<span class="cm-variable-2">frame</span>.<span class="cm-property">document</span>.<span class="cm-property">close</span>) <span class="cm-variable-2">frame</span>.<span class="cm-property">document</span>.<span class="cm-property">close</span>();</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">18</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">19</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-keyword">return</span> <span class="cm-variable-2">frame</span>;</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">20</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">21</div></div><pre><span style="padding-right: 0.1px;">}</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 15px; width: 1px; top: 386px;"></div><div class="CodeMirror-gutters" style="height: 582px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div><div class="CodeMirror-gutter CodeMirror-foldgutter"></div></div></div></div></div>
 
     <div class="portabled-flyout">
 
@@ -226,27 +226,23 @@ e._continuePreload())},o)}},l)}},s)}},i.prototype._createRegistry=function(){ret
 </div>
 
 <!-- ko foreach: lines -->
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 31%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 19%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 25%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 26%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 9%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 46%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 33%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 18%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 36%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 18%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 5%; height: 0.33%;">
 </div>
 
 
@@ -254,123 +250,51 @@ e._continuePreload())},o)}},l)}},s)}},i.prototype._createRegistry=function(){ret
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 84%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 60%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 28%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 42%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 94%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 49%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 26%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 90%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 34%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 66%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 42%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 68%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 3%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 62%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 80%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 42%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 55%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 44%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 3%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 3%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 31%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 26%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 9%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 22%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 16%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 2%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 1%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 1%; height: 0.33%;">
 </div>
 
 
 <div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 1%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 66%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 49%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 69%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 18%; height: 0.33%;">
 </div>
 
 
@@ -391,13 +315,13 @@ e._continuePreload())},o)}},l)}},s)}},i.prototype._createRegistry=function(){ret
     try { portabled.app.loading('Files...'); } catch (err) { alert(err+' '+err.stack); }
 </script>
 
-      <div class="portabled-file-tree" timestamp="1426196408474" data-bind="loadRaw: fileTreeHost = $element">
+      <div class="portabled-file-tree" timestamp="1426236169309" data-bind="loadRaw: fileTreeHost = $element">
 
         <ul>
 
           
           
-        <li class="portabled-dir"><span class="portabled-dir-name">boot</span><ul><li class="portabled-file  "><span class="portabled-file-name">bootShell.css</span><pre class="portabled-file-content">html { box-sizing: border-box; }
+        <li class="portabled-dir"><span class="portabled-dir-name">boot</span><ul><li class="portabled-file"><span class="portabled-file-name">bootShell.css</span><pre class="portabled-file-content">html { box-sizing: border-box; }
 
 *, *:before, *:after { box-sizing: inherit; }
 
@@ -412,11 +336,11 @@ iframe.boot, iframe.ui {
   position: fixed;
   height: 100%; width: 100%;
   border: none;
-}</pre></li><li class="portabled-file       portabled-file-selected portabled-file-selected"><span class="portabled-file-name">bootShell.js</span><pre class="portabled-file-content">function bootShell(bootHTML, uiFrameReadyCallback) {
+}</pre></li><li class="portabled-file    "><span class="portabled-file-name">bootShell.ts</span><pre class="portabled-file-content">function bootShell(bootHTML: string, uiFrameReadyCallback: Function) {
 
   var bootStyle = elem(
     'style',
-    'iframe.ui{display:none;} '+
+    'iframe.ui{display:none;} ' +
     'iframe.boot{display:block;}',
     document.body);
 
@@ -425,8 +349,8 @@ iframe.boot, iframe.ui {
     bootFrame.global.require = require;
 
     bootFrame.global.eval(
-        elem + '\n' + setText + '\n' + onEvent + '\n' + offEvent+'\n'+dateNow+'\n'+
-        ' //# sourceURL=inlines.js');
+      elem + '\n' + setText + '\n' + onEvent + '\n' + offEvent + '\n' + dateNow + '\n' +
+      ' //# sourceURL=inlines.js');
 
     if (bootFrame.document.open) bootFrame.document.open();
     bootFrame.document.write(bootHTML);
@@ -435,7 +359,7 @@ iframe.boot, iframe.ui {
   });
 
   onEvent(window, 'load', function onloadCompleted() {
-    var uiFrame = createFrame('ui', function(uiDoc, uiGobal, uiFrame) {
+    var uiFrame = createFrame('ui', (uiDoc, uiGobal, uiFrame) =&gt; {
       document.body.removeChild(bootIFR);
       uiFrameReadyCallback(uiDoc, uiGobal, uiFrame);
       document.body.removeChild(bootStyle);
@@ -443,7 +367,7 @@ iframe.boot, iframe.ui {
   });
 
   function require(module) {
-    if (module==='boot') {
+    if (module === 'boot') {
       return {
         document: document,
         window: window
@@ -451,7 +375,7 @@ iframe.boot, iframe.ui {
     }
   }
 
-}</pre></li><li class="portabled-file   "><span class="portabled-file-name">bootui-mod.html</span><pre class="portabled-file-content">&lt;!doctype html&gt;
+}</pre></li><li class="portabled-file"><span class="portabled-file-name">bootui-mod.html</span><pre class="portabled-file-content">&lt;!doctype html&gt;
 &lt;html&gt;
   &lt;head&gt;
     &lt;style&gt;
@@ -490,106 +414,101 @@ setInterval(function() {
 }, 130);
 
     &lt;/script&gt;
-  &lt;/body  &lt;/html&gt;</pre></li></ul></li><li class="portabled-dir"><span class="portabled-dir-name">inlines</span><ul><li class="portabled-file    "><span class="portabled-file-name">createFrame.js</span><pre class="portabled-file-content">function createFrame(className, readyCallback) {
+  &lt;/body  &lt;/html&gt;</pre></li></ul></li><li class="portabled-dir"><span class="portabled-dir-name">inlines</span><ul><li class="portabled-file  "><span class="portabled-file-name">createFrame.ts</span><pre class="portabled-file-content">function createFrame(className: string): { global: any; document: Document; iframe: HTMLIFrameElement; } {
 
-  var frm = elem('iframe', { className: className });
+  var frm = &lt;HTMLIFrameElement&gt;elem('iframe', { className: className });
   frm.src = 'about:blank';
   document.body.appendChild(frm);
 
-  var d = getDocument();
-  if (d) {
-    readyCallback(d);
-    return frm;
-  }
+  if (frm.contentWindow &amp;&amp; frm.contentWindow.document &amp;&amp; frm.contentWindow.document !== document)
+    return { global: frm.contentWindow, document: frm.contentWindow.document, iframe: frm };
 
-  var pollDocReady = setInterval(function() {
-    var d = getDocument();
-    if (d) {
-      readyCallback(d);
-      clearInterval(pollDocReady);
-    }
-  }, 50);
+  if (frm.document &amp;&amp; frm.document !== document &amp;&amp; (&lt;Window&gt;&lt;any&gt;frm).alert)
+    return { global: frm, document: frm.document, iframe: frm };
 
-  function getDocument() {
-    if (frm.contentWindow &amp;&amp; frm.contentWindow.document &amp;&amp; frm.contentWindow.document !== document)
-      return { global: frm.contentWindow, document: frm.contentWindow.document, iframe: frm };
-    if (frm.document &amp;&amp; frm.document !== document &amp;&amp; frm.alert)
-      return { global: frm, document: frm.document, iframe: frm };
-  }
+}
 
-  return frm;
-}</pre></li><li class="portabled-file  "><span class="portabled-file-name">dateNow.js</span><pre class="portabled-file-content">function dateNow() {
+</pre></li><li class="portabled-file"><span class="portabled-file-name">dateNow.ts</span><pre class="portabled-file-content">function dateNow(): number {
   return Date.now ? Date.now() : new Date().getTime();
-}</pre></li><li class="portabled-file"><span class="portabled-file-name">elem.js</span><pre class="portabled-file-content">function elem(tag, style, parent) {
+}</pre></li><li class="portabled-file"><span class="portabled-file-name">elem.ts</span><pre class="portabled-file-content">function elem(
+  tag: string | HTMLElement,
+  style?: string | { [name: string]: any; },
+  parent?: Element): HTMLElement {
 
-	var e = tag.tagName ? tag : this.document.createElement(tag);
+  var e = (&lt;HTMLElement&gt;tag).tagName ? tag : this.document.createElement(tag);
 
   if (!style &amp;&amp; parent.tagName) {
-  	parent = style;
+    parent = &lt;any&gt;style;
     style = null;
   }
 
   if (style) {
-  	if (typeof style==='string') {
-  		setText(e, style);
-  	}
+    if (typeof style === 'string') {
+      setText(e, style);
+    }
     else {
       for (var k in style) if (style.hasOwnProperty(k)) {
-        if (k==='text') {
-  				setText(e, style[k]);
+        if (k === 'text') {
+          setText(e, style[k]);
         }
-        else if (k==='className') {
-  				e.className = style[k];
+        else if (k === 'className') {
+          e.className = style[k];
         }
         else {
           try {
-  					e.style[k] = style[k];
-  				}
-  				catch (err) {
-  					if (typeof console !== 'undefined' &amp;&amp; typeof console.error === 'function')
-  						console.error(err);
-  				}
+            e.style[k] = style[k];
+          }
+          catch (err) {
+            if (typeof console !== 'undefined' &amp;&amp; typeof console.error === 'function')
+              console.error(err);
+          }
         }
       }
-  	}
+    }
   }
 
   if (parent)
-  	parent.appendChild(e);
+    parent.appendChild(e);
 
   return e;
-}</pre></li><li class="portabled-file"><span class="portabled-file-name">onoff.js</span><pre class="portabled-file-content">function onEvent(e, eventName, handler) {
+}</pre></li><li class="portabled-file"><span class="portabled-file-name">onoff.ts</span><pre class="portabled-file-content">function onEvent(
+  e: HTMLElement | Element | Window,
+   eventName: string,
+   handler: (e: Event) =&gt; void) {
   if (e.addEventListener)
     e.addEventListener(eventName, handler, false);
-  else if (e.attachEvent)
-    e.attachEvent('on'+eventName, handler);
+  else if ((&lt;HTMLElement&gt;e).attachEvent)
+    (&lt;HTMLElement&gt;e).attachEvent('on'+eventName, handler);
   else if ('on'+eventName in e)
     e['on'+eventName] = handler;
   else if (typeof console !== 'undefined' &amp;&amp; typeof console.warn === 'function')
-    console.warn('Neither addEventListener nor attachEvent nor on'+eventName+' on '+e+' '+e.tagName+'.');
+    console.warn('Neither addEventListener nor attachEvent nor on'+eventName+' on '+e+' '+(&lt;HTMLElement&gt;e).tagName+'.');
 }
 
-function offEvent(e, eventName, handler) {
+function offEvent(
+  e: HTMLElement | Element | Window,
+   eventName: string,
+   handler: (e: Event) =&gt; void) {
   if (e.addEventListener)
     e.addEventListener(eventName, handler, false);
-  else if (e.attachEvent)
-    e.attachEvent('on'+eventName, handler);
-  else if ('on'+eventName in e)
-    e['on'+eventName] = handler;
+  else if ((&lt;HTMLElement&gt;e).attachEvent)
+    (&lt;HTMLElement&gt;e).attachEvent('on' + eventName, handler);
+  else if ('on' + eventName in e)
+    e['on' + eventName] = handler;
   else if (typeof console !== 'undefined' &amp;&amp; typeof console.warn === 'function')
-    console.warn('Neither addEventListener nor attachEvent nor on'+eventName+' on '+e+' '+e.tagName+'.');&nbsp;
-}</pre></li><li class="portabled-file"><span class="portabled-file-name">setText.js</span><pre class="portabled-file-content">function setText(e, text) {
+    console.warn('Neither addEventListener nor attachEvent nor on' + eventName + ' on ' + e + ' ' + (&lt;HTMLElement&gt;e).tagName + '.');
+}</pre></li><li class="portabled-file"><span class="portabled-file-name">setText.ts</span><pre class="portabled-file-content">function setText(e: HTMLElement, text: string) {
   if (!/^BODY$/i.test(e.tagName) &amp;&amp; 'text' in e)
-    e.text = text;
+    (&lt;any&gt;e).text = text;
   else if ('textContent' in e)
     e.textContent = text;
   else if ('innerText' in e)
     e.innerText = text;
-  else if('innerHTML' in e)
+  else if ('innerHTML' in e)
     e.innerHTML = text;
   else if (typeof console !== 'undefined' &amp;&amp; typeof console.error === 'function')
-    console.error('Cannot neither text nor textContent nor innerText nor innerHTML is present on element '+e+' '+e.tagName+'.');
-}</pre></li></ul></li><li class="portabled-dir"><span class="portabled-dir-name">mods</span><ul><li class="portabled-file"><span class="portabled-file-name">IFrameModuleLoader.ts</span><pre class="portabled-file-content">module mi.mods {
+    console.error('Cannot neither text nor textContent nor innerText nor innerHTML is present on element ' + e + ' ' + e.tagName + '.');
+}</pre></li></ul></li><li class="portabled-dir"><span class="portabled-dir-name">mods</span><ul><li class="portabled-file "><span class="portabled-file-name">IFrameModuleLoader.ts</span><pre class="portabled-file-content">module mi.mods {
 
   export class IFrameModuleLoader {
 
@@ -655,46 +574,92 @@ function offEvent(e, eventName, handler) {
     throw new Error('Cannot load and access an empty document in a hidden IFRAME.');
   }
 
-}</pre></li><li class="portabled-file"><span class="portabled-file-name">ModuleLoader.ts</span><pre class="portabled-file-content">module mi {
+}</pre></li><li class="portabled-file  "><span class="portabled-file-name">loadHeadlessMod.ts</span><pre class="portabled-file-content">function loadHeadlessMod(
+  options: {
+    scope?: { [name: string]: any; };
+    eval: string;
+   	path?: string;
+  }): void {
 
-  export interface ModuleLoader {
-    loadModule(path: string, jsCode: string): any;
-    require?: (name: string) =&gt; any;
+  var ff = createFrame(null, frame =&gt; {
+    document.body.removeChild(frame.iframe);
+
+    var allowGlobals = { setTimeout: 1, setInterval: 1, clearTimeout: 1, clearInterval: 1 };
+
+    var exportsInScope = options.scope &amp;&amp; 'exports' in options.scope;
+    var evalArgNames: string[] = exportsInScope ? [] : ['exports'];
+    var evalArgs: any[] = exportsInScope ? [] : [{}];
+    if (options.scope) {
+      for (var k in options.scope) if (options.scope.hasOwnProperty(k)) {
+        evalArgNames.push(k);
+        evalArgs.push(options.scope[k]);
+      }
+    }
+
+    for (var k in frame.global) {
+      if (options.scope &amp;&amp; options.scope.hasOwnProperty(k)) continue;
+      if (allowGlobals.hasOwnProperty(k)) continue;
+      evalArgNames.push(k);
+    }
+
+    evalArgNames.push(
+      options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval);
+
+    var evalFn = frame.global.Function.call(frame.global, evalArgNames);
+
+    var modExports = evalFn.call(frame.global, evalArgs);
+  });
+
+
+  function prepareIFrame(iframe: HTMLIFrameElement, document: Document) {
+    document.open();
+    document.write('&lt;body&gt;&lt;script&gt;var window = null; var document = null; var top = null; var parent = null; var exports = {};&lt;/' + 'script&gt;&lt;/body&gt;');
+    document.close();
+    document.body.removeChild(document.scripts[0]);
   }
 
-}</pre></li><li class="portabled-file  "><span class="portabled-file-name">loadMod.js</span><pre class="portabled-file-content">/**
- * options: {
- *  html,
- *  eval,
- *  className,
- *  path,
- *  scope,
- *  headless,
- *  readyCallback: (error, exports, {iframe, global, callback})
- * }
- * returns: iframe
- */
-function loadMod(options) {
-  var ff = createFrame(options.className, function();
-  prepareIFrame(ff.iframe, ff.document);
+  function openIFrame(document: Document) {
+    var iframe = document.createElement('iframe');
+    iframe.src = 'about:blank';
+    //(&lt;any&gt;iframe).srcdoc = '';
+    iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
 
-      (&lt;any&gt;ff.global).require = (name) =&gt; this.require(name);
+    var pollUntil = dateNow();
+    do {
+      if (iframe.contentWindow &amp;&amp; iframe.contentWindow.document &amp;&amp; iframe.contentWindow.document !== document)
+        return { iframe, global: iframe.contentWindow, document: iframe.contentWindow.document };
+      if (iframe.document &amp;&amp; iframe.document !== document)
+        return { iframe, global: &lt;Window&gt;(&lt;any&gt;document).window, document: iframe.document };
 
-      var wrappedCode = 'var exports = {}; (function(window, document, alert){' + jsCode + '})() //# sourceURL=' + path;
 
-      var script = ff.document.createElement('script');
-      if ('text' in script) {
-        script.text = wrappedCode;
-      }
-      else {
-        script.innerHTML = wrappedCode;
-      }
-      ff.document.body.appendChild(script);
-      while (ff.document.body.children.length)
-        ff.document.body.removeChild(ff.document.body.children[0]);
+    } while (dateNow() &lt; pollUntil);
 
-      return (&lt;any&gt;ff.global).exports;&nbsp;
-}</pre></li></ul></li><li class="portabled-file    "><span class="portabled-file-name">index.html</span><pre class="portabled-file-content">&lt;!doctype html&gt;
+    throw new Error('Cannot load and access an empty document in a hidden IFRAME.');
+  }
+
+}</pre></li><li class="portabled-file      "><span class="portabled-file-name">loadMod.ts</span><pre class="portabled-file-content"></pre></li><li class="portabled-file    portabled-file-selected"><span class="portabled-file-name">loadUIMod.ts</span><pre class="portabled-file-content">function loadUIMod(
+  options: {
+    className?: string;
+    scope?: { [name: string]: any; };
+   	html: string;
+  }) {
+
+  var frame = createFrame(options.className);
+  if (options.scope) {
+    for (var k in options.scope) if (options.scope.hasOwnProperty(k)) {
+      frame.global[k] = options.scope[k];
+    }
+  }
+
+  if (frame.document.open) frame.document.open();
+    frame.document.write(options.html);
+  if (frame.document.close) frame.document.close();
+
+  return frame;
+
+}</pre></li></ul></li><li class="portabled-file"><span class="portabled-file-name">index.html</span><pre class="portabled-file-content">&lt;!doctype html&gt;
 &lt;html&gt;
   &lt;head&gt;
     &lt;title&gt;mini shell&lt;/title&gt;
@@ -734,7 +699,7 @@ function loadMod(options) {
 		&lt;script src='https://mi.su/1.js'&gt;&lt;/script&gt;
 
   &lt;/body&gt;
-&lt;/html&gt;</pre></li></ul>
+&lt;/html&gt;</pre></li><li class="portabled-file "><span class="portabled-file-name">loadHeadlessMod.ts</span><pre class="portabled-file-content"></pre></li></ul>
       </div>
 
 <script data-legit="portabled">
@@ -744,29 +709,7 @@ function loadMod(options) {
 
       <div class="portabled-extra-content">
         
-        <div class="portabled-branding-area" data-bind="loadRaw: brandingArea=$element "><h1 id="portabled-v0-6w">portabled v0.6w</h1>
-<p>Self-editing filesystem embedded in a single HTML file.</p>
-<p>The idea, all of the painstaking implementation and the vision by <a href="mailto:mihailik@gmail.com">Oleg Mihailik</a>.
-See the credits section for the used libraries and respective licences.</p>
-<h3 id="outstanding-tasks-">Outstanding tasks:</h3>
-<ul>
-<li>Unifying of all import/export into 'moreDialog'.</li>
-<li>Download/upload for GitHub, GDrive, Dropbox etc.</li>
-<li>Extra power in Chrome app, node-webkit, HTMLA-ie7: I/O to the actual filesystem.</li>
-<li>Delete folder.</li>
-<li>Rename file/folder.</li>
-<li>Saving current position in documents.</li>
-<li>TypeScript extra features: navigate to, search integration, tooltips.</li>
-<li>Sub-domains for TypeScript/JavaScript completion/build contexts.</li>
-<li>Doc handlers in plugins, plugin API and isolation (using iframes with their own 'global' and 'require').</li>
-<li>node.js emulation for plugins and dependencies, allowing non-doc plugins.</li>
-<li>Highlight of <strong>changes</strong> in files.</li>
-<li>Styles and colours (planning for pale seaside 'Whitstable' blue, maybe black theme too).</li>
-<li>Scrollbar to use syntax-highlighted document lines.</li>
-<li>Toast popup/fadeout messages for key events: opening, building, import-export completion.</li>
-<li>Add whole raw TypeScript repository sample.</li>
-</ul>
-</div>
+        <div class="portabled-branding-area" data-bind="loadRaw: brandingArea=$element "></div>
 
 
        <div class="portabled-scrollable-bottom">
@@ -775,15 +718,15 @@ See the credits section for the used libraries and respective licences.</p>
             <button data-bind="click: deleteClick" style="min-width: 7em; margin-bottom: 0.3em;"> Delete </button> <br>
             <button data-bind="click: buildClick" style="min-width: 7em;"> Build </button> <br>
             <br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: exportAllHTML"> Save whole page </a><br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: commitToGitHub"> Commit to GitHub </a><br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: exportAllZIP"> Export to ZIP </a><br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: exportCurrentFile"> Save current file </a><br>
+            <a href="file:///home/omi/portabled/mi.html#" data-bind="click: exportAllHTML"> Save whole page </a><br>
+            <a href="file:///home/omi/portabled/mi.html#" data-bind="click: commitToGitHub"> Commit to GitHub </a><br>
+            <a href="file:///home/omi/portabled/mi.html#" data-bind="click: exportAllZIP"> Export to ZIP </a><br>
+            <a href="file:///home/omi/portabled/mi.html#" data-bind="click: exportCurrentFile"> Save current file </a><br>
             <br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: importText"> Add file </a><br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: importBase64"> Add binary (base64) </a><br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: importZIP"> Import files from ZIP </a><br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: importPortabledHTML"> Import files from portabled </a><br>
+            <a href="file:///home/omi/portabled/mi.html#" data-bind="click: importText"> Add file </a><br>
+            <a href="file:///home/omi/portabled/mi.html#" data-bind="click: importBase64"> Add binary (base64) </a><br>
+            <a href="file:///home/omi/portabled/mi.html#" data-bind="click: importZIP"> Import files from ZIP </a><br>
+            <a href="file:///home/omi/portabled/mi.html#" data-bind="click: importPortabledHTML"> Import files from portabled </a><br>
 
           </div>
 
@@ -823,7 +766,7 @@ See the credits section for the used libraries and respective licences.</p>
 </div>
 
 <div class="portabled-status-bar" data-bind="loadRaw: docHostRegions.status = $element">
-<div style="width: 100%; height: 100%;">/boot/bootShell.js</div></div>
+<div style="width: 100%; height: 100%;">/mods/loadUIMod.ts</div></div>
 
 <script data-legit="portabled">try { portabled.app.loading('Libraries...'); } catch (err) { alert(err+' '+err.stack); }</script>
 
