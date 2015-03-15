@@ -74,6 +74,8 @@ module portabled.docs.types.text {
         matchTags: true,
         showTrailingSpace: true,
         autoCloseTags: true,
+      	foldGutter: true,
+    		gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
         //highlightSelectionMatches: {showToken: /\w/},
         styleActiveLine: true,
         tabSize: 2

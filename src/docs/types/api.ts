@@ -5,6 +5,9 @@
  */
 module portabled.docs.types {
 
+  /**
+   * Document handlers modules are expected to export these members.
+   */
   export interface DocHandlerModule {
     
     load(path: string, storage: DocState): DocHandler;
@@ -25,6 +28,10 @@ module portabled.docs.types {
 
     showEditor(regions: DocHostRegions): void;
     hideEditor(): void;
+
+    // TODO: implement icons like this:
+    //
+    // load(context: { iconText(text: string): void; iconColor(color: string): void; }): void;
 
     remove();
 

@@ -1,16 +1,51 @@
 <div class=portabled-more-dialog-background
-   data-bind="click: dismiss, event: { keydown: keydown }">
-  
+   data-bind="click: dismiss, event: { keydown: function(unused, e) { return keydown(e); } }">
+
+  <!-- ko template: { "if": moreModel(), data: moreModel() } -->
   <div class=portabled-more-dialog
      data-bind="click: function() { }, clickBubble: false">
     
-    <input data-bind="hasFocus: true, textInput: text, load: textInput=$element">
+    <input class=portabled-more-filename data-bind="hasFocus: true, textInput: text, load: textInput=$element">
+
     <div class=portabled-more-dialog-list data-bind="foreach: matchItems">
       <div class=portabled-more-dialog-item
-         data-bind="text: display, css: { selected: selected }, click: clickSelect "></div>
+           data-bind="text: display, css: { selected: selected }, click: clickSelect ">
       </div>
     </div>
+
+    <button data-bind="click: importClick"> import </button>
+      
+  </div>
+
+  <!-- /ko -->
+
+  <!-- ko template: { "if": importModel(), data: importModel() } -->
+  
+  <div class=portabled-import-dialog
+     data-bind="click: function() { }, clickBubble: false">
     
+    <!-- ko template: { "if": asSingle(), data: asSingle() } -->
+    	<input class=portabled-more-filename data-bind="hasFocus: true, textInput: filename">
+      <div class=portabled-import-tree data-bind="foreach: siblings()">
+
+        <div
+             class=portabled-import-tree-item
+             data-bind="
+                        text: file,
+                        css: { 'portabled-import-tree-item-matching': isMatching, 'portabled-import-tree-subdir': isSubdir },
+                        click: function() { $parent.click($data); }"></div>
+      </div>
+    	<div class=portabled-import-diff-host data-bind="loadRaw: contentHost($element)"></div>
+    <!-- /ko -->
+
+
+    <!-- ko template: { "if": asMulti(), data: asMulti() } -->
+    	multi
+    <!-- /ko -->
+
   </div>
   
+  
+  <!-- /ko -->
+
 </div>

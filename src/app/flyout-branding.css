@@ -1,19 +1,22 @@
 .portabled-extra-content {
   float: left;
-  width: 75%;
+  width: 71%;
   height: 100%;
   margin-right: -1em;
+  background: white;
 }
 
 .portabled-extra-content .portabled-branding-area {
-  height: 60%;
+  height: 40%;
   padding: 1em;
   overflow: auto;
+  font-size: 90%;
 }
 
 .portabled-extra-content .portabled-scrollable-bottom {
-  height: 36%;
+  height: 60%;
   overflow: auto;
+  padding: 1em;
 }
 
 .portabled-extra-content .portabled-links {
@@ -26,4 +29,5 @@
   float: left;
   height: 36%;
   width: 50%;
+  font-size: 90%;
 }

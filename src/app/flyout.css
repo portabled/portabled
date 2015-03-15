@@ -3,7 +3,7 @@
   position: absolute;
   left: 0px; top: 0px;
   height: 100%;
-  width: 80%;
+  width: 85%;
   padding-bottom: 2em;
 }
 
@@ -18,15 +18,15 @@
 
 .portabled-flyout-scroller-bg {
   height: 100%;
-  width: 150%;
-  padding-left: 80%;
+  width: 130%;
+  padding-left: 85%;
 }
 
 .portabled-flyout {
   border-top: solid 1px silver;
   position: relative;
   height: 100%;
-  background: #A6D785;
+  background: #E8E8E8;
   z-index: 100;
   overflow: hidden;
   padding-bottom: 2em;

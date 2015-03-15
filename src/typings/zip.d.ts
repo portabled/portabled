@@ -41,6 +41,7 @@ declare module zip {
   }
 
   export class BlobWriter implements Writer {
+    constructor(contentType: string);
   }
     
   export class TextWriter implements Writer {

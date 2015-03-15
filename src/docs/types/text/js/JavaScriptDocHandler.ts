@@ -14,16 +14,18 @@ module portabled.docs.types.text.js {
     }
 
     load(text: string) {
+      return;
       ternServer().server.addFile(this.path, text);
     }
 
     open() {
+      return;
       ternServer().server.delFile(this.path);
       ternServer().addDoc(this.path, this.doc);
 
     }
 
-    shouldTriggerCompletion(textBeforeCursor: string) {
+    disabled_shouldTriggerCompletion(textBeforeCursor: string) {
 
       var lastChar = textBeforeCursor.charAt(textBeforeCursor.length - 1);
       if (lastChar === '.')
@@ -33,8 +35,9 @@ module portabled.docs.types.text.js {
       
     }
     
-    getCompletions(callback): any {
+    disabled_getCompletions(callback): any {
 
+      return;
       if (_completionSuccess === false) {
         return (<any>CodeMirror).hint.javascript(this.editor);
       }

@@ -1,5 +1,5 @@
 .portabled-file-tree {
-  padding-left: 1.5em;
+  padding-left: 0.1em;
 }
 
 .portabled-file-tree ul {
@@ -14,28 +14,42 @@
 }
 
 .portabled-file-tree li .portabled-file-name {
-  padding: 2px;
-}
-
-.portabled-file-tree li .portabled-dir-name {
-  padding: 2px;
-  font-weight: bold;
+  padding: 1px;
+  margin-left: -1em;
+  padding-left: 1em;
+  cursor: pointer;
+  border: solid 1px transparent;
 }
 
 .portabled-file-tree ul li .portabled-file-name:hover {
-  padding: 1px;
   border: solid 1px gold;
 }
 
-.portabled-file-tree ul li .portabled-dir-name:hover {
+.portabled-file-tree li .portabled-dir-name {
   padding: 1px;
+  margin-left: -1em;
+  padding-left: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  border: solid 1px transparent;
+}
+
+.portabled-file-tree ul li .portabled-dir-name:hover {
   border: solid 1px gold;
 }
 
 
 .portabled-file-tree li.portabled-dir {
-  list-style: circle;
+  list-style: none;
   cursor: default;
+}
+
+.portabled-file-tree li.portabled-dir::before {
+  content: "\25bc";
+}
+
+.portabled-file-tree li.portabled-dir-collapsed::before {
+  content: "\25ba";
 }
 
 .portabled-file-tree .portabled-dir-collapsed ul {
@@ -43,12 +57,19 @@
 }
 
 
+
 .portabled-file-tree li.portabled-file {
-  list-style: square;
+  list-style: none;
 }
 
-.portabled-file-tree .portabled-file-selected {
+.portabled-file-tree li.portabled-file::before {
+  content: "\25a1";
+  padding-right: 0.2em;
+}
+
+.portabled-file-tree .portabled-file-selected .portabled-file-name {
   background: cornflowerblue;
+  background: rgba(100,149,237,0.5);
 }
 
 

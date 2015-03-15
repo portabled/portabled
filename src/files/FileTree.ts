@@ -166,7 +166,7 @@ module portabled.files {
         }
         
 
-        if ((<HTMLDivElement>child).tagName === 'DIV' && (<HTMLDivElement>child).className) {
+        if (((<HTMLDivElement>child).tagName === 'DIV' || (<HTMLDivElement>child).tagName === 'SPAN') && (<HTMLDivElement>child).className) {
           if ((<HTMLDivElement>child).className.indexOf('portabled-file-name') >= 0) {
             this.isDir = false;
             this.name = child.textContent || (<HTMLDivElement>child).innerText;
@@ -221,7 +221,7 @@ module portabled.files {
       if (this.isDir)
         return null; // DEBUG
 
-      return this._contentPRE ? this._contentPRE.textContent || this._contentPRE.innerText : '';
+      return readNodeFileContent(this._contentPRE);
     }
 
     write(content: string) {
@@ -234,10 +234,7 @@ module portabled.files {
         this.li.appendChild(this._contentPRE);
       }
       
-      if (this._contentPRE.textContent || 'textContent' in this._contentPRE)
-        this._contentPRE.textContent = content || '';
-      else
-        this._contentPRE.innerText = content || '';
+      this._contentPRE.textContent = content || '';
     }
   
     readAttr(prop: string) {
@@ -290,7 +287,8 @@ module portabled.files {
         var insertIndex = -matchIndex - 100;
 
         var newLI = document.createElement('li');
-        var fnameDIV = document.createElement('div');
+        newLI.className = 'portabled-dir';
+        var fnameDIV = document.createElement('span');
         fnameDIV.className = 'portabled-dir-name';
         if ('textContent' in fnameDIV)
           fnameDIV.textContent = subdirName;
@@ -323,7 +321,8 @@ module portabled.files {
   
     createFile(fileName: string): Node {
       var newLI = document.createElement('li');
-      var fnameDIV = document.createElement('div');
+      newLI.className = 'portabled-file';
+      var fnameDIV = document.createElement('span');
       fnameDIV.className = 'portabled-file-name';
       if ('textContent' in fnameDIV)
         fnameDIV.textContent = fileName;
@@ -475,6 +474,10 @@ module portabled.files {
       result.push(c);
     }
     return result.join('');
+  }
+
+	export function readNodeFileContent(node: HTMLElement) {
+    return node ? node.textContent || (node.innerText ? node.innerText.replace(/\r\n/g, '\n') : '') : '';
   }
 
 }

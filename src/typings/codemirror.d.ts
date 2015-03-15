@@ -335,6 +335,8 @@ declare module CodeMirror {
     whenever a new CodeMirror instance is initialized. */
     defineInitHook(func: Function);
 
+    normalizeKeyMap(keymap: any): any;
+
 
 
     on(element: any, eventName: string, handler: Function);

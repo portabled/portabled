@@ -35,7 +35,8 @@ module portabled.docs.types.text.html {
     }
     
     getCompletions() {
-      return (<any>CodeMirror).hint.html(this.editor);
+      if ((<any>CodeMirror).hint && (<any>CodeMirror).hint.html)
+      	return (<any>CodeMirror).hint.html(this.editor);
     }
     
   }

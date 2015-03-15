@@ -2,9 +2,10 @@ module portabled.docs.types.text {
 
   export class CodeMirrorDocHandler implements DocHandler {
 
-    static codeMirrorEditorPools: { [moduleName: string]: CodeMirror[]; } = { };
-    
+    static codeMirrorEditorPools: { [moduleName: string]: CodeMirror[]; } = {};
+
     private _closures = {
+      cm_change: (cm, docChange) => this._docSingleChange(docChange),
       cm_changes: (cm, docChanges) => this._docChanges(docChanges),
       cm_cursorActivity: (cm) => this._cursorActivity(),
       cm_scroll: (cm) => this._scroll()
@@ -13,7 +14,7 @@ module portabled.docs.types.text {
     private _saveTimer = new Timer();
 
     private _appliedKeyMap = null;
-    
+
     private _scrollerModel: scrollerView.ScrollerModel = null;
 
     private _retrievedText: string = null;
@@ -21,49 +22,30 @@ module portabled.docs.types.text {
     private _validTrail: number = 0;
     private _totalLength: number = 0;
 
+    private _newValidLead: number = -1;
+    private _newValidTrail: number = -1;
+
     constructor(
       public path: string,
       public storage: DocState,
       public textDoc: CodeMirrorTextDoc,
       public moduleName: string,
       public moduleObj: TextHandlerModule) {
-      
+
       this._saveTimer.ontick = () => this._save();
-      
+
       this.textDoc.path = path;
 
       this.textDoc.text = () => this.text();
-      
+
       if (this.textDoc.load) {
         var text = this.storage.read();
         this.textDoc.load(text);
       }
-      
+
     }
 
     showEditor(regions: DocHostRegions): void {
-
-      var cmPool =
-        CodeMirrorDocHandler.codeMirrorEditorPools[this.moduleName || ''] ||
-        (CodeMirrorDocHandler.codeMirrorEditorPools[this.moduleName || ''] = []);
-
-      if (cmPool.length) {
-        this.textDoc.editor = cmPool.pop();
-      	// avoid zoom on focus
-      	this.textDoc.editor.getInputField().style.fontSize = '16px';
-
-        regions.content.appendChild(this.textDoc.editor.getWrapperElement());
-      }
-      else {
-        this.textDoc.editor = (this.moduleObj && this.moduleObj.createCodeMirrorEditor) ?
-          this.moduleObj.createCodeMirrorEditor(regions.content) :
-          createCodeMirrorEditor(regions.content);
-
-        this._appliedKeyMap = this.textDoc.keyMap;
-        if (this._appliedKeyMap) {
-          this.textDoc.editor.addKeyMap(this._appliedKeyMap);
-        }
-      }
 
       if (!this.textDoc.doc) {
         if (!this._retrievedText && typeof this._retrievedText !== 'string') {
@@ -78,15 +60,56 @@ module portabled.docs.types.text {
           createCodeMirrorDoc(this._retrievedText);
       }
 
-      if (!this._scrollerModel) {
-        this._scrollerModel = new scrollerView.ScrollerModel(this.textDoc.doc, 300);
-      }
-      
-      this.textDoc.editor.swapDoc(this.textDoc.doc);
 
+      var cmPool =
+        CodeMirrorDocHandler.codeMirrorEditorPools[this.moduleName || ''] ||
+        (CodeMirrorDocHandler.codeMirrorEditorPools[this.moduleName || ''] = []);
+
+      if (cmPool.length) {
+        this.textDoc.editor = cmPool.pop();
+        // avoid zoom on focus
+        this.textDoc.editor.getInputField().style.fontSize = '16px';
+
+        regions.content.appendChild(this.textDoc.editor.getWrapperElement());
+      }
+      else {
+        this.textDoc.editor = (this.moduleObj && this.moduleObj.createCodeMirrorEditor) ?
+          this.moduleObj.createCodeMirrorEditor(regions.content) :
+          createCodeMirrorEditor(regions.content);
+
+        this._appliedKeyMap = this.textDoc.keyMap;
+        if (this._appliedKeyMap) {
+          this._appliedKeyMap = CodeMirror.normalizeKeyMap(this._appliedKeyMap);
+          this.textDoc.editor.addKeyMap(this._appliedKeyMap);
+        }
+      }
+
+      if (this.textDoc.editor.getDoc() !== this.textDoc.doc)
+        this.textDoc.editor.swapDoc(this.textDoc.doc);
+
+      try {
+        this.textDoc.editor.focus();
+      }
+      catch (e) { }
+
+      setTimeout(() => {
+        if (this.textDoc.editor && this.textDoc.editor.getDoc() === this.textDoc.doc) {
+          this.textDoc.editor.refresh();
+          this.textDoc.editor.focus();
+          this._scroll();
+        }
+      }, 2);
+
+
+      this.textDoc.editor.on('change', this._closures.cm_change);
       this.textDoc.editor.on('changes', this._closures.cm_changes);
       this.textDoc.editor.on('cursorActivity', this._closures.cm_cursorActivity);
       this.textDoc.editor.on('scroll', this._closures.cm_scroll);
+
+
+      if (!this._scrollerModel) {
+        this._scrollerModel = new scrollerView.ScrollerModel(this.textDoc.doc, 300);
+      }
 
       if (!this.textDoc.scroller) {
         this.textDoc.scroller = document.createElement('div');
@@ -96,7 +119,7 @@ module portabled.docs.types.text {
       }
 
       regions.scroller.appendChild(this.textDoc.scroller);
-      
+
       if (!this.textDoc.status) {
         this.textDoc.status = document.createElement('div');
         this.textDoc.status.style.width = '100%';
@@ -108,21 +131,17 @@ module portabled.docs.types.text {
 
       if (this.textDoc.open)
         this.textDoc.open();
-      
-      setTimeout(() => {
-        if (this.textDoc.editor && this.textDoc.editor.getDoc() === this.textDoc.doc) {
-          this.textDoc.editor.refresh();
-          this.textDoc.editor.focus();
-          this._scroll();
-        }
-      }, 2);
+
 
     }
 
     hideEditor(): void {
 
       this._saveTimer.endWaiting();
-      
+
+      if (!this.textDoc || !this.textDoc.doc)
+        return;
+
       this.textDoc.editor.off('changes', this._closures.cm_changes);
       this.textDoc.editor.off('cursorActivity', this._closures.cm_cursorActivity);
       this.textDoc.editor.off('scroll', this._closures.cm_scroll);
@@ -134,18 +153,24 @@ module portabled.docs.types.text {
 
       if (this.textDoc.close)
         this.textDoc.close();
-      
+
       var editor = this.textDoc.editor;
       this.textDoc.editor = null;
-      
+
+      editor.swapDoc(new CodeMirror.Doc(''));
+
       var cmPool =
         CodeMirrorDocHandler.codeMirrorEditorPools[this.moduleName || ''];
-      
+
       cmPool.push(editor);
     }
-    
-    remove() {
+
+    remove(): void {
       this._saveTimer.stop();
+
+      if (!this.textDoc || !this.textDoc.doc)
+        return;
+
       if (this.textDoc.remove)
         this.textDoc.remove();
 
@@ -157,7 +182,7 @@ module portabled.docs.types.text {
       var doc = this.textDoc.doc;
       if (!this._retrievedText && typeof this._retrievedText !== 'string') {
         this._retrievedText = doc ? doc.getValue() : this.storage.read();
-        this._totalLength = this._retrievedText.length;
+        this._totalLength = this._retrievedText ? this._retrievedText.length : 0;
         this._validLead = -1;
         return this._retrievedText;
       }
@@ -172,7 +197,7 @@ module portabled.docs.types.text {
       });
 
       if (this._validLead + this._validTrail === this._retrievedText.length
-         && this._retrievedText.length === totalLength)
+        && this._retrievedText.length === totalLength)
         return this._retrievedText;
 
       if (this._validLead + this._validTrail < totalLength / 4) { // if more than 0.75 of the document is modified
@@ -184,15 +209,27 @@ module portabled.docs.types.text {
       var mid = doc.getRange(
         doc.posFromIndex(this._validLead),
         doc.posFromIndex(totalLength - this._validTrail));
-      
+
       this._retrievedText =
-        this._retrievedText.slice(0, this._validLead) +
-        mid +
-        this._retrievedText.slice(this._retrievedText.length - this._validTrail);
+      this._retrievedText.slice(0, this._validLead) +
+      mid +
+      this._retrievedText.slice(this._retrievedText.length - this._validTrail);
       this._validLead = -1;
 
-      
+
       return this._retrievedText;
+    }
+
+    private _docSingleChange(docChange: CodeMirror.EditorChange) {
+      var doc = this.textDoc.doc;
+
+      var newValidLead = doc.indexFromPos(docChange.from);
+      var newValidTrail = this._totalLength - newValidLead - totalLength(docChange.removed);
+
+      if (this._newValidLead < 0 || this._newValidLead > newValidLead)
+        this._newValidLead = newValidLead;
+      if (this._newValidTrail < 0 || this._newValidTrail > newValidTrail)
+        this._newValidTrail = newValidTrail;
     }
 
     private _docChanges(docChanges: CodeMirror.EditorChange[]) {
@@ -205,28 +242,13 @@ module portabled.docs.types.text {
         ch: doc.getLine(lineCount - 1).length
       });
 
-      var changeLead = -1;
-      var changeTrail = -1;
-      var deltaLength = 0;
-      for (var i = 0; i < docChanges.length; i++) {
-        var ch = docChanges[i];
-        var removedLength = totalLength(ch.removed);
-        var addedLength = totalLength(ch.text);
-        var fromIndex = doc.indexFromPos(ch.from);
-        var trail = newTotalLength - fromIndex - addedLength;
-        
-        deltaLength += addedLength - removedLength;
-        
-        if (changeLead < 0) {
-          changeLead = fromIndex;
-          changeTrail = trail;
-        }
-        else {
-          changeLead = Math.min(changeLead, fromIndex);
-          changeTrail = Math.min(changeTrail, trail);
-        }
-      }
-      
+      var changeLead = this._newValidLead;
+      var changeTrail = this._newValidTrail;
+
+      this._newValidLead = -1;
+      this._newValidTrail = -1;
+
+
       if (this._validLead < 0) {
         this._validLead = changeLead;
         this._validTrail = changeTrail;
@@ -242,7 +264,7 @@ module portabled.docs.types.text {
         newmid: 0,
         trail: changeTrail
       };
-      changeSummary.newmid = changeSummary.mid + deltaLength;
+      changeSummary.newmid = newTotalLength - changeLead - changeTrail;
 
       this._totalLength = newTotalLength;
 
@@ -268,7 +290,7 @@ module portabled.docs.types.text {
       // TODO: scroller/thickBar cursor activity
 
     }
-    
+
     private _scroll() {
       var scr = this.textDoc.editor.getScrollInfo();
       if (this.textDoc.onScroll)
@@ -276,7 +298,7 @@ module portabled.docs.types.text {
 
       if (this._scrollerModel)
         this._scrollerModel.scroll(scr);
-      
+
     }
 
     private _save() {
@@ -287,7 +309,7 @@ module portabled.docs.types.text {
 
   function totalLength(lines: string[]): number {
     var length = 0;
-    for (var i = 0 ; i < lines.length; i++) {
+    for (var i = 0; i < lines.length; i++) {
       length += lines[i].length;
     }
     if (lines.length > 1)

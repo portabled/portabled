@@ -49,6 +49,9 @@ module portabled.docs.types.text.base {
 
     onChanges(docChanges: CodeMirror.EditorChange[], summary: { lead: number; mid: number; trail: number; }) {
 
+      // awkward workaround to an apparent TS emit bug (super.method() instead of _super.instance.method())
+      this.onChangesCore(docChanges, summary);
+
       if (this.getCompletions) {
         if (!this._isCompleting) {
           var cur = this.doc.getCursor();
@@ -60,6 +63,9 @@ module portabled.docs.types.text.base {
           this._completionTimer.reset();
         }
       }
+    }
+    
+    onChangesCore(docChanges: CodeMirror.EditorChange[], summary: { lead: number; mid: number; trail: number; }) {
     }
 
     private _createCompletionTimer() {
@@ -82,7 +88,8 @@ module portabled.docs.types.text.base {
 
     private _triggerCompletion(implicitly: boolean) {
 
-      this._completionTimer.stop();
+      if (this._completionTimer)
+        this._completionTimer.stop();
 
       var lastResult;
       

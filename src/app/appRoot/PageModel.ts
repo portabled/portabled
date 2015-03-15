@@ -5,7 +5,7 @@ module portabled.app.appRoot {
     private _drive: persistence.Drive = null;
     private _fileTree: portabled.files.FileTree = null;
     private _docHost: docs.DocHost = null;
-
+  
     docHostRegions: docs.types.DocHostRegions = <any>{};
     fileTreeHost: HTMLElement = null;
     flyoutScroller: HTMLElement = null;
@@ -17,7 +17,7 @@ module portabled.app.appRoot {
     loadFromDOM(completed: () => void) {
       var fileTree = new portabled.files.FileTree(this.fileTreeHost);
 
-      app.loading('Retrieving cached files...');
+      app.loading('Initializing caches...');
 
       var uniqueKey = this._getUniqueKey();
       var domTimestamp = fileTree.timestamp;
@@ -68,25 +68,60 @@ module portabled.app.appRoot {
         fileTree,
         uniqueKey,
         domTimestamp,
-        <any>portabled.persistence,
+        persistence.defaultPersistenceModules(),
         mountedDriveCallback);
     }
 
     keydown(unused, e: KeyboardEvent) {
-      if (e.keyCode === 220 || e.which === 220
-        || e.keyCode === 79 || e.which === 79) {
+      if (e.keyCode === 220 || e.which === 220 // Ctrl+O
+        || e.keyCode === 79 || e.which === 79) { // Ctrl+N
         if (e.ctrlKey || e.altKey || e.metaKey) {
           this.moreClick();
           return;
         }
       }
 
-      if (e.keyCode === 66 || e.which === 66) {
+      if ((e.keyCode || e.which) === 66) { // Ctrl+B, Alt+B
         if (e.ctrlKey || e.altKey || e.metaKey) {
           this.buildClick();
           return;
         }
       }
+
+      if ((e.keyCode || e.which) === 82) { // Alt+R
+        if (e.altKey) {
+          var allFiles = this._drive.files();
+          var deleteFiles = allFiles;
+
+          if (this._fileTree.selectedFile()) {
+            var currentFile = files.normalizePath(this._fileTree.selectedFile());
+            var lastSlash = currentFile.lastIndexOf('/');
+            var parentDir = currentFile.slice(0, lastSlash+1);
+
+            deleteFiles = [];
+            for (var i = 0; i < allFiles.length; i++) {
+              if (allFiles[i].indexOf(parentDir) === 0)
+                deleteFiles.push(allFiles[i]);
+            }
+          }
+
+          if (confirm('Delete '+deleteFiles.length+' files' + (parentDir ? ' at '+parentDir : '') +' out of ' + allFiles.length + '?')) {
+            for (var i = 0; i < deleteFiles.length; i++) {
+              this._drive.write(deleteFiles[i], null);
+            }
+            
+            alert(deleteFiles.length + ' files deleted.');
+          }
+          return;
+        }
+      }
+      
+      /*
+      if (typeof console !== 'undefined'
+          && typeof console.log === 'function') {
+        console.log('key '+e.keyCode);
+      }
+      */
 
       return true;
     }
@@ -104,7 +139,7 @@ module portabled.app.appRoot {
       var moreDlg = new moreDialog.Model(
         this._fileTree.selectedFile(),
         currentSelectedText,
-        this._drive.files(),
+        this._drive,
         typedFilename => { 
           document.body.removeChild(div);
           if (!typedFilename)
@@ -123,7 +158,7 @@ module portabled.app.appRoot {
       var div = document.createElement('div');
       document.body.appendChild(div);
       ko.applyBindingsToNode(div, { template: { name: 'MoreDialogView' } }, moreDlg);
-      moreDlg.loadFromDOM();
+      moreDlg.connectToDOM();
     }
   
     deleteClick() {
@@ -151,33 +186,108 @@ module portabled.app.appRoot {
 
       if (key.length > ignoreSuffix.length && key.slice(key.length - ignoreSuffix.length) === ignoreSuffix)
         key = key.slice(0, key.length - ignoreSuffix.length);
+      
+      if (key.charAt(0) === '/')
+        key = key.slice(1);
+      if (key.charAt(key.length - 1) === '/')
+        key = key.slice(0, key.length - 1);
+
+      if (window.location.port === 'blob:') {
+        var pts = key.split('/');
+        key = pts[pts.length - 1];
+      }
+
+      var hashedKey =
+          murmurhash2_32_gc(key, 2523).toString() + '-' +
+          murmurhash2_32_gc(key.slice(1), 45632).toString(); // a naive (stupid) way to reduce collisions
 
       return key;
     }
 
     buildClick() { 
-      var template: string;
       var file = this._fileTree.selectedFile();
-      if (file && (file.slice(file.length - '.html'.length) === '.html' || file.slice(file.length - '.html'.length) === '.htm')) {
-        template = this._drive.read(file);
-      }
-      else {
-        template = this._drive.read('/index.html');
-      }
-
-      if (template) {
-        build.functions.appPageModel = this;
-        var processed = build.processTemplate(template, [build.functions]);
-        var blob = new Blob([processed], { type: 'text/html' });
-        var url = URL.createObjectURL(blob);
-        window.open(url, '_blank' + Date.now());
-      }
+      
+      buildUI.runBuild(file, this._drive);
     }
 
     exportAllHTML() {
       importExport.exportAllHTML();
     }
-  
+
+    commitToGitHub() {
+      var gitHubURL = document.body.getAttribute('data-github-url');
+
+      if (/.github\.io$/.test(window.location.hostname.toLowerCase()))
+        gitHubURL = window.location + '';
+
+      if (!gitHubURL) {
+        gitHubURL = prompt('GitHub URL');
+        if (!gitHubURL)
+          return;
+        
+        document.body.setAttribute('data-github-url', gitHubURL);
+      }
+
+      if (gitHubURL.toLowerCase().indexOf('https://') ===0)
+        gitHubURL = gitHubURL.slice('https://'.length);
+      else if (gitHubURL.toLowerCase().indexOf('http://') == 0)
+        gitHubURL = gitHubURL.slice('http://'.length);
+
+      var gitHubURLParts = gitHubURL.split('/');
+
+      // TODO: support both GitHub pages as well as browse URLs
+      if (!/.github\.io$/.test(gitHubURLParts[0].toLowerCase())) {
+        alert('not a GitHub URL');
+        return;
+      }
+      if (gitHubURLParts.length < 2) {
+        alert('not full GitHub URL (with the file name)');
+        return;
+      }
+      
+      var message = prompt('Commit message');
+      if (!message)
+        return;
+
+      var user = gitHubURLParts[0].slice(0, gitHubURLParts[0].length - '.github.io'.length);
+
+      var repo = gitHubURLParts[1];
+      
+      var path = gitHubURLParts.length === 2 ? 'index.html' : gitHubURLParts.slice(3).join('/');
+      
+      
+      function commitViaJSAPI() {
+//        var gh = new Github();
+//        gh.Repo;
+      }
+      
+      var xhr = new XMLHttpRequest();
+      xhr.withCredentials = true;
+      xhr.open('PUT', 'https://api.github.com/repos/'+user+'/'+repo+'/contents/'+path);
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+          var resultJSON = typeof xhr.response === 'string' ? JSON.parse(xhr.response) : xhr.response;
+          if (!resultJSON) {
+            alert('GitHub did not respond well.');
+            return;
+          }
+          
+          console.log(resultJSON);
+        }
+      };
+      xhr.onerror = (err) => {
+        alert('GitHub reject: ' + err.message);
+      };
+      
+      var req = JSON.stringify({
+        "path": path,
+        "message": message,
+        "content": '<!doctype html>' + document.documentElement.outerHTML
+      });
+      
+      xhr.send(req);
+    }
+
     exportAllZIP() {
       importExport.exportAllZIP(this._drive);
     }
@@ -229,6 +339,10 @@ module portabled.app.appRoot {
 
     importZIP() {
       importExport.importZIPWithConfirmation(this._drive);
+    }
+  
+    importPortabledHTML() {
+      importExport.importPortabledHTMLWithConfirmation(this._drive);
     }
 
 

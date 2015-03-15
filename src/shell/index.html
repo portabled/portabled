@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+  <head>
+		<meta charset="utf-8">
+    <title> portable shell </title>
+
+    <!-- main and boot time CSS -->
+    <svg style="display: none;" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+      <defs><filter id="boot_gaussian_blur"><feGaussianBlur in="SourceGraphic" stdDeviation="2" /></filter></defs>
+  	</svg>
+    <style>
+<%=uglifyCSS('shell/basic-html-body.css', 'shell/boot-initial.css')%>
+    </style>
+
+    <!-- CodeMiror CSS -->
+    <style>
+      <%=uglifyCSS(
+        'imports/codemirror/lib/codemirror.css',
+      	'imports/codemirror/theme/3024-night.css',
+        'imports/codemirror/addon/hint/show-hint.css',
+        'imports/codemirror/addon/dialog/dialog.css',
+        'imports/codemirror/addon/merge/merge.css')%>
+    </style>
+
+  </head>
+  <body>
+
+    <!-- Error handling script -->
+    <script data-legit=portabled><%=embedFile('errors.js')%></script>
+
+    <!-- ES5 shim/sham, JSON3 -->
+    <script data-legit=portabled>
+      <%=embedFile('imports/es5-shim/es5-shim.min.js','imports/es5-shim/es5-sham.min.js', 'imports/json3/json3.min.js')%>
+    </script>
+
+
+    <!-- CodeMirror -->
+    <script data-legit=portabled>
+      <%=uglifyJS([
+        'imports/codemirror/lib/codemirror.js',
+        'imports/codemirror/addon/dialog/dialog.js',
+        'imports/codemirror/addon/search/search.js',
+        'imports/codemirror/addon/search/searchcursor.js',
+        'imports/codemirror/addon/hint/show-hint.js',
+        'imports/codemirror/mode/javascript/javascript.js',
+        'imports/codemirror/addon/tern/tern.js',
+        'imports/codemirror/addon/hint/javascript-hint.js',
+        'imports/codemirror/mode/css/css.js',
+        'imports/codemirror/addon/hint/css-hint.js',
+        'imports/codemirror/mode/sass/sass.js',
+        'imports/codemirror/mode/xml/xml.js',
+        'imports/codemirror/addon/hint/xml-hint.js',
+        'imports/codemirror/mode/htmlmixed/htmlmixed.js',
+        'imports/codemirror/mode/htmlembedded/htmlembedded.js',
+        'imports/codemirror/addon/hint/html-hint.js',
+        'imports/codemirror/mode/markdown/markdown.js',
+        'imports/codemirror/addon/edit/matchbrackets.js',
+        'imports/codemirror/addon/selection/active-line.js'])%>
+    </script>
+
+
+    <!-- Main portabled JS code -->
+    <script data-legit=portabled><%=typescriptBuild()%></script>
+
+    <script data-legit=portabled> if (typeof portabled !== 'undefined') portabled.shell.start(); </script>
+
+
+
+    <!-- finished loaded CSS -->
+    <style><%=uglifyCSS('shell/boot-loaded.css')%></style>
+
+  </body>
+</html>

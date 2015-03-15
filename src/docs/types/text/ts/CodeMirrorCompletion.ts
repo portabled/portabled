@@ -46,12 +46,7 @@ module portabled.docs.types.text.ts_ {
   var _useTextContent = -1;
   function createSpan(text: string, className: string) {
     var span = document.createElement('span');
-    if (_useTextContent === -1)
-      _useTextContent = 'textContent' in span ? 1:0;
-    if (_useTextContent)
-      span.textContent = text;
-    else
-      span.innerText = text;
+    setTextContent(span, text);
     span.className = className;
     return span;
   }

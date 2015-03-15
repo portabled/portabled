@@ -1,6 +1,5 @@
-<!DOCTYPE html>
-<!-- saved from url=(0037)file:///home/omi/portabled/empty.html -->
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!doctype html>
+<html><head>
 <meta charset="utf-8">
 <title>portabled - [portabled v0.6w]</title>
 
@@ -140,7 +139,7 @@ this.to=CodeMirror.Pos(r,t.length+e.length+i.length)}return n.prototype.render=f
 
 },this._matchHighlightTimer.interval=400,this._matchHighlightTimer.ontick=function(){return i._updateMatchHighlight()},this._statusUpdateTimer.interval=200,this._statusUpdateTimer.ontick=function(){return i._updateStatus()}}return __extends(r,e),r.prototype.load=function(){n().addFile(this.path,this)},r.prototype.open=function(){var t=this;this._matchHighlightTimer.reset(),this._statusUpdateTimer.reset();var e=this.editor.getOption("gutters");(!e||e.indexOf("CodeMirror-lint-markers")<0)&&(e||(e=[]),e.push("CodeMirror-lint-markers"),this.editor.setOption("gutters",e));var i=this.editor.getOption("foldOptions")||{};i.rangeFinder=function(e,i){if(t._foldData||(t._foldData=n().service().getOutliningSpans(t.path)),t._foldData){for(var r=t.doc.indexFromPos({line:i.line,ch:0}),o=t.doc.getLine(i.line).length,a=0;a<t._foldData.length;a++){var s=t._foldData[a];if(s.hintSpan.start>=r&&s.hintSpan.start<r+o){var l={from:t.doc.posFromIndex(s.textSpan.start),to:t.doc.posFromIndex(s.textSpan.start+s.textSpan.length)};return l;
 
-}}return null}},this.editor.setOption("foldOptions",i),this.editor.setOption("lint",function(){var e=[],i=function(i){var n,r,o=i.messageText;if("string"==typeof o)n=o,r=1===i.category?"error":"warning";else{n=a.messageText,r=1===a.category?"error":"warning";for(var a=o;a;)n="\n"+a.messageText,1===a.category&&(r="error"),a=a.next}e.push({message:n,severity:r,from:t.doc.posFromIndex(i.start),to:t.doc.posFromIndex(i.start+i.length)})},r=n().service().getSyntacticDiagnostics(t.path),o=n().service().getSemanticDiagnostics(t.path);if(r)for(var a=0;a<r.length;a++)i(r[a]);if(o)for(var a=0;a<o.length;a++)i(o[a]);return e})},r.prototype.close=function(){this._matchHighlightTimer.stop(),this._statusUpdateTimer.stop()},r.prototype.shouldTriggerCompletion=function(t){var e=t.charAt(t.length-1);return"."===e?!0:e.toLowerCase()!==e.toUpperCase()?!0:void 0},r.prototype.getCompletions=function(){var t=this.doc.getCursor(),e=this.doc.indexFromPos(t),r=n().service().getCompletionsAtPosition(this.path,e);if(r&&r.entries.length){
+}}return null}},this.editor.setOption("foldOptions",i),this.editor.setOption("lint",function(){var e=[],i=function(i){var n,r,o=i.messageText;if("string"==typeof o)n=o,r=1===i.category?"error":"warning";else{var a=o;for(n=a.messageText,r=1===a.category?"error":"warning";a;)n="\n"+a.messageText,1===a.category&&(r="error"),a=a.next}e.push({message:n,severity:r,from:t.doc.posFromIndex(i.start),to:t.doc.posFromIndex(i.start+i.length)})},r=n().service().getSyntacticDiagnostics(t.path),o=n().service().getSemanticDiagnostics(t.path);if(r)for(var a=0;a<r.length;a++)i(r[a]);if(o)for(var a=0;a<o.length;a++)i(o[a]);return e})},r.prototype.close=function(){this._matchHighlightTimer.stop(),this._statusUpdateTimer.stop()},r.prototype.shouldTriggerCompletion=function(t){var e=t.charAt(t.length-1);return"."===e?!0:e.toLowerCase()!==e.toUpperCase()?!0:void 0},r.prototype.getCompletions=function(){var t=this.doc.getCursor(),e=this.doc.indexFromPos(t),r=n().service().getCompletionsAtPosition(this.path,e);if(r&&r.entries.length){
 for(var o=this.doc.getLine(t.line),a=0;a<t.ch;){var l=o.charAt(t.ch-a-1);if(!s(l))break;a++}for(var c=0;t.ch+c<o.length;){var l=o.charAt(t.ch+c);if(!s(l))break;c++}for(var u=o.slice(0,t.ch-a),d=o.slice(t.ch-a,t.ch),h=o.slice(t.ch,t.ch+c),p=o.slice(t.ch+c),f=d.toLowerCase(),m=[],v=0;v<r.entries.length&&!(m.length>16);v++){var g=r.entries[v];if(!(a&&g.name.toLowerCase().indexOf(f)<0)){var _=n().service().getCompletionEntryDetails(this.path,e,g.name);m.push(new i.CodeMirrorCompletion(u,d,h,p,t.line,g,_))}}if(m.length&&(1!==m.length||m[m.length-1].text!==d)){var b={list:m,from:CodeMirror.Pos(t.line,t.ch-a),to:t};return b}}},r.prototype.onChangesCore=function(t,e){this._foldData=null;var i=ts.createTextChangeRange(ts.createTextSpan(e.lead,e.mid),e.newmid);this._changes.push(i),this._matchHighlightTimer.reset(),this._matchMarkersInvalidated=!0,this._statusUpdateTimer.reset(),this._autoformatAsNeeded(t)},r.prototype.onCursorMoved=function(){this._matchHighlightTimer.reset(),this._statusUpdateTimer.reset()},r.prototype.changes=function(){
 return this._changes},r.prototype._autoformatAsNeeded=function(t){var e=this;if(!this._autoformatInProgress){var i=t[t.length-1],r=i.text.length?i.text[i.text.length-1]:null;!r&&i.text.length>1&&(r="\n");var o=r.charAt(r.length-1);switch(o){case"}":case";":case"\n":break;default:return}var a=this.doc.getCursor(),s=this.doc.indexFromPos(a),l={IndentSize:2,TabSize:2,NewLineCharacter:"\n",ConvertTabsToSpaces:!0,InsertSpaceAfterCommaDelimiter:!0,InsertSpaceAfterSemicolonInForStatements:!0,InsertSpaceBeforeAndAfterBinaryOperators:!0,InsertSpaceAfterKeywordsInControlFlowStatements:!0,InsertSpaceAfterFunctionKeywordForAnonymousFunctions:!1,InsertSpaceAfterOpeningAndBeforeClosingNonemptyParenthesis:!1,PlaceOpenBraceOnNewLineForFunctions:!1,PlaceOpenBraceOnNewLineForControlBlocks:!1},c=n().service().getFormattingEditsAfterKeystroke(this.path,s,o,l);c&&c.length&&(this._autoformatInProgress=!0,this.editor.operation(function(){for(var t=c.length-1;t>=0;t--){var i=c[t],n=e.doc.posFromIndex(i.span.start),r=e.doc.posFromIndex(i.span.start+i.span.length);
 
@@ -183,14 +182,14 @@ t.executeSql('CREATE TABLE "'+i+'" (name PRIMARY KEY, value)',[],function(t){t.e
 height:"100%",border:"solid 1px white",padding:"0.25em"},this._leftHost),this._rightHost=t.element("div",{position:"fixed",left:"50.2%",width:"49.9%",top:"0px",bottom:"3em",padding:"0.25em",background:"cornflowerBlue",opacity:"0.5",zIndex:100},this._host),this._rightPanel=t.element("div",{width:"100%",height:"100%",border:"solid 1px white",padding:"0.25em"},this._rightHost),t.setTextContent(this._rightPanel,"one two")}return e}();e.Panels=i}(i=e.panels||(e.panels={}))}(e=t.shell||(t.shell={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){function i(){t.addEventListener(window,"load",function(){new e.consoleUI.ConsoleUI(document.body),new e.panels.Panels(document.body)})}e.start=i}(e=t.shell||(t.shell={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e=function(){function t(t){this._lineStartPositions=null,this._text=t.text(),this.changes=t.changes().slice(0)}return t.prototype.getText=function(t,e){return this._text?this._text.slice(t,e):""},t.prototype.getLength=function(){
 return this._text?this._text.length:0},t.prototype.getChangeRange=function(t){if(!this.changes.length)return ts.unchangedTextChangeRange;var e=t,i=e.changes?this.changes.slice(e.changes.length):this.changes,n=ts.collapseTextChangeRangesAcrossMultipleVersions(i);return n},t}();t.ScriptDocumentSnapshot=e}(e=t.typescript||(t.typescript={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e=function(){function e(t){this.doc=t,this._snapshot=null}return e.prototype.getScriptSnapshot=function(){return this._snapshot&&this._snapshot.changes.length==this.doc.changes().length||(this._snapshot=new t.ScriptDocumentSnapshot(this.doc)),this._snapshot},e.prototype.getScriptVersion=function(){var t=this.doc.changes();return t.length},e}();t.ScriptDocumentState=e}(e=t.typescript||(t.typescript={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){var i=function(){function i(){this.cancellation=null,this.currentDirectory="/",this.defaultLibFilenames=["#core.d.ts","#extensions.d.ts","#dom.generated.d.ts"],
 this.log=null,this._scriptFileNames=null,this._scripts={},this._defaultLibSnapshots={},this._preloadScriptFileNames=[],this._preloadPendingScriptFileNames=[],this._preloadTimeout=0,this.compilerOptions=ts.getDefaultCompilerOptions(),this.compilerOptions.target=1,this.host=this._createHost(),this._service=ts.createLanguageService(this.host,this._createRegistry())}return i.prototype.stopPreloading=function(){this._preloadScriptFileNames&&(this._preloadScriptFileNames=null,this._preloadPendingScriptFileNames=null)},i.prototype.service=function(){return this.stopPreloading(),this._service},i.prototype.addFile=function(t,i){var n=this,r=new e.ScriptDocumentState(i);this._scripts[t]=r,this._scriptFileNames=null,this._preloadPendingScriptFileNames&&(this._preloadPendingScriptFileNames.push(t),this._preloadTimeout&&clearTimeout(this._preloadTimeout),this._preloadTimeout=setTimeout(function(){n._preloadPendingScriptFileNames&&n._preloadPendingScriptFileNames.sort(),n._continuePreload()},2e3))},i.prototype.removeFile=function(t){
-if(delete this._scripts[t],this._scriptFileNames=null,this._preloadScriptFileNames)for(var e=0;e<this._preloadPendingScriptFileNames.length;e++)if(this._preloadPendingScriptFileNames[e]===t){delete this._preloadPendingScriptFileNames[e];break}if(this._preloadScriptFileNames)for(var e=0;e<this._preloadScriptFileNames.length;e++)if(this._preloadScriptFileNames[e]===t){delete this._preloadScriptFileNames[e];break}},i.prototype._continuePreload=function(){var e=this;if(this._preloadTimeout=0,this._preloadScriptFileNames&&this._preloadPendingScriptFileNames){var i;if(this._preloadScriptFileNames.length<this.defaultLibFilenames.length){var n=this._preloadScriptFileNames[this._preloadScriptFileNames.length]=this.defaultLibFilenames[this._preloadScriptFileNames.length];i=function(t){if("undefined"!=typeof console&&"function"==typeof console.error){console.error(n+" "+t.length+" errors:");for(var e=0;e<t.length;e++){var i=t[e];console.error(i.file.getLineAndCharacterOfPosition(i.start)," ",i.messageText)}}else for(var r=[],e=0;e<t.length;e++){
+if(delete this._scripts[t],this._scriptFileNames=null,this._preloadScriptFileNames)for(var e=0;e<this._preloadPendingScriptFileNames.length;e++)if(this._preloadPendingScriptFileNames[e]===t){delete this._preloadPendingScriptFileNames[e];break}if(this._preloadScriptFileNames)for(var e=0;e<this._preloadScriptFileNames.length;e++)if(this._preloadScriptFileNames[e]===t){delete this._preloadScriptFileNames[e];break}},i.prototype._continuePreload=function(){var e=this;if(this._preloadTimeout=0,this._preloadScriptFileNames&&this._preloadPendingScriptFileNames){var i;if(this._preloadScriptFileNames.length<this.defaultLibFilenames.length){var n=this._preloadScriptFileNames[this._preloadScriptFileNames.length]=this.defaultLibFilenames[this._preloadScriptFileNames.length];i=function(t){if(console&&"function"==typeof console.error){console.error(n+" "+t.length+" errors:");for(var e=0;e<t.length;e++){var i=t[e];console.error(i.file.getLineAndCharacterOfPosition(i.start)," ",i.messageText)}}else for(var r=[],e=0;e<t.length;e++){
 var i=t[e],o=i.file.getLineAndCharacterOfPosition(i.start);r.push(o.line+":"+o.character+" "+i.messageText),alert(n+" "+t.length+" errors:\n"+r.join("\n"))}}}else{if(!this._preloadPendingScriptFileNames.length)return this._preloadScriptFileNames=null,void(this._preloadPendingScriptFileNames=null);var n=this._preloadPendingScriptFileNames.shift();this._preloadScriptFileNames.push(n)}var r=t.dateNow(),o=this._service.getSyntacticDiagnostics(n),a=t.dateNow()-r;o&&o.length&&i&&i(o);var s=Math.max(10,Math.min(300,2*a));this._preloadTimeout=setTimeout(function(){if(e._preloadScriptFileNames){var r=t.dateNow(),o=e._service.getSemanticDiagnostics(n),s=t.dateNow()-r;o&&o.length&&i&&i(o);var l=Math.max(10,Math.min(200,2*s));e._preloadTimeout=setTimeout(function(){if(e._preloadScriptFileNames){var i=t.dateNow();e._service.getEmitOutput(n);var r=t.dateNow()-i,o=Math.max(10,Math.min(200,2*r));e._preloadTimeout=setTimeout(function(){e._preloadScriptFileNames&&("undefined"!=typeof console&&"function"==typeof console.log&&console.log("TS preloaded "+n+" "+(a+s+r)/1e3+" sec. "+Math.floor(100*a/(a+s+r))+":"+Math.floor(100*s/(a+s+r))+"%"+(e._preloadPendingScriptFileNames&&e._preloadPendingScriptFileNames.length?" ("+e._preloadPendingScriptFileNames.length+" to go)":"")),
 e._continuePreload())},o)}},l)}},s)}},i.prototype._createRegistry=function(){return ts.createDocumentRegistry()},i.prototype._createHost=function(){var t=this,e={getCompilationSettings:function(){return t.compilerOptions},getScriptFileNames:function(){if(t._preloadScriptFileNames)return t._preloadScriptFileNames;if(!t._scriptFileNames){t._scriptFileNames=[];for(var e in t._scripts)t._scripts.hasOwnProperty(e)&&t._scripts[e]&&t._scriptFileNames.push(e);for(var i=0;i<t.defaultLibFilenames.length;i++)t._scriptFileNames.push(t.defaultLibFilenames[i]);t._scriptFileNames.sort()}return t._scriptFileNames},getScriptVersion:function(e){if(t.defaultLibFilenames.indexOf(e)>=0)return"base";var i=t._scripts[e];return"v"+i.getScriptVersion()},getScriptSnapshot:function(e){if(t.defaultLibFilenames.indexOf(e)>=0){if(!t._defaultLibSnapshots[e]){var i="#"===e.charAt(0)?e.slice(1):e,n=document.getElementById(i);if(null==n)return null;t._defaultLibSnapshots[e]=ts.ScriptSnapshot.fromString(n.text||n.textContent||n.innerText)}return t._defaultLibSnapshots[e];
 
 }return t._scripts[e].getScriptSnapshot()},getLocalizedDiagnosticMessages:function(){return null},getCancellationToken:function(){return t.cancellation},getCurrentDirectory:function(){return t.currentDirectory},getNewLine:function(){return"\n"},getDefaultLibFileName:function(){return t.defaultLibFilenames[0]},log:function(e){t.log?t.log(e):"indefined"!=typeof console&&("function"==typeof console.groupCollapsed&&"function"==typeof console.groupEnd?(console.groupCollapsed("TS"),"function"==typeof console.log&&console.log(e),console.groupEnd()):"function"==typeof console.info?console.info("*** TS "+e):"function"==typeof console.log&&console.log("*** TS "+e))}};return e},i}();e.TypeScriptService=i}(e=t.typescript||(t.typescript={}))}(portabled||(portabled={}));</script>
 
 <div id="portabled-loading-host" style="display: none;">
-  <div id="portabled-loading-title">Opening...</div>
+  <div id="portabled-loading-title">Initialising document host...</div>
   <div id="portabled-loading-progress">
   </div>
 </div>
@@ -229,7 +228,7 @@ e._continuePreload())},o)}},l)}},s)}},i.prototype._createRegistry=function(){ret
     try { portabled.app.loading('Files...'); } catch (err) { alert(err+' '+err.stack); }
 </script>
 
-      <div class="portabled-file-tree" timestamp="1426107657705" data-bind="loadRaw: fileTreeHost = $element">
+      <div class="portabled-file-tree" timestamp="1426198527301" data-bind="loadRaw: fileTreeHost = $element">
 
         <ul>
 
@@ -245,29 +244,7 @@ e._continuePreload())},o)}},l)}},s)}},i.prototype._createRegistry=function(){ret
 
       <div class="portabled-extra-content">
         
-        <div class="portabled-branding-area" data-bind="loadRaw: brandingArea=$element "><h1 id="portabled-v0-6w">portabled v0.6w</h1>
-<p>Self-editing filesystem embedded in a single HTML file.</p>
-<p>The idea, all of the painstaking implementation and the vision by <a href="mailto:mihailik@gmail.com">Oleg Mihailik</a>.
-See the credits section for the used libraries and respective licences.</p>
-<h3 id="outstanding-tasks-">Outstanding tasks:</h3>
-<ul>
-<li>Unifying of all import/export into 'moreDialog'.</li>
-<li>Download/upload for GitHub, GDrive, Dropbox etc.</li>
-<li>Extra power in Chrome app, node-webkit, HTMLA-ie7: I/O to the actual filesystem.</li>
-<li>Delete folder.</li>
-<li>Rename file/folder.</li>
-<li>Saving current position in documents.</li>
-<li>TypeScript extra features: navigate to, search integration, tooltips.</li>
-<li>Sub-domains for TypeScript/JavaScript completion/build contexts.</li>
-<li>Doc handlers in plugins, plugin API and isolation (using iframes with their own 'global' and 'require').</li>
-<li>node.js emulation for plugins and dependencies, allowing non-doc plugins.</li>
-<li>Highlight of <strong>changes</strong> in files.</li>
-<li>Styles and colours (planning for pale seaside 'Whitstable' blue, maybe black theme too).</li>
-<li>Scrollbar to use syntax-highlighted document lines.</li>
-<li>Toast popup/fadeout messages for key events: opening, building, import-export completion.</li>
-<li>Add whole raw TypeScript repository sample.</li>
-</ul>
-</div>
+        <div class="portabled-branding-area" data-bind="loadRaw: brandingArea=$element "></div>
 
 
        <div class="portabled-scrollable-bottom">
@@ -276,15 +253,15 @@ See the credits section for the used libraries and respective licences.</p>
             <button data-bind="click: deleteClick" style="min-width: 7em; margin-bottom: 0.3em;"> Delete </button> <br>
             <button data-bind="click: buildClick" style="min-width: 7em;"> Build </button> <br>
             <br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: exportAllHTML"> Save whole page </a><br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: commitToGitHub"> Commit to GitHub </a><br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: exportAllZIP"> Export to ZIP </a><br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: exportCurrentFile"> Save current file </a><br>
+            <a href="#" data-bind="click: exportAllHTML"> Save whole page </a><br>
+            <a href="#" data-bind="click: commitToGitHub"> Commit to GitHub </a><br>
+            <a href="#" data-bind="click: exportAllZIP"> Export to ZIP </a><br>
+            <a href="#" data-bind="click: exportCurrentFile"> Save current file </a><br>
             <br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: importText"> Add file </a><br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: importBase64"> Add binary (base64) </a><br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: importZIP"> Import files from ZIP </a><br>
-            <a href="file:///home/omi/portabled/index.html#" data-bind="click: importPortabledHTML"> Import files from portabled </a><br>
+            <a href="#" data-bind="click: importText"> Add file </a><br>
+            <a href="#" data-bind="click: importBase64"> Add binary (base64) </a><br>
+            <a href="#" data-bind="click: importZIP"> Import files from ZIP </a><br>
+            <a href="#" data-bind="click: importPortabledHTML"> Import files from portabled </a><br>
 
           </div>
 

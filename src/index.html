@@ -1,35 +1,56 @@
 <!doctype html><html><head>
 <meta charset="utf-8">
-<title>portabled - [portabled v0.5a]</title>
+<title>portabled - [portabled v0.6w]</title>
 
-<style><%=embedFile('imports/codemirror/codemirror.css')%></style>
-<style><%=embedFile('imports/codemirror/show-hint.css')%></style>
-<style><%=embedFile('imports/codemirror/tern.css')%></style>
-<style><%=embedFile('imports/codemirror/dialog.css')%></style>
+<style>
+  <%/*uglifyJS.skip = true*/%>
+  <%=uglifyCSS(
 
+  	// CodeMirror CSS
+  	'imports/codemirror/lib/codemirror.css',
+  	'imports/codemirror/addon/hint/show-hint.css',
+  	'imports/codemirror/addon/lint/lint.css',
+  	'imports/codemirror/addon/dialog/dialog.css',
+  	'imports/codemirror/addon/merge/merge.css',
+  	'imports/codemirror/addon/fold/foldgutter.css',
 
-<style><%=embedFile('app/body.css')%></style>
-<style><%=embedFile('app/flyout.css')%></style>
-<style><%=embedFile('app/flyout-branding.css')%></style>
-<style><%=embedFile('app/tree-and-bar.css')%></style>
-<style><%=embedFile('app/status.css')%></style>
+    // portabled CSS
+  	'app/body.css',
+  	'app/flyout.css',
+  	'app/flyout-branding.css',
+  	'app/tree-and-bar.css',
+  	'app/status.css',
 
-<style><%=embedFile('files/FileTree.css')%></style>
-<style><%=embedFile('docs/types/text/CodeMirror-ext.css')%></style>
-<style><%=embedFile('app/moreDialog/style.css')%></style>
+  	'files/FileTree.css',
+  	'docs/types/text/CodeMirror-ext.css',
+  	'app/moreDialog/style.css',
+  	'docs/types/text/scrollerView/style.css',
+  
+  	'docs/types/text/ts/style.css',
+  
+  	'app/loading.css')
+	%>
+</style>
 
-<style><%=embedFile('docs/types/text/scrollerView/style.css')%></style>
-
-
-
-<style><%=embedFile('docs/types/text/ts/style.css')%></style>
-
-<style><%=embedFile('app/loading.css')%></style>
+<% /* embedFile('imports/codemirror/addon/tern/tern.css') */ %>
 
 
 </head>
 <body
     data-bind="event: {keydown:keydown}">
+
+
+<!-- ES5 shim/sham, JSON3 -->
+<script data-legit=portabled>
+  <%=embedFile('imports/es5-shim/es5-shim.min.js', 'imports/es5-shim/es5-sham.min.js', 'imports/json3/json3.min.js')%>
+</script>
+
+
+<!-- Error handling script -->
+<script data-legit=portabled><%=embedFile('errors.js')%></script>
+
+<!-- Main portabled JS code -->
+<script data-legit=portabled><%=function(){ var ts = typescriptBuild(); var tsstr = ts(); var ug = uglifyJS(tsstr); return typeof ug === 'function' ? ug() : ug; }%></script>
 
 <div id=portabled-loading-host>
   <div id=portabled-loading-title>
@@ -39,9 +60,19 @@
   </div>
 </div>
 
-<script data-legit=portabled>try { <%=typescriptBuild()%> } catch(bootError) { alert(bootError+' '+bootError.stack) }</script>
+<script data-legit=portabled>
 
-<script data-legit=portabled>try { portabled.app.loading('Page layout...'); } catch (err) { alert(err+' '+err.stack); }</script>
+  // Detect JS syntax error in compiled script (resulting in no top-level module),
+  // report early to avoid complicated debugging when things are trivially wrong.
+
+  if (typeof portabled === 'undefined') {
+    alert('Syntax error in the compiled script.');
+  }
+  else {
+  	try { portabled.app.loading('Page layout...'); } catch (err) { alert(err+' '+err.stack); }
+  }
+
+</script>
 
 <div class=portabled-flyout-scroller
    data-bind="load: flyoutScroller = $element">
@@ -61,21 +92,26 @@
         </div>
       </div>
 
-<script data-legit=portabled>try { portabled.app.loading('Files...'); } catch (err) { alert(err+' '+err.stack); }</script>
+<script data-legit=portabled>
+  if (typeof portabled !== 'undefined')
+    try { portabled.app.loading('Files...'); } catch (err) { alert(err+' '+err.stack); }
+</script>
 
       <div class=portabled-file-tree
+         timestamp="<%=new Date().getTime()%>"
          data-bind="loadRaw: fileTreeHost = $element">
 
         <ul>
 
-<!--
--->
           <%=embedTree()%>
           
         </ul>
       </div>
 
-<script data-legit=portabled>try { portabled.app.loading('Controls...'); } catch (err) { alert(err+' '+err.stack); }</script>
+<script data-legit=portabled>
+  if (typeof portabled !== 'undefined')
+  	try { portabled.app.loading('Controls...'); } catch (err) { alert(err+' '+err.stack); }
+</script>
 
       <div class=portabled-extra-content>
         
@@ -90,12 +126,14 @@
             <button data-bind="click: buildClick" style="min-width: 7em;"> Build </button> <br>
             <br>
             <a href=# data-bind="click: exportAllHTML"> Save whole page </a><br>
+            <a href=# data-bind="click: commitToGitHub"> Commit to GitHub </a><br>
             <a href=# data-bind="click: exportAllZIP"> Export to ZIP </a><br>
             <a href=# data-bind="click: exportCurrentFile"> Save current file </a><br>
             <br>
             <a href=# data-bind="click: importText"> Add file </a><br>
             <a href=# data-bind="click: importBase64"> Add binary (base64) </a><br>
             <a href=# data-bind="click: importZIP"> Import files from ZIP </a><br>
+            <a href=# data-bind="click: importPortabledHTML"> Import files from portabled </a><br>
 
           </div>
 
@@ -111,6 +149,13 @@
               <a href="https://github.com/knockout/knockout">Knockout.js</a> (Ryan Niemeyer, with MIT license) <br>
               <a href="https://github.com/gildas-lormeau/zip.js">Zip.js</a> (Gildas Lormeau, with BSD license) <br>
               <a href="https://github.com/chjj/marked">Marked</a> (Christopher Jeffrey, with MIT license) <br>
+              <a href="https://github.com/es-shims/es5-shim">ES5-shims<a/> (with MIT license)<br>
+              <a href="https://github.com/michael/github">GitHub API wrapper</a> (Michael Aufreiter with BSD2 license)<br>
+              <a href="https://github.com/garycourt/murmurhash-js">JS Murmur hasher</a> (Gary Court with MIT license)<br>
+              <a href="https://code.google.com/p/google-diff-match-patch/">google-diff-match-patch</a> (Google with Apache 2.0 license)<br>
+              <a href="https://github.com/mishoo/UglifyJS2">UglifyJS2</a> (Mihai Bazon with BSD license)<br>
+              <a href="https://github.com/mishoo/UglifyCSS">UglifyCSS</a> (Franck Marcia with MIT license)<br>
+              <a href="https://github.com/bestiejs/json3">JSON3</a> (Kit Cambridge with MIT license)<br>
               - main contributors mentioned where applicable.
             </div>
 
@@ -134,57 +179,113 @@
 <script data-legit=portabled>try { portabled.app.loading('Libraries...'); } catch (err) { alert(err+' '+err.stack); }</script>
 
 
-<script data-legit=portabled><%=embedFile('imports/acorn/acorn.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/acorn/acorn_loose.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/acorn/walk.js')%></script>
+<% /* embedFile(
+   'imports/acorn/acorn.js',
+   'imports/acorn/acorn_loose.js',
+   'imports/acorn/walk.js',
+   'imports/tern/signal.js',
+   'imports/tern/tern.js',
+   'imports/tern/def.js'
+   'imports/tern/comment.js',
+   'imports/tern/infer.js',
+   'imports/tern/doc_comment.js') */%>
 
-<script data-legit=portabled><%=embedFile('imports/tern/signal.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/tern/tern.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/tern/def.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/tern/comment.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/tern/infer.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/tern/doc_comment.js')%></script>
+<!-- Google diff/merge algorithm (used for a CodeMirror addon needed for the neat file import dialog) -->
+<script data-legit=portabled><%=embedFile('imports/google-diff-match-patch/diff_match_patch.js')%></script>
 
+<!-- CodeMirror -->
+<script data-legit=portabled>
+  <%=uglifyJS([
+  	'imports/codemirror/lib/codemirror.js',
+  	'imports/codemirror/addon/dialog/dialog.js',
+  	'imports/codemirror/addon/search/search.js',
+  	'imports/codemirror/addon/search/searchcursor.js',
+  	'imports/codemirror/addon/hint/show-hint.js',
+  	'imports/codemirror/addon/lint/lint.js',
+  	'imports/codemirror/mode/javascript/javascript.js',
+  	'imports/codemirror/addon/tern/tern.js',
+  	'imports/codemirror/addon/hint/javascript-hint.js',
+  	'imports/codemirror/mode/css/css.js',
+  	'imports/codemirror/addon/hint/css-hint.js',
+  	'imports/codemirror/mode/sass/sass.js',
+  	'imports/codemirror/mode/xml/xml.js',
+  	'imports/codemirror/addon/hint/xml-hint.js',
+  	'imports/codemirror/mode/htmlmixed/htmlmixed.js',
+  	'imports/codemirror/mode/htmlembedded/htmlembedded.js',
+  	'imports/codemirror/addon/hint/html-hint.js',
+  	'imports/codemirror/mode/markdown/markdown.js',
+  	'imports/codemirror/addon/edit/matchbrackets.js',
+  	'imports/codemirror/addon/selection/active-line.js',
+  	'imports/codemirror/addon/edit/trailingspace.js',
+  	'imports/codemirror/addon/fold/foldcode.js',
+  	'imports/codemirror/addon/fold/foldgutter.js',
+  	'imports/codemirror/addon/fold/brace-fold.js',
+  	'imports/codemirror/addon/fold/comment-fold.js',
+  	'imports/codemirror/addon/fold/markdown-fold.js',
+  	'imports/codemirror/addon/fold/xml-fold.js',
+  	'imports/codemirror/addon/merge/merge.js'])%></script>
 
+<!-- Knockout -->
+<script data-legit=portabled>
+  <%=uglifyJS(['imports/knockout/knockout-3.2.0.js'])%>
+</script>
 
-<script data-legit=portabled><%=embedFile('imports/codemirror/codemirror.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/dialog.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/search.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/searchcursor.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/show-hint.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/javascript.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/tern.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/javascript-hint.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/css.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/css-hint.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/sass.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/xml.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/xml-hint.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/htmlmixed.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/htmlembedded.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/html-hint.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/markdown.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/matchbrackets.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/codemirror/active-line.js')%></script>
+<!-- Zip.js -->
+<script data-legit=portabled>
+  <%=uglifyJS([
+    'imports/zip.js/zip.js',
+    'imports/zip.js/deflate.js',
+    'imports/zip.js/inflate.js'])%>
+</script>
 
-<script data-legit=portabled><%=embedFile('imports/knockout/knockout-3.2.0.js')%></script>
+<!-- Marked -->
+<script data-legit=portabled>
+  <%=uglifyJS(['imports/marked/marked.js'])%>
+</script>
 
-<script data-legit=portabled><%=embedFile('imports/zip.js/zip.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/zip.js/deflate.js')%></script>
-<script data-legit=portabled><%=embedFile('imports/zip.js/inflate.js')%></script>
+<!-- Uglify2 -->
+<script data-legit=portabled>
+var Uglify2;
+(function(Uglify2) {
+  <%=uglifyJS([
+    'imports/uglify2/utils.js',
+    'imports/uglify2/ast.js',
+    'imports/uglify2/parse.js',
+    'imports/uglify2/transform.js',
+    'imports/uglify2/scope.js',
+    'imports/uglify2/output.js',
+    'imports/uglify2/compress.js'
+  ])%>
+  Uglify2.Compressor = Compressor;
+  Uglify2.parse = parse
+  
+})(Uglify2 || (Uglify2={}))
+</script>
 
-<script data-legit=portabled><%=embedFile('imports/marked/marked.js')%></script>
+<!-- UglifyCSS -->
+<script data-legit=portabled>
+var UglifyCSS;
+(function(UglifyCSS) {
+  function require() { return {}; }
+  var module = { exports: { }};
+  <%=embedFile('imports/uglifyCSS/uglifycss-lib.js')%>
+  for (var k in module.exports) {
+    if (module.exports.hasOwnProperty(k))
+    	UglifyCSS[k] = module.exports[k];
+  }
+})(UglifyCSS || (UglifyCSS={}))
+</script>
+    
 
-<script data-legit=portabled><%=embedFile('errors.js')%></script>
 
 <script type=text/html id=MoreDialogView data-legit=portabled><%=embedFile('app/moreDialog/layout.html')%></script>
 <script type=text/html id=ScrollerView data-legit=portabled><%=embedFile('docs/types/text/scrollerView/ScrollerView.html')%></script>
 
-<script data-legit=portabled><%=embedFile('imports/typescript/typescriptServices.js')%></script>
-<script data-legit=portabled id=lib.d.ts type=text/typescriptdefinition><%=embedFile('imports/typescript/lib.d.ts.text')%></script>
+<script data-legit=portabled><%=uglifyJS('imports/typescript/typescriptServices.js')%></script>
+<script data-legit=portabled id=core.d.ts type=text/typescriptdefinition><%=embedFile('imports/typescript/core.d.ts.text')%></script>
+<script data-legit=portabled id=dom.generated.d.ts type=text/typescriptdefinition><%=embedFile('imports/typescript/dom.generated.d.ts.text')%></script>
+<script data-legit=portabled id=extensions.d.ts type=text/typescriptdefinition><%=embedFile('imports/typescript/extensions.d.ts.text')%></script>
 
-
-<script data-legit=portabled>try { portabled.app.start(); } catch (err) { alert(err+' '+err.stack); }</script>
 
 <!--
 <script data-legit=portabled type="text/javascript" src="https://getfirebug.com/firebug-lite.js">
@@ -196,6 +297,10 @@
 </script>
 -->
 
+<script data-legit=portabled>
+  if (typeof portabled !== 'undefined')
+  	try { portabled.app.start(); } catch (err) { alert(err+' '+err.stack); }
+</script>
 
 <div id=portabled-last-element></div>
 

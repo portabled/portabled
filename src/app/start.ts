@@ -7,34 +7,42 @@ module portabled.app {
 
     koBindingHandlers.register(ko);
 
-    addEventListener(window, 'load', () =>
-    {
+    // Cleanup of the HTML for fishy scripts and remnants of the dialog windows.
+    //
+    // Some fishy internet providers (looking at you, Vodafone)
+    // inject their scripts indiscriminately into every served web page.
+    // These needs to be removed from DOM
+    // at least to avoid saving them with the document.
+    //
+    // Dialog windows implemented as HTML DIVs may survive if document is saved.
+    // That stuff can be safely removed (it appears at the end of DOM body).
+
+    removeSpyScripts();
+    removeTrailElements();
+    
+    addEventListener(window, 'load',() => {
+      // this may never be executed, if window is already loaded
       removeSpyScripts();
       removeTrailElements();
+    });
 
-      loading('Restoring the setup...');
 
-      try { 
-        var layout = new portabled.app.appRoot.PageModel();
+    loading('Restoring the setup...');
 
-        loading('Rendering...');
+    var layout = new portabled.app.appRoot.PageModel();
 
-        ko.applyBindings(layout, document.body);
+    loading('Rendering...');
 
-        loading('Processing...');
-        layout.loadFromDOM(() => {
+    ko.applyBindings(layout, document.body);
 
-          setTimeout(() => {
-            runStartScripts(() => {
-              loading(null);
-            });
-          }, 1);
+    loading('Processing...');
+    layout.loadFromDOM(() => {
 
+      setTimeout(() => {
+        runStartScripts(() => {
+          loading(null);
         });
-      }
-      catch (error) { 
-        alert('portabled.start ' + error + ' ' + error.stack); 
-      }
+      }, 1);
 
     });
 
@@ -85,10 +93,10 @@ module portabled.app {
       spyScripts[i].parentNode.removeChild(spyScripts[i]);
     }
   }
-  
+
   function removeTrailElements() {
     var lastDIV = document.getElementById('portabled-last-element');
-    while (lastDIV.nextSibling) {
+    while (lastDIV && lastDIV.nextSibling) {
       lastDIV.nextSibling.parentNode.removeChild(lastDIV.nextSibling);
     }
   }

@@ -1,8 +1,9 @@
 .portabled-file-tree {
   float: left;
-  width: 20%;
+  width: 23%;
   height: 100%;
   overflow: auto;
+  border-right: solid 1px whitesmoke;
 }
 
 .portabled-thick-bar-host {
@@ -29,6 +30,7 @@
 
 .portabled-thick-bar-host .portabled-thick-bar-bg .portabled-thick-bar {
   height: 100%;
-  background: #F0FFF0;
+  background: white;
+  border-left: solid 1px #E4EEF5;
   cursor: move;
 }

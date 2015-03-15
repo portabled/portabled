@@ -1,12 +1,27 @@
 module portabled {
-  
+
   function getIndexedDB() {
-    return typeof indexedDB === 'undefined' ? null : indexedDB;
+    try {
+    	return typeof indexedDB === 'undefined' || typeof indexedDB.open !== 'function' ? null : indexedDB;
+    }
+    catch (error) {
+      return null;
+    }
   }
-  
+
   export module persistence.indexedDB {
 
-    export function detect(uniqueKey: string, callback: (detached: Drive.Detached) => void ): void {
+    export function detect(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
+      try {
+        detectCore(uniqueKey, callback);
+      }
+      catch (error) {
+        callback(null);
+      }
+    }
+
+    function detectCore(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
+
       var indexedDBInstance = getIndexedDB();
       if (!indexedDBInstance) {
         callback(null);
@@ -18,21 +33,31 @@ module portabled {
       var openRequest = indexedDBInstance.open(dbName, 1);
       openRequest.onerror = (errorEvent) => callback(null);
 
-      openRequest.onupgradeneeded = (versionChangeEvent) => {
-        var db: IDBDatabase = openRequest.result;
-        var filesStore = db.createObjectStore('files', { keyPath: 'path' });
-        var metadataStore = db.createObjectStore('metadata', { keyPath: 'property' });
-      };
+      openRequest.onupgradeneeded = createDBAndTables;
 
       openRequest.onsuccess = (event) => {
         var db: IDBDatabase = openRequest.result;
 
-        var transaction = db.transaction('metadata');
-        transaction.onerror = (errorEvent) => callback(null);
+        try {
+          var transaction = db.transaction(['files', 'metadata']);
+          // files mentioned here, but not really used to detect
+          // broken multi-store transaction implementation in Safari
 
-        var metadataStore = transaction.objectStore('metadata');
+          transaction.onerror = (errorEvent) => callback(null);
+        
+          var metadataStore = transaction.objectStore('metadata');
+          var filesStore = transaction.objectStore('files');
+          var editedUTCRequest = metadataStore.get('editedUTC');
+        }
+        catch (getStoreError) {
+          callback(null);
+          return;
+        }
 
-        var editedUTCRequest = metadataStore.get('editedUTC');
+        if (!editedUTCRequest) {
+          callback(null);
+          return;
+        }
 
         editedUTCRequest.onerror = (errorEvent) => {
           var detached = new IndexedDBDetached(db, null);
@@ -46,6 +71,12 @@ module portabled {
         };
 
       };
+      
+      function createDBAndTables() {
+        var db: IDBDatabase = openRequest.result;
+        var filesStore = db.createObjectStore('files', { keyPath: 'path' });
+        var metadataStore = db.createObjectStore('metadata', { keyPath: 'property' });
+      }
     }
 
     class IndexedDBDetached implements Drive.Detached {
@@ -138,12 +169,12 @@ module portabled {
 
     }
 
-    class IndexedDBShadow implements Drive.Shadow { 
+    class IndexedDBShadow implements Drive.Shadow {
 
-      constructor(private _db: IDBDatabase, public timestamp: number) { 
+      constructor(private _db: IDBDatabase, public timestamp: number) {
       }
 
-      write(file: string, content: string) { 
+      write(file: string, content: string) {
         var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
         var filesStore = transaction.objectStore('files');
         var metadataStore = transaction.objectStore('metadata');
@@ -181,4 +212,5 @@ module portabled {
 
 
   }
+
 }

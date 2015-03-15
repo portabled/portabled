@@ -1,5 +1,5 @@
 module portabled.typescript {
-  
+
   export class ScriptDocumentSnapshot implements ts.IScriptSnapshot {
 
     changes: ts.TextChangeRange[];
@@ -9,34 +9,32 @@ module portabled.typescript {
 
     constructor(doc: ExternalDocument) {
       this._text = doc.text();
-      this.changes = doc.changes();
+      this.changes = doc.changes().slice(0);
     }
 
     getText(start: number, end: number): string {
+      if (!this._text)
+        return '';
       return this._text.slice(start, end);
     }
 
     getLength(): number {
+      if (!this._text)
+        return 0;
       return this._text.length;
-    }
-
-    getLineStartPositions(): number[] {
-      if (!this._lineStartPositions)
-        this._lineStartPositions = ts.computeLineStarts(this._text);
-      return this._lineStartPositions;
     }
 
     getChangeRange(oldSnapshot: ts.IScriptSnapshot): ts.TextChangeRange {
 
       if (!this.changes.length)
-        return ts.TextChangeRange.unchanged;
+        return ts.unchangedTextChangeRange;
 
       var typedOldSnapshot = <ScriptDocumentSnapshot>oldSnapshot;
       var chunk = typedOldSnapshot.changes ?
         this.changes.slice(typedOldSnapshot.changes.length) :
         this.changes;
 
-      var result = ts.TextChangeRange.collapseChangesAcrossMultipleVersions(chunk);
+      var result = ts.collapseTextChangeRangesAcrossMultipleVersions(chunk);
 
       return result;
 

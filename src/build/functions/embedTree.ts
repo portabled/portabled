@@ -25,12 +25,12 @@ module portabled.build.functions {
         for (var k in dir) if (dir.hasOwnProperty(k)) {
           var child = dir[k];
           if (typeof child === 'string') {
-            output.push('<li class=portabled-file><div class=portabled-file-name>' + k + '</div>');
+            output.push('<li class=portabled-file><span class=portabled-file-name>' + k + '</span>');
             tmp.textContent = child;
             output.push('<pre class=portabled-file-content>' + tmp.innerHTML + '</pre></li>');
           }
           else {
-            output.push('<li class="portabled-dir portabled-dir-collapsed"><div class=portabled-dir-name>' + k + '</div><ul>');
+            output.push('<li class="portabled-dir portabled-dir-collapsed"><span class=portabled-dir-name>' + k + '</span><ul>');
             addDir(child);
             output.push('</ul></li>');
           }

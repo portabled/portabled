@@ -15,3 +15,6 @@
   white-space: normal;
 }
 
+.CodeMirror .cm-trailingspace {
+  background: linear-gradient(to right, cornflowerblue -5%, transparent 50%, gold 100%)
+}

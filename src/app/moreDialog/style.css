@@ -17,9 +17,51 @@
   width: 70%;
   top: 20%;
   height: 70%;
+  padding: 1em;
 
+  background: #B3D0E4;
+
+}
+
+.portabled-more-filename {
+  width: 95%;
+}
+
+.portabled-import-dialog {
+  
+  position: fixed !important;
+  position: absolute;
+  left: 15%;
+  width: 70%;
+  top: 10%;
+  padding: 1em;
+
+  background: #C8B6D6;
+
+}
+
+.portabled-import-tree {
+  float: left;
+  width: 30%;
+  height: 80%;
+  overflow: auto;
+  border: solid 1px silver;
+  padding: 3px;
+}
+
+.portabled-import-tree-item-matching {
   background: gold;
+}
 
+.portabled-import-tree-subdir {
+  opacity: 0.6;
+  font-weight: bold;
+}
+
+.portabled-import-diff-host {
+  float: left;
+  width: 67%; 
+  height: 80%;
 }
 
 .portabled-more-dialog-list {

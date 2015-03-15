@@ -1,32 +1,37 @@
 module portabled.persistence {
-  
+
+  export function defaultPersistenceModules() {
+    return [
+      persistence.indexedDB,
+      persistence.webSQL,
+      persistence.localStorage
+    ];
+  }
+
   export function mountDrive(
     dom: Drive,
     uniqueKey: string,
     domTimestamp: number,
-    optionalModules: { [moduleName: string]: Drive.Optional; },
+    optionalModules: Drive.Optional[],
     callback: mountDrive.Callback): void {
 
     var driveIndex = 0;
 
-    var optional: Drive.Optional[] = [];
-    if (optionalModules) {
-      for (var moduleName in optionalModules) if (optionalModules.hasOwnProperty(moduleName)) {
-        var moduleObj = optionalModules[moduleName];
-        if (moduleObj && moduleObj.detect && typeof moduleObj.detect === 'function')
-          optional.push(moduleObj);
-      }
-    }
-
     loadNextOptional();
 
     function loadNextOptional() {
-      if (driveIndex >= optional.length) {
+
+      while (driveIndex < optionalModules.length &&
+        (!optionalModules[driveIndex] || typeof optionalModules[driveIndex].detect !== 'function')) {
+        driveIndex++;
+      }
+
+      if (driveIndex >= optionalModules.length) {
         callback(new MountedDrive(dom, null));
         return;
       }
 
-      var op = optional[driveIndex];
+      var op = optionalModules[driveIndex];
       op.detect(
         uniqueKey,
         detached => {

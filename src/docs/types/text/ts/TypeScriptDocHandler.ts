@@ -2,7 +2,7 @@ module portabled.docs.types.text.ts_ {
 
   export var expectsFile = /.*\.ts/g;
   export var acceptsFile = /.*\.ts/g;
-  
+
   var _typescriptService: typescript.TypeScriptService;
 
   function typescriptService() {
@@ -24,9 +24,6 @@ module portabled.docs.types.text.ts_ {
 
     private _changes: ts.TextChangeRange[] = [];
 
-    private _diagMarkers: CodeMirror.TextMarker[] = null;
-    private _diagsTimer = new Timer();
-
     private _matchHighlightTimer = new Timer();
     private _matchMarkers: { marker: CodeMirror.TextMarker; offset: number; isCurrent: boolean; }[] = null;
     private _matchMarkersInvalidated = true;
@@ -34,6 +31,7 @@ module portabled.docs.types.text.ts_ {
     private _statusUpdateTimer = new Timer();
 
     private _autoformatInProgress = false;
+    private _foldData: ts.OutliningSpan[];
 
     constructor() {
       super();
@@ -51,9 +49,6 @@ module portabled.docs.types.text.ts_ {
       this._matchHighlightTimer.interval = 400;
       this._matchHighlightTimer.ontick = () => this._updateMatchHighlight();
 
-      this._diagsTimer.interval = 600;
-      this._diagsTimer.ontick = () => this._updateDiags();
-
       this._statusUpdateTimer.interval = 200;
       this._statusUpdateTimer.ontick = () => this._updateStatus();
     }
@@ -63,13 +58,93 @@ module portabled.docs.types.text.ts_ {
     }
 
     open() {
-      this._diagsTimer.reset();
       this._matchHighlightTimer.reset();
       this._statusUpdateTimer.reset();
+
+      var gutters = <string[]>this.editor.getOption('gutters');
+      if (!gutters || gutters.indexOf('CodeMirror-lint-markers') < 0) {
+        if (!gutters)
+          gutters = [];
+        gutters.push('CodeMirror-lint-markers');
+        this.editor.setOption('gutters', gutters);
+      }
+
+      var foldOptions = this.editor.getOption('foldOptions') || {};
+      foldOptions.rangeFinder = (cm: CodeMirror, pos: CodeMirror.Pos) => {
+        if (!this._foldData)
+        	this._foldData = typescriptService().service().getOutliningSpans(this.path);
+        if (!this._foldData)
+          return;
+
+        var lineStartOffset = this.doc.indexFromPos({ line: pos.line, ch: 0 });
+        var lineLength = this.doc.getLine(pos.line).length;
+        for (var i = 0; i < this._foldData.length; i++) {
+          var sp = this._foldData[i];
+          if (sp.hintSpan.start>=lineStartOffset && sp.hintSpan.start < lineStartOffset + lineLength) {
+            var result = {
+              from: this.doc.posFromIndex(sp.textSpan.start),
+              to: this.doc.posFromIndex(sp.textSpan.start + sp.textSpan.length)
+            };
+            return result;
+          }
+        }
+        return null;
+      };
+      this.editor.setOption('foldOptions', foldOptions);
+
+      this.editor.setOption('lint', () => {
+
+        var resultErrors: { message: string; severity: string; from: any; to: any; }[] = [];
+        if (!this.doc || !this.text || !this.text())
+          return resultErrors;
+
+        var addDiag = (diag: ts.Diagnostic) => {
+          var messageTextOrChain = diag.messageText;
+          var messageText: string;
+          var severity: string;
+          if (typeof messageTextOrChain === 'string') {
+            messageText = messageTextOrChain;
+            severity = diag.category === ts.DiagnosticCategory.Error ? 'error' : 'warning';
+          }
+          else {
+            var chain = messageTextOrChain;
+            messageText = chain.messageText;
+            severity = chain.category === ts.DiagnosticCategory.Error ? 'error' : 'warning';
+            while (chain) {
+              messageText = '\n' + chain.messageText;
+              if (chain.category === ts.DiagnosticCategory.Error)
+                severity = 'error';
+              chain = chain.next;
+            }
+          }
+          resultErrors.push({
+            message: messageText,
+            severity,
+            from: this.doc.posFromIndex(diag.start),
+            to: this.doc.posFromIndex(diag.start + diag.length)
+          });
+        };
+
+        var syntacticDiags = typescriptService().service().getSyntacticDiagnostics(this.path);
+        var semanticDiags = typescriptService().service().getSemanticDiagnostics(this.path);
+
+        if (syntacticDiags) {
+          for (var i = 0; i < syntacticDiags.length; i++) {
+            addDiag(syntacticDiags[i]);
+          }
+        }
+
+        if (semanticDiags) {
+          for (var i = 0; i < semanticDiags.length; i++) {
+            addDiag(semanticDiags[i]);
+          }
+        }
+
+        return resultErrors;
+      });
     }
 
     close() {
-      this._diagsTimer.stop();
       this._matchHighlightTimer.stop();
       this._statusUpdateTimer.stop();
     }
@@ -81,23 +156,22 @@ module portabled.docs.types.text.ts_ {
       if (lastChar.toLowerCase() !== lastChar.toUpperCase())
         return true;
     }
-    
+
     getCompletions(): any {
       var cur = this.doc.getCursor();
       var curOffset = this.doc.indexFromPos(cur);
-      
+
       var completions = typescriptService().service().getCompletionsAtPosition(
         this.path,
-        curOffset,
-        false);
-      
+        curOffset);
+
       if (!completions || !completions.entries.length)
         return;
 
       var lineText = this.doc.getLine(cur.line);
       var prefixLength = 0;
       while (prefixLength < cur.ch) {
-        var ch = lineText.charAt(cur.ch - prefixLength-1);
+        var ch = lineText.charAt(cur.ch - prefixLength - 1);
         if (!isalphanumeric(ch))
           break;
         prefixLength++;
@@ -110,19 +184,19 @@ module portabled.docs.types.text.ts_ {
         suffixLength++;
       }
       var lead = lineText.slice(0, cur.ch - prefixLength);
-      var prefix = lineText.slice (cur.ch - prefixLength, cur.ch);
+      var prefix = lineText.slice(cur.ch - prefixLength, cur.ch);
       var suffix = lineText.slice(cur.ch, cur.ch + suffixLength);
       var trail = lineText.slice(cur.ch + suffixLength);
       var matchTextLower = prefix.toLowerCase();
-      
+
       var completionEntries: CodeMirrorCompletion[] = [];
       for (var i = 0; i < completions.entries.length; i++) {
         if (completionEntries.length > 16) break;
         var co = completions.entries[i];
-        
+
         if (prefixLength && co.name.toLowerCase().indexOf(matchTextLower) < 0)
           continue;
-        
+
         var det = typescriptService().service().getCompletionEntryDetails(this.path, curOffset, co.name);
 
         completionEntries.push(new CodeMirrorCompletion(
@@ -131,7 +205,7 @@ module portabled.docs.types.text.ts_ {
       }
 
       if (!completionEntries.length
-       || (completionEntries.length === 1 && completionEntries[completionEntries.length - 1].text === prefix))
+        || (completionEntries.length === 1 && completionEntries[completionEntries.length - 1].text === prefix))
         return;
 
       var result: CodeMirror.showHint.CompletionResult = {
@@ -143,19 +217,20 @@ module portabled.docs.types.text.ts_ {
       return result;
     }
 
-    onChanges(docChanges: CodeMirror.EditorChange[], summary: ChangeSummary) {
+    onChangesCore(docChanges: CodeMirror.EditorChange[], summary: ChangeSummary) {
 
-      this._changes.push(new ts.TextChangeRange(
-        new ts.TextSpan(summary.lead, summary.mid),
-        summary.mid));
+      this._foldData = null;
 
-      this._diagsTimer.reset();
+      var tsChanges = ts.createTextChangeRange(
+        ts.createTextSpan(summary.lead, summary.mid),
+        summary.newmid);
+
+      this._changes.push(tsChanges);
+
       this._matchHighlightTimer.reset();
       this._matchMarkersInvalidated = true;
 
       this._statusUpdateTimer.reset();
-
-      super.onChanges(docChanges, summary);
 
       this._autoformatAsNeeded(docChanges);
     }
@@ -174,12 +249,12 @@ module portabled.docs.types.text.ts_ {
       if (this._autoformatInProgress)
         return;
 
-      var ch = docChanges[docChanges.length-1];
-      var chText = ch.text.length ? ch.text[ch.text.length-1] : null;
+      var ch = docChanges[docChanges.length - 1];
+      var chText = ch.text.length ? ch.text[ch.text.length - 1] : null;
       if (!chText && ch.text.length > 1)
         chText = '\n';
-      
-      var lastch = chText.charAt(chText.length-1);
+
+      var lastch = chText.charAt(chText.length - 1);
       switch (lastch) {
         case '}':
         case ';':
@@ -206,7 +281,7 @@ module portabled.docs.types.text.ts_ {
         InsertSpaceAfterFunctionKeywordForAnonymousFunctions: false,
         InsertSpaceAfterOpeningAndBeforeClosingNonemptyParenthesis: false,
         PlaceOpenBraceOnNewLineForFunctions: false,
-        PlaceOpenBraceOnNewLineForControlBlocks: false,
+        PlaceOpenBraceOnNewLineForControlBlocks: false
       };
 
       var fmtEdits = typescriptService().service().getFormattingEditsAfterKeystroke(
@@ -214,69 +289,34 @@ module portabled.docs.types.text.ts_ {
         cursorOffset,
         lastch,
         fmtOps);
-      console.log('..'+JSON.stringify(lastch));
 
       if (fmtEdits && fmtEdits.length) {
         this._autoformatInProgress = true;
         this.editor.operation(() => {
-          for (var i = 0; i < fmtEdits.length; i++) {
+          for (var i = fmtEdits.length - 1; i >= 0; i--) {
             var ed = fmtEdits[i];
-            var from = this.doc.posFromIndex(ed.span.start());
-            var to = this.doc.posFromIndex(ed.span.end());
+            var from = this.doc.posFromIndex(ed.span.start);
+            var to = this.doc.posFromIndex(ed.span.start + ed.span.length);
             this.doc.replaceRange(ed.newText, from, to);
-            console.log('change '+i+':: '+from.line+':'+from.ch+'['+ed.span.length()+']='+JSON.stringify(ed.newText));
           }
         });
         this._autoformatInProgress = false;
       }
-        
-    }
-
-    private _updateDiags() {
-      if (this.removed) return;
-
-      this.editor.operation(() => {
-
-        if (this._diagMarkers) {
-          for (var i = 0; i <this._diagMarkers.length; i++) {
-            var m = this._diagMarkers[i];
-            m.clear();
-          }
-        }
-        this._diagMarkers = [];
-
-        var syntacticDiags = typescriptService().service().getSyntacticDiagnostics(this.path);
-        var semanticDiags = typescriptService().service().getSemanticDiagnostics(this.path);
-
-        if (syntacticDiags) {
-          for (var i = 0; i < syntacticDiags.length; i++) {
-            this._addDiag(syntacticDiags[i], 'syntactic');
-          }
-        }
-
-        if (semanticDiags) {
-          for (var i = 0; i < semanticDiags.length; i++) {
-            this._addDiag(semanticDiags[i], 'semantic');
-          }
-        }
-
-        this._updateStatus();
-      });
 
     }
-      
+
     private _addDiag(d: ts.Diagnostic, kind: string) {
-      var tsFrom = d.file.getLineAndCharacterFromPosition(d.start);
-      var tsTo = d.file.getLineAndCharacterFromPosition(d.start + d.length);
+
+      var tsFrom = d.file.getLineAndCharacterOfPosition(d.start); // zero-based
+      var tsTo = d.file.getLineAndCharacterOfPosition(d.start + d.length); // zero-based
+
       var marker = this.doc.markText(
-        CodeMirror.Pos(tsFrom.line-1, tsFrom.character-1),
-        CodeMirror.Pos(tsTo.line-1, tsTo.character-1),
-        {
-          className: 'portabled-diag portabled-diag-'+kind+' portabled-diag-'+ts.DiagnosticCategory[d.category]
+        CodeMirror.Pos(tsFrom.line, tsFrom.character),
+        CodeMirror.Pos(tsTo.line, tsTo.character), {
+          className: 'portabled-diag portabled-diag-' + kind + ' portabled-diag-' + ts.DiagnosticCategory[d.category]
         });
+
       marker['__error'] = d;
-      this._diagMarkers.push(marker);
-      // TODO: update rendering
     }
 
     private _updateMatchHighlight() {
@@ -289,7 +329,7 @@ module portabled.docs.types.text.ts_ {
         for (var i = 0; i < this._matchMarkers.length; i++) {
           var m = this._matchMarkers[i];
           var pos = m.marker.find();
-          if (compareSign(pos.from, cursor)<=0 && compareSign(cursor, pos.to)<=0) {
+          if (pos && compareSign(pos.from, cursor) <= 0 && compareSign(cursor, pos.to) <= 0) {
             if (m.isCurrent) {
               // all is well
               return;
@@ -297,6 +337,8 @@ module portabled.docs.types.text.ts_ {
           }
         }
       }
+
+      var newMatches = typescriptService().service().getOccurrencesAtPosition(this.path, cursorOffset);
 
       this.editor.operation(() => {
 
@@ -307,7 +349,6 @@ module portabled.docs.types.text.ts_ {
         }
         this._matchMarkers = [];
 
-        var newMatches = typescriptService().service().getOccurrencesAtPosition(this.path, cursorOffset);
         if (!newMatches)
           return;
 
@@ -316,10 +357,10 @@ module portabled.docs.types.text.ts_ {
           if (m.fileName !== this.path)
             continue;
 
-          var from = this.doc.posFromIndex(m.textSpan.start());
-          var to = this.doc.posFromIndex(m.textSpan.end());
+          var from = this.doc.posFromIndex(m.textSpan.start);
+          var to = this.doc.posFromIndex(m.textSpan.start + m.textSpan.length);
 
-          var isCurrent = m.textSpan.containsPosition(cursorOffset);
+          var isCurrent = cursorOffset >= m.textSpan.start && cursorOffset <= m.textSpan.start + m.textSpan.length;
 
           var marker = this.doc.markText(
             from,
@@ -327,7 +368,7 @@ module portabled.docs.types.text.ts_ {
             {
               className: isCurrent ? 'portabled-match portabled-match-current' : 'portabled-match'
             });
-          this._matchMarkers.push({ marker: marker, offset: m.textSpan.start(), isCurrent: isCurrent });
+          this._matchMarkers.push({ marker: marker, offset: m.textSpan.start, isCurrent: isCurrent });
 
         }
 
@@ -336,9 +377,9 @@ module portabled.docs.types.text.ts_ {
       });
 
       this._matchMarkersInvalidated = false;
-      
+
     }
-      
+
     private _matchGo(dir: number) {
       if (!this.doc && !this.editor)
         return;
@@ -372,7 +413,7 @@ module portabled.docs.types.text.ts_ {
 
       this.doc.setCursor(newCursor);
       this._updateMatchHighlight();
-        
+
     }
 
     private _updateStatus() {
@@ -382,35 +423,6 @@ module portabled.docs.types.text.ts_ {
       var cursor = this.doc.getCursor();
       var cursorOffset = this.doc.indexFromPos(cursor);
 
-      if (this._diagMarkers) {
-        var anyErrors = false;
-        for (var i = 0; i < this._diagMarkers.length; i++) {
-          var dm = this._diagMarkers[i];
-          var dmPos = dm.find();
-          if (dmPos
-              && compareSign(dmPos.from, cursor)<=0 
-              && compareSign(cursor, dmPos.to)<=0) {
-            var d: ts.Diagnostic = dm['__error'];
-
-            var errSpan = document.createElement('span');
-            if ('textContent' in errSpan)
-              errSpan.textContent = '? '+d.messageText+' ';
-            else
-              errSpan.innerText = '? '+d.messageText + ' ';
-            
-            errSpan.className = 'portabled-diag-'+ts.DiagnosticCategory[d.category];
-
-            setTextContent(this.status, '');
-
-            this.status.appendChild(errSpan);
-            anyErrors = true;
-          }
-        }
-
-        if (anyErrors)
-          return;
-      }
-
       var signature = typescriptService().service().getSignatureHelpItems(this.path, cursorOffset);
       if (signature && signature.items.length) {
         setTextContent(this.status, '');
@@ -418,6 +430,7 @@ module portabled.docs.types.text.ts_ {
         var si = signature.items[signature.selectedItemIndex || 0];
         if (si.prefixDisplayParts)
           renderSyntaxPart(si.prefixDisplayParts, this.status);
+
         if (si.parameters) {
           for (var i = 0; i < si.parameters.length; i++) {
             if (i > 0)
@@ -425,7 +438,7 @@ module portabled.docs.types.text.ts_ {
             if (i === signature.argumentIndex) {
               var paramHighlight = document.createElement('span');
               paramHighlight.className = 'portabled-syntax-current';
-            	renderSyntaxPart(si.parameters[i].displayParts, paramHighlight);
+              renderSyntaxPart(si.parameters[i].displayParts, paramHighlight);
               this.status.appendChild(paramHighlight);
             }
             else {
@@ -433,6 +446,7 @@ module portabled.docs.types.text.ts_ {
             }
           }
         }
+
         if (si.suffixDisplayParts)
           renderSyntaxPart(si.suffixDisplayParts, this.status);
 
@@ -443,9 +457,10 @@ module portabled.docs.types.text.ts_ {
           renderSyntaxPart(si.documentation, docSpan);
           this.status.appendChild(docSpan);
         }
-        
+
       }
       else {
+
         var qi = typescriptService().service().getQuickInfoAtPosition(this.path, cursorOffset);
         if (qi && qi.displayParts) {
           setTextContent(this.status, '');
@@ -466,8 +481,8 @@ module portabled.docs.types.text.ts_ {
               sp.textContent = dip.text;
             else
               sp.innerText = dip.text;
-            sp.className = 'portabled-syntax-'+dip.kind;
-            
+            sp.className = 'portabled-syntax-' + dip.kind;
+
             this.status.appendChild(sp);
           }
 
@@ -492,7 +507,7 @@ module portabled.docs.types.text.ts_ {
                 sp.textContent = dip.text;
               else
                 sp.innerText = dip.text;
-              sp.className = 'portabled-syntax-'+dip.kind;
+              sp.className = 'portabled-syntax-' + dip.kind;
 
               this.status.appendChild(sp);
             }
@@ -505,6 +520,16 @@ module portabled.docs.types.text.ts_ {
             this.status.innerText = this.path;
         }
       }
+
+      var def = typescriptService().service().getDefinitionAtPosition(this.path, cursorOffset);
+      if (def && def.length) {
+        var defSpan = document.createElement('span');
+        var shortFileName = def[0].fileName.slice(def[0].fileName.lastIndexOf('/')+1);
+        setTextContent(defSpan, ' @' + shortFileName + ' ' + def[0].containerKind + ' ' + def[0].containerName);
+        defSpan.style.color = 'cornflowerblue';
+        this.status.appendChild(defSpan);
+      }
+
     }
 
   }
@@ -523,14 +548,14 @@ module portabled.docs.types.text.ts_ {
     else if (p1.ch < p2.ch)
       return -1;
     else
-      return 0;      
+      return 0;
   }
 
   function isalphanumeric(ch: string) {
     if (ch >= '0' && ch <= '9') return true;
     if (ch >= 'A' && ch <= 'Z') return true;
     if (ch >= 'a' && ch <= 'z') return true;
-    if (ch === '_' || ch ==='$') return true;
+    if (ch === '_' || ch === '$') return true;
     if (ch.charCodeAt(0) < 128) return false;
     // slow Unicode path
     return ch.toLowerCase() !== ch.toUpperCase();
