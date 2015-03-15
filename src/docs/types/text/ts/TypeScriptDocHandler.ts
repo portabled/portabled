@@ -423,9 +423,13 @@ module portabled.docs.types.text.ts_ {
       var cursor = this.doc.getCursor();
       var cursorOffset = this.doc.indexFromPos(cursor);
 
+      var isSignature = false;
+
       var signature = typescriptService().service().getSignatureHelpItems(this.path, cursorOffset);
       if (signature && signature.items.length) {
         setTextContent(this.status, '');
+
+        isSignature = true;
 
         var si = signature.items[signature.selectedItemIndex || 0];
         if (si.prefixDisplayParts)
@@ -521,11 +525,41 @@ module portabled.docs.types.text.ts_ {
         }
       }
 
-      var def = typescriptService().service().getDefinitionAtPosition(this.path, cursorOffset);
+      try {
+      	var def = typescriptService().service().getDefinitionAtPosition(this.path, cursorOffset);
+      }
+      catch (tsError) {
+        // TS sometimes throws at this point
+      }
+
       if (def && def.length) {
         var defSpan = document.createElement('span');
-        var shortFileName = def[0].fileName.slice(def[0].fileName.lastIndexOf('/')+1);
-        setTextContent(defSpan, ' @' + shortFileName + ' ' + def[0].containerKind + ' ' + def[0].containerName);
+        var defLocation: string;
+
+        if (def[0].fileName===this.path) {
+          var loc = this.doc.posFromIndex(def[0].textSpan.start);
+          if (loc.line !== cursor.line)
+            defLocation = 'at line ' + (loc.line + 1);
+        }
+        else {
+          var script = typescriptService().service().getProgram().getSourceFile(def[0].fileName);
+          if (script) {
+            var tsLoc = script.getLineAndCharacterOfPosition(def[0].textSpan.start);
+            defLocation = 'in ' + def[0].fileName + ' at line ' + (tsLoc.line + 1);
+          }
+          else {
+            defLocation = 'in ' + def[0].fileName;
+          }
+        }
+
+        setTextContent(
+          defSpan,
+          ' ' +
+          (isSignature ? ' ' + def[0].name : '') +
+          (def[0].kind ? ', a ' + def[0].kind : '') +
+          (def[0].containerName ? ' in ' + def[0].containerName : '') +
+          (def[0].containerKind ? ' (' + def[0].containerKind + ')' : '') +
+          (defLocation ? ' ' + defLocation : ''));
         defSpan.style.color = 'cornflowerblue';
         this.status.appendChild(defSpan);
       }
