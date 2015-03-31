@@ -1,4 +1,5 @@
-<!doctype html>
+<!DOCTYPE html>
+<!-- saved from url=(0048)https://preview.c9.io/mihailik/portabled/mi.html -->
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
 <title>portabled - [portabled v0.6w]</title>
@@ -212,7 +213,7 @@ t._continuePreload())},o)}},l)}},s)}},n.prototype._createRegistry=function(){ret
 <div class="portabled-flyout-scroller" data-bind="load: flyoutScroller = $element">
   <div class="portabled-flyout-scroller-bg">
 
-    <div class="portabled-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default"><div class="CodeMirror-vscrollbar" cm-not-content="true" style="min-width: 18px; display: block; bottom: 0px;"><div style="min-width: 1px; height: 1944px;"></div></div><div class="CodeMirror-hscrollbar" cm-not-content="true" style="min-height: 18px; display: block; right: 0px; left: 40px;"><div style="height: 100%; min-height: 1px; width: 898px;"></div></div><div class="CodeMirror-scrollbar-filler" cm-not-content="true"></div><div class="CodeMirror-gutter-filler" cm-not-content="true"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 40px; margin-bottom: 0px; border-right-width: 30px; min-width: 898.6875px; min-height: 1944px; padding-right: 0px; padding-bottom: 0px;"><div style="position: relative; top: 836px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>75</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors" style="visibility: hidden;"></div><div class="CodeMirror-code" contenteditable="true" autocorrect="off" autocapitalize="off" spellcheck="false" tabindex="0"><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">39</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable">dirs</span>.<span class="cm-property">sort</span>((<span class="cm-def">d1</span>, <span class="cm-def">d2</span>) <span class="cm-operator">=&gt;</span> <span class="cm-variable-2">d1</span>.<span class="cm-property">name</span> <span class="cm-operator">&gt;</span> <span class="cm-variable-2">d2</span>.<span class="cm-property">name</span> <span class="cm-operator">?</span> <span class="cm-operator">+</span><span class="cm-number">1</span> : <span class="cm-variable-2">d1</span>.<span class="cm-property">name</span> <span class="cm-operator">&lt;</span> <span class="cm-variable-2">d2</span>.<span class="cm-property">name</span> <span class="cm-operator">?</span> <span class="cm-operator">-</span><span class="cm-number">1</span> : <span class="cm-number">0</span>);</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">40</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">if</span> (<span class="cm-variable">dir</span> <span class="cm-operator">!==</span> <span class="cm-string">'/'</span>) {</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">41</div></div><pre><span style="padding-right: 0.1px;">        <span class="cm-keyword">var</span> <span class="cm-variable">lastSlashPos</span> <span class="cm-operator">=</span> <span class="cm-variable">dir</span>.<span class="cm-property">lastIndexOf</span>(<span class="cm-string">'/'</span>, <span class="cm-variable">dir</span>.<span class="cm-property">length</span> <span class="cm-operator">-</span> <span class="cm-number">2</span>);</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">42</div></div><pre><span style="padding-right: 0.1px;">        <span class="cm-keyword">var</span> <span class="cm-variable">parentDir</span> <span class="cm-operator">=</span> <span class="cm-variable">dir</span>.<span class="cm-property">slice</span>(<span class="cm-number">0</span>, <span class="cm-variable">lastSlashPos</span> <span class="cm-operator">+</span> <span class="cm-number">1</span>);</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">43</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-variable">dirs</span>.<span class="cm-property">unshift</span>({ <span class="cm-property">path</span>: <span class="cm-variable">parentDir</span>, <span class="cm-property">name</span>: <span class="cm-string">'..'</span> });</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">44</div></div><pre><span style="padding-right: 0.1px;">      }</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">45</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">46</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable">files</span>.<span class="cm-property">sort</span>((<span class="cm-def">f1</span>, <span class="cm-def">f2</span>) <span class="cm-operator">=&gt;</span> <span class="cm-variable-2">f1</span>.<span class="cm-property">name</span> <span class="cm-operator">&gt;</span> <span class="cm-variable-2">f2</span>.<span class="cm-property">name</span> <span class="cm-operator">?</span> <span class="cm-operator">+</span><span class="cm-number">1</span> : <span class="cm-variable-2">f1</span>.<span class="cm-property">name</span> <span class="cm-operator">&lt;</span> <span class="cm-variable-2">f2</span>.<span class="cm-property">name</span> <span class="cm-operator">?</span> <span class="cm-operator">-</span><span class="cm-number">1</span> : <span class="cm-number">0</span>);</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">47</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">48</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable">setText</span>(<span class="cm-keyword">this</span>.<span class="cm-property">_host</span>, <span class="cm-string">''</span>);</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">49</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">for</span> (<span class="cm-keyword">var</span> <span class="cm-variable">i</span> <span class="cm-operator">=</span> <span class="cm-number">0</span>; <span class="cm-variable">i</span> <span class="cm-operator">&lt;</span> <span class="cm-variable">dirs</span>.<span class="cm-property">length</span>; <span class="cm-variable">i</span><span class="cm-operator">++</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">50</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">51</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-keyword">var</span> <span class="cm-variable">dirElem</span> <span class="cm-operator">=</span> <span class="cm-variable">elem</span>(<span class="cm-string">'div'</span>, {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">52</div></div><pre class=""><span style="padding-right: 0.1px;">          <span class="cm-property">text</span>: <span class="cm-string">'['</span> <span class="cm-operator">+</span> <span class="cm-variable">dirs</span>[<span class="cm-variable">i</span>].<span class="cm-property">name</span> <span class="cm-operator">+</span> <span class="cm-string">']'</span>,</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">53</div></div><pre class=""><span style="padding-right: 0.1px;">          <span class="cm-property">cursor</span>: <span class="cm-string">'pointer'</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">54</div></div><pre class=""><span style="padding-right: 0.1px;">        }, <span class="cm-keyword">this</span>.<span class="cm-property">_host</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">55</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">56</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-variable">dirElem</span>.<span class="cm-property">setAttribute</span>(<span class="cm-string">'data-path'</span>, <span class="cm-variable">dirs</span>[<span class="cm-variable">i</span>].<span class="cm-property">path</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">57</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">58</div></div><pre class=""><span style="padding-right: 0.1px;">      }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">59</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">60</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-keyword">for</span> (<span class="cm-keyword">var</span> <span class="cm-variable">i</span> <span class="cm-operator">=</span> <span class="cm-number">0</span>; <span class="cm-variable">i</span> <span class="cm-operator">&lt;</span> <span class="cm-variable">files</span>.<span class="cm-property">length</span>; <span class="cm-variable">i</span><span class="cm-operator">++</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">61</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">62</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-keyword">var</span> <span class="cm-variable">fileElem</span> <span class="cm-operator">=</span> <span class="cm-variable">elem</span>(<span class="cm-string">'div'</span>, <span class="cm-variable">files</span>[<span class="cm-variable">i</span>].<span class="cm-property">name</span>, <span class="cm-keyword">this</span>.<span class="cm-property">_host</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">63</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">64</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-variable">fileElem</span>.<span class="cm-property">setAttribute</span>(<span class="cm-string">'data-path'</span>, <span class="cm-variable">files</span>[<span class="cm-variable">i</span>].<span class="cm-property">path</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">65</div></div><pre class=""><span style="padding-right: 0.1px;">      }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">66</div></div><pre class=""><span style="padding-right: 0.1px;">    }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">67</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">68</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">69</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;"><span class="cm-tab" role="presentation" cm-text="	">  </span><span class="cm-tab" role="presentation" cm-text="	">  </span><span class="cm-keyword">private</span> <span class="cm-variable">_onclick</span>(<span class="cm-variable">e</span>: <span class="cm-variable">Event</span>) {</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">70</div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">var</span> <span class="cm-variable">target</span>: <span class="cm-variable-3">HTMLElement</span> <span class="cm-operator">=</span> <span class="cm-operator">&lt;</span><span class="cm-variable-3">any</span><span class="cm-operator">&gt;</span><span class="cm-variable">e</span>.<span class="cm-property">target</span> <span class="cm-operator">||</span> <span class="cm-variable">e</span>.<span class="cm-property">srcElement</span>;</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">71</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">while</span> (<span class="cm-atom">true</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">72</div></div><pre><span style="padding-right: 0.1px;">        <span class="cm-keyword">if</span> (<span class="cm-operator">!</span><span class="cm-variable">target</span>) <span class="cm-keyword">return</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">73</div></div><pre><span style="padding-right: 0.1px;">        <span class="cm-keyword">var</span> <span class="cm-variable">dataPath</span> <span class="cm-operator">=</span> <span class="cm-variable">target</span>.<span class="cm-property">getAttribute</span> <span class="cm-operator">&amp;&amp;</span> <span class="cm-variable">target</span>.<span class="cm-property">getAttribute</span>(<span class="cm-string">'data-path'</span>);</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">74</div></div><pre><span style="padding-right: 0.1px;">        <span class="cm-keyword">if</span> (<span class="cm-variable">dataPath</span>) <span class="cm-keyword">break</span>;</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">75</div></div><pre><span style="padding-right: 0.1px;">        <span class="cm-variable">target</span> <span class="cm-operator">=</span> <span class="cm-variable">target</span>.<span class="cm-property">parentElement</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">76</div></div><pre class=""><span style="padding-right: 0.1px;">      }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">77</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">78</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">if</span> (<span class="cm-variable">dataPath</span>.<span class="cm-property">charAt</span>(<span class="cm-variable">dataPath</span>.<span class="cm-property">length</span> <span class="cm-operator">-</span> <span class="cm-number">1</span>) <span class="cm-operator">===</span> <span class="cm-string">'/'</span>) {</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">79</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-keyword">this</span>.<span class="cm-property">_showDir</span>(<span class="cm-variable">dataPath</span>);</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">80</div></div><pre><span style="padding-right: 0.1px;">      }</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">81</div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">else</span> {</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">82</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-variable">alert</span>(<span class="cm-string">'Open file '</span> <span class="cm-operator">+</span> <span class="cm-variable">dataPath</span>);</span></pre></div><div class="CodeMirror-activeline" style="position: relative;"><div class="CodeMirror-activeline-background CodeMirror-linebackground"></div><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">83</div></div><pre><span style="padding-right: 0.1px;">      }</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">84</div></div><pre><span style="padding-right: 0.1px;">    }</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">85</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">86</div></div><pre><span style="padding-right: 0.1px;">  }</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">87</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" contenteditable="false" style="left: -39px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">88</div></div><pre><span style="padding-right: 0.1px;">}</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 30px; width: 1px; top: 1944px;"></div><div class="CodeMirror-gutters" style="height: 1974px; left: 1px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div><div class="CodeMirror-gutter CodeMirror-foldgutter"></div></div></div></div></div>
+    <div class="portabled-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default CodeMirror-focused"><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 609px; left: 120.453125px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none; font-size: 16px;" tabindex="0"></textarea></div><div class="CodeMirror-vscrollbar" cm-not-content="true" style="bottom: 0px; display: block;"><div style="min-width: 1px; height: 890px;"></div></div><div class="CodeMirror-hscrollbar" cm-not-content="true"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-scrollbar-filler" cm-not-content="true"></div><div class="CodeMirror-gutter-filler" cm-not-content="true"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 40px; margin-bottom: -17px; border-right-width: 13px; min-width: 496.78125px; min-height: 890px; padding-right: 17px; padding-bottom: 0px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><pre>x</pre></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors" style=""><div class="CodeMirror-cursor" style="left: 80.453125px; top: 702px; height: 18px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">1</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-variable">elem</span>(<span class="cm-string">'h3'</span>, {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">2</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-property">text</span>: <span class="cm-string">'Ready!'</span>,</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">3</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-property">color</span>: <span class="cm-string">'silver'</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">4</div></div><pre class=""><span style="padding-right: 0.1px;">}, <span class="cm-variable">document</span>.<span class="cm-property">body</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">5</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">6</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-variable">loadMod</span>({</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">7</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-property">eval</span>: <span class="cm-string">'console.log("running a headless module from within shell");'</span>,</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">8</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-property">path</span>: <span class="cm-string">'headless.js'</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">9</div></div><pre class=""><span style="padding-right: 0.1px;">});</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">10</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">11</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-keyword">try</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">12</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-keyword">var</span> <span class="cm-variable">root</span> <span class="cm-operator">=</span> <span class="cm-variable">require</span>(<span class="cm-string">'root'</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">13</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-keyword">var</span> <span class="cm-variable">shell</span> <span class="cm-operator">=</span> <span class="cm-variable">require</span>(<span class="cm-string">'shell'</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">14</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-keyword">var</span> <span class="cm-variable">pan</span> <span class="cm-operator">=</span> <span class="cm-keyword">new</span> <span class="cm-variable">shell</span>.<span class="cm-property">Panels</span>(<span class="cm-variable">document</span>.<span class="cm-property">body</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">15</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-keyword">var</span> <span class="cm-variable">diviLeft</span> <span class="cm-operator">=</span> <span class="cm-keyword">new</span> <span class="cm-variable">shell</span>.<span class="cm-property">DirectoryViewer</span>(<span class="cm-variable">pan</span>.<span class="cm-property">leftPanel</span>, <span class="cm-variable">root</span>.<span class="cm-property">rootfs</span>.<span class="cm-property">files</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">16</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-keyword">var</span> <span class="cm-variable">diviRight</span> <span class="cm-operator">=</span> <span class="cm-keyword">new</span> <span class="cm-variable">shell</span>.<span class="cm-property">DirectoryViewer</span>(<span class="cm-variable">pan</span>.<span class="cm-property">rightPanel</span>, <span class="cm-variable">root</span>.<span class="cm-property">rootfs</span>.<span class="cm-property">files</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">17</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">18</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-keyword">var</span> <span class="cm-variable">currentLeft</span> <span class="cm-operator">=</span> <span class="cm-atom">true</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">19</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-variable">pan</span>.<span class="cm-property">rightPanel</span>.<span class="cm-property">style</span>.<span class="cm-property">opacity</span> <span class="cm-operator">=</span> <span class="cm-number">0.5</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">20</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-variable">onEvent</span>(<span class="cm-variable">window</span>, <span class="cm-string">'keydown'</span>, <span class="cm-keyword">function</span>(<span class="cm-def">e</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">21</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-keyword">if</span> (<span class="cm-variable-2">e</span>.<span class="cm-property">keyCode</span><span class="cm-operator">===</span><span class="cm-number">9</span>) { <span class="cm-comment">// tab</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">22</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-keyword">if</span> (<span class="cm-variable">currentLeft</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">23</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable">currentLeft</span> <span class="cm-operator">=</span> <span class="cm-atom">false</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">24</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable">pan</span>.<span class="cm-property">leftPanel</span>.<span class="cm-property">style</span>.<span class="cm-property">opacity</span> <span class="cm-operator">=</span> <span class="cm-number">0.5</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">25</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable">pan</span>.<span class="cm-property">rightPanel</span>.<span class="cm-property">style</span>.<span class="cm-property">opacity</span> <span class="cm-operator">=</span> <span class="cm-number">1</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">26</div></div><pre class=""><span style="padding-right: 0.1px;">    }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">27</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-keyword">else</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">28</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable">currentLeft</span> <span class="cm-operator">=</span> <span class="cm-atom">true</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">29</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable">pan</span>.<span class="cm-property">rightPanel</span>.<span class="cm-property">style</span>.<span class="cm-property">opacity</span> <span class="cm-operator">=</span> <span class="cm-number">0.5</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">30</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable">pan</span>.<span class="cm-property">leftPanel</span>.<span class="cm-property">style</span>.<span class="cm-property">opacity</span> <span class="cm-operator">=</span> <span class="cm-number">1</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">31</div></div><pre class=""><span style="padding-right: 0.1px;">    }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">32</div></div><pre><span style="padding-right: 0.1px;">    <span class="cm-keyword">if</span> (<span class="cm-variable-2">e</span>.<span class="cm-property">preventDefault</span>) <span class="cm-variable-2">e</span>.<span class="cm-property">preventDefault</span>();</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">33</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-variable-2">e</span>.<span class="cm-property">cancelBubble</span> <span class="cm-operator">=</span> <span class="cm-atom">true</span>;</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">34</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-keyword">return</span>;</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">35</div></div><pre><span style="padding-right: 0.1px;">  }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">36</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">37</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-keyword">if</span> (<span class="cm-variable">currentLeft</span>)</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">38</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-tab" role="presentation" cm-text="	">  </span><span class="cm-variable">diviLeft</span>.<span class="cm-property">onkey</span>(<span class="cm-variable-2">e</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">39</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-keyword">else</span></span></pre></div><div class="CodeMirror-activeline" style="position: relative;"><div class="CodeMirror-activeline-background CodeMirror-linebackground"></div><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">40</div></div><pre><span style="padding-right: 0.1px;">    <span class="cm-variable">diviRight</span>.<span class="cm-property">onkey</span>(<span class="cm-variable-2">e</span>);</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">41</div></div><pre><span style="padding-right: 0.1px;">});</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">42</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">43</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-variable">setTimeout</span>(<span class="cm-keyword">function</span>() { <span class="cm-variable">window</span>.<span class="cm-property">focus</span>(); }, <span class="cm-number">1</span>);</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">44</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">45</div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-variable">console</span>.<span class="cm-property">log</span>(<span class="cm-string">'shell is OK'</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">46</div></div><pre class=""><span style="padding-right: 0.1px;">}</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">47</div><div class="CodeMirror-gutter-elt" style="left: 28px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;"><span class="cm-keyword">catch</span> (<span class="cm-def">error</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">48</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-variable">alert</span>(<span class="cm-string">'shell error '</span> <span class="cm-operator">+</span> <span class="cm-variable-2">error</span> <span class="cm-operator">+</span> <span class="cm-string">'\n'</span><span class="cm-operator">+</span><span class="cm-variable-2">error</span>.<span class="cm-property">message</span><span class="cm-operator">+</span><span class="cm-string">'\n'</span><span class="cm-operator">+</span><span class="cm-variable-2">error</span>.<span class="cm-property">stack</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -40px; width: 40px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 20px;">49</div></div><pre class=""><span style="padding-right: 0.1px;">}</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 13px; width: 1px; top: 890px;"></div><div class="CodeMirror-gutters" style="height: 903px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 28px;"></div><div class="CodeMirror-gutter CodeMirror-foldgutter"></div></div></div></div></div>
 
     <div class="portabled-flyout">
 
@@ -221,36 +222,20 @@ t._continuePreload())},o)}},l)}},s)}},n.prototype._createRegistry=function(){ret
         <div class="portabled-thick-bar-bg">
           <div class="portabled-thick-bar" data-bind="event: { mousedown: thickbarMouseDown }, loadRaw: docHostRegions.scroller = $element">
           <div style="width: 100%; height: 100%;"><div class="portabled-scroller-outer" data-bind="load: bindHandlers($element)">
-  <div class="portabled-scroller-thumb" data-bind="style: { top: viewportFrom, height: viewportHeight }" style="top: 20.8636363636364%; height: 8.59090909090909%;">
+  <div class="portabled-scroller-thumb" data-bind="style: { top: viewportFrom, height: viewportHeight }" style="top: 1.7962962962963%; height: 11.9444444444444%;">
   </div>
 </div>
 
 <!-- ko foreach: lines -->
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 5%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 16%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 1%; width: 23%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 19%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 96%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 14%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 40%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 23%; height: 0.33%;">
 </div>
 
 
@@ -258,7 +243,19 @@ t._continuePreload())},o)}},l)}},s)}},n.prototype._createRegistry=function(){ret
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 24%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 11%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 88%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 24%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 3%; height: 0.33%;">
 </div>
 
 
@@ -266,107 +263,27 @@ t._continuePreload())},o)}},l)}},s)}},n.prototype._createRegistry=function(){ret
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 30%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 6%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 8%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 35%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 37%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 11%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 54%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 19%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 97%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 11%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 49%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 28%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 26%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 21%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 31%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 26%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 14%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 92%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 4%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 30%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 38%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 7%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 20%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 10%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 1%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 10%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 18%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 100%; height: 0.33%;">
 </div>
 
 
@@ -374,55 +291,43 @@ t._continuePreload())},o)}},l)}},s)}},n.prototype._createRegistry=function(){ret
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 59%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 29%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 14%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 45%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 44%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 51%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 37%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 35%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 36%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 23%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 25%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 44%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 59%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 42%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 1%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 18%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 30%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 21%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 7%; height: 0.33%;">
 </div>
 
 
@@ -430,35 +335,31 @@ t._continuePreload())},o)}},l)}},s)}},n.prototype._createRegistry=function(){ret
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 13%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 45%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 11%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 41%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 1%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 37%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 53%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 28%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 9%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 31%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 1%; height: 0.33%;">
 </div>
 
 
@@ -466,7 +367,23 @@ t._continuePreload())},o)}},l)}},s)}},n.prototype._createRegistry=function(){ret
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 42%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 20%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 23%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 5%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 24%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 3%; height: 0.33%;">
 </div>
 
 
@@ -474,15 +391,7 @@ t._continuePreload())},o)}},l)}},s)}},n.prototype._createRegistry=function(){ret
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 39%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 59%; height: 0.33%;">
 </div>
 
 
@@ -490,87 +399,23 @@ t._continuePreload())},o)}},l)}},s)}},n.prototype._createRegistry=function(){ret
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 35%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 22%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 1%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 44%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 19%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 11%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 2%; width: 88%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 15%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 55%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 15%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 23%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 40%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 18%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 4%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 24%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 1%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 1%; height: 0.33%;">
 </div>
 
 <!-- /ko -->
@@ -583,7 +428,7 @@ t._continuePreload())},o)}},l)}},s)}},n.prototype._createRegistry=function(){ret
     try { portabled.app.loading('Files...'); } catch (err) { alert(err+' '+err.stack); }
 </script>
 
-      <div class="portabled-file-tree" timestamp="1427494119683" data-bind="loadRaw: fileTreeHost = $element">
+      <div class="portabled-file-tree" timestamp="1427833222132" data-bind="loadRaw: fileTreeHost = $element">
 
         <ul>
 
@@ -604,7 +449,7 @@ iframe.boot, iframe.ui {
   position: fixed;
   height: 100%; width: 100%;
   border: none;
-}</pre></li><li class="portabled-file       "><span class="portabled-file-name">bootShell.ts</span><pre class="portabled-file-content">function bootShell() {
+}</pre></li><li class="portabled-file         "><span class="portabled-file-name">bootShell.ts</span><pre class="portabled-file-content">function bootShell() {
 
   var bootStyle = elem(
     'style',
@@ -632,7 +477,7 @@ iframe.boot, iframe.ui {
   });
 
   onEvent(window, 'load', function onloadCompleted() {
-    loadMod({
+    var ui = loadMod({
       style: 'ui',
       eval: getElementText('shell.js'), path: 'shell.js',
       scope: childScopeGenerator,
@@ -641,6 +486,8 @@ iframe.boot, iframe.ui {
 
     document.body.removeChild(bootStyle);
     document.body.removeChild(bootFrame.iframe);
+
+    bootFrame.iframe.focus();
   });
 
   function require(module): any {
@@ -760,7 +607,7 @@ function offEvent(
     e.innerHTML = text;
   else if (typeof console !== 'undefined' &amp;&amp; typeof console.error === 'function')
     console.error('Cannot neither text nor textContent nor innerText nor innerHTML is present on element ' + e + ' ' + e.tagName + '.');
-}</pre></li></ul></li><li class="portabled-dir"><span class="portabled-dir-name">mods</span><ul><li class="portabled-file   "><span class="portabled-file-name">loadMod.ts</span><pre class="portabled-file-content">function loadMod(options: {
+}</pre></li></ul></li><li class="portabled-dir"><span class="portabled-dir-name">mods</span><ul><li class="portabled-file    "><span class="portabled-file-name">loadMod.ts</span><pre class="portabled-file-content">function loadMod(options: {
   /** module script */
   eval: string;
   /** module path to emulate */
@@ -1112,13 +959,56 @@ function offEvent(
       return json;
     }
   }
-}</pre></li></ul></li><li class="portabled-dir   "><span class="portabled-dir-name">shell</span><ul><li class="portabled-file    portabled-file-selected portabled-file-selected"><span class="portabled-file-name">DirectoryViewer.ts</span><pre class="portabled-file-content">module shell {
+}</pre></li></ul></li><li class="portabled-dir   "><span class="portabled-dir-name">shell</span><ul><li class="portabled-file         "><span class="portabled-file-name">DirectoryViewer.ts</span><pre class="portabled-file-content">module shell {
 
   export class DirectoryViewer {
 
+    private _currentDir: string = null;
+    selected: HTMLElement = null;
+
     constructor(private _host: HTMLElement, private _files: { [path: string]: { read(): string; write(content: string); }; }) {
       this._showDir('/');
-      onEvent(this._host, 'click', e =&gt; this._onclick(e));
+      onEvent(this._host, 'click', e =&gt; this._onclick(&lt;any&gt;e.target || e.srcElement));
+    }
+
+		onkey(e: KeyboardEvent) {
+      var handled = false;
+      switch (e.keyCode) {
+        case 38: // Up
+          this._moveSelection(-1);
+          handled = true;
+          break;
+        case 40: // Down
+          this._moveSelection(+1);
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; handled = true;
+          break;
+        case 13: // Enter
+          if (this.selected)
+            this._onclick(this.selected);
+          handled = true;
+          break;
+        case 8: // Backspace
+          break;
+      }
+      if (handled) {
+        if (e.preventDefault) e.preventDefault();
+        e.cancelBubble = true;
+      }
+    }
+
+		private _moveSelection(direction: number) {
+      if (!this.selected) return;
+      var forward = direction &gt; 0 ?
+          (item: HTMLElement) =&gt; item.nextSibling :
+      		(item: HTMLElement) =&gt; item.previousSibling;
+
+      var next = &lt;HTMLElement&gt;forward(this.selected);
+      if (next === null) return;
+      if (!next.getAttribute || !next.getAttribute('data-path')) return;
+
+      next.style.background = 'cyan';
+      this.selected.style.background = null;
+      this.selected = next;
     }
 
     private _showDir(dir: string) {
@@ -1160,6 +1050,16 @@ function offEvent(
       files.sort((f1, f2) =&gt; f1.name &gt; f2.name ? +1 : f1.name &lt; f2.name ? -1 : 0);
 
       setText(this._host, '');
+      this.selected = null;
+
+      elem('div', {
+        text: dir,
+        marginTop: '-1em',
+        textAlign: 'center',
+        maxHeight: '1em',
+        fontWeight: 'bold'
+      }, this._host);
+
       for (var i = 0; i &lt; dirs.length; i++) {
 
         var dirElem = elem('div', {
@@ -1167,7 +1067,18 @@ function offEvent(
           cursor: 'pointer'
         }, this._host);
 
+        if (this._currentDir &amp;&amp; dirs[i].path===this._currentDir) {
+          if (this.selected)
+            this.selected.style.background = null;
+          dirElem.style.background = 'cyan';
+          this.selected = dirElem;
+        }
+
         dirElem.setAttribute('data-path', dirs[i].path);
+        if (!this.selected) {
+          dirElem.style.background = 'cyan';
+          this.selected = dirElem;
+        }
 
       }
 
@@ -1176,12 +1087,18 @@ function offEvent(
         var fileElem = elem('div', files[i].name, this._host);
 
         fileElem.setAttribute('data-path', files[i].path);
+
+&nbsp; &nbsp; &nbsp; &nbsp; if (!this.selected) {
+          this.selected = fileElem;
+          fileElem.style.background = 'cyan';
+        }
       }
+
+      this._currentDir = dir;
     }
 
 
-		private _onclick(e: Event) {
-      var target: HTMLElement = &lt;any&gt;e.target || e.srcElement;
+		private _onclick(target: HTMLElement) {
       while (true) {
         if (!target) return;
         var dataPath = target.getAttribute &amp;&amp; target.getAttribute('data-path');
@@ -1199,7 +1116,7 @@ function offEvent(
 
   }
 
-}</pre></li><li class="portabled-file   "><span class="portabled-file-name">Panels.ts</span><pre class="portabled-file-content">module shell {
+}</pre></li><li class="portabled-file      "><span class="portabled-file-name">Panels.ts</span><pre class="portabled-file-content">module shell {
 
   export class Panels {
 
@@ -1209,11 +1126,10 @@ function offEvent(
       top: '0px', bottom: '3em',
       padding: '0.25em',
       background: 'cornflowerBlue',
-      opacity: '0.5',
       zIndex: 100
     }, this._host);
 
-    private _leftPanel = elem('div', {
+    leftPanel = elem('div', {
       width: '100%', height: '100%',
       border: 'solid 1px white',
       padding: '0.25em'
@@ -1226,27 +1142,21 @@ function offEvent(
       top: '0px', bottom: '3em',
       padding: '0.25em',
       background: 'cornflowerBlue',
-      opacity: '0.5',
       zIndex: 100
     }, this._host);
 
-    private _rightPanel = elem('div', {
+    rightPanel = elem('div', {
       width: '100%', height: '100%',
       border: 'solid 1px white',
       padding: '0.25em'
     }, this._rightHost);
 
     constructor(private _host: HTMLElement) {
-      elem(this._rightPanel, 'one two');
-    }
-
-    getLeftPanel() {
-      return this._leftPanel;
     }
 
   }
 
-}</pre></li><li class="portabled-file         "><span class="portabled-file-name">shell.js</span><pre class="portabled-file-content">elem('h3', {
+}</pre></li><li class="portabled-file                 portabled-file-selected"><span class="portabled-file-name">shell.js</span><pre class="portabled-file-content">elem('h3', {
   text: 'Ready!',
   color: 'silver'
 }, document.body);
@@ -1260,13 +1170,41 @@ try {
 var root = require('root');
 var shell = require('shell');
 var pan = new shell.Panels(document.body);
-var divi = new shell.DirectoryViewer(pan.getLeftPanel(), root.rootfs.files);
+var diviLeft = new shell.DirectoryViewer(pan.leftPanel, root.rootfs.files);
+var diviRight = new shell.DirectoryViewer(pan.rightPanel, root.rootfs.files);
+
+var currentLeft = true;
+pan.rightPanel.style.opacity = 0.5;
+onEvent(window, 'keydown', function(e) {
+  if (e.keyCode===9) { // tab
+    if (currentLeft) {
+      currentLeft = false;
+      pan.leftPanel.style.opacity = 0.5;
+      pan.rightPanel.style.opacity = 1;
+    }
+    else {
+      currentLeft = true;
+      pan.rightPanel.style.opacity = 0.5;
+      pan.leftPanel.style.opacity = 1;
+    }
+    if (e.preventDefault) e.preventDefault();
+    e.cancelBubble = true;
+    return;
+  }
+
+  if (currentLeft)
+  	diviLeft.onkey(e);
+  else
+    diviRight.onkey(e);
+});
+
+setTimeout(function() { window.focus(); }, 1);
 
 console.log('shell is OK');
 }
 catch (error) {
   alert('shell error ' + error + '\n'+error.message+'\n'+error.stack);
-}</pre></li></ul></li><li class="portabled-file             "><span class="portabled-file-name">index.html</span><pre class="portabled-file-content">&lt;!doctype html&gt;
+}</pre></li></ul></li><li class="portabled-file                "><span class="portabled-file-name">index.html</span><pre class="portabled-file-content">&lt;!doctype html&gt;
 &lt;html&gt;
   &lt;head&gt;
     &lt;title&gt;mini shell&lt;/title&gt;
@@ -1367,7 +1305,7 @@ catch (error) {
 </div>
 
 <div class="portabled-status-bar" data-bind="loadRaw: docHostRegions.status = $element">
-<div style="width: 100%; height: 100%;">/shell/DirectoryViewer.ts</div></div>
+<div style="width: 100%; height: 100%;">/shell/shell.js</div></div>
 
 <script data-legit="portabled">try { portabled.app.loading('Libraries...'); } catch (err) { alert(err+' '+err.stack); }</script>
 
