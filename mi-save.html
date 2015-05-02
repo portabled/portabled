@@ -406,7 +406,7 @@ function shellLoader(uniqueKey, document, boot) {
             var uiframe = createFrame();
             uiframe.iframe.style.opacity = '0';
             var _elem = elem;
-            window['elem'] = function (x, y, z) { _elem.apply(uiframe.global, [x, y, z]); };
+            window['elem'] = function (x, y, z) { return _elem.apply(uiframe.global, [x, y, z]); };
             shell.start(uiframe, drive);
             var start = new Date().valueOf();
             var fadeintTime = 500;
