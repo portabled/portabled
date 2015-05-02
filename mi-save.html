@@ -392,7 +392,7 @@ function loadMod(options) {
   };
 }
 //# sourceURL=boot/*.js
-</script><style data-legit="mi">*{display:none;background:white;color:white;}html,body,iframe{display:block;}</style></head><body><iframe style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; border: none; z-index: 1000;"></iframe>
+</script><style data-legit="mi">*{display:none;background:white;color:white;}html,body,iframe{display:block;}</style></head><body>
 <script data-legit="mi">
 function shellLoader(uniqueKey, document, boot) {
     var driveMount = persistence.bootMount(uniqueKey, document);
@@ -403,16 +403,24 @@ function shellLoader(uniqueKey, document, boot) {
     }
     function finishLoading() {
         driveMount.finishLoading(function (drive) {
-            // EVERYTHING READY!
+            var uiframe = createFrame();
+            uiframe.iframe.style.opacity = '0';
+            var _elem = elem;
+            window['elem'] = function (x, y, z) { _elem.apply(uiframe.global, [x, y, z]); };
+            shell.start(uiframe, drive);
+            var start = new Date().valueOf();
+            var animateFadeIn = setInterval(function () {
+                var passed = new Date().valueOf() - start;
+                var opacity = Math.min(passed, 1000) / 1000;
+                uiframe.iframe.style.opacity = opacity.toString();
+                boot.iframe.style.opacity = (1 - opacity).toString();
+                if (passed >= 1000) {
+                    clearInterval(animateFadeIn);
+                    boot.iframe.parentElement.removeChild(boot.iframe);
+                }
+            }, 10);
             if (typeof console !== 'undefined' && console.log)
                 console.log(window['dbgDrive'] = drive);
-            elem(boot.document.body, {
-                background: 'white',
-                color: 'black'
-            });
-            var coolLoadedTitle = elem('h1', {
-                text: 'Finished.'
-            }, boot.document.body);
         });
     }
 }
@@ -1617,6 +1625,21 @@ var persistence;
     }
     persistence.normalizePath = normalizePath;
 })(persistence || (persistence = {}));
+var shell;
+(function (shell) {
+    function start(uiFrame, drive) {
+        var files = drive.files();
+        elem('h1', { text: files.length + ' files loaded' }, uiFrame.document.body);
+        elem('div', { text: 'modified ' + new Date(drive.timestamp) }, uiFrame.document.body);
+        for (var i = 0; i < files.length; i++) {
+            var fileText = drive.read(files[i]);
+            var coolLoadedTitle = elem('h3', { text: files[i] + ' [' + fileText.length + ']' }, uiFrame.document.body);
+            var encodedText = fileText.replace(/\r|\n|\r\n/g, function (chunk) { return chunk === '\r\n' ? '[CRLF]\r\n' : chunk === '\r' ? '[CR]\r' : '[LF]\n'; });
+            var content = elem('pre', { text: encodedText }, uiFrame.document.body);
+        }
+    }
+    shell.start = start;
+})(shell || (shell = {}));
 
 //# sourceURL=typescriptBuild.ts
 </script>
@@ -1636,11 +1659,11 @@ var persistence;
 123
           4-->
 
-<!-- /eval-file.txt [eval]
+<!-- /eval-file.txt (failed-eval)
 "new ok" + String.fromCharCode(Math.random()*16000)+" and what\r\n or "+String.fromCharCode(1)+"?"-->
 
 <!-- /json-file.txt [json]
 "new ok \u2222 and what\r\n or \u0001?"-->
 
 <!-- /runme.js
-console.log(123)--></body></html>
+console.log(123)--><iframe style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; border: none; opacity: 1;"></iframe></body></html>
