@@ -417,7 +417,8 @@ function shellLoader(uniqueKey, document, boot) {
                 boot.iframe.style.opacity = (1 - opacity).toString();
                 if (passed >= fadeintTime) {
                     clearInterval(animateFadeIn);
-                    boot.iframe.parentElement.removeChild(boot.iframe);
+                    if (boot.iframe.parentElement)
+                        boot.iframe.parentElement.removeChild(boot.iframe);
                 }
             }, 10);
             if (typeof console !== 'undefined' && console.log)
