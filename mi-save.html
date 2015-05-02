@@ -173,7 +173,7 @@ function createFrame(style) {
     '<!'+'doctype html'+'>'+
     '<'+'html'+'>'+
     '<'+'head'+'><'+'style'+'>'+
-    'body,html{margin:0;padding:0;border:none;height:100%;}'+
+    'body,html{margin:0;padding:0;border:none;}'+
     '*,*:before,*:after{box-sizing:inherit;}'+
     'html{box-sizing:border-box;}'+
     '</'+'style'+'>\n'+
@@ -301,13 +301,16 @@ function loadMod(options) {
   function earlyBoot() {
 
   document.write(
-    '<'+'style'+'>'+
+    '<'+'style'+' data-legit=mi>'+
     '*{display:none;background:white;color:white;}'+
     'html,body,iframe{display:block;}'+
     '</'+'style'+'>'+
     (document.body ? '' : '<body>'));
 
+  var addedStyle = document.body.children[document.body.children.length-1];
+
   var bootFrame = createFrame();
+  bootFrame.iframe.style.zIndex = 2000;
 
   bootFrame.global.elem = elem;
 
@@ -324,6 +327,9 @@ function loadMod(options) {
   window.onload = function() {
 
     clearInterval(shellLoadInterval);
+
+    removeSpyElements();
+    bootFrame.iframe.style.zIndex = 1000;
 
     (shellLoaderInstance || shellLoader(uniqueKey, document, bootFrame)).finishLoading();
 
@@ -352,6 +358,24 @@ function loadMod(options) {
 
   }
 
+  function removeSpyElements() {
+
+    removeElements('iframe', function(ifr) { return ifr !== bootFrame.iframe; });
+    removeElements('style', function(sty) { return sty.getAttribute('data-legit') !== 'mi'; });
+    removeElements('script', function(sty) { return sty.getAttribute('data-legit') !== 'mi'; });
+
+    function removeElements(tagName, predicateToRemove) {
+    	var list = document.getElementsByTagName(tagName);
+      for (var i = 0; i < list.length; i++) {
+        var elem = list[i] || list.item(i);
+        if (predicateToRemove(elem)) {
+          elem.parentElement.removeChild(elem);
+          i--;
+        }
+      }
+    }
+  }
+
 }
   function bootUI(document, window, elem) {
 
@@ -368,7 +392,7 @@ function loadMod(options) {
   };
 }
 //# sourceURL=boot/*.js
-</script><style>*{display:none;background:white;color:white;}html,body,iframe{display:block;}</style></head><body><iframe style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; border: none;"></iframe>
+</script><style data-legit="mi">*{display:none;background:white;color:white;}html,body,iframe{display:block;}</style></head><body><iframe style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; border: none; z-index: 1000;"></iframe>
 <script data-legit="mi">
 function shellLoader(uniqueKey, document, boot) {
     var driveMount = persistence.bootMount(uniqueKey, document);
