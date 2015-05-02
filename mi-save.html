@@ -404,7 +404,8 @@ function shellLoader(uniqueKey, document, boot) {
     function finishLoading() {
         driveMount.finishLoading(function (drive) {
             // EVERYTHING READY!
-            console.log(window['dbgDrive'] = drive);
+            if (typeof console !== 'undefined' && console.log)
+                console.log(window['dbgDrive'] = drive);
             elem(boot.document.body, {
                 background: 'white',
                 color: 'black'
