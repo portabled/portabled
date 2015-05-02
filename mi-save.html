@@ -409,12 +409,13 @@ function shellLoader(uniqueKey, document, boot) {
             window['elem'] = function (x, y, z) { _elem.apply(uiframe.global, [x, y, z]); };
             shell.start(uiframe, drive);
             var start = new Date().valueOf();
+            var fadeintTime = 500;
             var animateFadeIn = setInterval(function () {
                 var passed = new Date().valueOf() - start;
-                var opacity = Math.min(passed, 1000) / 1000;
+                var opacity = Math.min(passed, fadeintTime) / fadeintTime;
                 uiframe.iframe.style.opacity = opacity.toString();
                 boot.iframe.style.opacity = (1 - opacity).toString();
-                if (passed >= 1000) {
+                if (passed >= fadeintTime) {
                     clearInterval(animateFadeIn);
                     boot.iframe.parentElement.removeChild(boot.iframe);
                 }
@@ -1344,7 +1345,6 @@ var persistence;
                     var savedFmt = /^\s*saved\s+(\d+)\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d+)\s+(\d+)\:(\d+)(\:(\d+(\.(\d+))?))\s*(GMT\s*[\-\+]?\d+\:?\d*)?\s*$/i;
                     var savedMatch = savedFmt.exec(parts[i]);
                     if (savedMatch) {
-                        var saveDate = savedMatch[1];
                         // 25 Apr 2015 22:52:01.231
                         try {
                             var savedDay = parseInt(savedMatch[1]);
@@ -1386,9 +1386,9 @@ var persistence;
                     'saved ';
                 var saveDate = new Date(this.timestamp);
                 newTotals +=
-                    saveDate.getFullYear() + ' ' +
+                    saveDate.getDate() + ' ' +
                         monthsPrettyCase[saveDate.getMonth()] + ' ' +
-                        saveDate.getDate() + ' ' +
+                        saveDate.getFullYear() + ' ' +
                         num2(saveDate.getHours()) + ':' +
                         num2(saveDate.getMinutes()) + ':' +
                         num2(saveDate.getSeconds()) + '.' +
@@ -1644,7 +1644,7 @@ var shell;
 //# sourceURL=typescriptBuild.ts
 </script>
 
-<!--total 177, saved 2015 Apr 25 22:52:01.231 GMT+0100-->
+<!--total 177, saved 25 Apr 2015 22:52:01.231 GMT+0100-->
 
 <!-- /LF-file.txt
 123-->
