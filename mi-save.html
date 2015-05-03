@@ -307,9 +307,12 @@ function loadMod(options) {
     '</'+'style'+'>'+
     (document.body ? '' : '<body>'));
 
-  document.body.style.height = '100%';
-  document.body.style.margin = '0';
-  document.body.style.padding = '0';
+  elem(document.body, {
+    height: '100%',
+  	margin: 0,
+    padding: 0,
+    overflow: 'auto'
+  });
 
   var allStyleElements = document.getElementsByTagName('style');
   var addedStyle = allStyleElements[allStyleElements.length-1];
@@ -401,7 +404,7 @@ function loadMod(options) {
   };
 }
 //# sourceURL=boot/*.js
-</script></head><body style="height: 100%; margin: 0px; padding: 0px;">
+</script></head><body style="height: 100%; margin: 0px; padding: 0px; overflow: auto;">
 <script data-legit="mi">
 function shellLoader(uniqueKey, document, boot) {
     var driveMount = persistence.bootMount(uniqueKey, document);
