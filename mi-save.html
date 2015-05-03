@@ -1643,7 +1643,113 @@ var persistence;
 })(persistence || (persistence = {}));
 var shell;
 (function (shell) {
+    var Console = (function () {
+        function Console(_host) {
+            var _this = this;
+            this._host = _host;
+            _host.innerHTML =
+                '<table style="width: 100%; height: 100%;" cellspacing=0 cellpadding=0><tr height=100%><td height=100% colspan=2 valign=bottom>' +
+                    // history
+                    '</td></tr>' +
+                    '<tr height=1><td height=1 width=1 valign=top>' +
+                    // prompt
+                    '</td><td height=1 width=100% valign=top><textarea style="background: transparent; padding: 0; margin: 0; font-family: inherit; overflow: auto; border: none; height: auto; width: 100%; resize: none;outline:none;">' +
+                    // input
+                    '</textarea></td></tr></table>';
+            var table = _host.getElementsByTagName('table')[0];
+            this._history = table.rows[0].cells[0];
+            this._prompt = table.rows[1].cells[0];
+            this._input = _host.getElementsByTagName('textarea')[0];
+            elem(this._prompt, {
+                fontWeight: 'bold',
+                text: '>'
+            });
+            this._input.onkeydown = function (e) { return _this._inputKeyDown(e); };
+        }
+        Console.prototype.focus = function () {
+            this._input.focus();
+        };
+        Console.prototype._inputKeyDown = function (e) {
+            if (e.keyCode === 13 && !e.altKey && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+                // IE quirk
+                if (!e && window.event)
+                    e = window.event;
+                if (typeof e.preventDefault === 'function')
+                    e.preventDefault();
+                if ('cancelBubble' in e)
+                    e.cancelBubble = true;
+                this._executeInput();
+                return false;
+            }
+        };
+        Console.prototype._executeInput = function () {
+            var code = this._input.value;
+            this._input.value = '';
+            this._logInputCode(code);
+            try {
+                var result = (0, window['eval'])(code);
+            }
+            catch (error) {
+                this._logError(error);
+            }
+            this._logResult(result);
+        };
+        Console.prototype._logInputCode = function (code) {
+            elem('pre', {
+                text: code,
+                color: 'silver',
+                marginTop: '0.5em',
+                marginBottom: '0.25em'
+            }, this._history);
+        };
+        Console.prototype._logError = function (error) {
+            elem('pre', {
+                text: error && error.stack ? error.stack : 'Error ' + error,
+                color: 'red',
+                fontWeight: 'bold'
+            }, this._history);
+        };
+        Console.prototype._logResult = function (result) {
+            if (typeof result === 'undefined') {
+                elem('div', {
+                    text: 'undefined',
+                    fontSize: '80%',
+                    opacity: '0.8'
+                }, this._history);
+            }
+            else if (typeof result === 'string') {
+                elem('div', {
+                    text: '"' + result + '"',
+                    color: 'red'
+                }, this._history);
+            }
+            else if (typeof result !== 'object' || result === null) {
+                elem('div', {
+                    text: result,
+                    color: 'green'
+                }, this._history);
+            }
+            else {
+                elem('div', {
+                    text: result,
+                    color: 'cornflowerblue'
+                }, this._history);
+            }
+        };
+        return Console;
+    })();
+    shell.Console = Console;
+})(shell || (shell = {}));
+var shell;
+(function (shell) {
     function start(uiFrame, drive) {
+        uiFrame.document.body.parentElement.style.height = '100%';
+        uiFrame.document.body.style.height = '100%';
+        var co = new shell.Console(uiFrame.document.body);
+        setTimeout(function () { return co.focus(); }, 100);
+    }
+    shell.start = start;
+    function dumpDrive(uiFrame, drive) {
         var files = drive.files();
         var h1title = elem('h1', { text: files.length + ' files loaded' }, uiFrame.document.body);
         elem('div', { text: 'modified ' + new Date(drive.timestamp) }, uiFrame.document.body);
@@ -1655,7 +1761,7 @@ var shell;
         }
         h1title.onclick = exportAllHTML;
     }
-    shell.start = start;
+    shell.dumpDrive = dumpDrive;
     function exportAllHTML() {
         var filename = saveFileName();
         exportBlob(filename, ['<!doctype html>\n', document.documentElement.outerHTML]);
