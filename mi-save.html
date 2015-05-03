@@ -177,6 +177,7 @@ function createFrame(style) {
     '*,*:before,*:after{box-sizing:inherit;}'+
     'html{box-sizing:border-box;}'+
     '</'+'style'+'>\n'+
+    // IE6/7/8 bug: global scope and window are not identical
     (ifrwin.Function?'':'<'+'script'+'>window.Function=Function</'+'script'+'>')+
     '<'+'body'+'><'+'body'+'>'+
   	'</'+'html'+'>');
@@ -423,17 +424,31 @@ function shellLoader(uniqueKey, document, boot) {
             uiframe.iframe.style.opacity = '0';
             //var _elem = elem;
             //window['elem'] = function(x, y, z) { return _elem.apply(uiframe.global, [x, y, z]); };
+            function shell_require(moduleName) {
+                switch (moduleName) {
+                    case 'ui': return uiframe;
+                    case 'drive': return drive;
+                }
+                if ((moduleName + '').charAt(0) === '.') {
+                    moduleName = '/shell/' + moduleName.slice(2);
+                }
+                var code = drive.read(moduleName);
+                if (code) {
+                    var mod = loadMod({
+                        eval: code,
+                        path: persistence.normalizePath(moduleName),
+                        ui: false,
+                        scope: { require: shell_require }
+                    });
+                    return mod.exports;
+                }
+            }
             loadMod({
                 path: '/shell/start.js',
                 eval: drive.read('/shell/start.js'),
                 ui: false,
                 scope: {
-                    require: function shell_require(moduleName) {
-                        switch (moduleName) {
-                            case 'ui': return uiframe;
-                            case 'drive': return drive;
-                        }
-                    }
+                    require: shell_require
                 }
             });
             var start = new Date().valueOf();
@@ -1762,7 +1777,7 @@ var shell;
 //# sourceURL=typescriptBuild.ts
 </script>
 
-<!--total 2Kb, saved 25 Apr 2015 22:52:01.231 GMT+0100-->
+<!--total 3Kb, saved 25 Apr 2015 22:52:01.231 GMT+0100-->
 
 <!-- /LF-file.txt
 123
@@ -1792,7 +1807,8 @@ console.log(123)-->
 var uiFrame = require('ui');
 var drive = require('drive');
 var elem = function(a,b,c) { return uiFrame.global.elem(a,b,c); };
-var _win = uiFrame.global.parent;
+
+var exportAllHTML = require('./exportAllHTML.js');
 
 start(uiFrame, drive);
 
@@ -1813,11 +1829,19 @@ function start(uiFrame, drive) {
   h1title.onclick = exportAllHTML;
 
 }
+-->
+<!-- /shell/exportAllHTML.js
+var uiFrame = require('ui');
+var drive = require('drive');
+var elem = function(a,b,c) { return uiFrame.global.elem(a,b,c); };
+var _win = uiFrame.global.parent;
 
-  function exportAllHTML() {
-    var filename = saveFileName();
-    exportBlob(filename, ['<!doctype html>\n', _win.document.documentElement.outerHTML]);
-  }
+exports = exportAllHTML;
+
+function exportAllHTML() {
+  var filename = saveFileName();
+  exportBlob(filename, ['<!doctype html>\n', _win.document.documentElement.outerHTML]);
+}
 
 function saveFileName() {
 
@@ -1886,4 +1910,4 @@ function exportDocumentWrite(filename, content) {
 
 }
 
---><iframe style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; border: none; opacity: 1;"></iframe><iframe style="display: none;"></iframe></body></html>
+--><iframe style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; border: none; opacity: 1;"></iframe><iframe style="display: none;"></iframe><iframe style="display: none;"></iframe></body></html>
