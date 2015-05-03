@@ -1,5 +1,5 @@
 <!doctype html>
-<html><head><title>mini shell </title>
+<html style="overflow: hidden;"><head><title>mini shell </title>
 
 <script data-legit="mi">
   window.onerror = function onerror() {
@@ -311,7 +311,10 @@ function loadMod(options) {
     height: '100%',
   	margin: 0,
     padding: 0,
-    overflow: 'auto'
+    overflow: 'hidden'
+  });
+  elem(document.body.parentElement, {
+    overflow: 'hidden'
   });
 
   var allStyleElements = document.getElementsByTagName('style');
@@ -404,7 +407,7 @@ function loadMod(options) {
   };
 }
 //# sourceURL=boot/*.js
-</script></head><body style="height: 100%; margin: 0px; padding: 0px; overflow: auto;">
+</script></head><body style="height: 100%; margin: 0px; padding: 0px; overflow: hidden;">
 <script data-legit="mi">
 function shellLoader(uniqueKey, document, boot) {
     var driveMount = persistence.bootMount(uniqueKey, document);
