@@ -1790,7 +1790,7 @@ console.log(123)-->
 <!-- /shell/start.js
 var uiFrame = require('ui');
 var drive = require('drive');
-var elem = uiFrame.global.elem;
+var elem = function(a,b,c) { return uiFrame.global.elem(a,b,c); };
 var _win = uiFrame.global.parent;
 
 start(uiFrame, drive);
