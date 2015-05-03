@@ -422,7 +422,19 @@ function shellLoader(uniqueKey, document, boot) {
             uiframe.iframe.style.opacity = '0';
             var _elem = elem;
             window['elem'] = function (x, y, z) { return _elem.apply(uiframe.global, [x, y, z]); };
-            shell.start(uiframe, drive);
+            loadMod({
+                path: '/shell/start.js',
+                eval: drive.read('/shell/start.js'),
+                ui: false,
+                scope: {
+                    require: function shell_require(moduleName) {
+                        switch (moduleName) {
+                            case 'ui': return uiframe;
+                            case 'drive': return drive;
+                        }
+                    }
+                }
+            });
             var start = new Date().valueOf();
             var fadeintTime = 500;
             var animateFadeIn = setInterval(function () {
@@ -1649,7 +1661,11 @@ var shell;
             this._host = _host;
             _host.innerHTML =
                 '<table style="width: 100%; height: 100%;" cellspacing=0 cellpadding=0><tr height=100%><td height=100% colspan=2 valign=bottom>' +
+                    '<div style="overflow: auto;">' +
+                    '<table style="width: 100%; height: 90%;" cellspacing=0 cellpadding=0><tr height=100%><td height=100%>&nbsp;</td></tr><tr height=1><td height=1>' +
                     // history
+                    '</td></tr></table>' +
+                    '</div>' +
                     '</td></tr>' +
                     '<tr height=1><td height=1 width=1 valign=top>' +
                     // prompt
@@ -1657,7 +1673,8 @@ var shell;
                     // input
                     '</textarea></td></tr></table>';
             var table = _host.getElementsByTagName('table')[0];
-            this._history = table.rows[0].cells[0];
+            var historyTable = _host.getElementsByTagName('table')[1];
+            this._history = historyTable.rows[1].cells[0];
             this._prompt = table.rows[1].cells[0];
             this._input = _host.getElementsByTagName('textarea')[0];
             elem(this._prompt, {
@@ -1670,7 +1687,7 @@ var shell;
             this._input.focus();
         };
         Console.prototype._inputKeyDown = function (e) {
-            if (e.keyCode === 13 && !e.altKey && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+            if ((e.keyCode === 13) && !e.altKey && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
                 // IE quirk
                 if (!e && window.event)
                     e = window.event;
@@ -1740,92 +1757,11 @@ var shell;
     })();
     shell.Console = Console;
 })(shell || (shell = {}));
-var shell;
-(function (shell) {
-    function start(uiFrame, drive) {
-        uiFrame.document.body.parentElement.style.height = '100%';
-        uiFrame.document.body.style.height = '100%';
-        var co = new shell.Console(uiFrame.document.body);
-        setTimeout(function () { return co.focus(); }, 100);
-    }
-    shell.start = start;
-    function dumpDrive(uiFrame, drive) {
-        var files = drive.files();
-        var h1title = elem('h1', { text: files.length + ' files loaded' }, uiFrame.document.body);
-        elem('div', { text: 'modified ' + new Date(drive.timestamp) }, uiFrame.document.body);
-        for (var i = 0; i < files.length; i++) {
-            var fileText = drive.read(files[i]);
-            var coolLoadedTitle = elem('h3', { text: files[i] + ' [' + fileText.length + ']' }, uiFrame.document.body);
-            var encodedText = fileText.replace(/\r|\n|\r\n/g, function (chunk) { return chunk === '\r\n' ? '[CRLF]\n' : chunk === '\r' ? '[CR]' : '[LF]\n'; });
-            var content = elem('pre', { text: encodedText }, uiFrame.document.body);
-        }
-        h1title.onclick = exportAllHTML;
-    }
-    shell.dumpDrive = dumpDrive;
-    function exportAllHTML() {
-        var filename = saveFileName();
-        exportBlob(filename, ['<!doctype html>\n', document.documentElement.outerHTML]);
-    }
-    function saveFileName() {
-        if (window.location.protocol.toLowerCase() === 'blob:')
-            return 'nportabled.html';
-        var urlParts = window.location.pathname.split('/');
-        var currentFileName = decodeURI(urlParts[urlParts.length - 1]);
-        var lastDot = currentFileName.indexOf('.');
-        if (lastDot > 0) {
-            currentFileName = currentFileName.slice(0, lastDot) + '.html';
-        }
-        else {
-            currentFileName += '.html';
-        }
-        return currentFileName;
-    }
-    function exportBlob(filename, textChunks) {
-        try {
-            var blob = new Blob(textChunks, { type: 'application/octet-stream' });
-        }
-        catch (blobError) {
-            exportDocumentWrite(filename, textChunks.join(''));
-            return;
-        }
-        exportBlobHTML5(filename, blob);
-    }
-    shell.exportBlob = exportBlob;
-    function exportBlobHTML5(filename, blob) {
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.setAttribute('download', filename);
-        try {
-            // safer save method, supposed to work with FireFox
-            var evt = document.createEvent("MouseEvents");
-            evt.initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-            a.dispatchEvent(evt);
-        }
-        catch (e) {
-            a.click();
-        }
-    }
-    function exportDocumentWrite(filename, content) {
-        var win = document.createElement('iframe');
-        win.style.width = '100px';
-        win.style.height = '100px';
-        win.style.display = 'none';
-        document.body.appendChild(win);
-        setTimeout(function () {
-            var doc = win.contentDocument || win.document;
-            doc.open();
-            doc.write(content);
-            doc.close();
-            doc.execCommand('SaveAs', null, filename);
-        }, 200);
-    }
-})(shell || (shell = {}));
 
 //# sourceURL=typescriptBuild.ts
 </script>
 
-<!--total 195, saved 25 Apr 2015 22:52:01.231 GMT+0100-->
+<!--total 2Kb, saved 25 Apr 2015 22:52:01.231 GMT+0100-->
 
 <!-- /LF-file.txt
 123
@@ -1850,4 +1786,99 @@ var shell;
 "new ok \u2222 and what\r\n or \u0001?\n\n\n"-->
 
 <!-- /runme.js
-console.log(123)--><iframe style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; border: none; opacity: 1;"></iframe></body></html>
+console.log(123)-->
+<!-- /shell/start.js
+var uiFrame = require('ui');
+var drive = require('drive');
+var elem = uiFrame.global.elem;
+var _win = uiFrame.global.parent;
+
+start(uiFrame, drive);
+
+function start(uiFrame, drive) {
+
+  var files = drive.files();
+
+  var h1title = elem('h1', { text: files.length+' files loaded' }, uiFrame.document.body);
+  elem('div', { text: 'modified ' + new Date(drive.timestamp)}, uiFrame.document.body);
+
+  for (var i = 0; i < files.length; i++) {
+    var fileText = drive.read(files[i]);
+    var coolLoadedTitle = elem('h3', { text: files[i]+' ['+fileText.length+']' }, uiFrame.document.body);
+    var encodedText = fileText.replace(/\r|\n|\r\n/g, function(chunk) { return chunk === '\r\n' ? '[CRLF]\n' : chunk === '\r' ?  '[CR]' : '[LF]\n'; });
+    var content = elem('pre', { text: encodedText }, uiFrame.document.body);
+  }
+
+  h1title.onclick = exportAllHTML;
+
+}
+
+  function exportAllHTML() {
+    var filename = saveFileName();
+    exportBlob(filename, ['<!doctype html>\n', _win.document.documentElement.outerHTML]);
+  }
+
+function saveFileName() {
+
+  if (_win.location.protocol.toLowerCase() === 'blob:')
+    return 'nportabled.html';
+
+  var urlParts = _win.location.pathname.split('/');
+  var currentFileName = decodeURI(urlParts[urlParts.length - 1]);
+  var lastDot = currentFileName.indexOf('.');
+  if (lastDot > 0) {
+    currentFileName = currentFileName.slice(0, lastDot) + '.html';
+  }
+  else {
+    currentFileName += '.html';
+  }
+  return currentFileName;
+}
+
+function exportBlob(filename, textChunks) {
+  try {
+    var blob = new _win.Blob(textChunks, { type: 'application/octet-stream' });
+  }
+  catch (blobError) {
+    exportDocumentWrite(filename, textChunks.join(''));
+    return;
+  }
+
+  exportBlobHTML5(filename, blob);
+}
+
+function exportBlobHTML5(filename, blob) {
+  var url = _win.URL.createObjectURL(blob);
+  var a = _win.document.createElement('a');
+  a.href = url;
+  a.setAttribute('download', filename);
+  try {
+    // safer save method, supposed to work with FireFox
+    var evt = _win.document.createEvent("MouseEvents");
+    evt.initMouseEvent("click", true, false, _win, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+    a.dispatchEvent(evt);
+  }
+  catch (e) {
+    a.click();
+  }
+}
+
+function exportDocumentWrite(filename, content) {
+  var win = _win.document.createElement('iframe');
+  win.style.width = '100px';
+  win.style.height = '100px';
+  win.style.display = 'none';
+  _win.document.body.appendChild(win);
+
+  setTimeout(function () {
+    var doc = win.contentDocument || win.document;
+    doc.open();
+    doc.write(content);
+    doc.close();
+
+    doc.execCommand('SaveAs', null, filename);
+  }, 200);
+
+}
+
+--><iframe style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; border: none; opacity: 1;"></iframe><iframe style="display: none;"></iframe></body></html>
