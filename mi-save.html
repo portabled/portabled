@@ -303,14 +303,16 @@ function loadMod(options) {
   document.write(
     '<'+'style'+' data-legit=mi>'+
     '*{display:none;background:white;color:white;}'+
-    'html,body,iframe{display:block;}'+
+    'html,body{display:block;}'+
     '</'+'style'+'>'+
     (document.body ? '' : '<body>'));
 
-  var addedStyle = document.body.children[document.body.children.length-1];
+  var allStyleElements = document.getElementsByTagName('style');
+  var addedStyle = allStyleElements[allStyleElements.length-1];
 
   var bootFrame = createFrame();
   bootFrame.iframe.style.zIndex = 2000;
+  bootFrame.iframe.style.display = 'block';
 
   bootFrame.global.elem = elem;
 
@@ -330,6 +332,9 @@ function loadMod(options) {
 
     removeSpyElements();
     bootFrame.iframe.style.zIndex = 1000;
+    if (addedStyle.parentElement)
+    	addedStyle.parentElement.removeChild(addedStyle);
+    bootFrame.iframe.style.display = null;
 
     (shellLoaderInstance || shellLoader(uniqueKey, document, bootFrame)).finishLoading();
 
@@ -392,7 +397,7 @@ function loadMod(options) {
   };
 }
 //# sourceURL=boot/*.js
-</script><style data-legit="mi">*{display:none;background:white;color:white;}html,body,iframe{display:block;}</style></head><body>
+</script></head><body>
 <script data-legit="mi">
 function shellLoader(uniqueKey, document, boot) {
     var driveMount = persistence.bootMount(uniqueKey, document);
@@ -1522,7 +1527,7 @@ var persistence;
     var encodings;
     (function (encodings) {
         function eval(text) {
-            return (0, eval)(text);
+            return (0, window['eval'])(text);
         }
         encodings.eval = eval;
     })(encodings = persistence.encodings || (persistence.encodings = {}));
