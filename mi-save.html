@@ -173,10 +173,11 @@ function createFrame(style) {
     '<!'+'doctype html'+'>'+
     '<'+'html'+'>'+
     '<'+'head'+'><'+'style'+'>'+
-    'body,html{margin:0;padding:0;border:none;}'+
+    'body,html{margin:0;padding:0;border:none;height:100%;}'+
     '*,*:before,*:after{box-sizing:inherit;}'+
     'html{box-sizing:border-box;}'+
     '</'+'style'+'>\n'+
+    (ifrwin.Function?'':'<'+'script'+'>window.Function=Function</'+'script'+'>')+
     '<'+'body'+'><'+'body'+'>'+
   	'</'+'html'+'>');
   if (ifrdoc.close) ifrdoc.close();
