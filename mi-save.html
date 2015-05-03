@@ -420,8 +420,8 @@ function shellLoader(uniqueKey, document, boot) {
         driveMount.finishLoading(function (drive) {
             var uiframe = createFrame();
             uiframe.iframe.style.opacity = '0';
-            var _elem = elem;
-            window['elem'] = function (x, y, z) { return _elem.apply(uiframe.global, [x, y, z]); };
+            //var _elem = elem;
+            //window['elem'] = function(x, y, z) { return _elem.apply(uiframe.global, [x, y, z]); };
             loadMod({
                 path: '/shell/start.js',
                 eval: drive.read('/shell/start.js'),
@@ -1864,11 +1864,11 @@ function exportBlobHTML5(filename, blob) {
 }
 
 function exportDocumentWrite(filename, content) {
-  var win = _win.document.createElement('iframe');
+  var win = uiFrame.document.createElement('iframe');
   win.style.width = '100px';
   win.style.height = '100px';
   win.style.display = 'none';
-  _win.document.body.appendChild(win);
+  uiFrame.document.body.appendChild(win);
 
   setTimeout(function () {
     var doc = win.contentDocument || win.document;
@@ -1877,6 +1877,10 @@ function exportDocumentWrite(filename, content) {
     doc.close();
 
     doc.execCommand('SaveAs', null, filename);
+
+    setTimeout(function() {
+      win.parentElement.removeChild(win);
+    }, 1000);
   }, 200);
 
 }
