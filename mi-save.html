@@ -335,7 +335,7 @@ function loadMod(options) {
 
   var shellLoaderInstance = null;
 	var shellLoadInterval = setInterval(function() {
-    shellLoaderInstance = shellLoaderInstance ? shellLoaderInstance.continueLoading() : shellLoader(uniqueKey, document, bootFrame);
+    shellLoaderInstance = shellLoaderInstance ? shellLoaderInstance.continueLoading() : shellLoader ? shellLoader(uniqueKey, document, bootFrame) : null;
   }, 100);
 
   window.onload = function() {
