@@ -96,31 +96,32 @@ var t=this._selectedItem>=0?this.matchItems()[this._selectedItem]:null;this._com
 this.textInput.selectionEnd=n.text.length))},e.prototype._updateList=function(){for(var t=[],i=-1,n=this.text(),r=(n||"").toLowerCase(),o=0;o<this._allMatchItems.length;o++){var a=this._allMatchItems[o];n?a.text===n?-1===i?(a.selected(!0),i=o):(a.selected(!1),t.push(a)):a.text.toLowerCase().indexOf(r)>=0?(a.selected(!1),t.push(a)):a.selected(!1):(a.selected(!1),t.push(a))}if(!t.length){var a=new e.MatchItem(n,"create",this._completed);a.display="Create new file: "+n,a.selected(!0),i=0,t.push(a)}this.matchItems(t),this._selectedItem=i},e}();e.MoreModel=i;var i;!function(t){var e=function(){function t(t,e,i){this.text=t,this.type=e,this._completed=i,this.selected=ko.observable(!1),this.display=t}return t.prototype.clickSelect=function(){this._completed(this.text)},t}();t.MatchItem=e}(i=e.MoreModel||(e.MoreModel={}))}(e=t.moreDialog||(t.moreDialog={}))}(e=t.app||(t.app={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){function i(){e.loading("Initialising the application..."),e.koBindingHandlers.register(ko),
 r(),o(),t.addEventListener(window,"load",function(){r(),o()}),e.loading("Restoring the setup...");var i=new t.app.appRoot.PageModel;e.loading("Rendering..."),ko.applyBindings(i,document.body),e.loading("Processing..."),i.loadFromDOM(function(){setTimeout(function(){n(function(){e.loading(null)})},1)})}function n(t){function e(){if(!a.length)return void(i||(i=!0,setTimeout(function(){t()},1)));var n=a.shift();n(function(){e()}),setTimeout(e,1)}var i=!1;e()}function r(){for(var t=[],e=0;e<document.scripts.length;e++)"portabled"!==document.scripts[e].getAttribute("data-legit")&&t.push(document.scripts[e]);for(var e=0;e<t.length;e++)t[e].parentNode.removeChild(t[e])}function o(){for(var t=document.getElementById("portabled-last-element");t&&t.nextSibling;)t.nextSibling.parentNode.removeChild(t.nextSibling)}e.start=i;var i,a=[];!function(t){function e(t){a.push(t)}t.addStartScript=e}(i=e.start||(e.start={}))}(e=t.app||(t.app={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e;!function(t){
 t.appPageModel}(e=t.functions||(t.functions={}))}(e=t.build||(t.build={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){var i;!function(i){function n(){for(var t=[],e=0;e<arguments.length;e++)t[e-0]=arguments[e];for(var i=[],n=0;n<t.length;n++)t[n]&&"string"!=typeof t[n]&&"number"==typeof t[n].length?i=i.concat(t[n]):i.push(t[n]);return r(i)}function r(i){for(var n=[],r=0;r<i.length;r++){var o=e.processTemplate.mainDrive.read(t.files.normalizePath(i[r]));n.push(o||"string"==typeof o?o:i[r])}return n.join("\n")}i.embedFile=n}(i=e.functions||(e.functions={}))}(e=t.build||(t.build={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e;!function(e){function i(){var e=t.processTemplate.mainDrive.files();e.sort();for(var i={},n=0;n<e.length;n++){var r=e[n],o=r;"/"===o.charAt(0)&&(o=o.slice(1));for(var a=o.split("/"),s=i,l=0;l<a.length-1;l++)s=s[a[l]]||(s[a[l]]={});var c=t.processTemplate.mainDrive.read(r);s[a[a.length-1]]=c}var u=document.createElement("pre"),d=function(t){
-for(var e in t)if(t.hasOwnProperty(e)){var i=t[e];"string"==typeof i?(h.push("<li class=portabled-file><span class=portabled-file-name>"+e+"</span>"),u.textContent=i,h.push("<pre class=portabled-file-content>"+u.innerHTML+"</pre></li>")):(h.push('<li class="portabled-dir portabled-dir-collapsed"><span class=portabled-dir-name>'+e+"</span><ul>"),d(i),h.push("</ul></li>"))}},h=[];return d(i),h.join("")}e.embedTree=i}(e=t.functions||(t.functions={}))}(e=t.build||(t.build={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){var i;!function(i){function n(){for(var t=[],e=0;e<arguments.length;e++)t[e-0]=arguments[e];var i=function(){return a(t)};return i.toString=function(){return"typescriptBuild("+t+")"},i}function r(t){n.mainTS.service();for(var e=n.mainTS.host.getScriptFileNames(),i=[],r={},o=0;o<t.length;o++)for(var a=new RegExp(t[o].replace(/[\[\]\\\"\'\-\.\-\$\&\*\?]/,function(t){return"*"===t?"[sS]*":"?"===t?"[sS]":"\\"+t})),s=0;s<e.length;s++){var l=e[s];i.hasOwnProperty(l)||(a.test(l)||"/"!==l.charAt(0))&&(i.push(l),
-r[l]=!0)}return i.sort(),i}function o(i){function o(t){var i=e.processTemplate.mainDrive.read(t);return{text:function(){return i},changes:function(){return[]}}}var a=r(i);"undefined"!=typeof console&&console.log&&console.log("partial TS build with ",a);for(var s=new t.typescript.TypeScriptService(n.mainTS.registry),l=0;l<a.length;l++)s.addFile(a[l],o(a[l]));return s}function a(t){var e=t?o(t):n.mainTS;e.compilerOptions.out="index.js",e.service();for(var i=e.host.getScriptFileNames(),r=null,a=0;a<i.length;a++){var s=i[a];if(".d.ts"!==s.slice(s.length-".d.ts".length)){r=s;break}}var l=e.service().getProgram(),c=null,u=l.getSyntacticDiagnostics().concat(l.getGlobalDiagnostics()).concat(l.getSemanticDiagnostics());if(u.length){for(var d=0,h={},p=[],a=0;a<u.length;a++){var f=u[a];h.hasOwnProperty(f.file.fileName)||(h[f.file.fileName]=1,d++);var m=f.file?f.file.getLineAndCharacterOfPosition(f.start):null;p.push((f.file?f.file.fileName+" ":"")+ts.DiagnosticCategory[f.category]+f.code+(m?" @"+m.line+":"+m.character:" @@"+f.start)+" "+f.messageText);
+for(var e in t)if(t.hasOwnProperty(e)){var i=t[e];"string"==typeof i?(h.push("<li class=portabled-file><span class=portabled-file-name>"+e+"</span>"),u.textContent=i,h.push("<pre class=portabled-file-content>"+u.innerHTML+"</pre></li>")):(h.push('<li class="portabled-dir portabled-dir-collapsed"><span class=portabled-dir-name>'+e+"</span><ul>"),d(i),h.push("</ul></li>"))}},h=[];return d(i),h.join("")}e.embedTree=i}(e=t.functions||(t.functions={}))}(e=t.build||(t.build={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e;!function(t){function e(){for(var t=[],e=0;e<arguments.length;e++)t[e-0]=arguments[e];var i=function(){return n(t)};return i.toString=function(){return"typescriptBuild("+t+")"},i}function i(t){for(var i=[],n=0;n<t.length;n++){var r=new RegExp(t[n].replace(/[\[\]\\\"\'\-\.\-\$\&\*\?]/,function(t){return"*"===t?"[sS]*":"?"===t?"[sS]":"\\"+t}));i.push(r)}var o=[],a=e.mainTS.withSubset(function(t){for(var e=0;e<i.length;e++)if(i[e].test(t))return o.push(t),!0});return"undefined"!=typeof console&&console.log&&console.log("partial TS build with ",o),
+a}function n(t){var n=t?i(t):e.mainTS;n.compilerOptions.out="index.js",n.service();for(var r=n.host.getScriptFileNames(),o=null,a=0;a<r.length;a++){var s=r[a];if(".d.ts"!==s.slice(s.length-".d.ts".length)){o=s;break}}var l=n.service().getProgram(),c=null,u=l.getSyntacticDiagnostics().concat(l.getGlobalDiagnostics()).concat(l.getSemanticDiagnostics());if(u.length){for(var d=0,h={},p=[],a=0;a<u.length;a++){var f=u[a];h.hasOwnProperty(f.file.fileName)||(h[f.file.fileName]=1,d++);var m=f.file?f.file.getLineAndCharacterOfPosition(f.start):null;p.push((f.file?f.file.fileName+" ":"")+ts.DiagnosticCategory[f.category]+f.code+(m?" @"+m.line+":"+m.character:" @@"+f.start)+" "+f.messageText)}throw new Error("TypeScript compilation errors/warnings "+o+", "+p.length+" errors in "+d+" files:\n"+p.join("\n"))}return l.emit(o,function(t,e){return c=e}),c}t.typescriptBuild=e;var e;!function(t){t.mainTS}(e=t.typescriptBuild||(t.typescriptBuild={}))}(e=t.functions||(t.functions={}))}(e=t.build||(t.build={}))}(portabled||(portabled={}));
 
-}throw new Error("TypeScript compilation errors/warnings "+r+", "+p.length+" errors in "+d+" files:\n"+p.join("\n"))}return l.emit(r,function(t,e){return c=e}),c}i.typescriptBuild=n;var n;!function(t){t.mainTS}(n=i.typescriptBuild||(i.typescriptBuild={}))}(i=e.functions||(e.functions={}))}(e=t.build||(t.build={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){var i;!function(i){function n(){for(var t=[],e=0;e<arguments.length;e++)t[e-0]=arguments[e];for(var i=[],n=0;n<t.length;n++)t[n]&&"string"!=typeof t[n]&&"number"==typeof t[n].length?i=i.concat(t[n]):i.push(t[n]);return r(i)}function r(i){for(var n=[],r=[],s=0;s<i.length;s++)if(n[s]=r[s]=i[s],i[s].length<200&&i[s].indexOf("\n")<0){var l=t.files.normalizePath(i[s]),c=e.processTemplate.mainDrive.read(l);"string"==typeof c&&(n[s]=l,r[s]=c)}var u="{uglifyCSS}"+t.murmurhash2_32_gc(n.join(","),23),d=r.join("\n");if(a.hasOwnProperty(u)&&a[u].input===d)return a[u].output;try{if("undefined"!=typeof sessionStorage&&sessionStorage){var h=sessionStorage.getItem?sessionStorage.getItem(u):sessionStorage[u];
+var portabled;!function(t){var e;!function(e){var i;!function(i){function n(){for(var t=[],e=0;e<arguments.length;e++)t[e-0]=arguments[e];for(var i=[],n=0;n<t.length;n++)t[n]&&"string"!=typeof t[n]&&"number"==typeof t[n].length?i=i.concat(t[n]):i.push(t[n]);return r(i)}function r(i){for(var n=[],r=[],s=0;s<i.length;s++)if(n[s]=r[s]=i[s],i[s].length<200&&i[s].indexOf("\n")<0){var l=t.files.normalizePath(i[s]),c=e.processTemplate.mainDrive.read(l);"string"==typeof c&&(n[s]=l,r[s]=c)}var u="{uglifyCSS}"+t.murmurhash2_32_gc(n.join(","),23),d=r.join("\n");if(a.hasOwnProperty(u)&&a[u].input===d)return a[u].output;try{if("undefined"!=typeof sessionStorage&&sessionStorage){var h=sessionStorage.getItem?sessionStorage.getItem(u):sessionStorage[u];if(h&&"string"==typeof h){var p=JSON.parse(h);if(p.input===d)return p.output}}}catch(f){}var m=function(){var t=o(d);a[u]={input:d,output:t};try{"undefined"!=typeof sessionStorage&&sessionStorage&&sessionStorage.setItem&&sessionStorage.setItem(u,JSON.stringify({input:d,output:t
+}))}catch(e){}return t};return m.toString=function(){return"uglifyCSS("+(u.length>50||u.indexOf("\n")?u.replace(/\n/g," ").slice(0,48)+"...":u)+")"},m}function o(t){var e=UglifyCSS.processString(t,{});return e}var a={};i.uglifyCSS=n}(i=e.functions||(e.functions={}))}(e=t.build||(t.build={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){var i;!function(i){function n(){for(var t=[],e=0;e<arguments.length;e++)t[e-0]=arguments[e];for(var i=[],n=0;n<t.length;n++)t[n]&&"string"!=typeof t[n]&&"number"==typeof t[n].length?i=i.concat(t[n]):i.push(t[n]);return r(i)}function r(i){for(var r=[],s=[],l=0;l<i.length;l++)if(r[l]=s[l]=i[l],i[l].length<200&&i[l].indexOf("\n")<0){var c=t.files.normalizePath(i[l]),u=e.processTemplate.mainDrive.read(c);"string"==typeof u&&(r[l]=c,s[l]=u)}var d="{uglifyJS}"+t.murmurhash2_32_gc(r.join(","),"23"),h=s.join("\n");if(!n.skip&&a.hasOwnProperty(d)&&a[d].input===h)return"undefined"!=typeof console&&console.info&&console.info("Serving cached uglify result for "+d+"."),
+a[d].output;try{if("undefined"!=typeof sessionStorage&&sessionStorage){var p=sessionStorage.getItem?sessionStorage.getItem(d):sessionStorage[d];if(p&&"string"==typeof p){var f=JSON.parse(p);if(f.input===h)return f.output}}}catch(m){}var v=function(){var t=o(h);if(!n.skip){a[d]={input:h,output:t};try{"undefined"!=typeof sessionStorage&&sessionStorage&&sessionStorage.setItem&&sessionStorage.setItem(d,JSON.stringify({input:h,output:t}))}catch(e){}}return t};return v.toString=function(){return"uglify("+(d.length>50||d.indexOf("\n")?d.replace(/\n/g," ").slice(0,48)+"...":d)+")"},v}function o(t){if(n.skip)return"undefined"!=typeof console&&"function"==typeof console.log&&console.log("uglifyText("+JSON.stringify(t.slice(0,Math.min(t.length,20)))+") skipping to plain text"),t;var e=Uglify2.parse(t,{});e.figure_out_scope();var i=new Uglify2.Compressor({sequences:!0,properties:!0,dead_code:!0,drop_debugger:!0,unsafe:!1,unsafe_comps:!1,conditionals:!0,comparisons:!0,evaluate:!0,booleans:!0,loops:!0,unused:!0,hoist_funs:!0,
+hoist_vars:!1,if_return:!0,join_vars:!0,cascade:!0,side_effects:!0,negate_iife:!0,screw_ie8:!1,warnings:!0,global_defs:{}}),r=e.transform(i);r.figure_out_scope(),r.compute_char_frequency(),r.mangle_names();var o=r.print_to_string({quote_keys:!1,space_colon:!0,ascii_only:!1,inline_script:!0,max_line_len:1024,beautify:!1,source_map:null,bracketize:!1,semicolons:!0,comments:/@license|@preserve|^!/,preserve_line:!1,screw_ie8:!1});return"undefined"!=typeof console&&"function"==typeof console.log&&console.log("uglifyText("+JSON.stringify(t.slice(0,Math.min(t.length,20)))+") resulted in "+o.lengh+" chars ("+100*o.length/t.length+"% original)"),o}var a={};i.uglifyJS=n;var n;!function(t){t.skip}(n=i.uglifyJS||(i.uglifyJS={}))}(i=e.functions||(e.functions={}))}(e=t.build||(t.build={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){function i(e,i,r,o){r("Generating build script..."),setTimeout(function(){var a=n(e,i);r("Preprocessing build script..."),setTimeout(function(){function e(){for(var i=t.dateNow();;){
+if(l>=s.length){var n=s.join("");return void o(null,n)}var a=s[l];if("function"==typeof a){r("Processing "+a+"..."),setTimeout(function(){try{var t=a(),i=String(t);s[l]=i}catch(n){return void o(n)}r("...OK ["+i.length+"]"),l++,e()},1);break}var c=String(a);s[l]=c;for(var u=(c.length>100?c.slice(0,50)+"\n...\n"+c.slice(c.length-5):c).split("\n");u.length&&!u[0];)u.shift();for(;u.length&&!u[u.length-1];)u.pop();if(r(u.length<=2?u.join("\n"):u[0]+"\n...\n"+u[u.length-1]),l++,t.dateNow()-i>300){setTimeout(e,1);break}}}var n=Function("scopes",a);r("Executing build script...");var s=n(i),l=0;e()},1)},1)}function n(t,e){for(var i=[],n=0;n<e.length;n++)i.push("with(scopes["+n+"]) {");i.push("var output =[];");for(var s=0;s<t.length;){var l=t.indexOf("<%",s);if(0>l){r(i,t.slice(s));break}var c=t.charAt(l+2);if("="===c){var u=t.indexOf("%>",l);if(0>u){r(i,t.slice(s));break}r(i,t.slice(s,l)),o(i,t.slice(l+3,u)),s=u+2}else if("-"===c){var d="-"===t.charAt(l+3)?"--%>":"-%>",h=t.indexOf(d,l);if(0>h){r(i,t.slice(s));break}r(i,t.slice(s,l)),
+s=h+d.length}else{var u=t.indexOf("%>",l);if(0>u){r(i,t.slice(s));break}r(i,t.slice(s,l)),a(i,t.slice(l+2,u)),s=u+2}}for(var n=0;n<e.length;n++)i.push("}");i.push("return output;");var p=i.join("\n");return p}function r(t,e){e&&t.push("output.push('"+s(e)+"');")}function o(t,e){t.push("output.push("+e+");")}function a(t,e){t.push(e)}function s(t){return t.replace(/\\/g,"\\\\").replace(/\n/g,"\\n").replace(/\r/g,"\\r").replace(/\t/g,"\\t").replace(/\'/g,"\\'").replace(/\"/g,'\\"')}e.processTemplate=i;var i;!function(t){t.mainDrive}(i=e.processTemplate||(e.processTemplate={}))}(e=t.build||(t.build={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e=function(){function e(t,e){this._regions=t,this._drive=e,this._docs={},this._activeHandler=null;for(var i=this._drive.files(),n=0;n<i.length;n++)this.add(i[n])}return e.prototype.show=function(t){var e=this._activeHandler,i=[];if(this._regions.content)for(var n=0;n<this._regions.content.children.length;n++)i.push(this._regions.content.children[n]);
 
-if(h&&"string"==typeof h){var p=JSON.parse(h);if(p.input===d)return p.output}}}catch(f){}var m=function(){var t=o(d);a[u]={input:d,output:t};try{"undefined"!=typeof sessionStorage&&sessionStorage&&sessionStorage.setItem&&sessionStorage.setItem(u,JSON.stringify({input:d,output:t}))}catch(e){}return t};return m.toString=function(){return"uglifyCSS("+(u.length>50||u.indexOf("\n")?u.replace(/\n/g," ").slice(0,48)+"...":u)+")"},m}function o(t){var e=UglifyCSS.processString(t,{});return e}var a={};i.uglifyCSS=n}(i=e.functions||(e.functions={}))}(e=t.build||(t.build={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){var i;!function(i){function n(){for(var t=[],e=0;e<arguments.length;e++)t[e-0]=arguments[e];for(var i=[],n=0;n<t.length;n++)t[n]&&"string"!=typeof t[n]&&"number"==typeof t[n].length?i=i.concat(t[n]):i.push(t[n]);return r(i)}function r(i){for(var r=[],s=[],l=0;l<i.length;l++)if(r[l]=s[l]=i[l],i[l].length<200&&i[l].indexOf("\n")<0){var c=t.files.normalizePath(i[l]),u=e.processTemplate.mainDrive.read(c);
+if(this._regions.scroller)for(var n=0;n<this._regions.scroller.children.length;n++)i.push(this._regions.scroller.children[n]);if(this._regions.status)for(var n=0;n<this._regions.status.children.length;n++)i.push(this._regions.status.children[n]);try{if(this._activeHandler=this._docs[t],!this._activeHandler)return void 0;this._activeHandler.showEditor(this._regions)}finally{e&&e.hideEditor&&e.hideEditor();for(var n=0;n<i.length;n++)i[n].parentNode.removeChild(i[n])}},e.prototype.add=function(e){var n=new i(e,this._drive),r=t.types.load(e,n);this._docs[e]=r},e.prototype.remove=function(t){var e=!1,i=this._docs[t];i&&(e=!0,this._activeHandler===i&&this.show(null),i.remove(),delete this._docs[t])},e}();t.DocHost=e;var i=function(){function t(t,e){this._file=t,this._drive=e}return t.prototype.read=function(){return this._drive.read(this._file)},t.prototype.write=function(t){this._drive.timestamp=Date.now?Date.now():+new Date,this._drive.write(this._file,t)},t.prototype.readState=function(){},t.prototype.writeState=function(){},
+t}()}(e=t.docs||(t.docs={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e;!function(){}(e=t.types||(t.types={}))}(e=t.docs||(t.docs={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e;!function(t){function e(t,e){var i=t.__cachedSubmoduleList;if(!i){i=t.__cachedSubmoduleList=[];for(var n in t)if(t.hasOwnProperty(n)){var r=t[n];r&&"object"==typeof r&&n.charAt(0).toUpperCase()!==n.charAt(0)&&r[e]&&"function"==typeof r[e]&&r.expectsFile&&i.push({moduleName:n,moduleObj:r})}t.__cachedSubmoduleList=i}return i}t.listSubmodules=e}(e=t.types||(t.types={}))}(e=t.docs||(t.docs={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){var i;!function(e){function i(i,n){for(var r=e.listSubmodules(t.docs.types,"load"),o=0;o<r.length;o++){var a=i.match(r[o].moduleObj.expectsFile);if(a&&a.length&&a[0]===i){var s=r[o].moduleObj.load(i,n);if(s)return s}}for(var o=0;o<r.length;o++){if(r[o].moduleObj.acceptsFile){var a=i.match(r[o].moduleObj.acceptsFile);
 
-"string"==typeof u&&(r[l]=c,s[l]=u)}var d="{uglifyJS}"+t.murmurhash2_32_gc(r.join(","),"23"),h=s.join("\n");if(!n.skip&&a.hasOwnProperty(d)&&a[d].input===h)return"undefined"!=typeof console&&console.info&&console.info("Serving cached uglify result for "+d+"."),a[d].output;try{if("undefined"!=typeof sessionStorage&&sessionStorage){var p=sessionStorage.getItem?sessionStorage.getItem(d):sessionStorage[d];if(p&&"string"==typeof p){var f=JSON.parse(p);if(f.input===h)return f.output}}}catch(m){}var v=function(){var t=o(h);if(!n.skip){a[d]={input:h,output:t};try{"undefined"!=typeof sessionStorage&&sessionStorage&&sessionStorage.setItem&&sessionStorage.setItem(d,JSON.stringify({input:h,output:t}))}catch(e){}}return t};return v.toString=function(){return"uglify("+(d.length>50||d.indexOf("\n")?d.replace(/\n/g," ").slice(0,48)+"...":d)+")"},v}function o(t){if(n.skip)return"undefined"!=typeof console&&"function"==typeof console.log&&console.log("uglifyText("+JSON.stringify(t.slice(0,Math.min(t.length,20)))+") skipping to plain text"),
-t;var e=Uglify2.parse(t,{});e.figure_out_scope();var i=new Uglify2.Compressor({sequences:!0,properties:!0,dead_code:!0,drop_debugger:!0,unsafe:!1,unsafe_comps:!1,conditionals:!0,comparisons:!0,evaluate:!0,booleans:!0,loops:!0,unused:!0,hoist_funs:!0,hoist_vars:!1,if_return:!0,join_vars:!0,cascade:!0,side_effects:!0,negate_iife:!0,screw_ie8:!1,warnings:!0,global_defs:{}}),r=e.transform(i);r.figure_out_scope(),r.compute_char_frequency(),r.mangle_names();var o=r.print_to_string({quote_keys:!1,space_colon:!0,ascii_only:!1,inline_script:!0,max_line_len:1024,beautify:!1,source_map:null,bracketize:!1,semicolons:!0,comments:/@license|@preserve|^!/,preserve_line:!1,screw_ie8:!1});return"undefined"!=typeof console&&"function"==typeof console.log&&console.log("uglifyText("+JSON.stringify(t.slice(0,Math.min(t.length,20)))+") resulted in "+o.lengh+" chars ("+100*o.length/t.length+"% original)"),o}var a={};i.uglifyJS=n;var n;!function(t){t.skip}(n=i.uglifyJS||(i.uglifyJS={}))}(i=e.functions||(e.functions={}))}(e=t.build||(t.build={}));
+if(!a||!a.length||a[0]!==i)continue}var s=r[o].moduleObj.load(i,n);if(s)return s}return null}e.load=i}(i=e.types||(e.types={}))}(e=t.docs||(t.docs={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){var i;!function(e){var i;!function(e){function i(t){for(var e=0,i=0;i<t.length;i++)e+=t[i].length;return t.length>1&&(e+=t.length-1),e}var n=function(){function n(e,i,n,r,o){var a=this;if(this.path=e,this.storage=i,this.textDoc=n,this.moduleName=r,this.moduleObj=o,this._closures={cm_change:function(t,e){return a._docSingleChange(e)},cm_changes:function(t,e){return a._docChanges(e)},cm_cursorActivity:function(){return a._cursorActivity()},cm_scroll:function(){return a._scroll()}},this._saveTimer=new t.Timer,this._appliedKeyMap=null,this._scrollerModel=null,this._retrievedText=null,this._validLead=-1,this._validTrail=0,this._totalLength=0,this._newValidLead=-1,this._newValidTrail=-1,this._saveTimer.ontick=function(){return a._save()},this.textDoc.path=e,this.textDoc.text=function(){return a.text();
 
-}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){function i(e,i,r,o){r("Generating build script..."),setTimeout(function(){var a=n(e,i);r("Preprocessing build script..."),setTimeout(function(){function e(){for(var i=t.dateNow();;){if(l>=s.length){var n=s.join("");return void o(null,n)}var a=s[l];if("function"==typeof a){r("Processing "+a+"..."),setTimeout(function(){try{var t=a(),i=String(t);s[l]=i}catch(n){return void o(n)}r("...OK ["+i.length+"]"),l++,e()},1);break}var c=String(a);s[l]=c;for(var u=(c.length>100?c.slice(0,50)+"\n...\n"+c.slice(c.length-5):c).split("\n");u.length&&!u[0];)u.shift();for(;u.length&&!u[u.length-1];)u.pop();if(r(u.length<=2?u.join("\n"):u[0]+"\n...\n"+u[u.length-1]),l++,t.dateNow()-i>300){setTimeout(e,1);break}}}var n=Function("scopes",a);r("Executing build script...");var s=n(i),l=0;e()},1)},1)}function n(t,e){for(var i=[],n=0;n<e.length;n++)i.push("with(scopes["+n+"]) {");i.push("var output =[];");for(var s=0;s<t.length;){var l=t.indexOf("<%",s);if(0>l){
-r(i,t.slice(s));break}var c=t.charAt(l+2);if("="===c){var u=t.indexOf("%>",l);if(0>u){r(i,t.slice(s));break}r(i,t.slice(s,l)),o(i,t.slice(l+3,u)),s=u+2}else if("-"===c){var d="-"===t.charAt(l+3)?"--%>":"-%>",h=t.indexOf(d,l);if(0>h){r(i,t.slice(s));break}r(i,t.slice(s,l)),s=h+d.length}else{var u=t.indexOf("%>",l);if(0>u){r(i,t.slice(s));break}r(i,t.slice(s,l)),a(i,t.slice(l+2,u)),s=u+2}}for(var n=0;n<e.length;n++)i.push("}");i.push("return output;");var p=i.join("\n");return p}function r(t,e){e&&t.push("output.push('"+s(e)+"');")}function o(t,e){t.push("output.push("+e+");")}function a(t,e){t.push(e)}function s(t){return t.replace(/\\/g,"\\\\").replace(/\n/g,"\\n").replace(/\r/g,"\\r").replace(/\t/g,"\\t").replace(/\'/g,"\\'").replace(/\"/g,'\\"')}e.processTemplate=i;var i;!function(t){t.mainDrive}(i=e.processTemplate||(e.processTemplate={}))}(e=t.build||(t.build={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e=function(){function e(t,e){this._regions=t,this._drive=e,this._docs={},
-this._activeHandler=null;for(var i=this._drive.files(),n=0;n<i.length;n++)this.add(i[n])}return e.prototype.show=function(t){var e=this._activeHandler,i=[];if(this._regions.content)for(var n=0;n<this._regions.content.children.length;n++)i.push(this._regions.content.children[n]);if(this._regions.scroller)for(var n=0;n<this._regions.scroller.children.length;n++)i.push(this._regions.scroller.children[n]);if(this._regions.status)for(var n=0;n<this._regions.status.children.length;n++)i.push(this._regions.status.children[n]);try{if(this._activeHandler=this._docs[t],!this._activeHandler)return void 0;this._activeHandler.showEditor(this._regions)}finally{e&&e.hideEditor&&e.hideEditor();for(var n=0;n<i.length;n++)i[n].parentNode.removeChild(i[n])}},e.prototype.add=function(e){var n=new i(e,this._drive),r=t.types.load(e,n);this._docs[e]=r},e.prototype.remove=function(t){var e=!1,i=this._docs[t];i&&(e=!0,this._activeHandler===i&&this.show(null),i.remove(),delete this._docs[t])},e}();t.DocHost=e;var i=function(){function t(t,e){
-this._file=t,this._drive=e}return t.prototype.read=function(){return this._drive.read(this._file)},t.prototype.write=function(t){this._drive.timestamp=Date.now?Date.now():+new Date,this._drive.write(this._file,t)},t.prototype.readState=function(){},t.prototype.writeState=function(){},t}()}(e=t.docs||(t.docs={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e;!function(){}(e=t.types||(t.types={}))}(e=t.docs||(t.docs={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e;!function(t){function e(t,e){var i=t.__cachedSubmoduleList;if(!i){i=t.__cachedSubmoduleList=[];for(var n in t)if(t.hasOwnProperty(n)){var r=t[n];r&&"object"==typeof r&&n.charAt(0).toUpperCase()!==n.charAt(0)&&r[e]&&"function"==typeof r[e]&&r.expectsFile&&i.push({moduleName:n,moduleObj:r})}t.__cachedSubmoduleList=i}return i}t.listSubmodules=e}(e=t.types||(t.types={}))}(e=t.docs||(t.docs={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){var i;!function(e){function i(i,n){
-for(var r=e.listSubmodules(t.docs.types,"load"),o=0;o<r.length;o++){var a=i.match(r[o].moduleObj.expectsFile);if(a&&a.length&&a[0]===i){var s=r[o].moduleObj.load(i,n);if(s)return s}}for(var o=0;o<r.length;o++){if(r[o].moduleObj.acceptsFile){var a=i.match(r[o].moduleObj.acceptsFile);if(!a||!a.length||a[0]!==i)continue}var s=r[o].moduleObj.load(i,n);if(s)return s}return null}e.load=i}(i=e.types||(e.types={}))}(e=t.docs||(t.docs={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){var i;!function(e){var i;!function(e){function i(t){for(var e=0,i=0;i<t.length;i++)e+=t[i].length;return t.length>1&&(e+=t.length-1),e}var n=function(){function n(e,i,n,r,o){var a=this;if(this.path=e,this.storage=i,this.textDoc=n,this.moduleName=r,this.moduleObj=o,this._closures={cm_change:function(t,e){return a._docSingleChange(e)},cm_changes:function(t,e){return a._docChanges(e)},cm_cursorActivity:function(){return a._cursorActivity()},cm_scroll:function(){return a._scroll()}},this._saveTimer=new t.Timer,this._appliedKeyMap=null,
-this._scrollerModel=null,this._retrievedText=null,this._validLead=-1,this._validTrail=0,this._totalLength=0,this._newValidLead=-1,this._newValidTrail=-1,this._saveTimer.ontick=function(){return a._save()},this.textDoc.path=e,this.textDoc.text=function(){return a.text()},this.textDoc.load){var s=this.storage.read();this.textDoc.load(s)}}return n.prototype.showEditor=function(t){var i=this;this.textDoc.doc||(this._retrievedText||"string"==typeof this._retrievedText||(this._retrievedText=this.storage.read(),this._validLead=-1,this._validTrail=0,this._totalLength=this._retrievedText.length),this.textDoc.doc=this.moduleObj&&this.moduleObj.createCodeMirrorDoc?this.moduleObj.createCodeMirrorDoc(this.storage.read()):e.createCodeMirrorDoc(this._retrievedText));var r=n.codeMirrorEditorPools[this.moduleName||""]||(n.codeMirrorEditorPools[this.moduleName||""]=[]);r.length?(this.textDoc.editor=r.pop(),this.textDoc.editor.getInputField().style.fontSize="16px",t.content.appendChild(this.textDoc.editor.getWrapperElement())):(this.textDoc.editor=this.moduleObj&&this.moduleObj.createCodeMirrorEditor?this.moduleObj.createCodeMirrorEditor(t.content):e.createCodeMirrorEditor(t.content),
-this._appliedKeyMap=this.textDoc.keyMap,this._appliedKeyMap&&(this._appliedKeyMap=CodeMirror.normalizeKeyMap(this._appliedKeyMap),this.textDoc.editor.addKeyMap(this._appliedKeyMap))),this.textDoc.editor.getDoc()!==this.textDoc.doc&&this.textDoc.editor.swapDoc(this.textDoc.doc);try{this.textDoc.editor.focus()}catch(o){}setTimeout(function(){i.textDoc.editor&&i.textDoc.editor.getDoc()===i.textDoc.doc&&(i.textDoc.editor.refresh(),i.textDoc.editor.focus(),i._scroll())},2),this.textDoc.editor.on("change",this._closures.cm_change),this.textDoc.editor.on("changes",this._closures.cm_changes),this.textDoc.editor.on("cursorActivity",this._closures.cm_cursorActivity),this.textDoc.editor.on("scroll",this._closures.cm_scroll),this._scrollerModel||(this._scrollerModel=new e.scrollerView.ScrollerModel(this.textDoc.doc,300)),this.textDoc.scroller||(this.textDoc.scroller=document.createElement("div"),this.textDoc.scroller.style.width="100%",this.textDoc.scroller.style.height="100%",ko.renderTemplate("ScrollerView",this._scrollerModel,null,this.textDoc.scroller)),
-t.scroller.appendChild(this.textDoc.scroller),this.textDoc.status||(this.textDoc.status=document.createElement("div"),this.textDoc.status.style.width="100%",this.textDoc.status.style.height="100%",this.textDoc.status.textContent=this.path),t.status.appendChild(this.textDoc.status),this.textDoc.open&&this.textDoc.open()},n.prototype.hideEditor=function(){if(this._saveTimer.endWaiting(),this.textDoc&&this.textDoc.doc){var t=this.textDoc.editor;t.off("changes",this._closures.cm_changes),t.off("cursorActivity",this._closures.cm_cursorActivity),t.off("scroll",this._closures.cm_scroll),this._appliedKeyMap&&(t.removeKeyMap(this._appliedKeyMap),this._appliedKeyMap=null),this.textDoc.close&&this.textDoc.close(),this.textDoc.editor=null,t.swapDoc(new CodeMirror.Doc(""));var e=n.codeMirrorEditorPools[this.moduleName||""];e.push(t)}},n.prototype.remove=function(){this._saveTimer.stop();var t=this.textDoc.editor;t&&(t.off("changes",this._closures.cm_changes),t.off("cursorActivity",this._closures.cm_cursorActivity),t.off("scroll",this._closures.cm_scroll)),
-this.textDoc&&this.textDoc.doc&&(this.textDoc.remove&&this.textDoc.remove(),this.textDoc.doc=null)},n.prototype.text=function(){var t=this.textDoc.doc;if(!this._retrievedText&&"string"!=typeof this._retrievedText)return this._retrievedText=t?t.getValue():this.storage.read(),this._totalLength=this._retrievedText?this._retrievedText.length:0,this._validLead=-1,this._retrievedText;if(this._validLead<0)return this._retrievedText;var e=t.lineCount(),i=t.indexFromPos({line:e-1,ch:t.getLine(e-1).length});if(this._validLead+this._validTrail===this._retrievedText.length&&this._retrievedText.length===i)return this._retrievedText;if(this._validLead+this._validTrail<i/4)return this._retrievedText=t.getValue(),this._validLead=-1,this._retrievedText;var n=t.getRange(t.posFromIndex(this._validLead),t.posFromIndex(i-this._validTrail));return this._retrievedText=this._retrievedText.slice(0,this._validLead)+n+this._retrievedText.slice(this._retrievedText.length-this._validTrail),this._validLead=-1,this._retrievedText},n.prototype._docSingleChange=function(t){
-var e=this.textDoc.doc;if(e){var n=e.indexFromPos(t.from),r=this._totalLength-n-i(t.removed);(this._newValidLead<0||this._newValidLead>n)&&(this._newValidLead=n),(this._newValidTrail<0||this._newValidTrail>r)&&(this._newValidTrail=r)}},n.prototype._docChanges=function(t){var i=this.textDoc.doc,n=i.lineCount(),r=i.indexFromPos({line:n-1,ch:i.getLine(n-1).length}),o=this._newValidLead,a=this._newValidTrail;this._newValidLead=-1,this._newValidTrail=-1,this._validLead<0?(this._validLead=o,this._validTrail=a):(this._validLead=Math.min(this._validLead,o),this._validTrail=Math.min(this._validTrail,a));var s={lead:o,mid:this._totalLength-o-a,newmid:0,trail:a};s.newmid=r-o-a,this._totalLength=r,this.textDoc.onChanges&&this.textDoc.onChanges(t,s),this._scrollerModel&&this._scrollerModel.docChanges(t),this._saveTimer.interval=this.moduleObj&&this.moduleObj.saveDelay||e.saveDelay,this._saveTimer.reset()},n.prototype._cursorActivity=function(){if(this.textDoc.editor&&this.textDoc.onCursorMoved){var t=this.textDoc.doc.getCursor();
+},this.textDoc.load){var s=this.storage.read();this.textDoc.load(s)}}return n.prototype.showEditor=function(t){var i=this;this.textDoc.doc||(this._retrievedText||"string"==typeof this._retrievedText||(this._retrievedText=this.storage.read(),this._validLead=-1,this._validTrail=0,this._totalLength=this._retrievedText.length),this.textDoc.doc=this.moduleObj&&this.moduleObj.createCodeMirrorDoc?this.moduleObj.createCodeMirrorDoc(this.storage.read()):e.createCodeMirrorDoc(this._retrievedText));var r=n.codeMirrorEditorPools[this.moduleName||""]||(n.codeMirrorEditorPools[this.moduleName||""]=[]);r.length?(this.textDoc.editor=r.pop(),this.textDoc.editor.getInputField().style.fontSize="16px",t.content.appendChild(this.textDoc.editor.getWrapperElement())):(this.textDoc.editor=this.moduleObj&&this.moduleObj.createCodeMirrorEditor?this.moduleObj.createCodeMirrorEditor(t.content):e.createCodeMirrorEditor(t.content),this._appliedKeyMap=this.textDoc.keyMap,this._appliedKeyMap&&(this._appliedKeyMap=CodeMirror.normalizeKeyMap(this._appliedKeyMap),
+this.textDoc.editor.addKeyMap(this._appliedKeyMap))),this.textDoc.editor.getDoc()!==this.textDoc.doc&&this.textDoc.editor.swapDoc(this.textDoc.doc);try{this.textDoc.editor.focus()}catch(o){}setTimeout(function(){i.textDoc.editor&&i.textDoc.editor.getDoc()===i.textDoc.doc&&(i.textDoc.editor.refresh(),i.textDoc.editor.focus(),i._scroll())},2),this.textDoc.editor.on("change",this._closures.cm_change),this.textDoc.editor.on("changes",this._closures.cm_changes),this.textDoc.editor.on("cursorActivity",this._closures.cm_cursorActivity),this.textDoc.editor.on("scroll",this._closures.cm_scroll),this._scrollerModel||(this._scrollerModel=new e.scrollerView.ScrollerModel(this.textDoc.doc,300)),this.textDoc.scroller||(this.textDoc.scroller=document.createElement("div"),this.textDoc.scroller.style.width="100%",this.textDoc.scroller.style.height="100%",ko.renderTemplate("ScrollerView",this._scrollerModel,null,this.textDoc.scroller)),t.scroller.appendChild(this.textDoc.scroller),this.textDoc.status||(this.textDoc.status=document.createElement("div"),
+this.textDoc.status.style.width="100%",this.textDoc.status.style.height="100%",this.textDoc.status.textContent=this.path),t.status.appendChild(this.textDoc.status),this.textDoc.open&&this.textDoc.open()},n.prototype.hideEditor=function(){if(this._saveTimer.endWaiting(),this.textDoc&&this.textDoc.doc){var t=this.textDoc.editor;t.off("changes",this._closures.cm_changes),t.off("cursorActivity",this._closures.cm_cursorActivity),t.off("scroll",this._closures.cm_scroll),this._appliedKeyMap&&(t.removeKeyMap(this._appliedKeyMap),this._appliedKeyMap=null),this.textDoc.close&&this.textDoc.close(),this.textDoc.editor=null,t.swapDoc(new CodeMirror.Doc(""));var e=n.codeMirrorEditorPools[this.moduleName||""];e.push(t)}},n.prototype.remove=function(){this._saveTimer.stop();var t=this.textDoc.editor;t&&(t.off("changes",this._closures.cm_changes),t.off("cursorActivity",this._closures.cm_cursorActivity),t.off("scroll",this._closures.cm_scroll)),this.textDoc&&this.textDoc.doc&&(this.textDoc.remove&&this.textDoc.remove(),this.textDoc.doc=null);
 
-this.textDoc.onCursorMoved(t)}},n.prototype._scroll=function(){if(this.textDoc.editor){var t=this.textDoc.editor.getScrollInfo();this.textDoc.onScroll&&this.textDoc.onScroll(t),this._scrollerModel&&this._scrollerModel.scroll(t)}},n.prototype._save=function(){this.storage.write(this.text())},n.codeMirrorEditorPools={},n}();e.CodeMirrorDocHandler=n}(i=e.text||(e.text={}))}(i=e.types||(e.types={}))}(e=t.docs||(t.docs={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e;!function(t){var e;!function(t){function e(){return{path:null,editor:null,doc:null,text:null,scroller:null,status:null,state:null,open:null,close:null,remove:null}}function i(t){return new CodeMirror(t,{lineNumbers:!0,matchBrackets:!0,autoCloseBrackets:!0,matchTags:!0,showTrailingSpace:!0,autoCloseTags:!0,foldGutter:!0,gutters:["CodeMirror-linenumbers","CodeMirror-foldgutter"],styleActiveLine:!0,tabSize:2})}function n(t){return new CodeMirror.Doc(t||"")}t.loadText=e,t.createCodeMirrorEditor=i,t.createCodeMirrorDoc=n}(e=t.text||(t.text={}));
+},n.prototype.text=function(){var t=this.textDoc.doc;if(!this._retrievedText&&"string"!=typeof this._retrievedText)return this._retrievedText=t?t.getValue():this.storage.read(),this._totalLength=this._retrievedText?this._retrievedText.length:0,this._validLead=-1,this._retrievedText;if(this._validLead<0)return this._retrievedText;var e=t.lineCount(),i=t.indexFromPos({line:e-1,ch:t.getLine(e-1).length});if(this._validLead+this._validTrail===this._retrievedText.length&&this._retrievedText.length===i)return this._retrievedText;if(this._validLead+this._validTrail<i/4)return this._retrievedText=t.getValue(),this._validLead=-1,this._retrievedText;var n=t.getRange(t.posFromIndex(this._validLead),t.posFromIndex(i-this._validTrail));return this._retrievedText=this._retrievedText.slice(0,this._validLead)+n+this._retrievedText.slice(this._retrievedText.length-this._validTrail),this._validLead=-1,this._retrievedText},n.prototype._docSingleChange=function(t){var e=this.textDoc.doc;if(e){var n=e.indexFromPos(t.from),r=this._totalLength-n-i(t.removed);
 
-}(e=t.types||(t.types={}))}(e=t.docs||(t.docs={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){var i;!function(e){var i;!function(e){var i;!function(e){var i=function(){function e(){var t=this;this.path=null,this.editor=null,this.doc=null,this.text=null,this.scroller=null,this.status=null,this.keyMap={"Ctrl-Enter":function(){return t._triggerCompletion(!1)},"Alt-Enter":function(){return t._triggerCompletion(!1)},"Ctrl-J":function(){return t._triggerCompletion(!1)},"Alt-J":function(){return t._triggerCompletion(!1)}},this.removed=!1,this.state=null,this._completionTimer=null,this._completionLastChangeText=null,this._isCompleting=!1,this.asyncCompletion=!1}return e.prototype.open=function(){},e.prototype.close=function(){this.editor&&CodeMirror.on(this.editor,"endCompletion",close),this._completionTimer&&this._completionTimer.stop()},e.prototype.remove=function(){this.editor&&CodeMirror.on(this.editor,"endCompletion",close),this._completionTimer&&this._completionTimer.stop()},e.prototype.shouldTriggerCompletion=function(){
-return!1},e.prototype.getCompletions=function(){return null},e.prototype.onChanges=function(t,e){if(this.onChangesCore(t,e),this.getCompletions&&(t.length>1&&(this._isCompleting=!1),!this._isCompleting)){var i=this.doc.getCursor(),n=this.doc.getLine(i.line);this._completionLastChangeText=n.slice(0,i.ch),this._completionTimer||this._createCompletionTimer(),this._completionTimer.reset()}},e.prototype.onChangesCore=function(){},e.prototype._createCompletionTimer=function(){var e=this;this._completionTimer=new t.Timer,this._completionTimer.interval=200,this._completionTimer.ontick=function(){e._isCompleting||e.editor&&(!e.shouldTriggerCompletion||e.shouldTriggerCompletion(e._completionLastChangeText))&&e._triggerCompletion(!0)}},e.prototype.onSave=function(){},e.prototype._triggerCompletion=function(t){var e=this;this._completionTimer&&this._completionTimer.stop();var i,n=function(){e.editor&&CodeMirror.off(e.editor,"endCompletion",n),e._isCompleting=!1},r=function(r,o){if(!e.editor)return null;var a=function(){if(s&&s.list&&t)for(var r=e.doc.getRange(s.from,s.to),o=0;o<s.list.length;o++)if(s.list[o]==r){
+(this._newValidLead<0||this._newValidLead>n)&&(this._newValidLead=n),(this._newValidTrail<0||this._newValidTrail>r)&&(this._newValidTrail=r)}},n.prototype._docChanges=function(t){var i=this.textDoc.doc,n=i.lineCount(),r=i.indexFromPos({line:n-1,ch:i.getLine(n-1).length}),o=this._newValidLead,a=this._newValidTrail;this._newValidLead=-1,this._newValidTrail=-1,this._validLead<0?(this._validLead=o,this._validTrail=a):(this._validLead=Math.min(this._validLead,o),this._validTrail=Math.min(this._validTrail,a));var s={lead:o,mid:this._totalLength-o-a,newmid:0,trail:a};s.newmid=r-o-a,this._totalLength=r,this.textDoc.onChanges&&this.textDoc.onChanges(t,s),this._scrollerModel&&this._scrollerModel.docChanges(t),this._saveTimer.interval=this.moduleObj&&this.moduleObj.saveDelay||e.saveDelay,this._saveTimer.reset()},n.prototype._cursorActivity=function(){if(this.textDoc.editor&&this.textDoc.onCursorMoved){var t=this.textDoc.doc.getCursor();this.textDoc.onCursorMoved(t)}},n.prototype._scroll=function(){if(this.textDoc.editor){
+var t=this.textDoc.editor.getScrollInfo();this.textDoc.onScroll&&this.textDoc.onScroll(t),this._scrollerModel&&this._scrollerModel.scroll(t)}},n.prototype._save=function(){this.storage.write(this.text())},n.codeMirrorEditorPools={},n}();e.CodeMirrorDocHandler=n}(i=e.text||(e.text={}))}(i=e.types||(e.types={}))}(e=t.docs||(t.docs={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e;!function(t){var e;!function(t){function e(){return{path:null,editor:null,doc:null,text:null,scroller:null,status:null,state:null,open:null,close:null,remove:null}}function i(t){return new CodeMirror(t,{lineNumbers:!0,matchBrackets:!0,autoCloseBrackets:!0,matchTags:!0,showTrailingSpace:!0,autoCloseTags:!0,foldGutter:!0,gutters:["CodeMirror-linenumbers","CodeMirror-foldgutter"],styleActiveLine:!0,tabSize:2})}function n(t){return new CodeMirror.Doc(t||"")}t.loadText=e,t.createCodeMirrorEditor=i,t.createCodeMirrorDoc=n}(e=t.text||(t.text={}))}(e=t.types||(t.types={}))}(e=t.docs||(t.docs={}))}(portabled||(portabled={}));
+
+var portabled;!function(t){var e;!function(e){var i;!function(e){var i;!function(e){var i;!function(e){var i=function(){function e(){var t=this;this.path=null,this.editor=null,this.doc=null,this.text=null,this.scroller=null,this.status=null,this.keyMap={"Ctrl-Enter":function(){return t._triggerCompletion(!1)},"Alt-Enter":function(){return t._triggerCompletion(!1)},"Ctrl-J":function(){return t._triggerCompletion(!1)},"Alt-J":function(){return t._triggerCompletion(!1)}},this.removed=!1,this.state=null,this._completionTimer=null,this._completionLastChangeText=null,this._isCompleting=!1,this.asyncCompletion=!1}return e.prototype.open=function(){},e.prototype.close=function(){this.editor&&CodeMirror.on(this.editor,"endCompletion",close),this._completionTimer&&this._completionTimer.stop()},e.prototype.remove=function(){this.editor&&CodeMirror.on(this.editor,"endCompletion",close),this._completionTimer&&this._completionTimer.stop()},e.prototype.shouldTriggerCompletion=function(){return!1},e.prototype.getCompletions=function(){
+return null},e.prototype.onChanges=function(t,e){if(this.onChangesCore(t,e),this.getCompletions&&(t.length>1&&(this._isCompleting=!1),!this._isCompleting)){var i=this.doc.getCursor(),n=this.doc.getLine(i.line);this._completionLastChangeText=n.slice(0,i.ch),this._completionTimer||this._createCompletionTimer(),this._completionTimer.reset()}},e.prototype.onChangesCore=function(){},e.prototype._createCompletionTimer=function(){var e=this;this._completionTimer=new t.Timer,this._completionTimer.interval=200,this._completionTimer.ontick=function(){e._isCompleting||e.editor&&(!e.shouldTriggerCompletion||e.shouldTriggerCompletion(e._completionLastChangeText))&&e._triggerCompletion(!0)}},e.prototype.onSave=function(){},e.prototype._triggerCompletion=function(t){var e=this;this._completionTimer&&this._completionTimer.stop();var i,n=function(){e.editor&&CodeMirror.off(e.editor,"endCompletion",n),e._isCompleting=!1},r=function(r,o){if(!e.editor)return null;var a=function(){if(s&&s.list&&t)for(var r=e.doc.getRange(s.from,s.to),o=0;o<s.list.length;o++)if(s.list[o]==r){
 s=null;break}return s&&s.list&&s.list.length?(e._isCompleting=!0,i=s,CodeMirror.on(e.editor,"endCompletion",n)):(e._isCompleting=!1,i&&CodeMirror.off(e.editor,"endCompletion",n)),s};if(!e.asyncCompletion){var s=e.getCompletions(),l=a(s);return l}e.getCompletions(function(t){var e=a(t);o(e)})};this.asyncCompletion&&(r.async=!0);var o={hint:r,completeSingle:t?!1:!0};this.editor.showHint(o)},e.prototype.onCompletion=function(t){var e=CodeMirror.hint.css(this.editor);t(e)},e}();e.SimpleCodeMirrorDocHandler=i}(i=e.base||(e.base={}))}(i=e.text||(e.text={}))}(i=e.types||(e.types={}))}(e=t.docs||(t.docs={}))}(portabled||(portabled={}));var __extends=this.__extends||function(t,e){function i(){this.constructor=t}for(var n in e)e.hasOwnProperty(n)&&(t[n]=e[n]);i.prototype=e.prototype,t.prototype=new i},portabled;!function(t){var e;!function(t){var e;!function(t){var e;!function(t){var e;!function(e){function i(){return new r}function n(t){return new CodeMirror.Doc(t||"","css")}e.expectsFile=/.*\.css/g,e.acceptsFile=/.*\.css/g,
 e.loadText=i;var r=function(t){function e(){t.call(this)}return __extends(e,t),e.prototype.shouldTriggerCompletion=function(t){if(": "===t.slice(t.length-2))return!0;var e=t.charAt(t.length-1);return"-"===e?!0:e.toLowerCase()!==e.toUpperCase()?!0:void 0},e.prototype.getCompletions=function(){return CodeMirror.hint.css(this.editor)},e}(t.base.SimpleCodeMirrorDocHandler);e.CssDocHandler=r,e.createCodeMirrorDoc=n}(e=t.css||(t.css={}))}(e=t.text||(t.text={}))}(e=t.types||(t.types={}))}(e=t.docs||(t.docs={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e;!function(t){var e;!function(t){var e;!function(e){function i(){return new r}function n(t){return new CodeMirror.Doc(t||"","text/html")}e.expectsFile=/.*\.(html|htm)/g,e.acceptsFile=/.*\.(html|htm)/g,e.loadText=i;var r=function(t){function e(){t.call(this)}return __extends(e,t),e.prototype.shouldTriggerCompletion=function(t){var e=this.doc.getCursor(),i=this.editor.getTokenAt(e),n=t.charAt(t.length-1);return"<"===n?!0:"="===n&&i.type?!0:n.toLowerCase()!==n.toUpperCase()&&i.type?!0:void 0;
 
@@ -178,12 +179,14 @@ t.executeSql('CREATE TABLE "'+i+'" (name PRIMARY KEY, value)',[],function(t){t.e
 },t}();t.listAllTables=o}(i=t.webSQL||(t.webSQL={}))}(i=t.persistence||(t.persistence={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e;!function(t){var e=function(){function t(t){var e=this;this._host=t,this.cm=new CodeMirror(function(t){t.style.position="absolute",t.style.height="100%",t.style.width="100%",e._host.appendChild(t)},{lineNumbers:!0,theme:"3024-night"}),this.doc=this.cm.getDoc(),setTimeout(function(){return e.cm.focus()},100)}return t.prototype.log=function(t){for(var e=[],i=1;i<arguments.length;i++)e[i-1]=arguments[i];this.doc.replaceSelection(t)},t}();t.ConsoleUI=e}(e=t.consoleUI||(t.consoleUI={}))}(e=t.shell||(t.shell={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){var i;!function(e){var i=function(){function e(e){this._host=e,this._leftHost=t.element("div",{position:"fixed",width:"49.9%",top:"0px",bottom:"3em",padding:"0.25em",background:"cornflowerBlue",opacity:"0.5",zIndex:100},this._host),this._leftPanel=t.element("div",{width:"100%",
 height:"100%",border:"solid 1px white",padding:"0.25em"},this._leftHost),this._rightHost=t.element("div",{position:"fixed",left:"50.2%",width:"49.9%",top:"0px",bottom:"3em",padding:"0.25em",background:"cornflowerBlue",opacity:"0.5",zIndex:100},this._host),this._rightPanel=t.element("div",{width:"100%",height:"100%",border:"solid 1px white",padding:"0.25em"},this._rightHost),t.setTextContent(this._rightPanel,"one two")}return e}();e.Panels=i}(i=e.panels||(e.panels={}))}(e=t.shell||(t.shell={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){function i(){t.addEventListener(window,"load",function(){new e.consoleUI.ConsoleUI(document.body),new e.panels.Panels(document.body)})}e.start=i}(e=t.shell||(t.shell={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e=function(){function t(t){this._lineStartPositions=null,this._text=t.text(),this.changes=t.changes().slice(0)}return t.prototype.getText=function(t,e){return this._text?this._text.slice(t,e):""},t.prototype.getLength=function(){
 return this._text?this._text.length:0},t.prototype.getChangeRange=function(t){if(!this.changes.length)return ts.unchangedTextChangeRange;var e=t,i=e.changes?this.changes.slice(e.changes.length):this.changes,n=ts.collapseTextChangeRangesAcrossMultipleVersions(i);return n},t}();t.ScriptDocumentSnapshot=e}(e=t.typescript||(t.typescript={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(t){var e=function(){function e(t){this.doc=t,this._snapshot=null}return e.prototype.getScriptSnapshot=function(){return this._snapshot&&this._snapshot.changes.length==this.doc.changes().length||(this._snapshot=new t.ScriptDocumentSnapshot(this.doc)),this._snapshot},e.prototype.getScriptVersion=function(){var t=this.doc.changes();return t.length},e}();t.ScriptDocumentState=e}(e=t.typescript||(t.typescript={}))}(portabled||(portabled={}));var portabled;!function(t){var e;!function(e){var i=function(){function i(t){void 0===t&&(t=ts.createDocumentRegistry()),this.registry=t,this.cancellation=null,this.currentDirectory="/",
-this.defaultLibFilenames=["#core.d.ts","#extensions.d.ts","#dom.generated.d.ts"],this.log=null,this._scriptFileNames=null,this._scripts={},this._defaultLibSnapshots={},this._preloadScriptFileNames=[],this._preloadPendingScriptFileNames=[],this._preloadTimeout=0,this.compilerOptions=ts.getDefaultCompilerOptions(),this.compilerOptions.target=1,this.host=this._createHost(),this._service=ts.createLanguageService(this.host,this.registry)}return i.prototype.stopPreloading=function(){this._preloadScriptFileNames&&(this._preloadScriptFileNames=null,this._preloadPendingScriptFileNames=null)},i.prototype.service=function(){return this.stopPreloading(),this._service},i.prototype.addFile=function(t,i){var n=this,r=new e.ScriptDocumentState(i);this._scripts[t]=r,this._scriptFileNames=null,this._preloadPendingScriptFileNames&&(this._preloadPendingScriptFileNames.push(t),this._preloadTimeout&&clearTimeout(this._preloadTimeout),this._preloadTimeout=setTimeout(function(){n._preloadPendingScriptFileNames&&n._preloadPendingScriptFileNames.sort(),
-n._continuePreload()},2e3))},i.prototype.removeFile=function(t){if(delete this._scripts[t],this._scriptFileNames=null,this._preloadScriptFileNames)for(var e=0;e<this._preloadPendingScriptFileNames.length;e++)if(this._preloadPendingScriptFileNames[e]===t){delete this._preloadPendingScriptFileNames[e];break}if(this._preloadScriptFileNames)for(var e=0;e<this._preloadScriptFileNames.length;e++)if(this._preloadScriptFileNames[e]===t){delete this._preloadScriptFileNames[e];break}},i.prototype._continuePreload=function(){var e=this;if(this._preloadTimeout=0,this._preloadScriptFileNames&&this._preloadPendingScriptFileNames){var i;if(this._preloadScriptFileNames.length<this.defaultLibFilenames.length){var n=this._preloadScriptFileNames[this._preloadScriptFileNames.length]=this.defaultLibFilenames[this._preloadScriptFileNames.length];i=function(t){if(console&&"function"==typeof console.error){console.error(n+" "+t.length+" errors:");for(var e=0;e<t.length;e++){var i=t[e];console.error(i.file.getLineAndCharacterOfPosition(i.start)," ",i.messageText);
+this.defaultLibFilenames=["#core.d.ts","#extensions.d.ts","#dom.generated.d.ts"],this.log=null,this._scriptFileNames=null,this._scripts={},this._defaultLibSnapshots={},this._preloadScriptFileNames=[],this._preloadPendingScriptFileNames=[],this._preloadTimeout=0,this.compilerOptions=ts.getDefaultCompilerOptions(),this.compilerOptions.target=1,this.host=this._createHost(),this._service=ts.createLanguageService(this.host,this.registry)}return i.prototype.withSubset=function(t){var e=new i;this.service(),e.service();var n=this.host.getScriptFileNames();e._scriptFileNames=null;for(var r=0;r<n.length;r++){var o="#"===n[r].charAt(0)||t(n[r]);o&&(this._scripts.hasOwnProperty(n[r])&&(e._scripts[n[r]]=this._scripts[n[r]]),this._defaultLibSnapshots.hasOwnProperty(n[r])&&(e._defaultLibSnapshots[n[r]]=this._defaultLibSnapshots[n[r]]))}return e},i.prototype.stopPreloading=function(){this._preloadScriptFileNames&&(this._preloadScriptFileNames=null,this._preloadPendingScriptFileNames=null)},i.prototype.service=function(){return this.stopPreloading(),
+this._service},i.prototype.addFile=function(t,i){var n=this,r=new e.ScriptDocumentState(i);this._scripts[t]=r,this._scriptFileNames=null,this._preloadPendingScriptFileNames&&(this._preloadPendingScriptFileNames.push(t),this._preloadTimeout&&clearTimeout(this._preloadTimeout),this._preloadTimeout=setTimeout(function(){n._preloadPendingScriptFileNames&&n._preloadPendingScriptFileNames.sort(),n._continuePreload()},2e3))},i.prototype.removeFile=function(t){if(delete this._scripts[t],this._scriptFileNames=null,this._preloadScriptFileNames)for(var e=0;e<this._preloadPendingScriptFileNames.length;e++)if(this._preloadPendingScriptFileNames[e]===t){delete this._preloadPendingScriptFileNames[e];break}if(this._preloadScriptFileNames)for(var e=0;e<this._preloadScriptFileNames.length;e++)if(this._preloadScriptFileNames[e]===t){delete this._preloadScriptFileNames[e];break}},i.prototype._continuePreload=function(){var e=this;if(this._preloadTimeout=0,this._preloadScriptFileNames&&this._preloadPendingScriptFileNames){var i;if(this._preloadScriptFileNames.length<this.defaultLibFilenames.length){
+var n=this._preloadScriptFileNames[this._preloadScriptFileNames.length]=this.defaultLibFilenames[this._preloadScriptFileNames.length];i=function(t){if(console&&"function"==typeof console.error){console.error(n+" "+t.length+" errors:");for(var e=0;e<t.length;e++){var i=t[e];console.error(i.file.getLineAndCharacterOfPosition(i.start)," ",i.messageText)}}else for(var r=[],e=0;e<t.length;e++){var i=t[e],o=i.file.getLineAndCharacterOfPosition(i.start);r.push(o.line+":"+o.character+" "+i.messageText),alert(n+" "+t.length+" errors:\n"+r.join("\n"))}}}else{if(!this._preloadPendingScriptFileNames.length)return this._preloadScriptFileNames=null,void(this._preloadPendingScriptFileNames=null);var n=this._preloadPendingScriptFileNames.shift();this._preloadScriptFileNames.push(n)}var r=t.dateNow(),o=this._service.getSyntacticDiagnostics(n),a=t.dateNow()-r;o&&o.length&&i&&i(o);var s=Math.max(10,Math.min(300,2*a));this._preloadTimeout=setTimeout(function(){if(e._preloadScriptFileNames){var r=t.dateNow(),o=e._service.getSemanticDiagnostics(n),s=t.dateNow()-r;
 
-}}else for(var r=[],e=0;e<t.length;e++){var i=t[e],o=i.file.getLineAndCharacterOfPosition(i.start);r.push(o.line+":"+o.character+" "+i.messageText),alert(n+" "+t.length+" errors:\n"+r.join("\n"))}}}else{if(!this._preloadPendingScriptFileNames.length)return this._preloadScriptFileNames=null,void(this._preloadPendingScriptFileNames=null);var n=this._preloadPendingScriptFileNames.shift();this._preloadScriptFileNames.push(n)}var r=t.dateNow(),o=this._service.getSyntacticDiagnostics(n),a=t.dateNow()-r;o&&o.length&&i&&i(o);var s=Math.max(10,Math.min(300,2*a));this._preloadTimeout=setTimeout(function(){if(e._preloadScriptFileNames){var r=t.dateNow(),o=e._service.getSemanticDiagnostics(n),s=t.dateNow()-r;o&&o.length&&i&&i(o);var l=Math.max(10,Math.min(200,2*s));e._preloadTimeout=setTimeout(function(){if(e._preloadScriptFileNames){var i=t.dateNow();e._service.getEmitOutput(n);var r=t.dateNow()-i,o=Math.max(10,Math.min(200,2*r));e._preloadTimeout=setTimeout(function(){e._preloadScriptFileNames&&("undefined"!=typeof console&&"function"==typeof console.log&&console.log("TS preloaded "+n+" "+(a+s+r)/1e3+" sec. "+Math.floor(100*a/(a+s+r))+":"+Math.floor(100*s/(a+s+r))+"%"+(e._preloadPendingScriptFileNames&&e._preloadPendingScriptFileNames.length?" ("+e._preloadPendingScriptFileNames.length+" to go)":"")),
-e._continuePreload())},o)}},l)}},s)}},i.prototype._createHost=function(){var t=this,e={getCompilationSettings:function(){return t.compilerOptions},getScriptFileNames:function(){if(t._preloadScriptFileNames)return t._preloadScriptFileNames;if(!t._scriptFileNames){t._scriptFileNames=[];for(var e in t._scripts)t._scripts.hasOwnProperty(e)&&t._scripts[e]&&t._scriptFileNames.push(e);for(var i=0;i<t.defaultLibFilenames.length;i++)t._scriptFileNames.push(t.defaultLibFilenames[i]);t._scriptFileNames.sort()}return t._scriptFileNames},getScriptVersion:function(e){if(t.defaultLibFilenames.indexOf(e)>=0)return"base";var i=t._scripts[e];return"v"+i.getScriptVersion()},getScriptSnapshot:function(e){if(t.defaultLibFilenames.indexOf(e)>=0){if(!t._defaultLibSnapshots[e]){var i="#"===e.charAt(0)?e.slice(1):e,n=document.getElementById(i);if(null==n)return null;t._defaultLibSnapshots[e]=ts.ScriptSnapshot.fromString(n.text||n.textContent||n.innerText)}return t._defaultLibSnapshots[e]}return t._scripts[e].getScriptSnapshot()},getLocalizedDiagnosticMessages:function(){
-return null},getCancellationToken:function(){return t.cancellation},getCurrentDirectory:function(){return t.currentDirectory},getNewLine:function(){return"\n"},getDefaultLibFileName:function(){return t.defaultLibFilenames[0]},log:function(e){t.log?t.log(e):t.debugLog&&"undefined"!=typeof console&&("function"==typeof console.groupCollapsed&&"function"==typeof console.groupEnd?(console.groupCollapsed("TS"),"function"==typeof console.log&&console.log(e),console.groupEnd()):"function"==typeof console.info?console.info("*** TS "+e):"function"==typeof console.log&&console.log("*** TS "+e))}};return e},i}();e.TypeScriptService=i}(e=t.typescript||(t.typescript={}))}(portabled||(portabled={}));</script>
+o&&o.length&&i&&i(o);var l=Math.max(10,Math.min(200,2*s));e._preloadTimeout=setTimeout(function(){if(e._preloadScriptFileNames){var i=t.dateNow();e._service.getEmitOutput(n);var r=t.dateNow()-i,o=Math.max(10,Math.min(200,2*r));e._preloadTimeout=setTimeout(function(){e._preloadScriptFileNames&&("undefined"!=typeof console&&"function"==typeof console.log&&console.log("TS preloaded "+n+" "+(a+s+r)/1e3+" sec. "+Math.floor(100*a/(a+s+r))+":"+Math.floor(100*s/(a+s+r))+"%"+(e._preloadPendingScriptFileNames&&e._preloadPendingScriptFileNames.length?" ("+e._preloadPendingScriptFileNames.length+" to go)":"")),e._continuePreload())},o)}},l)}},s)}},i.prototype._createHost=function(){var t=this,e={getCompilationSettings:function(){return t.compilerOptions},getScriptFileNames:function(){if(t._preloadScriptFileNames)return t._preloadScriptFileNames;if(!t._scriptFileNames){t._scriptFileNames=[];for(var e in t._scripts)t._scripts.hasOwnProperty(e)&&t._scripts[e]&&t._scriptFileNames.push(e);for(var i=0;i<t.defaultLibFilenames.length;i++)t._scriptFileNames.push(t.defaultLibFilenames[i]);
+
+t._scriptFileNames.sort()}return t._scriptFileNames},getScriptVersion:function(e){if(t.defaultLibFilenames.indexOf(e)>=0)return"base";var i=t._scripts[e];return"v"+i.getScriptVersion()},getScriptSnapshot:function(e){if(t.defaultLibFilenames.indexOf(e)>=0){if(!t._defaultLibSnapshots[e]){var i="#"===e.charAt(0)?e.slice(1):e,n=document.getElementById(i);if(null==n)return null;t._defaultLibSnapshots[e]=ts.ScriptSnapshot.fromString(n.text||n.textContent||n.innerText)}return t._defaultLibSnapshots[e]}return t._scripts[e].getScriptSnapshot()},getLocalizedDiagnosticMessages:function(){return null},getCancellationToken:function(){return t.cancellation},getCurrentDirectory:function(){return t.currentDirectory},getNewLine:function(){return"\n"},getDefaultLibFileName:function(){return t.defaultLibFilenames[0]},log:function(e){t.log?t.log(e):t.debugLog&&"undefined"!=typeof console&&("function"==typeof console.groupCollapsed&&"function"==typeof console.groupEnd?(console.groupCollapsed("TS"),"function"==typeof console.log&&console.log(e),
+console.groupEnd()):"function"==typeof console.info?console.info("*** TS "+e):"function"==typeof console.log&&console.log("*** TS "+e))}};return e},i}();e.TypeScriptService=i}(e=t.typescript||(t.typescript={}))}(portabled||(portabled={}));</script>
 
 <div id="portabled-loading-host" style="display: none;">
   <div id="portabled-loading-title">Opening...</div>
@@ -208,7 +211,7 @@ return null},getCancellationToken:function(){return t.cancellation},getCurrentDi
 <div class="portabled-flyout-scroller" data-bind="load: flyoutScroller = $element">
   <div class="portabled-flyout-scroller-bg">
 
-    <div class="portabled-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default CodeMirror-focused"><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 112px; left: 60.6796875px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none; font-size: 16px;" tabindex="0"></textarea></div><div class="CodeMirror-vscrollbar" cm-not-content="true" style="bottom: 0px;"><div style="min-width: 1px; height: 0px;"></div></div><div class="CodeMirror-hscrollbar" cm-not-content="true"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-scrollbar-filler" cm-not-content="true"></div><div class="CodeMirror-gutter-filler" cm-not-content="true"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 41px; margin-bottom: -17px; border-right-width: 13px; min-width: 299px; min-height: 170px; padding-right: 0px; padding-bottom: 0px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>1</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors" style=""><div class="CodeMirror-cursor" style="left: 19.6796875px; top: 108px; height: 18px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">1</div><div class="CodeMirror-gutter-elt" style="left: 29px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-keyword">class</span> <span class="cm-variable">CommanderShell</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">2</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">3</div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-property">private</span> <span class="cm-variable">_twoPanels</span>: <span class="cm-variable">panels</span>.<span class="cm-property">TwoPanels</span>;</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">4</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-keyword">private</span> <span class="cm-variable">_terminal</span>: <span class="cm-variable">terminal</span>.<span class="cm-property">Terminal</span>;</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">5</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">6</div><div class="CodeMirror-gutter-elt" style="left: 29px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">  <span class="cm-keyword">constructor</span>(<span class="cm-keyword">private</span> <span class="cm-variable">_host</span>: <span class="cm-variable">HTMLElement</span>) <span class=" CodeMirror-matchingbracket">{</span></span></pre></div><div class="CodeMirror-activeline" style="position: relative;"><div class="CodeMirror-activeline-background CodeMirror-linebackground"></div><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">7</div></div><pre><span style="padding-right: 0.1px;">  <span class=" CodeMirror-matchingbracket">}</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">8</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">9</div></div><pre><span style="padding-right: 0.1px;">}</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 13px; width: 1px; top: 170px;"></div><div class="CodeMirror-gutters" style="height: 614px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 29px;"></div><div class="CodeMirror-gutter CodeMirror-foldgutter"></div></div></div></div></div>
+    <div class="portabled-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default CodeMirror-focused"><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 105px; left: 281px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none; font-size: 16px;" tabindex="0"></textarea></div><div class="CodeMirror-vscrollbar" cm-not-content="true" style="bottom: 0px; display: block;"><div style="min-width: 1px; height: 1232px;"></div></div><div class="CodeMirror-hscrollbar" cm-not-content="true"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-scrollbar-filler" cm-not-content="true"></div><div class="CodeMirror-gutter-filler" cm-not-content="true"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 41px; margin-bottom: -17px; border-right-width: 13px; min-width: 687.75px; min-height: 1232px; padding-right: 17px; padding-bottom: 0px;"><div style="position: relative; top: 360px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors" style=""><div class="CodeMirror-cursor" style="left: 240px; top: 612px; height: 18px;">&nbsp;</div></div><div class="CodeMirror-code"><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">21</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">padding</span>: <span class="cm-number">0</span>, <span class="cm-property">margin</span>: <span class="cm-number">0</span>,</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">22</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">text</span>: <span class="cm-string">'Hello world from mini-shell\n\nVersion 0.7m\nMay 2015\nOleg Mihailik\n\nPlease be careful.'</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">23</div></div><pre><span style="padding-right: 0.1px;">      }, <span class="cm-keyword">this</span>.<span class="cm-property">_history</span>);</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">24</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">25</div><div class="CodeMirror-gutter-elt" style="left: 29px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">this</span>.<span class="cm-property">_prompt</span> <span class="cm-operator">=</span> <span class="cm-operator">&lt;</span><span class="cm-variable-3">any</span><span class="cm-operator">&gt;</span><span class="cm-variable">elem</span>(<span class="cm-string">'div'</span>, {</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">26</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">position</span>: <span class="cm-string">'fixed'</span>,</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">27</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">left</span>: <span class="cm-number">0</span>, <span class="cm-property">bottom</span>: <span class="cm-number">0</span>,</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">28</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">height</span>: <span class="cm-string">'1em'</span>,</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">29</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">text</span>: <span class="cm-string">'&gt;'</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">30</div></div><pre><span style="padding-right: 0.1px;">      }, <span class="cm-keyword">this</span>.<span class="cm-property">_host</span>);</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">31</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">32</div><div class="CodeMirror-gutter-elt" style="left: 29px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">this</span>.<span class="cm-property">_input</span> <span class="cm-operator">=</span> <span class="cm-operator">&lt;</span><span class="cm-variable-3">any</span><span class="cm-operator">&gt;</span><span class="cm-variable">elem</span>(<span class="cm-string">'textarea'</span>, {</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">33</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">position</span>: <span class="cm-string">'fixed'</span>,</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">34</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">left</span>: <span class="cm-string">'0'</span>, <span class="cm-property">bottom</span>: <span class="cm-number">0</span>,</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">35</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">width</span>: <span class="cm-number">0</span>, <span class="cm-property">height</span>: <span class="cm-string">'1em'</span>,</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">36</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">font</span>: <span class="cm-string">'inherit'</span>,</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">37</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">border</span>: <span class="cm-string">'none'</span>,</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">38</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">background</span>: <span class="cm-string">'transparent'</span>,</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">39</div><div class="CodeMirror-gutter-elt" style="left: 29px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">color</span>: [<span class="cm-string">'inherit'</span>, <span class="cm-string">'silver'</span>],</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">40</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">outline</span>: <span class="cm-string">'none'</span>,</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">41</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">resize</span>: <span class="cm-string">'none'</span>,</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">42</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">overflow</span>: <span class="cm-string">'hidden'</span>,</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">43</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">autofocus</span>: <span class="cm-atom">true</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">44</div></div><pre><span style="padding-right: 0.1px;">      }, <span class="cm-keyword">this</span>.<span class="cm-property">_host</span>);</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">45</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">46</div></div><pre><span style="padding-right: 0.1px;">    }</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">47</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">48</div><div class="CodeMirror-gutter-elt" style="left: 29px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">    <span class="cm-variable">measure</span>() {</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">49</div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">this</span>.<span class="cm-property">_promptWidth</span> <span class="cm-operator">=</span> <span class="cm-keyword">this</span>.<span class="cm-property">_prompt</span>.<span class="cm-property">offsetWidth</span>;</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">50</div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">this</span>.<span class="cm-property">_historyContentHeight</span> <span class="cm-operator">=</span> <span class="cm-keyword">this</span>.<span class="cm-property">_historyContent</span>.<span class="cm-property">offsetHeight</span>;</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">51</div></div><pre><span style="padding-right: 0.1px;">    }</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">52</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">53</div><div class="CodeMirror-gutter-elt" style="left: 29px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">    <span class="cm-variable">arrange</span>(<span class="cm-variable">metrics</span>: <span class="cm-variable">CommanderShell</span>.<span class="cm-variable">Metrics</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">54</div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">this</span>.<span class="cm-property">_history</span>.<span class="cm-property">style</span>.<span class="cm-property">bottom</span> <span class="cm-operator">=</span> <span class="cm-variable">metrics</span>.<span class="cm-property portabled-match">emHeight</span> <span class="cm-operator">+</span> <span class="cm-string">'px'</span>;</span></pre></div><div style="position: relative;" class="CodeMirror-activeline"><div class="CodeMirror-activeline-background CodeMirror-linebackground"></div><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">55</div><div class="CodeMirror-gutter-elt" style="left: 29px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">if</span> (<span class="cm-variable">metrics</span>.<span class="cm-property">hostHeight</span> <span class="cm-operator">-</span> <span class="cm-variable">metrics</span>.<span class="cm-property portabled-match portabled-match-current">emHeight</span> <span class="cm-operator">&gt;</span> <span class="cm-keyword">this</span>.<span class="cm-property">_historyContentHeight</span>) {</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">56</div></div><pre><span style="padding-right: 0.1px;">        <span class="cm-keyword">this</span>.<span class="cm-property">_history</span>.<span class="cm-property">style</span>.<span class="cm-property">height</span> <span class="cm-operator">=</span> <span class="cm-keyword">this</span>.<span class="cm-property">_historyContentHeight</span> <span class="cm-operator">+</span> <span class="cm-string">'px'</span>;</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">57</div></div><pre><span style="padding-right: 0.1px;">      }</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">58</div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">else</span> {</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">59</div></div><pre><span style="padding-right: 0.1px;">        <span class="cm-keyword">this</span>.<span class="cm-property">_history</span>.<span class="cm-property">style</span>.<span class="cm-property">height</span> <span class="cm-operator">=</span> (<span class="cm-variable">metrics</span>.<span class="cm-property">hostHeight</span> <span class="cm-operator">-</span> <span class="cm-variable">metrics</span>.<span class="cm-property portabled-match">emHeight</span>) <span class="cm-operator">+</span> <span class="cm-string">'px'</span>;</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">60</div></div><pre><span style="padding-right: 0.1px;">        <span class="cm-keyword">this</span>.<span class="cm-property">_history</span>.<span class="cm-property">scrollTop</span> <span class="cm-operator">=</span> <span class="cm-keyword">this</span>.<span class="cm-property">_historyContentHeight</span> <span class="cm-operator">-</span> (<span class="cm-variable">metrics</span>.<span class="cm-property">hostHeight</span> <span class="cm-operator">-</span> <span class="cm-variable">metrics</span>.<span class="cm-property portabled-match">emHeight</span>);</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">61</div></div><pre><span style="padding-right: 0.1px;">      }</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">62</div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">this</span>.<span class="cm-property">_input</span>.<span class="cm-property">style</span>.<span class="cm-property">left</span> <span class="cm-operator">=</span> <span class="cm-keyword">this</span>.<span class="cm-property">_promptWidth</span> <span class="cm-operator">+</span> <span class="cm-string">'px'</span>;</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">63</div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">this</span>.<span class="cm-property">_input</span>.<span class="cm-property">style</span>.<span class="cm-property">width</span> <span class="cm-operator">=</span> (<span class="cm-variable">metrics</span>.<span class="cm-property">hostWidth</span> <span class="cm-operator">-</span> <span class="cm-keyword">this</span>.<span class="cm-property">_promptWidth</span>) <span class="cm-operator">+</span> <span class="cm-string">'px'</span>;</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">64</div></div><pre><span style="padding-right: 0.1px;">    }</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">65</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">66</div></div><pre><span style="padding-right: 0.1px;">  }</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">67</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -41px; width: 41px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 21px;">68</div></div><pre class=""><span style="padding-right: 0.1px;">}</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 13px; width: 1px; top: 1232px;"></div><div class="CodeMirror-gutters" style="height: 1245px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 29px;"></div><div class="CodeMirror-gutter CodeMirror-foldgutter"></div></div></div></div></div>
 
     <div class="portabled-flyout">
 
@@ -217,20 +220,16 @@ return null},getCancellationToken:function(){return t.cancellation},getCurrentDi
         <div class="portabled-thick-bar-bg">
           <div class="portabled-thick-bar" data-bind="event: { mousedown: thickbarMouseDown }, loadRaw: docHostRegions.scroller = $element">
           <div style="width: 100%; height: 100%;"><div class="portabled-scroller-outer" data-bind="load: bindHandlers($element)">
-  <div class="portabled-scroller-thumb" data-bind="style: { top: viewportFrom, height: viewportHeight }" style="top: 0%; height: 11.1296296296296%;">
+  <div class="portabled-scroller-thumb" data-bind="style: { top: viewportFrom, height: viewportHeight }" style="top: 16.1296296296296%; height: 6.68518518518519%;">
   </div>
 </div>
 
 <!-- ko foreach: lines -->
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 22%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 7%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 74%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 74%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 1%; width: 21%; height: 0.33%;">
 </div>
 
 
@@ -238,11 +237,19 @@ return null},getCancellationToken:function(){return t.cancellation},getCurrentDi
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 82%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 31%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 2%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 37%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 30%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 33%; height: 0.33%;">
 </div>
 
 
@@ -250,7 +257,239 @@ return null},getCancellationToken:function(){return t.cancellation},getCurrentDi
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 2%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 23%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 32%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 38%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 32%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 16%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 17%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 23%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 15%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 14%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 38%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 20%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 92%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 16%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 31%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 16%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 17%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 13%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 8%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 14%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 34%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 16%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 19%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 22%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 15%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 14%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 24%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 27%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 15%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 14%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 17%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 14%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 14%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 10%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 42%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 59%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 39%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 50%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 68%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 59%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 5%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 71%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 7%; width: 89%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 47%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 68%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 1%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
 </div>
 
 <!-- /ko -->
@@ -263,7 +502,7 @@ return null},getCancellationToken:function(){return t.cancellation},getCurrentDi
     try { portabled.app.loading('Files...'); } catch (err) { alert(err+' '+err.stack); }
 </script>
 
-      <div class="portabled-file-tree" timestamp="1430743184706" data-bind="loadRaw: fileTreeHost = $element">
+      <div class="portabled-file-tree" timestamp="1430868572194" data-bind="loadRaw: fileTreeHost = $element">
 
         <ul>
 
@@ -276,6 +515,15 @@ declare function elem(tag: string): HTMLElement;
 declare function elem(tag: string, style: {}, parent?: Element): HTMLElement;
 declare function elem(tag: string, parent: Element): HTMLElement;
 declare function elem(elem: HTMLElement, style: {}, parent?: Element): HTMLElement;
+
+declare module elem {
+
+  export function on(obj: Node, eventName: string, handler: (evt: Event) =&gt; void);
+  export function on(obj: Window, eventName: string, handler: (evt: Event) =&gt; void);
+  export function on(obj: Node, eventName: string, handler: (evt: Event) =&gt; void);
+  export function off(obj: Window, eventName: string, handler: (evt: Event) =&gt; void);
+
+}
 
 declare function createFrame(style?: {}):
   { global: Window; document: Document; iframe: HTMLIFrameElement; };
@@ -306,7 +554,7 @@ declare module loadMod {
     document: Document;
     iframe: HTMLIFrameElement
   }
-}</pre></li><li class="portabled-file"><span class="portabled-file-name">base.js</span><pre class="portabled-file-content">function getText(obj) {
+}</pre></li><li class="portabled-file  "><span class="portabled-file-name">base.js</span><pre class="portabled-file-content">function getText(obj) {
 
   if (typeof obj === 'function') {
     var result = /\/\*(\*(?!\/)|[^*])*\*\//m.exec(obj+'')[0];
@@ -370,6 +618,31 @@ function setText(obj, text) {
   }
 }
 
+elem.on = function (obj, eventName, handler) {
+  if (obj.addEventListener) {
+    obj.addEventListener(eventName, handler, false);
+  }
+  else if (obj.attachEvent) {
+    obj.attachEvent(eventName, handler);
+  }
+  else {
+    obj['on'+eventName] = handler;
+  }
+};
+
+elem.off = function (obj, eventName, handler) {
+  if (obj.removeEventListener) {
+    obj.removeEventListener(eventName, handler, false);
+  }
+  else if (obj.detachEvent) {
+    obj.detachEvent(eventName, handler);
+  }
+  else {
+    if (obj['on'+eventName] === handler)
+      obj['on' + eventName] = null;
+  }
+};
+
 function elem(tag, style, parent) {
   var e = tag.tagName ? tag : this.document.createElement(tag);
 
@@ -394,16 +667,32 @@ function elem(tag, style, parent) {
           e[k] = style[k];
         }
         else {
-          try {
-            e.style[k] = style[k];
-          }
-          catch (err) {
-            try {
-              if (typeof console !== 'undefined' &amp;&amp; typeof console.error === 'function')
-                console.error(e.tagName+'.style.'+k+'='+style[k]+': '+err.message);
+
+          if (style[k] &amp;&amp; typeof style[k] === 'object' &amp;&amp; typeof style[k].length === 'number') {
+            // array: iterate and try to apply values
+            var applyValues = style[k];
+						for (var i = 0; i &lt; applyValues.length; i++) {
+              try {
+                e.style[k] = applyValues[i];
+                if (e.style[k] == applyValues[i])
+                	break;
+              }
+              catch (e) { }
             }
-            catch (whatevs) {
-              alert(e.tagName+'.style.'+k+'='+style[k]+': '+err.message);
+          }
+          else {
+            // not array
+            try {
+              e.style[k] = style[k];
+            }
+            catch (err) {
+              try {
+                if (typeof console !== 'undefined' &amp;&amp; typeof console.error === 'function')
+                  console.error(e.tagName+'.style.'+k+'='+style[k]+': '+err.message);
+              }
+              catch (whatevs) {
+                alert(e.tagName+'.style.'+k+'='+style[k]+': '+err.message);
+              }
             }
           }
         }
@@ -456,11 +745,18 @@ function createFrame(style) {
 
   ifrwin.elem = elem;
 
+  if (window.onerror)
+    ifrwin.onerror = delegate_onerror;
+
   return {
     document: ifrdoc,
     global: ifrwin,
     iframe: ifr
   };
+
+  function delegate_onerror(a,b,c,d,e,f,g,h) {
+    window.onerror(a,b,c,d,e,f,g,h);
+  }
 }
 
 function loadMod(options) {
@@ -706,7 +1002,7 @@ function loadMod(options) {
 
   alert(msg.join('\n'));
 
-}</pre></li></ul></li><li class="portabled-dir"><span class="portabled-dir-name">load</span><ul><li class="portabled-file   "><span class="portabled-file-name">shellLoader.ts</span><pre class="portabled-file-content">function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.BootModuleAPI): shellLoader.ContinueLoading {
+}</pre></li></ul></li><li class="portabled-dir"><span class="portabled-dir-name">load</span><ul><li class="portabled-file    "><span class="portabled-file-name">shellLoader.ts</span><pre class="portabled-file-content">function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.BootModuleAPI): shellLoader.ContinueLoading {
 
   var driveMount = persistence.bootMount(uniqueKey, document);
 
@@ -724,13 +1020,32 @@ function loadMod(options) {
       var uiframe = createFrame();
       uiframe.iframe.style.opacity = '0';
 
-      //var _elem = elem;
-      //window['elem'] = function(x, y, z) { return _elem.apply(uiframe.global, [x, y, z]); };
+      var wasResized = false;
+      var resizeHandlers: any[] = [];
+      elem.on(window, 'resize', global_resize);
+      elem.on(document.body, 'resize', global_resize);
+
+      (&lt;any&gt;shell_elem).on = elem.on;
+      (&lt;any&gt;shell_elem).off = elem.off;
+
+      loadMod({
+        path: '/shell/start.js',
+        eval: drive.read('/shell/start.js'),
+        ui: false,
+        scope: {
+          require: shell_require,
+          document: uiframe.document,
+          window: uiframe.global,
+          console: console,
+          elem: shell_elem
+        }
+      });
 
       function shell_require(moduleName): any {
         switch (moduleName) {
           case 'ui': return uiframe;
           case 'drive': return drive;
+          case 'resize': return { on: onresize, off: offresize };
         }
 
         if ((moduleName + '').charAt(0) === '.') {
@@ -749,18 +1064,47 @@ function loadMod(options) {
         }
       }
 
-      loadMod({
-        path: '/shell/start.js',
-        eval: drive.read('/shell/start.js'),
-        ui: false,
-        scope: {
-          require: shell_require,
-          document: uiframe.document,
-          window: uiframe.global
-        }
-      });
-
       function shell_elem(x, y, z) { return (&lt;any&gt;uiframe.global).elem(x, y, z); }
+
+      function onresize(handler) {
+        if (typeof handler !== 'function') return;
+        resizeHandlers.push(handler);
+      }
+
+      function offresize(handler) {
+        if (typeof handler !== 'function') return;
+        for (var i = 0; i &lt; resizeHandlers.length; i++) {
+          if (resizeHandlers[i]===handler) {
+            resizeHandlers.splice(i, 1);
+          }
+        }
+      }
+
+      function global_resize() {
+        if (wasResized) return;
+        wasResized = true;
+
+        if (requestAnimationFrame) {
+          requestAnimationFrame(global_resize_delayed);
+        }
+        else {
+          setTimeout(global_resize_delayed, 1);
+        }
+      }
+
+      function global_resize_delayed() {
+        var metrics = {
+          windowWidth: window.innerWidth || document.body.parentElement.clientWidth || document.body.clientWidth,
+          windowHeight: window.innerHeight || document.body.parentElement.clientHeight || document.body.clientHeight
+        };
+
+        wasResized = false;
+        for (var i = 0; i &lt; resizeHandlers.length; i++) {
+          var f = resizeHandlers[i];
+          if (f)
+            f(metrics);
+        }
+      }
 
       var start = new Date().valueOf();
       var fadeintTime = 500;
@@ -2375,37 +2719,230 @@ module shellLoader {
     return path;
   }
 
-}</pre></li></ul></li><li class="portabled-dir "><span class="portabled-dir-name">shell</span><ul><li class="portabled-dir"><span class="portabled-dir-name">panels</span><ul><li class="portabled-file "><span class="portabled-file-name">TwoPanels.ts</span><pre class="portabled-file-content">module panels {
+}</pre></li></ul></li><li class="portabled-dir "><span class="portabled-dir-name">shell</span><ul><li class="portabled-dir"><span class="portabled-dir-name">panels</span><ul><li class="portabled-file           "><span class="portabled-file-name">TwoPanels.ts</span><pre class="portabled-file-content">module panels {
 
   export class TwoPanels {
 
+    private _leftPanel: HTMLDivElement;
+    private _rightPanel: HTMLDivElement;
+
     constructor(private _host: HTMLElement) {
+      this._leftPanel = &lt;any&gt;elem('div', {
+        position: ['fixed', 'absolute' ],
+        left: '2px', top: '2px', width: 0, height: 0,
+        background: ['cornflowerblue', 'rgba(0, 0, 255, 0.5)'],
+        padding: '5px',
+        color: 'silver',
+        text: 'Left panel'
+      }, this._host);
+      this._rightPanel = &lt;any&gt;elem('div', {
+        position: ['fixed', 'absolute'],
+        right: '2px', top: '2px', width: 0, height: 0,
+        background: ['cornflowerblue', 'rgba(0, 0, 255, 0.5)'],
+        padding: '5px',
+        color: 'silver',
+        text: 'Right panel'
+      }, this._host);
+
+      elem.on(this._leftPanel, 'mousedown', e=&gt; {
+        if (e.preventDefault)
+          e.preventDefault();
+        return false;
+      });
+
+      elem.on(this._rightPanel, 'mousedown', e=&gt; {
+        if (e.preventDefault)
+          e.preventDefault();
+        return false;
+      });
+
+    }
+
+    measure() {
+    }
+
+    arrange(metrics: CommanderShell.Metrics) {
+      console.log(metrics);
+      this._leftPanel.style.width = this._rightPanel.style.width = (metrics.hostWidth / 2 - 3)+'px';
+      this._leftPanel.style.height = this._rightPanel.style.height = (metrics.hostHeight - metrics.emHeight * 4) + 'px';
+    }
+
+  	toggle() {
+      this._leftPanel.style.display = this._leftPanel.style.display !== 'none' ? 'none' : 'block';
+      this._rightPanel.style.display = this._rightPanel.style.display !== 'none' ? 'none' : 'block';
+    }
+
+  	keydown(e: KeyboardEvent) {
     }
 
   }
 
-}</pre></li></ul></li><li class="portabled-dir"><span class="portabled-dir-name">terminal</span><ul><li class="portabled-file "><span class="portabled-file-name">Terminal.ts</span><pre class="portabled-file-content">module terminal {
+}</pre></li></ul></li><li class="portabled-dir"><span class="portabled-dir-name">terminal</span><ul><li class="portabled-file      portabled-file-selected"><span class="portabled-file-name">Terminal.ts</span><pre class="portabled-file-content">module terminal {
 
   export class Terminal {
 
+    private _history: HTMLDivElement;
+    private _historyContent: HTMLDivElement;
+    private _prompt: HTMLDivElement;
+    private _input: HTMLTextAreaElement;
+
+    private _promptWidth = 0;
+    private _historyContentHeight = 0;
+
     constructor(private _host: HTMLElement) {
+      this._history = &lt;any&gt;elem('div', {
+        position: 'fixed',
+        left: 0, bottom: 0,
+        width: '100%', height: 0,
+        overflow: 'auto'
+      }, this._host);
+      this._historyContent = &lt;any&gt;elem('pre', {
+        padding: 0, margin: 0,
+        text: 'Hello world from mini-shell\n\nVersion 0.7m\nMay 2015\nOleg Mihailik\n\nPlease be careful.'
+      }, this._history);
+
+      this._prompt = &lt;any&gt;elem('div', {
+        position: 'fixed',
+        left: 0, bottom: 0,
+        height: '1em',
+        text: '&gt;'
+      }, this._host);
+
+      this._input = &lt;any&gt;elem('textarea', {
+        position: 'fixed',
+        left: '0', bottom: 0,
+        width: 0, height: '1em',
+        font: 'inherit',
+        border: 'none',
+        background: 'transparent',
+        color: ['inherit', 'silver'],
+        outline: 'none',
+        resize: 'none',
+        overflow: 'hidden',
+        autofocus: true
+      }, this._host);
+
+    }
+
+    measure() {
+      this._promptWidth = this._prompt.offsetWidth;
+      this._historyContentHeight = this._historyContent.offsetHeight;
+    }
+
+    arrange(metrics: CommanderShell.Metrics) {
+      this._history.style.bottom = metrics.emHeight + 'px';
+      if (metrics.hostHeight - metrics.emHeight &gt; this._historyContentHeight) {
+        this._history.style.height = this._historyContentHeight + 'px';
+      }
+      else {
+        this._history.style.height = (metrics.hostHeight - metrics.emHeight) + 'px';
+        this._history.scrollTop = this._historyContentHeight - (metrics.hostHeight - metrics.emHeight);
+      }
+      this._input.style.left = this._promptWidth + 'px';
+      this._input.style.width = (metrics.hostWidth - this._promptWidth) + 'px';
     }
 
   }
 
-}</pre></li></ul></li><li class="portabled-file portabled-file-selected"><span class="portabled-file-name">CommanderShell.ts</span><pre class="portabled-file-content">class CommanderShell {
+}</pre></li></ul></li><li class="portabled-file        "><span class="portabled-file-name">CommanderShell.ts</span><pre class="portabled-file-content">class CommanderShell {
 
+  private _metricElem: HTMLDivElement;
   private _twoPanels: panels.TwoPanels;
   private _terminal: terminal.Terminal;
 
+  private _metrics: CommanderShell.Metrics = null;
+  private _onsizechangedTimeout: number = 0;
+
   constructor(private _host: HTMLElement) {
+
+		elem(this._host, {
+      background: 'black',
+      color: 'silver'
+    });
+
+    this._metricElem = &lt;any&gt;elem('div', {
+      position: 'absolute',
+      opacity: 0,
+      left: '-200px', top: '-200px',
+      wdith: 'auto', height: 'auto',
+      text: 'M'
+    }, document.body);
+
+    this._terminal = new terminal.Terminal(this._host);
+    this._twoPanels = new panels.TwoPanels(this._host);
+
+    var resizeMod = require('resize');
+    resizeMod.on(winMetrics =&gt; {
+      this.measure();
+      this.arrange(winMetrics);
+    });
+
+    this.measure();
+    this.arrange({
+      windowWidth: document.body.offsetWidth,
+      windowHeight: document.body.offsetHeight
+    });
+
+    elem.on(this._host, 'keydown', e =&gt; this._keydown(&lt;any&gt;e));
+
   }
 
-}</pre></li><li class="portabled-file      "><span class="portabled-file-name">start.ts</span><pre class="portabled-file-content">declare var require;
+  measure() {
+    this._metrics = {
+      hostWidth: 0,
+      hostHeight: 0,
+      emWidth: this._metricElem.offsetWidth,
+      emHeight: this._metricElem.offsetHeight
+    };
+    this._twoPanels.measure();
+    this._terminal.measure();
+  }
 
-setTimeout(() =&gt; start(require('drive')), 10);
+	arrange(winMetrics) {
+    this._metrics.hostWidth = winMetrics.windowWidth;
+    this._metrics.hostHeight = winMetrics.windowHeight;
+    this._twoPanels.arrange(this._metrics);
+    this._terminal.arrange(this._metrics);
+  }
 
-function start(drive) {
+	private _keydown(e: KeyboardEvent) {
+    if (e.keyCode === 27 &amp;&amp; !e.altKey &amp;&amp; !e.shiftKey &amp;&amp; !e.ctrlKey &amp;&amp; !e.metaKey) {
+      this._twoPanels.toggle();
+      if (e.preventDefault)
+        e.preventDefault();
+      return false;
+    }
+  }
+
+}
+
+module CommanderShell {
+
+  export interface Metrics {
+    hostWidth: number;
+    hostHeight: number;
+    emWidth: number;
+    emHeight: number;
+  }
+
+}</pre></li><li class="portabled-file  "><span class="portabled-file-name">start.ts</span><pre class="portabled-file-content">declare var require;
+
+//setTimeout(() =&gt; start(require('drive')), 10);
+setTimeout(() =&gt; showCommander(require('drive')), 10);
+
+function showCommander(drive: persistence.Drive) {
+  /*var s = require('ui');
+  s.global.alert('Hello!');
+  try {
+    throw new Error('ok');
+  }
+  catch (err) {
+    s.global.alert('proceed');
+  }*/
+  var commander = new CommanderShell(document.body);
+}
+
+function start(drive: persistence.Drive) {
 
   var files = drive.files();
 
@@ -2558,7 +3095,7 @@ interface SQLResultSet {
 interface SQLResultSetRowList {
   length: number;
   item(index: number): any;
-}</pre></li></ul></li><li class="portabled-file  "><span class="portabled-file-name">index.html</span><pre class="portabled-file-content">&lt;!doctype html&gt;
+}</pre></li></ul></li><li class="portabled-file"><span class="portabled-file-name">index.html</span><pre class="portabled-file-content">&lt;!doctype html&gt;
 &lt;title&gt;mini shell &lt;/title&gt;
 
 &lt;script data-legit=mi&gt;
@@ -2607,7 +3144,7 @@ console.log(123)--&gt;
 
 
 &lt;!-- /shell/start.js
-&lt;%=typescriptBuild('/shell/*', '/boot/base.d.ts')%&gt;--&gt;</pre></li><li class="portabled-file  "><span class="portabled-file-name">readme.md</span><pre class="portabled-file-content">#New mini portable shell development</pre></li>
+&lt;%=typescriptBuild('/shell/*', '/boot/base.d.ts', '/persistence/Drive.ts')%&gt;--&gt;</pre></li><li class="portabled-file  "><span class="portabled-file-name">readme.md</span><pre class="portabled-file-content">#New mini portable shell development</pre></li>
 
         </ul>
       </div>
@@ -2643,7 +3180,7 @@ console.log(123)--&gt;
 
           <div class="portabled-credits">
 
-            portabled v0.6.1a by Oleg Mihailik<br><span style="font-size:80%;">built Mon May 04 2015 12:05:51 GMT+0100 (GMT Summer Time)</span><br>
+            portabled v0.6.1a by Oleg Mihailik<br><span style="font-size:80%;">built Tue May 05 2015 23:13:55 GMT+0100 (GMT Summer Time)</span><br>
             <br>
 
             <div style="font-size: 90%;">
@@ -2677,7 +3214,7 @@ console.log(123)--&gt;
 </div>
 
 <div class="portabled-status-bar" data-bind="loadRaw: docHostRegions.status = $element">
-<div style="width: 100%; height: 100%;">/shell/CommanderShell.ts</div></div>
+<div style="width: 100%; height: 100%;"><span class="portabled-syntax-space"> </span><span class="portabled-syntax-className">CommanderShell</span><span class="portabled-syntax-punctuation">.</span><span class="portabled-syntax-interfaceName">Metrics</span><span class="portabled-syntax-punctuation">.</span><span class="portabled-syntax-propertyName">emHeight</span><span class="portabled-syntax-punctuation">:</span><span class="portabled-syntax-space"> </span><span class="portabled-syntax-keyword">number</span><span style="color: rgb(100, 149, 237);"> , a property in CommanderShell.Metrics in /shell/CommanderShell.ts at line 79</span></div></div>
 
 <script data-legit="portabled">try { portabled.app.loading('Libraries...'); } catch (err) { alert(err+' '+err.stack); }</script>
 
