@@ -1,4 +1,3 @@
-
 <!doctype html>
 <title>mini shell </title>
 
@@ -151,14 +150,10 @@ function elem(tag, style, parent) {
         else {
 
           if (style[k] && typeof style[k] === 'object' && typeof style[k].length === 'number') {
-            // array: iterate and try to apply values
+            // array: iterate and apply values
             var applyValues = style[k];
 						for (var i = 0; i < applyValues.length; i++) {
-              try {
-                e.style[k] = applyValues[i];
-                if (e.style[k] == applyValues[i])
-                	break;
-              }
+              try { e.style[k] = applyValues[i]; }
               catch (e) { }
             }
           }
@@ -1925,17 +1920,19 @@ var panels;
 })(panels || (panels = {}));
 var panels;
 (function (panels) {
+    var panelHMargin = 10;
+    var panelVMargin = 5;
     var TwoPanels = (function () {
         function TwoPanels(_host, leftPath, rightPath, _drive) {
             var _this = this;
             this._host = _host;
             this._drive = _drive;
             this._scrollHost = elem('div', {
-                position: ['fixed', 'absolute'],
+                position: ['absolute', 'fixed'],
                 left: 0, top: 0, width: 0, height: 0,
                 overflow: 'auto',
                 overflowY: 'hidden',
-                background: ['rgba(0,0,0,0.1)', 'black']
+                background: ['black', 'transparent']
             }, this._host);
             this._scrollContent = elem('div', {
                 width: 0, height: 0,
@@ -1946,14 +1943,20 @@ var panels;
                 width: 0, height: 0,
                 overflow: 'auto',
                 overflowX: 'hidden',
-                background: 'gray'
+                background: ['navy', 'rgba(4, 12, 64, 0.95)'],
+                padding: panelHMargin + 'px',
+                paddingTop: panelVMargin + 'px',
+                paddingBottom: panelVMargin + 'px'
             }, this._scrollContent);
             this._rightPanelHost = elem('div', {
                 float: 'right',
                 width: 0, height: 0,
                 overflow: 'auto',
                 overflowX: 'hidden',
-                background: 'cornflowerblue'
+                background: ['navy', 'rgba(4, 12, 64, 0.95)'],
+                padding: panelHMargin + 'px',
+                paddingTop: panelVMargin + 'px',
+                paddingBottom: panelVMargin + 'px'
             }, this._scrollContent);
             var directoryService = function (path) {
                 var pathPrefix = path === '/' ? path : path + '/';
@@ -1985,6 +1988,7 @@ var panels;
                 return result;
             };
             this._leftPanel = new panels.Panel(this._leftPanelHost, leftPath, directoryService);
+            this._rightPanel = new panels.Panel(this._rightPanelHost, rightPath, directoryService);
             /*
             TODO: ensure focus stays with the text input at the bottom
             elem.on(this._leftPanel, 'mousedown', e=> {
@@ -2018,8 +2022,13 @@ var panels;
             this._rightPanelHost.style.width = panelWidth + 'px';
             this._leftPanel.arrange({
                 windowMetrics: metrics,
-                hostWidth: panelWidth,
-                hostHeight: panelsHeight
+                hostWidth: panelWidth - panelHMargin * 2,
+                hostHeight: panelsHeight - panelVMargin * 2
+            });
+            this._rightPanel.arrange({
+                windowMetrics: metrics,
+                hostWidth: panelWidth - panelHMargin * 2,
+                hostHeight: panelsHeight - panelVMargin * 2
             });
         };
         TwoPanels.prototype.toggle = function () {
