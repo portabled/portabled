@@ -1,4 +1,3 @@
-
 <!doctype html>
 <title>mini shell </title>
 
@@ -347,6 +346,8 @@ function loadMod(options) {
 }
   function earlyBoot() {
 
+  var earlyBootStart = new Date().valueOf();
+
   document.write(
     '<'+'style'+' data-legit=mi>'+
     '*{display:none;background:white;color:white;}'+
@@ -375,6 +376,7 @@ function loadMod(options) {
 
   var bootAPI = bootUI(bootFrame.document, bootFrame.global, function elemProxy(a,b,c) { return bootFrame.global.elem(a,b,c); });
   bootFrame.api = bootAPI;
+  bootFrame.startTime = earlyBootStart;
 
   var uniqueKey = deriveUniqueKey(location);
 
@@ -444,8 +446,12 @@ function loadMod(options) {
   function bootUI(document, window, elem) {
 
   elem(document.body, {
-    background: 'royalblue'
+    background: 'black'
   });
+  elem('div', {
+    background: 'rgb(3,11,61)',
+    height: '90%'
+  }, document.body);
 
   var header = elem('h2', { text: 'Loading...' }, document.body);
 
@@ -546,12 +552,12 @@ function shellLoader(uniqueKey, document, boot) {
                 }
             }
             var start = new Date().valueOf();
-            var fadeintTime = 500;
+            var fadeintTime = Math.min(500, (new Date().valueOf() - boot.startTime) * 0.9);
             var animateFadeIn = setInterval(function () {
                 var passed = new Date().valueOf() - start;
                 var opacity = Math.min(passed, fadeintTime) / fadeintTime;
-                uiframe.iframe.style.opacity = opacity.toString();
                 boot.iframe.style.opacity = (1 - opacity).toString();
+                uiframe.iframe.style.opacity = '1';
                 if (passed >= fadeintTime) {
                     clearInterval(animateFadeIn);
                     if (boot.iframe.parentElement)
