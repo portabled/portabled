@@ -144,7 +144,7 @@ function elem(tag, style, parent) {
         else if (k === 'className') {
           e.className = style[k];
         }
-        else if (!(k in e.style) && k in e) {
+        else if (!(e.style && k in e.style) && k in e) {
           e[k] = style[k];
         }
         else {
