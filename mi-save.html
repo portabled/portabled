@@ -252,7 +252,7 @@ function loadMod(options) {
   if (options.scope) {
     var scope = typeof options.scope === 'function' ? (options.scope)(frame.global) : options.scope;
     for (var k in scope) if (scope.hasOwnProperty(k)) {
-      frame.global[k] = scope[k];
+      try { frame.global[k] = scope[k]; } catch (err) { }
     }
   }
 
