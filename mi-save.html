@@ -1,3 +1,4 @@
+
 <!doctype html>
 <title>mini shell </title>
 
@@ -1801,9 +1802,10 @@ console.log(123)-->
 
 <!-- /shell/start.js
 var CommanderShell = (function () {
-    function CommanderShell(_host) {
+    function CommanderShell(_host, _drive) {
         var _this = this;
         this._host = _host;
+        this._drive = _drive;
         this._metrics = null;
         this._onsizechangedTimeout = 0;
         elem(this._host, {
@@ -1818,7 +1820,7 @@ var CommanderShell = (function () {
             text: 'M'
         }, document.body);
         this._terminal = new terminal.Terminal(this._host);
-        this._twoPanels = new panels.TwoPanels(this._host);
+        this._twoPanels = new panels.TwoPanels(this._host, '/', '/src', this._drive);
         var resizeMod = require('resize');
         resizeMod.on(function (winMetrics) {
             _this.measure();
@@ -1859,46 +1861,169 @@ var CommanderShell = (function () {
 })();
 var panels;
 (function (panels) {
-    var TwoPanels = (function () {
-        function TwoPanels(_host) {
+    var Panel = (function () {
+        function Panel(_host, _path, _directoryService) {
             this._host = _host;
-            this._leftPanel = elem('div', {
-                position: ['fixed', 'absolute'],
-                left: '2px', top: '2px', width: 0, height: 0,
-                background: ['cornflowerblue', 'rgba(0, 0, 255, 0.5)'],
-                padding: '5px',
-                color: 'silver',
-                text: 'Left panel'
+            this._path = _path;
+            this._directoryService = _directoryService;
+            this._redrawRequested = 0;
+            this._metrics = null;
+            this._scrollContent = elem('div', {
+                text: 'Loading...'
             }, this._host);
-            this._rightPanel = elem('div', {
+            this._queueRedraw();
+        }
+        Panel.prototype.currentPath = function () {
+            return this._path;
+        };
+        Panel.prototype.selectedPath = function () {
+            return this._selectedPath;
+        };
+        Panel.prototype.arrange = function (metrics) {
+            this._metrics = metrics;
+            this._queueRedraw();
+        };
+        Panel.prototype._queueRedraw = function () {
+            var _this = this;
+            if (this._redrawRequested)
+                return;
+            this._redrawRequested = setTimeout(function () { return _this._redrawNow(); }, 1);
+        };
+        Panel.prototype._redrawNow = function () {
+            this._redrawRequested = 0;
+            this._scrollContent.innerHTML = '';
+            var entries = this._directoryService(this._path);
+            if (entries) {
+                entries.sort(function (e1, e2) {
+                    var flagCompare = (e1.flags && Panel.EntryFlags.Directory) ?
+                        ((e2.flags && Panel.EntryFlags.Directory) ? 0 : -1) :
+                        ((e2.flags && Panel.EntryFlags.Directory) ? 0 : +1);
+                    if (flagCompare)
+                        return flagCompare;
+                    var nameCompare = e1.path > e2.path ? 1 : e1.path < e2.path ? -1 : 0;
+                    return nameCompare;
+                });
+                for (var i = 0; i < entries.length; i++) {
+                    elem('div', {
+                        height: this._metrics.windowMetrics.emHeight,
+                        text: entries[i].name,
+                        fontWeight: entries[i].flags & Panel.EntryFlags.Directory ? 'bold' : 'normal'
+                    }, this._scrollContent);
+                }
+            }
+        };
+        return Panel;
+    })();
+    panels.Panel = Panel;
+    var Panel;
+    (function (Panel) {
+        (function (EntryFlags) {
+            EntryFlags[EntryFlags["Directory"] = 1] = "Directory";
+        })(Panel.EntryFlags || (Panel.EntryFlags = {}));
+        var EntryFlags = Panel.EntryFlags;
+    })(Panel = panels.Panel || (panels.Panel = {}));
+})(panels || (panels = {}));
+var panels;
+(function (panels) {
+    var TwoPanels = (function () {
+        function TwoPanels(_host, leftPath, rightPath, _drive) {
+            var _this = this;
+            this._host = _host;
+            this._drive = _drive;
+            this._scrollHost = elem('div', {
                 position: ['fixed', 'absolute'],
-                right: '2px', top: '2px', width: 0, height: 0,
-                background: ['cornflowerblue', 'rgba(0, 0, 255, 0.5)'],
-                padding: '5px',
-                color: 'silver',
-                text: 'Right panel'
+                left: 0, top: 0, width: 0, height: 0,
+                overflow: 'auto',
+                overflowY: 'hidden',
+                background: ['rgba(0,0,0,0.1)', 'black']
             }, this._host);
-            elem.on(this._leftPanel, 'mousedown', function (e) {
-                if (e.preventDefault)
-                    e.preventDefault();
-                return false;
-            });
-            elem.on(this._rightPanel, 'mousedown', function (e) {
-                if (e.preventDefault)
-                    e.preventDefault();
-                return false;
-            });
+            this._scrollContent = elem('div', {
+                width: 0, height: 0,
+                overflow: 'hidden'
+            }, this._scrollHost);
+            this._leftPanelHost = elem('div', {
+                float: 'left',
+                width: 0, height: 0,
+                overflow: 'auto',
+                overflowX: 'hidden',
+                background: 'gray'
+            }, this._scrollContent);
+            this._rightPanelHost = elem('div', {
+                float: 'right',
+                width: 0, height: 0,
+                overflow: 'auto',
+                overflowX: 'hidden',
+                background: 'cornflowerblue'
+            }, this._scrollContent);
+            var directoryService = function (path) {
+                var pathPrefix = path === '/' ? path : path + '/';
+                var result = [];
+                var resByName = {};
+                var files = _this._drive.files();
+                for (var i = 0; i < files.length; i++) {
+                    var fi = files[i];
+                    if (fi.length < pathPrefix.length + 1)
+                        continue;
+                    if (fi.slice(0, pathPrefix.length) !== pathPrefix)
+                        continue;
+                    var name;
+                    var isDirectory = false;
+                    var nextSlashPos = fi.indexOf('/', pathPrefix.length);
+                    if (nextSlashPos < 0) {
+                        name = fi.slice(pathPrefix.length);
+                    }
+                    else {
+                        name = fi.slice(pathPrefix.length, nextSlashPos);
+                        isDirectory = true;
+                    }
+                    if (resByName.hasOwnProperty(name))
+                        continue;
+                    var entry = { path: fi, name: name, flags: isDirectory ? panels.Panel.EntryFlags.Directory : 0 };
+                    result.push(entry);
+                    resByName[name] = entry;
+                }
+                return result;
+            };
+            this._leftPanel = new panels.Panel(this._leftPanelHost, leftPath, directoryService);
+            /*
+            TODO: ensure focus stays with the text input at the bottom
+            elem.on(this._leftPanel, 'mousedown', e=> {
+              if (e.preventDefault)
+                e.preventDefault();
+              return false;
+            }); */
         }
         TwoPanels.prototype.measure = function () {
         };
         TwoPanels.prototype.arrange = function (metrics) {
-            console.log(metrics);
-            this._leftPanel.style.width = this._rightPanel.style.width = (metrics.hostWidth / 2 - 3) + 'px';
-            this._leftPanel.style.height = this._rightPanel.style.height = (metrics.hostHeight - metrics.emHeight * 4) + 'px';
+            var contentWidth = 0;
+            if (metrics.hostWidth < metrics.emWidth * 25 && metrics.hostWidth < metrics.hostHeight * 0.8) {
+                // flippable layout
+                contentWidth = Math.max(metrics.hostWidth / 2, metrics.hostWidth * 2 - metrics.emWidth * 3);
+            }
+            else {
+                // full layout
+                contentWidth = metrics.hostWidth;
+            }
+            var bottomGap = Math.min(metrics.hostHeight / 3, metrics.emHeight * 3);
+            this._scrollHost.style.width = metrics.hostWidth + 'px';
+            var panelsHeight = metrics.hostHeight - bottomGap;
+            this._scrollHost.style.height = panelsHeight + 'px';
+            this._scrollContent.style.width = contentWidth + 'px';
+            this._scrollContent.style.height = panelsHeight + 'px';
+            var panelWidth = (contentWidth / 2 - 0.5) | 0;
+            this._leftPanelHost.style.height = panelsHeight + 'px';
+            this._leftPanelHost.style.width = panelWidth + 'px';
+            this._rightPanelHost.style.height = panelsHeight + 'px';
+            this._rightPanelHost.style.width = panelWidth + 'px';
+            this._leftPanel.arrange({
+                windowMetrics: metrics,
+                hostWidth: panelWidth,
+                hostHeight: panelsHeight
+            });
         };
         TwoPanels.prototype.toggle = function () {
-            this._leftPanel.style.display = this._leftPanel.style.display !== 'none' ? 'none' : 'block';
-            this._rightPanel.style.display = this._rightPanel.style.display !== 'none' ? 'none' : 'block';
+            this._scrollHost.style.display = this._scrollHost.style.display !== 'none' ? 'none' : 'block';
         };
         TwoPanels.prototype.keydown = function (e) {
         };
@@ -1917,7 +2042,7 @@ function showCommander(drive) {
     catch (err) {
       s.global.alert('proceed');
     }*/
-    var commander = new CommanderShell(document.body);
+    var commander = new CommanderShell(document.body, drive);
 }
 function start(drive) {
     var files = drive.files();
