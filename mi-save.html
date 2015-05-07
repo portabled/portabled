@@ -1,3 +1,4 @@
+
 <!doctype html>
 <title>mini shell </title>
 
@@ -1890,22 +1891,45 @@ var panels;
             var entries = this._directoryService(this._path);
             if (entries) {
                 entries.sort(function (e1, e2) {
-                    var flagCompare = (e1.flags && Panel.EntryFlags.Directory) ?
-                        ((e2.flags && Panel.EntryFlags.Directory) ? 0 : -1) :
-                        ((e2.flags && Panel.EntryFlags.Directory) ? 0 : +1);
+                    var flagCompare = (e1.flags & Panel.EntryFlags.Directory) ?
+                        ((e2.flags & Panel.EntryFlags.Directory) ? 0 : -1) :
+                        ((e2.flags & Panel.EntryFlags.Directory) ? +1 : 0);
                     if (flagCompare)
                         return flagCompare;
-                    var nameCompare = e1.path > e2.path ? 1 : e1.path < e2.path ? -1 : 0;
+                    var nameCompare = e1.name > e2.name ? 1 : e1.name < e2.name ? -1 : 0;
                     return nameCompare;
                 });
+                if (this._path !== '/') {
+                    var parentPath = this._path.slice(0, this._path.lastIndexOf('/'));
+                    entries.unshift({
+                        name: '..',
+                        path: parentPath,
+                        flags: Panel.EntryFlags.Directory
+                    });
+                }
+                var selectedPathIndex = -1;
                 for (var i = 0; i < entries.length; i++) {
-                    elem('div', {
-                        height: this._metrics.windowMetrics.emHeight,
-                        text: entries[i].name,
-                        fontWeight: entries[i].flags & Panel.EntryFlags.Directory ? 'bold' : 'normal'
-                    }, this._scrollContent);
+                    if (selectedPathIndex < 0) {
+                        selectedPathIndex = 0;
+                        this._selectedPath = entries.length > 0 ? entries[i].path : null;
+                    }
+                }
+                for (var i = 0; i < entries.length; i++) {
+                    this._renderEntry(entries[i], i === selectedPathIndex);
+                    if (entries[i].path === this._selectedPath) {
+                        selectedPathIndex = i;
+                    }
                 }
             }
+        };
+        Panel.prototype._renderEntry = function (entry, selected) {
+            elem('div', {
+                height: this._metrics.windowMetrics.emHeight,
+                text: entry.name,
+                fontWeight: (entry.flags & Panel.EntryFlags.Directory) ? 'bold' : 'normal',
+                color: (entry.flags & Panel.EntryFlags.Directory) ? 'white' : selected ? 'black' : 'darkcyan',
+                background: selected ? 'darkcyan' : null
+            }, this._scrollContent);
         };
         return Panel;
     })();
@@ -1924,7 +1948,6 @@ var panels;
     var panelVMargin = 5;
     var TwoPanels = (function () {
         function TwoPanels(_host, leftPath, rightPath, _drive) {
-            var _this = this;
             this._host = _host;
             this._drive = _drive;
             this._scrollHost = elem('div', {
@@ -1958,35 +1981,7 @@ var panels;
                 paddingTop: panelVMargin + 'px',
                 paddingBottom: panelVMargin + 'px'
             }, this._scrollContent);
-            var directoryService = function (path) {
-                var pathPrefix = path === '/' ? path : path + '/';
-                var result = [];
-                var resByName = {};
-                var files = _this._drive.files();
-                for (var i = 0; i < files.length; i++) {
-                    var fi = files[i];
-                    if (fi.length < pathPrefix.length + 1)
-                        continue;
-                    if (fi.slice(0, pathPrefix.length) !== pathPrefix)
-                        continue;
-                    var name;
-                    var isDirectory = false;
-                    var nextSlashPos = fi.indexOf('/', pathPrefix.length);
-                    if (nextSlashPos < 0) {
-                        name = fi.slice(pathPrefix.length);
-                    }
-                    else {
-                        name = fi.slice(pathPrefix.length, nextSlashPos);
-                        isDirectory = true;
-                    }
-                    if (resByName.hasOwnProperty(name))
-                        continue;
-                    var entry = { path: fi, name: name, flags: isDirectory ? panels.Panel.EntryFlags.Directory : 0 };
-                    result.push(entry);
-                    resByName[name] = entry;
-                }
-                return result;
-            };
+            var directoryService = panels.driveDirectoryService(this._drive);
             this._leftPanel = new panels.Panel(this._leftPanelHost, leftPath, directoryService);
             this._rightPanel = new panels.Panel(this._rightPanelHost, rightPath, directoryService);
             /*
@@ -2039,6 +2034,43 @@ var panels;
         return TwoPanels;
     })();
     panels.TwoPanels = TwoPanels;
+})(panels || (panels = {}));
+var panels;
+(function (panels) {
+    function driveDirectoryService(drive) {
+        return function (path) {
+            var pathPrefix = path === '/' ? path : path + '/';
+            var result = [];
+            var resByName = {};
+            var files = drive.files();
+            for (var i = 0; i < files.length; i++) {
+                var fi = files[i];
+                if (fi.length < pathPrefix.length + 1)
+                    continue;
+                if (fi.slice(0, pathPrefix.length) !== pathPrefix)
+                    continue;
+                var name;
+                var entryPath = fi;
+                var isDirectory = false;
+                var nextSlashPos = fi.indexOf('/', pathPrefix.length);
+                if (nextSlashPos < 0) {
+                    name = fi.slice(pathPrefix.length);
+                }
+                else {
+                    name = fi.slice(pathPrefix.length, nextSlashPos);
+                    entryPath = fi.slice(0, nextSlashPos);
+                    isDirectory = true;
+                }
+                if (resByName.hasOwnProperty(name))
+                    continue;
+                var entry = { path: entryPath, name: name, flags: isDirectory ? panels.Panel.EntryFlags.Directory : 0 };
+                result.push(entry);
+                resByName[name] = entry;
+            }
+            return result;
+        };
+    }
+    panels.driveDirectoryService = driveDirectoryService;
 })(panels || (panels = {}));
 //setTimeout(() => start(require('drive')), 10);
 setTimeout(function () { return showCommander(require('drive')); }, 10);
@@ -2184,3 +2216,15 @@ var terminal;
     terminal.Terminal = Terminal;
 })(terminal || (terminal = {}));
 -->
+
+<!-- /1.txt
+OK -->
+
+<!-- /4.txt
+OK -->
+
+<!-- /2.txt
+OK -->
+
+<!-- /3.txt
+OK -->
