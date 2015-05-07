@@ -154,7 +154,7 @@ function elem(tag, style, parent) {
             var applyValues = style[k];
 						for (var i = 0; i < applyValues.length; i++) {
               try { e.style[k] = applyValues[i]; }
-              catch (e) { }
+              catch (errApplyValues) { }
             }
           }
           else {
