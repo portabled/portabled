@@ -1808,7 +1808,12 @@ var CommanderShell = (function () {
         var _this = this;
         this._host = _host;
         this._drive = _drive;
-        this._metrics = null;
+        this._metrics = {
+            hostWidth: 0,
+            hostHeight: 0,
+            emWidth: 0,
+            emHeight: 0
+        };
         this._onsizechangedTimeout = 0;
         elem(this._host, {
             background: 'black',
@@ -1825,38 +1830,49 @@ var CommanderShell = (function () {
         this._twoPanels = new panels.TwoPanels(this._host, '/', '/src', this._drive);
         var resizeMod = require('resize');
         resizeMod.on(function (winMetrics) {
+            _this._metrics.hostWidth = winMetrics.windowWidth;
+            _this._metrics.hostHeight = winMetrics.windowHeight;
             _this.measure();
-            _this.arrange(winMetrics);
+            _this.arrange();
         });
+        this._metrics.hostWidth = document.body.offsetWidth;
+        this._metrics.hostHeight = document.body.offsetHeight;
         this.measure();
-        this.arrange({
-            windowWidth: document.body.offsetWidth,
-            windowHeight: document.body.offsetHeight
-        });
+        this.arrange();
         elem.on(this._host, 'keydown', function (e) { return _this._keydown(e); });
     }
     CommanderShell.prototype.measure = function () {
-        this._metrics = {
-            hostWidth: 0,
-            hostHeight: 0,
-            emWidth: this._metricElem.offsetWidth,
-            emHeight: this._metricElem.offsetHeight
-        };
+        this._metrics.emWidth = this._metricElem.offsetWidth;
+        this._metrics.emHeight = this._metricElem.offsetHeight;
         this._twoPanels.measure();
         this._terminal.measure();
     };
-    CommanderShell.prototype.arrange = function (winMetrics) {
-        this._metrics.hostWidth = winMetrics.windowWidth;
-        this._metrics.hostHeight = winMetrics.windowHeight;
+    CommanderShell.prototype.arrange = function () {
         this._twoPanels.arrange(this._metrics);
         this._terminal.arrange(this._metrics);
     };
     CommanderShell.prototype._keydown = function (e) {
         if (e.keyCode === 27 && !e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-            this._twoPanels.toggle();
+            this._twoPanels.toggleVisibility();
             if (e.preventDefault)
                 e.preventDefault();
-            return false;
+            return true;
+        }
+        else if (this._twoPanels.isVisible() && this._twoPanels.keydown(e)) {
+            if (e.preventDefault)
+                e.preventDefault();
+            return true;
+        }
+        else {
+            this._terminal.focus();
+            if (this._terminal.keydown(e)) {
+                if (e.preventDefault)
+                    e.preventDefault();
+                return true;
+            }
+            if (e.keyCode < 32 || e.keyCode > 126) {
+                this._terminal.log('CommanderShell::keydown ' + e.keyCode, e);
+            }
         }
     };
     return CommanderShell;
@@ -1884,6 +1900,10 @@ var panels;
         Panel.prototype.arrange = function (metrics) {
             this._metrics = metrics;
             this._queueRedraw();
+        };
+        Panel.prototype.activate = function () {
+        };
+        Panel.prototype.deactivate = function () {
         };
         Panel.prototype._queueRedraw = function () {
             var _this = this;
@@ -1956,6 +1976,7 @@ var panels;
         function TwoPanels(_host, leftPath, rightPath, _drive) {
             this._host = _host;
             this._drive = _drive;
+            this._isLeftActive = true;
             this._scrollHost = elem('div', {
                 position: ['absolute', 'fixed'],
                 left: 0, top: 0, width: 0, height: 0,
@@ -2032,10 +2053,34 @@ var panels;
                 hostHeight: panelsHeight - panelVMargin * 2
             });
         };
-        TwoPanels.prototype.toggle = function () {
-            this._scrollHost.style.display = this._scrollHost.style.display !== 'none' ? 'none' : 'block';
+        TwoPanels.prototype.isVisible = function () {
+            return this._scrollHost.style.display !== 'none';
+        };
+        TwoPanels.prototype.toggleVisibility = function () {
+            this._scrollHost.style.display = this.isVisible() ? 'none' : 'block';
+        };
+        TwoPanels.prototype.isLeftActive = function () {
+            return this._isLeftActive;
+        };
+        TwoPanels.prototype.toggleActivePanel = function () {
+            this._isLeftActive = !this._isLeftActive;
+            this._getPanel(this._isLeftActive).deactivate();
+            this._getPanel(!this._isLeftActive).activate();
         };
         TwoPanels.prototype.keydown = function (e) {
+            switch (e.keyCode) {
+                case 38:
+                    return this._selectionGo(-1);
+                case 40:
+                    return this._selectionGo(+1);
+            }
+            return false;
+        };
+        TwoPanels.prototype._selectionGo = function (direction) {
+            return true;
+        };
+        TwoPanels.prototype._getPanel = function (left) {
+            return left ? this._leftPanel : this._rightPanel;
         };
         return TwoPanels;
     })();
@@ -2171,6 +2216,7 @@ var terminal;
             this._host = _host;
             this._promptWidth = 0;
             this._historyContentHeight = 0;
+            this._hostMetrics = null;
             this._history = elem('div', {
                 position: 'fixed',
                 left: 0, bottom: 0,
@@ -2201,11 +2247,59 @@ var terminal;
                 autofocus: true
             }, this._host);
         }
+        Terminal.prototype.log = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i - 0] = arguments[_i];
+            }
+            var output = elem('div', this._historyContent);
+            for (var i = 0; i < args.length; i++) {
+                if (i > 0)
+                    elem('span', { text: ' ' }, output);
+                if (args[i] === null) {
+                    elem('span', { text: 'null', color: 'green' }, output);
+                }
+                else {
+                    switch (typeof args[i]) {
+                        case 'number':
+                        case 'boolean':
+                            elem('span', { text: args[i], color: 'green' }, output);
+                            break;
+                        case 'undefined':
+                            elem('span', { text: 'undefined', color: 'green', opacity: 0.5 }, output);
+                            break;
+                        case 'function':
+                            var funContainer = elem('span', output);
+                            var funFunction = elem('span', { text: 'function ', color: 'silver', opacity: 0.5 }, funContainer);
+                            var funName = elem('span', { text: args[i].name, color: 'cornflowerblue', fontWeight: 'bold' }, funContainer);
+                            funContainer.title = args[i];
+                            break;
+                        case 'string':
+                            var strContainer = elem('span', output);
+                            elem('span', { text: '"', color: 'tomato' }, strContainer);
+                            elem('span', { text: args[i], color: 'tomato', opacity: 0.5 }, strContainer);
+                            elem('span', { text: '"', color: 'tomato' }, strContainer);
+                        default:
+                            //if (args[i] && args[i].constructor && args[i].constructor.name
+                            elem('span', { text: args[i], color: 'magenta' }, output);
+                            break;
+                    }
+                }
+            }
+            if (this._hostMetrics) {
+                this.measure();
+                this.arrange(this._hostMetrics);
+            }
+        };
+        Terminal.prototype.focus = function () {
+            this._input.focus();
+        };
         Terminal.prototype.measure = function () {
             this._promptWidth = this._prompt.offsetWidth;
             this._historyContentHeight = this._historyContent.offsetHeight;
         };
         Terminal.prototype.arrange = function (metrics) {
+            this._hostMetrics = metrics;
             this._history.style.bottom = metrics.emHeight + 'px';
             if (metrics.hostHeight - metrics.emHeight > this._historyContentHeight) {
                 this._history.style.height = this._historyContentHeight + 'px';
@@ -2216,6 +2310,33 @@ var terminal;
             }
             this._input.style.left = this._promptWidth + 'px';
             this._input.style.width = (metrics.hostWidth - this._promptWidth) + 'px';
+        };
+        Terminal.prototype.keydown = function (e) {
+            if (e.keyCode === 38) {
+            }
+            else if (e.keyCode === 13) {
+                var code = this._input.value;
+                if (code) {
+                    this._input.value = null;
+                    elem('div', {
+                        text: code,
+                        color: 'gray'
+                    }, this._historyContent);
+                    var result;
+                    try {
+                        result = (0, eval)(code);
+                    }
+                    catch (error) {
+                        elem('div', {
+                            text: error && error.stack ? error.stack : error,
+                            color: 'red'
+                        }, this._historyContent);
+                        return true;
+                    }
+                    this.log(result);
+                    return true;
+                }
+            }
         };
         return Terminal;
     })();
