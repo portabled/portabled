@@ -386,6 +386,7 @@ function loadMod(options) {
 
   var shellLoaderInstance = null;
 	var shellLoadInterval = setInterval(function() {
+    if (typeof shellLoader === 'undefined') return;
     if (!shellLoadInterval) return; // protect against old Opera's super-async habits
     shellLoaderInstance = shellLoaderInstance ? shellLoaderInstance.continueLoading() : shellLoader ? shellLoader(uniqueKey, document, bootFrame) : null;
   }, 100);
@@ -536,7 +537,7 @@ function shellLoader(uniqueKey, document, boot) {
                 if (wasResized)
                     return;
                 wasResized = true;
-                if (requestAnimationFrame) {
+                if (typeof requestAnimationFrame === 'function') {
                     requestAnimationFrame(global_resize_delayed);
                 }
                 else {
@@ -2013,7 +2014,7 @@ var panels;
         };
         TwoPanels.prototype.arrange = function (metrics) {
             var contentWidth = 0;
-            if (metrics.hostWidth < metrics.emWidth * 25 && metrics.hostWidth < metrics.hostHeight * 0.8) {
+            if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {
                 // flippable layout
                 contentWidth = Math.max(metrics.hostWidth / 2, metrics.hostWidth * 2 - metrics.emWidth * 3);
             }
