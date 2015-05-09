@@ -104,7 +104,7 @@ elem.on = function (obj, eventName, handler) {
     obj.addEventListener(eventName, handler, false);
   }
   else if (obj.attachEvent) {
-    obj.attachEvent(eventName, handler);
+    obj.attachEvent('on'+eventName, handler);
   }
   else {
     obj['on'+eventName] = handler;
@@ -116,7 +116,7 @@ elem.off = function (obj, eventName, handler) {
     obj.removeEventListener(eventName, handler, false);
   }
   else if (obj.detachEvent) {
-    obj.detachEvent(eventName, handler);
+    obj.detachEvent('on'+eventName, handler);
   }
   else {
     if (obj['on'+eventName] === handler)
@@ -489,7 +489,7 @@ function shellLoader(uniqueKey, document, boot) {
                     require: shell_require,
                     document: uiframe.document,
                     window: uiframe.global,
-                    console: console,
+                    console: window.console,
                     elem: shell_elem
                 }
             });
@@ -1871,7 +1871,6 @@ var CommanderShell = (function () {
                 return true;
             }
             if (e.keyCode < 32 || e.keyCode > 126) {
-                this._terminal.log('CommanderShell::keydown ' + e.keyCode, e);
             }
         }
     };
@@ -1970,6 +1969,20 @@ var panels;
 })(panels || (panels = {}));
 var panels;
 (function (panels) {
+    var PanelEntry = (function () {
+        function PanelEntry(hostMetrics, entry) {
+            this.hostMetrics = hostMetrics;
+            this.entry = entry;
+            this.element = elem('div', {
+                text: entry.name
+            });
+        }
+        return PanelEntry;
+    })();
+    panels.PanelEntry = PanelEntry;
+})(panels || (panels = {}));
+var panels;
+(function (panels) {
     var panelHMargin = 10;
     var panelVMargin = 5;
     var TwoPanels = (function () {
@@ -1977,37 +1990,10 @@ var panels;
             this._host = _host;
             this._drive = _drive;
             this._isLeftActive = true;
-            this._scrollHost = elem('div', {
-                position: ['absolute', 'fixed'],
-                left: 0, top: 0, width: 0, height: 0,
-                overflow: 'auto',
-                overflowY: 'hidden',
-                background: ['black', 'transparent']
-            }, this._host);
-            this._scrollContent = elem('div', {
-                width: 0, height: 0,
-                overflow: 'hidden'
-            }, this._scrollHost);
-            this._leftPanelHost = elem('div', {
-                float: 'left',
-                width: 0, height: 0,
-                overflow: 'auto',
-                overflowX: 'hidden',
-                background: ['navy', 'rgba(4, 12, 64, 0.95)'],
-                padding: panelHMargin + 'px',
-                paddingTop: panelVMargin + 'px',
-                paddingBottom: panelVMargin + 'px'
-            }, this._scrollContent);
-            this._rightPanelHost = elem('div', {
-                float: 'right',
-                width: 0, height: 0,
-                overflow: 'auto',
-                overflowX: 'hidden',
-                background: ['navy', 'rgba(4, 12, 64, 0.95)'],
-                padding: panelHMargin + 'px',
-                paddingTop: panelVMargin + 'px',
-                paddingBottom: panelVMargin + 'px'
-            }, this._scrollContent);
+            this._scrollHost = elem('div', { className: 'panels-scroll-host' }, this._host);
+            this._scrollContent = elem('div', { className: 'panels-scroll-content' }, this._scrollHost);
+            this._leftPanelHost = elem('div', { className: 'panels-panel panels-left-panel' }, this._scrollContent);
+            this._rightPanelHost = elem('div', { className: 'panels-panel panels-right-panel' }, this._scrollContent);
             var directoryService = panels.driveDirectoryService(this._drive);
             this._leftPanel = new panels.Panel(this._leftPanelHost, leftPath, directoryService);
             this._rightPanel = new panels.Panel(this._rightPanelHost, rightPath, directoryService);
@@ -2123,91 +2109,11 @@ var panels;
     }
     panels.driveDirectoryService = driveDirectoryService;
 })(panels || (panels = {}));
-//setTimeout(() => start(require('drive')), 10);
 setTimeout(function () { return showCommander(require('drive')); }, 10);
 function showCommander(drive) {
-    /*var s = require('ui');
-    s.global.alert('Hello!');
-    try {
-      throw new Error('ok');
-    }
-    catch (err) {
-      s.global.alert('proceed');
-    }*/
+    var styleText = drive.read('/shell/style.css');
+    elem('style', { text: styleText }, document.body);
     var commander = new CommanderShell(document.body, drive);
-}
-function start(drive) {
-    var files = drive.files();
-    var h1title = elem('h1', { text: files.length + ' files loaded' }, document.body);
-    elem('div', { text: 'modified ' + new Date(drive.timestamp) }, document.body);
-    for (var i = 0; i < files.length; i++) {
-        var fileText = drive.read(files[i]);
-        var coolLoadedTitle = elem('h3', { text: files[i] + ' [' + fileText.length + ']' }, document.body);
-        var encodedText = fileText.replace(/\r|\n|\r\n/g, function (chunk) { return chunk === '\r\n' ? '[CRLF]\n' : chunk === '\r' ? '[CR]' : '[LF]\n'; });
-        var content = elem('pre', { text: encodedText }, document.body);
-    }
-    h1title.onclick = exportAllHTML;
-    function exportAllHTML() {
-        var filename = saveFileName();
-        exportBlob(filename, ['<!doctype html>\n', document.documentElement.outerHTML]);
-    }
-    function saveFileName() {
-        if (window.location.protocol.toLowerCase() === 'blob:')
-            return 'nportabled.html';
-        var urlParts = window.location.pathname.split('/');
-        var currentFileName = decodeURI(urlParts[urlParts.length - 1]);
-        var lastDot = currentFileName.indexOf('.');
-        if (lastDot > 0) {
-            currentFileName = currentFileName.slice(0, lastDot) + '.html';
-        }
-        else {
-            currentFileName += '.html';
-        }
-        return currentFileName;
-    }
-    function exportBlob(filename, textChunks) {
-        try {
-            var blob = new window.Blob(textChunks, { type: 'application/octet-stream' });
-        }
-        catch (blobError) {
-            exportDocumentWrite(filename, textChunks.join(''));
-            return;
-        }
-        exportBlobHTML5(filename, blob);
-    }
-    function exportBlobHTML5(filename, blob) {
-        var url = window.URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.setAttribute('download', filename);
-        try {
-            // safer save method, supposed to work with FireFox
-            var evt = document.createEvent("MouseEvents");
-            evt.initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-            a.dispatchEvent(evt);
-        }
-        catch (e) {
-            a.click();
-        }
-    }
-    function exportDocumentWrite(filename, content) {
-        var win = document.createElement('iframe');
-        win.style.width = '100px';
-        win.style.height = '100px';
-        win.style.display = 'none';
-        document.body.appendChild(win);
-        setTimeout(function () {
-            var doc = win.contentDocument || win.document;
-            doc.open();
-            doc.write(content);
-            doc.close();
-            doc.execCommand('SaveAs', null, filename);
-            setTimeout(function () {
-                win.parentElement.removeChild(win);
-                (win);
-            }, 1000);
-        }, 200);
-    }
 }
 var terminal;
 (function (terminal) {
@@ -2217,35 +2123,13 @@ var terminal;
             this._promptWidth = 0;
             this._historyContentHeight = 0;
             this._hostMetrics = null;
-            this._history = elem('div', {
-                position: 'fixed',
-                left: 0, bottom: 0,
-                width: '100%', height: 0,
-                overflow: 'auto'
-            }, this._host);
+            this._history = elem('div', { className: 'terminal-history' }, this._host);
             this._historyContent = elem('pre', {
-                padding: 0, margin: 0,
+                className: 'terminal-history-content',
                 text: 'Hello world from mini-shell\n\nVersion 0.7m\nMay 2015\nOleg Mihailik\n\nPlease be careful.'
             }, this._history);
-            this._prompt = elem('div', {
-                position: 'fixed',
-                left: 0, bottom: 0,
-                height: '1em',
-                text: '>'
-            }, this._host);
-            this._input = elem('textarea', {
-                position: 'fixed',
-                left: '0', bottom: 0,
-                width: 0, height: '1em',
-                font: 'inherit',
-                border: 'none',
-                background: 'transparent',
-                color: ['inherit', 'silver'],
-                outline: 'none',
-                resize: 'none',
-                overflow: 'hidden',
-                autofocus: true
-            }, this._host);
+            this._prompt = elem('div', { className: 'terminal-prompt', text: '>' }, this._host);
+            this._input = elem('textarea', { className: 'terminal-input', autofocus: true }, this._host);
         }
         Terminal.prototype.log = function () {
             var args = [];
@@ -2260,35 +2144,86 @@ var terminal;
                     elem('span', { text: 'null', color: 'green' }, output);
                 }
                 else {
-                    switch (typeof args[i]) {
-                        case 'number':
-                        case 'boolean':
-                            elem('span', { text: args[i], color: 'green' }, output);
-                            break;
-                        case 'undefined':
-                            elem('span', { text: 'undefined', color: 'green', opacity: 0.5 }, output);
-                            break;
-                        case 'function':
-                            var funContainer = elem('span', output);
-                            var funFunction = elem('span', { text: 'function ', color: 'silver', opacity: 0.5 }, funContainer);
-                            var funName = elem('span', { text: args[i].name, color: 'cornflowerblue', fontWeight: 'bold' }, funContainer);
-                            funContainer.title = args[i];
-                            break;
-                        case 'string':
-                            var strContainer = elem('span', output);
-                            elem('span', { text: '"', color: 'tomato' }, strContainer);
-                            elem('span', { text: args[i], color: 'tomato', opacity: 0.5 }, strContainer);
-                            elem('span', { text: '"', color: 'tomato' }, strContainer);
-                        default:
-                            //if (args[i] && args[i].constructor && args[i].constructor.name
-                            elem('span', { text: args[i], color: 'magenta' }, output);
-                            break;
-                    }
+                    this._logAppendObj(args[i], output, 0);
                 }
             }
             if (this._hostMetrics) {
                 this.measure();
                 this.arrange(this._hostMetrics);
+            }
+        };
+        Terminal.prototype._logAppendObj = function (obj, output, level) {
+            switch (typeof obj) {
+                case 'number':
+                case 'boolean':
+                    elem('span', { text: obj, color: 'green' }, output);
+                    break;
+                case 'undefined':
+                    elem('span', { text: 'undefined', color: 'green', opacity: 0.5 }, output);
+                    break;
+                case 'function':
+                    var funContainer = elem('span', output);
+                    var funFunction = elem('span', { text: 'function ', color: 'silver', opacity: 0.5 }, funContainer);
+                    var funName = elem('span', { text: obj.name, color: 'cornflowerblue', fontWeight: 'bold' }, funContainer);
+                    funContainer.title = obj;
+                    break;
+                case 'string':
+                    var strContainer = elem('span', output);
+                    elem('span', { text: '"', color: 'tomato' }, strContainer);
+                    elem('span', { text: obj, color: 'tomato', opacity: 0.5 }, strContainer);
+                    elem('span', { text: '"', color: 'tomato' }, strContainer);
+                default:
+                    if (obj && obj.constructor && obj.construct && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
+                        elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
+                        if (obj.constructor.prototype && obj.constructor.prototype.constructor
+                            && obj.constructor.prototype.constructor.name
+                            && obj.constructor.prototype.constructor.name !== 'Object' && obj.constructor.prototype.constructor.name !== 'Array')
+                            elem('span', { text: ':' + obj.contructor.prototype.constructor.name, color: 'cornflowerblue', opacity: 0.5 }, output);
+                        elem('span', output);
+                    }
+                    if (obj && typeof obj.length === 'number' && obj.length >= 0) {
+                        elem('span', { text: '[', color: 'white' }, output);
+                        if (level > 1) {
+                            elem('span', { text: '...', color: 'silver' }, output);
+                        }
+                        else {
+                            for (var i = 0; i < obj.length; i++) {
+                                if (i > 0)
+                                    elem('span', { text: ', ', color: 'gray' }, output);
+                                if (typeof obj[i] !== 'undefined')
+                                    this._logAppendObj(obj[i], output, level + 1);
+                            }
+                        }
+                        elem('span', { text: ']', color: 'white' }, output);
+                    }
+                    else if (obj + '' !== '[Object]') {
+                        elem('span', { text: '{', color: 'cornflowerblue' }, output);
+                        if (level > 1) {
+                            elem('span', { text: '...', color: 'cornflowerblue', opacity: 0.5 }, output);
+                        }
+                        else {
+                            var first = true;
+                            for (var k in obj) {
+                                if (obj.hasOwnProperty && !obj.hasOwnProperty(k))
+                                    continue;
+                                if (first) {
+                                    first = false;
+                                }
+                                else {
+                                    elem('span', { text: ', ', color: 'cornflowerblue', opacity: 0.3 }, output);
+                                    first = false;
+                                }
+                                elem('span', { text: k, color: 'cornflowerblue', fontWeight: 'bold' }, output);
+                                elem('span', { text: ': ', color: 'cornflowerblue', opacity: 0.5 }, output);
+                                this._logAppendObj(obj[k], output, level + 1);
+                            }
+                        }
+                        elem('span', { text: '}', color: 'cornflowerblue' }, output);
+                    }
+                    else {
+                        elem('span', { text: obj, color: 'cornflowerblue' }, output);
+                    }
+                    break;
             }
         };
         Terminal.prototype.focus = function () {
@@ -2331,6 +2266,10 @@ var terminal;
                             text: error && error.stack ? error.stack : error,
                             color: 'red'
                         }, this._historyContent);
+                        if (this._hostMetrics) {
+                            this.measure();
+                            this.arrange(this._hostMetrics);
+                        }
                         return true;
                     }
                     this.log(result);
@@ -2342,6 +2281,71 @@ var terminal;
     })();
     terminal.Terminal = Terminal;
 })(terminal || (terminal = {}));
+-->
+<!-- /shell/style.css
+.terminal-history {
+  position: fixed;
+  left: 0; bottom: 0;
+  width: 100%; height: 0;
+  overflow: auto;
+}
+
+.terminal-history-content {
+  margin: 0; padding: 0;
+}
+
+.terminal-prompt {
+  position: absolute;
+  position: fixed;
+  left: 0; bottom: 0;
+  height: 1em;
+}
+
+.terminal-input {
+  position: absolute;
+  position: fixed;
+  left: 0; bottom: 0;
+  width: 0; height: 1em;
+  font: inherit;
+  border: none;
+  background: transparent;
+  color: silver;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+}
+.panels-scroll-host {
+  position: absolute;
+  position: fixed;
+  left: 0; top: 0; width: 0; height: 0;
+  overflow: auto;
+  overflow-y: hidden;
+  background: black;
+  background: transparent;
+}
+
+.panels-scroll-content {
+  width: 0; height: 0;   overflow: hidden;
+}
+
+.panels-panel {
+  width: 0; height: 0;
+  overflow: auto;
+  overflow-x: hidden;
+  background: navy;
+  background: rgba(4, 12, 64, 0.95);
+  padding: 5px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.panels-left-panel {
+  float: left;
+}
+
+.panels-right-panel {
+  float: right;
+}
 -->
 
 <!-- /1.txt
