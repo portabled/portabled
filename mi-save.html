@@ -81,12 +81,16 @@ function setText(obj, text) {
       obj.innerHTML = text;
   }
   else if (/^STYLE$/i.test(obj.tagName)) {
-    if ('text' in obj)
+    if ('text' in obj) {
       obj.text = text;
-    else if (obj.styleSheet)
+    }
+    else if ('styleSheet' in obj) {
+      if (!obj.type) obj.type = 'text/css';
       obj.styleSheet.cssText = text;
-    else
+    }
+    else {
       obj.innerHTML = text;
+    }
   }
   else if ('textContent' in obj) {
     obj.textContent = text;
@@ -2283,37 +2287,6 @@ var terminal;
 })(terminal || (terminal = {}));
 -->
 <!-- /shell/style.css
-.terminal-history {
-  position: fixed;
-  left: 0; bottom: 0;
-  width: 100%; height: 0;
-  overflow: auto;
-}
-
-.terminal-history-content {
-  margin: 0; padding: 0;
-}
-
-.terminal-prompt {
-  position: absolute;
-  position: fixed;
-  left: 0; bottom: 0;
-  height: 1em;
-}
-
-.terminal-input {
-  position: absolute;
-  position: fixed;
-  left: 0; bottom: 0;
-  width: 0; height: 1em;
-  font: inherit;
-  border: none;
-  background: transparent;
-  color: silver;
-  outline: none;
-  resize: none;
-  overflow: hidden;
-}
 .panels-scroll-host {
   position: absolute;
   position: fixed;
@@ -2345,6 +2318,37 @@ var terminal;
 
 .panels-right-panel {
   float: right;
+}
+.terminal-history {
+  position: fixed;
+  left: 0; bottom: 0;
+  width: 100%; height: 0;
+  overflow: auto;
+}
+
+.terminal-history-content {
+  margin: 0; padding: 0;
+}
+
+.terminal-prompt {
+  position: absolute;
+  position: fixed;
+  left: 0; bottom: 0;
+  height: 1em;
+}
+
+.terminal-input {
+  position: absolute;
+  position: fixed;
+  left: 0; bottom: 0;
+  width: 0; height: 1em;
+  font: inherit;
+  border: none;
+  background: transparent;
+  color: silver;
+  outline: none;
+  resize: none;
+  overflow: hidden;
 }
 -->
 
