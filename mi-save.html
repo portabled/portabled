@@ -2289,8 +2289,8 @@ var terminal;
 -->
 <!-- /shell/style.css
 .panels-scroll-host {
+  position: fixed !important;
   position: absolute;
-  position: fixed;
   left: 0; top: 0; width: 0; height: 0;
   overflow: auto;
   overflow-y: hidden;
@@ -2321,7 +2321,8 @@ var terminal;
   float: right;
 }
 .terminal-history {
-  position: fixed;
+  position: fixed !important;
+  position: absolute;
   left: 0; bottom: 0;
   width: 100%; height: 0;
   overflow: auto;
@@ -2332,6 +2333,7 @@ var terminal;
 }
 
 .terminal-prompt {
+  position: fixed !important;
   position: absolute;
   position: fixed;
   left: 0; bottom: 0;
@@ -2339,8 +2341,8 @@ var terminal;
 }
 
 .terminal-input {
+  position: fixed !important;
   position: absolute;
-  position: fixed;
   left: 0; bottom: 0;
   width: 0; height: 1em;
   font: inherit;
