@@ -2331,6 +2331,7 @@ var terminal;
                     elem('span', { text: '"', color: 'tomato' }, strContainer);
                     elem('span', { text: obj, color: 'tomato', opacity: 0.5 }, strContainer);
                     elem('span', { text: '"', color: 'tomato' }, strContainer);
+                    break;
                 default:
                     if (obj && obj.constructor && obj.construct && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
                         elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
