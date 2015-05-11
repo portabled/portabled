@@ -1,6 +1,7 @@
 <!doctype html>
 <title>mini shell </title>
 
+<script src="http://localhost:1337/vorlon.js"></script>
 <script data-legit=mi>
   window.onerror = function onerror() {
 
@@ -85,7 +86,7 @@ function setText(obj, text) {
       obj.text = text;
     }
     else if ('styleSheet' in obj) {
-      if (!obj.type) obj.type = 'text/css';
+      if (!obj.styleSheet && !obj.type) obj.type = 'text/css';
       obj.styleSheet.cssText = text;
     }
     else {
@@ -218,9 +219,14 @@ function createFrame(style) {
     '*,*:before,*:after{box-sizing:inherit;}'+
     'html{box-sizing:border-box;}'+
     '</'+'style'+'>\n'+
+
     // IE6/7/8 bug: global scope and window are not identical
     (ifrwin.Function?'':'<'+'script'+'>window.Function=Function</'+'script'+'>')+
+
+    // it's important to have body before any long scripts (especialy external),
+    // so IFRAME is immediately ready
     '<'+'body'+'><'+'body'+'>'+
+
   	'</'+'html'+'>');
   if (ifrdoc.close) ifrdoc.close();
 
@@ -569,8 +575,8 @@ function shellLoader(uniqueKey, document, boot) {
                         boot.iframe.parentElement.removeChild(boot.iframe);
                 }
             }, 10);
-            if (typeof console !== 'undefined' && console.log)
-                console.log(window['dbgDrive'] = drive);
+            //if (typeof console !== 'undefined' && console.log)
+            //  console.log(window['dbgDrive'] = drive);
         });
     }
 }
@@ -1890,6 +1896,7 @@ var panels;
             this._directoryService = _directoryService;
             this._redrawRequested = 0;
             this._metrics = null;
+            this._pages = [];
             this._scrollContent = elem('div', {
                 text: 'Loading...'
             }, this._host);
@@ -1919,47 +1926,87 @@ var panels;
             this._redrawRequested = 0;
             this._scrollContent.innerHTML = '';
             var entries = this._directoryService(this._path);
-            if (entries) {
-                entries.sort(function (e1, e2) {
-                    var flagCompare = (e1.flags & Panel.EntryFlags.Directory) ?
-                        ((e2.flags & Panel.EntryFlags.Directory) ? 0 : -1) :
-                        ((e2.flags & Panel.EntryFlags.Directory) ? +1 : 0);
-                    if (flagCompare)
-                        return flagCompare;
-                    var nameCompare = e1.name > e2.name ? 1 : e1.name < e2.name ? -1 : 0;
-                    return nameCompare;
+            if (!entries)
+                entries = [];
+            entries.sort(function (e1, e2) {
+                var flagCompare = (e1.flags & Panel.EntryFlags.Directory) ?
+                    ((e2.flags & Panel.EntryFlags.Directory) ? 0 : -1) :
+                    ((e2.flags & Panel.EntryFlags.Directory) ? +1 : 0);
+                if (flagCompare)
+                    return flagCompare;
+                var nameCompare = e1.name > e2.name ? 1 : e1.name < e2.name ? -1 : 0;
+                return nameCompare;
+            });
+            if (this._path !== '/') {
+                var parentPath = this._path.slice(0, this._path.lastIndexOf('/'));
+                entries.unshift({
+                    name: '..',
+                    path: parentPath,
+                    flags: Panel.EntryFlags.Directory
                 });
-                if (this._path !== '/') {
-                    var parentPath = this._path.slice(0, this._path.lastIndexOf('/'));
-                    entries.unshift({
-                        name: '..',
-                        path: parentPath,
-                        flags: Panel.EntryFlags.Directory
-                    });
-                }
-                var selectedPathIndex = -1;
-                for (var i = 0; i < entries.length; i++) {
-                    if (selectedPathIndex < 0) {
-                        selectedPathIndex = 0;
-                        this._selectedPath = entries.length > 0 ? entries[i].path : null;
-                    }
-                }
-                for (var i = 0; i < entries.length; i++) {
-                    this._renderEntry(entries[i], i === selectedPathIndex);
-                    if (entries[i].path === this._selectedPath) {
-                        selectedPathIndex = i;
-                    }
+            }
+            var selectedPathIndex = -1;
+            for (var i = 0; i < entries.length; i++) {
+                if (selectedPathIndex < 0) {
+                    selectedPathIndex = 0;
+                    this._selectedPath = entries.length > 0 ? entries[i].path : null;
                 }
             }
-        };
-        Panel.prototype._renderEntry = function (entry, selected) {
-            elem('div', {
-                height: this._metrics.windowMetrics.emHeight,
-                text: entry.name,
-                fontWeight: (entry.flags & Panel.EntryFlags.Directory) ? 'bold' : 'normal',
-                color: (entry.flags & Panel.EntryFlags.Directory) ? 'white' : selected ? 'black' : 'darkcyan',
-                background: selected ? 'darkcyan' : null
-            }, this._scrollContent);
+            var pageEntryCount = Math.max(3, ((this._metrics.hostHeight / this._metrics.windowMetrics.emHeight) | 0) - 2);
+            var pageColumnHeight = pageEntryCount * this._metrics.windowMetrics.emHeight;
+            var pageInterval = this._metrics.hostHeight - pageColumnHeight - this._metrics.windowMetrics.emHeight;
+            var desiredColumnWidth = 17 * this._metrics.windowMetrics.emWidth;
+            var columnCount = Math.max(1, Math.round(this._metrics.hostWidth / desiredColumnWidth) | 0);
+            var columnWidth = (this._metrics.hostWidth / columnCount) | 0;
+            this._pages = [];
+            var page = null;
+            var column = null;
+            for (var i = 0; i < entries.length; i++) {
+                if (!column || column.entries.length === pageEntryCount) {
+                    if (!page || page.columns.length === columnCount) {
+                        if (this._pages.length) {
+                            var leadPaddingDIV = elem('div', {
+                                className: 'panels-page-separator',
+                                height: pageInterval + 'px'
+                            }, this._scrollContent);
+                        }
+                        page = {
+                            leadPaddingDIV: leadPaddingDIV,
+                            pageDIV: elem('div', {
+                                className: 'panels-panel-page',
+                                height: pageColumnHeight + 'px'
+                            }, this._scrollContent),
+                            columns: []
+                        };
+                        this._pages.push(page);
+                    }
+                    column = {
+                        columnDIV: elem('div', {
+                            className: 'panels-panel-column',
+                            height: pageColumnHeight + 'px',
+                            width: (columnWidth - 1) + 'px'
+                        }, page.pageDIV),
+                        entries: []
+                    };
+                    page.columns.push(column);
+                }
+                var dentry = entries[i];
+                var dirfileClassName = dentry.flags & Panel.EntryFlags.Directory ? ' panels-entry-dir' : ' panels-entry-file';
+                var entryClassName = 'panels-entry' +
+                    dirfileClassName +
+                    (selectedPathIndex === i ? ' panels-entry-current' + dirfileClassName + '-current' : '');
+                column.entries.push({
+                    name: dentry.name,
+                    path: dentry.path,
+                    flags: dentry.flags,
+                    selectionFlags: selectedPathIndex === i ? Panel.SelectionFlags.Current : 0,
+                    entryDIV: elem('div', {
+                        className: entryClassName,
+                        text: dentry.name,
+                        height: this._metrics.windowMetrics.emHeight + 'px'
+                    }, column.columnDIV)
+                });
+            }
         };
         return Panel;
     })();
@@ -1970,6 +2017,12 @@ var panels;
             EntryFlags[EntryFlags["Directory"] = 1] = "Directory";
         })(Panel.EntryFlags || (Panel.EntryFlags = {}));
         var EntryFlags = Panel.EntryFlags;
+        (function (SelectionFlags) {
+            SelectionFlags[SelectionFlags["None"] = 0] = "None";
+            SelectionFlags[SelectionFlags["Current"] = 1] = "Current";
+            SelectionFlags[SelectionFlags["Selected"] = 2] = "Selected";
+        })(Panel.SelectionFlags || (Panel.SelectionFlags = {}));
+        var SelectionFlags = Panel.SelectionFlags;
     })(Panel = panels.Panel || (panels.Panel = {}));
 })(panels || (panels = {}));
 var panels;
@@ -2289,7 +2342,6 @@ var terminal;
 -->
 <!-- /shell/style.css
 .panels-scroll-host {
-  position: fixed !important;
   position: absolute;
   left: 0; top: 0; width: 0; height: 0;
   overflow: auto;
@@ -2308,7 +2360,6 @@ var terminal;
   overflow-x: hidden;
   background: navy;
   background: rgba(4, 12, 64, 0.95);
-  padding: 5px;
   padding-top: 10px;
   padding-bottom: 10px;
 }
@@ -2320,8 +2371,36 @@ var terminal;
 .panels-right-panel {
   float: right;
 }
+
+.panels-panel-page {
+  clear: both;
+}
+
+.panels-page-separator {
+  clear: both;
+}
+
+.panels-panel-column {
+  float: left;
+}
+
+.panels-entry {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.panels-entry-dir {
+  color: white;
+}
+
+.panels-entry-current {
+  background: darkcyan;
+}
+
+.panels-entry-file-current {
+  color: navy;
+}
 .terminal-history {
-  position: fixed !important;
   position: absolute;
   left: 0; bottom: 0;
   width: 100%; height: 0;
@@ -2333,15 +2412,12 @@ var terminal;
 }
 
 .terminal-prompt {
-  position: fixed !important;
   position: absolute;
-  position: fixed;
   left: 0; bottom: 0;
   height: 1em;
 }
 
 .terminal-input {
-  position: fixed !important;
   position: absolute;
   left: 0; bottom: 0;
   width: 0; height: 1em;
@@ -2357,12 +2433,221 @@ var terminal;
 
 <!-- /1.txt
 OK -->
-
 <!-- /4.txt
 OK -->
-
 <!-- /2.txt
 OK -->
-
 <!-- /3.txt
+OK -->
+<!-- /500.txt
+OK -->
+<!-- /501.txt
+OK -->
+<!-- /502.txt
+OK -->
+<!-- /503.txt
+OK -->
+<!-- /504.txt
+OK -->
+<!-- /505.txt
+OK -->
+<!-- /506.txt
+OK -->
+<!-- /507.txt
+OK -->
+<!-- /508.txt
+OK -->
+<!-- /509.txt
+OK -->
+<!-- /510.txt
+OK -->
+<!-- /511.txt
+OK -->
+<!-- /512.txt
+OK -->
+<!-- /513.txt
+OK -->
+<!-- /514.txt
+OK -->
+<!-- /515.txt
+OK -->
+<!-- /516.txt
+OK -->
+<!-- /517.txt
+OK -->
+<!-- /518.txt
+OK -->
+<!-- /519.txt
+OK -->
+<!-- /520.txt
+OK -->
+<!-- /521.txt
+OK -->
+<!-- /522.txt
+OK -->
+<!-- /523.txt
+OK -->
+<!-- /524.txt
+OK -->
+<!-- /525.txt
+OK -->
+<!-- /526.txt
+OK -->
+<!-- /527.txt
+OK -->
+<!-- /528.txt
+OK -->
+<!-- /529.txt
+OK -->
+<!-- /530.txt
+OK -->
+<!-- /531.txt
+OK -->
+<!-- /532.txt
+OK -->
+<!-- /533.txt
+OK -->
+<!-- /534.txt
+OK -->
+<!-- /535.txt
+OK -->
+<!-- /536.txt
+OK -->
+<!-- /537.txt
+OK -->
+<!-- /538.txt
+OK -->
+<!-- /539.txt
+OK -->
+<!-- /540.txt
+OK -->
+<!-- /541.txt
+OK -->
+<!-- /542.txt
+OK -->
+<!-- /543.txt
+OK -->
+<!-- /544.txt
+OK -->
+<!-- /545.txt
+OK -->
+<!-- /546.txt
+OK -->
+<!-- /547.txt
+OK -->
+<!-- /548.txt
+OK -->
+<!-- /549.txt
+OK -->
+<!-- /550.txt
+OK -->
+<!-- /551.txt
+OK -->
+<!-- /552.txt
+OK -->
+<!-- /553.txt
+OK -->
+<!-- /554.txt
+OK -->
+<!-- /555.txt
+OK -->
+<!-- /556.txt
+OK -->
+<!-- /557.txt
+OK -->
+<!-- /558.txt
+OK -->
+<!-- /559.txt
+OK -->
+<!-- /560.txt
+OK -->
+<!-- /561.txt
+OK -->
+<!-- /562.txt
+OK -->
+<!-- /563.txt
+OK -->
+<!-- /564.txt
+OK -->
+<!-- /565.txt
+OK -->
+<!-- /566.txt
+OK -->
+<!-- /567.txt
+OK -->
+<!-- /568.txt
+OK -->
+<!-- /569.txt
+OK -->
+<!-- /570.txt
+OK -->
+<!-- /571.txt
+OK -->
+<!-- /572.txt
+OK -->
+<!-- /573.txt
+OK -->
+<!-- /574.txt
+OK -->
+<!-- /575.txt
+OK -->
+<!-- /576.txt
+OK -->
+<!-- /577.txt
+OK -->
+<!-- /578.txt
+OK -->
+<!-- /579.txt
+OK -->
+<!-- /580.txt
+OK -->
+<!-- /581.txt
+OK -->
+<!-- /582.txt
+OK -->
+<!-- /583.txt
+OK -->
+<!-- /584.txt
+OK -->
+<!-- /585.txt
+OK -->
+<!-- /586.txt
+OK -->
+<!-- /587.txt
+OK -->
+<!-- /588.txt
+OK -->
+<!-- /589.txt
+OK -->
+<!-- /590.txt
+OK -->
+<!-- /591.txt
+OK -->
+<!-- /592.txt
+OK -->
+<!-- /593.txt
+OK -->
+<!-- /594.txt
+OK -->
+<!-- /595.txt
+OK -->
+<!-- /596.txt
+OK -->
+<!-- /597.txt
+OK -->
+<!-- /598.txt
+OK -->
+<!-- /599.txt
+OK -->
+<!-- /500.txt
+OK -->
+<!-- /500.txt
+OK -->
+<!-- /500.txt
+OK -->
+<!-- /500.txt
+OK -->
+<!-- /500.txt
+OK -->
+<!-- /500.txt
 OK -->
