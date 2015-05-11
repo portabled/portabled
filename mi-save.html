@@ -1858,6 +1858,31 @@ var CommanderShell = (function () {
         this.measure();
         this.arrange();
         elem.on(this._host, 'keydown', function (e) { return _this._keydown(e); });
+        var glob = (function () { return this; })();
+        if (glob.console) {
+            var _oldLog = glob.console.log;
+            var term = this._terminal;
+            console.log = function () {
+                var args = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    args[_i - 0] = arguments[_i];
+                }
+                _oldLog.apply(glob.console, args);
+                term.logArray(args);
+            };
+        }
+        else {
+            var term = this._terminal;
+            glob.console = {
+                log: function () {
+                    var args = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        args[_i - 0] = arguments[_i];
+                    }
+                    term.logArray(args);
+                }
+            };
+        }
     }
     CommanderShell.prototype.measure = function () {
         this._metrics.emWidth = this._metricElem.offsetWidth;
@@ -2295,6 +2320,9 @@ var terminal;
             for (var _i = 0; _i < arguments.length; _i++) {
                 args[_i - 0] = arguments[_i];
             }
+            return this.logArray(args);
+        };
+        Terminal.prototype.logArray = function (args) {
             var output = elem('div', this._historyContent);
             for (var i = 0; i < args.length; i++) {
                 if (i > 0)
