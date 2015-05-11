@@ -335,10 +335,17 @@ function loadMod(options) {
       }
     }
 
-    evalArgNames.push(
-      options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval);
+    var innerEval = frameFunction.apply(frame.global, ['return function(txt) { return eval(txt); }'])();
 
-    var evalFn = frameFunction.apply(frame.global, evalArgNames);
+    var wrappedText = '(function('+evalArgNames.join(',')+'){'+
+      options.eval + '\nreturn exports; })'+
+      (options.path ? ' //# sourceURL=' + options.path : '');
+
+    //evalArgNames.push(
+    //  options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval + '\nreturn exports;');
+
+    var evalFn = innerEval(wrappedText);
+    //var evalFn = frameFunction.apply(frame.global, evalArgNames);
 
     var modExports = evalFn.apply(frame.global, evalArgs);
 
@@ -500,7 +507,8 @@ function shellLoader(uniqueKey, document, boot) {
                     document: uiframe.document,
                     window: uiframe.global,
                     console: window.console,
-                    elem: shell_elem
+                    elem: shell_elem,
+                    setText: setText
                 }
             });
             function shell_require(moduleName) {
@@ -1896,6 +1904,11 @@ var panels;
             this._redrawRequested = 0;
             this._metrics = null;
             this._pages = [];
+            this._entriesInColumn = 0;
+            this._pageHeight = 0;
+            this._pageInterval = 0;
+            this._columnsOnPage = 0;
+            this._columnWidth = 0;
             this._scrollContent = elem('div', this._host);
             this._queueRedraw();
         }
@@ -1951,48 +1964,77 @@ var panels;
                     this._selectedPath = entries.length > 0 ? entries[i].path : null;
                 }
             }
-            var entriesInColumn = Math.max(3, ((this._metrics.hostHeight / this._metrics.windowMetrics.emHeight) | 0) - 2);
-            var pageColumnHeight = entriesInColumn * this._metrics.windowMetrics.emHeight;
-            var pageInterval = this._metrics.hostHeight - pageColumnHeight - this._metrics.windowMetrics.emHeight;
+            this._entriesInColumn = Math.max(3, ((this._metrics.hostHeight / this._metrics.windowMetrics.emHeight) | 0) - 2);
+            this._pageHeight = this._entriesInColumn * this._metrics.windowMetrics.emHeight;
+            this._pageInterval = this._metrics.hostHeight - this._pageHeight - this._metrics.windowMetrics.emHeight;
             var desiredColumnWidth = 17 * this._metrics.windowMetrics.emWidth;
-            var columnsOnPage = Math.max(1, Math.round(this._metrics.hostWidth / desiredColumnWidth) | 0);
-            var columnWidth = (this._metrics.hostWidth / columnsOnPage) | 0;
+            this._columnsOnPage = Math.max(1, Math.round(this._metrics.hostWidth / desiredColumnWidth) | 0);
+            this._columnWidth = ((this._metrics.hostWidth / this._columnsOnPage) | 0) - 1;
             if (!this._pages)
                 this._pages = [];
             for (var i = 0; i < entries.length; i++) {
-                var pageIndex = (i / (columnsOnPage * entriesInColumn)) | 0;
+                var pageIndex = (i / (this._columnsOnPage * this._entriesInColumn)) | 0;
                 var page = this._pages[pageIndex];
-                if (!page) {
-                    if (pageIndex)
+                if (page) {
+                    if (page.height !== this._pageHeight) {
+                        page.height = this._pageHeight;
+                        page.pageDIV.style.height = this._pageHeight + 'px';
+                    }
+                    if (page.leadInterval !== this._pageInterval) {
+                        page.leadInterval = this._pageInterval;
+                        if (page.leadPaddingDIV)
+                            page.leadPaddingDIV.style.height = this._pageInterval + 'px';
+                    }
+                }
+                else {
+                    if (pageIndex) {
                         var leadPaddingDIV = elem('div', {
                             className: 'panels-page-separator',
-                            height: pageInterval + 'px'
+                            height: this._pageInterval + 'px'
                         }, this._scrollContent);
+                    }
                     page = {
                         leadPaddingDIV: leadPaddingDIV,
+                        leadInterval: this._pageInterval,
+                        height: this._pageHeight,
                         pageDIV: elem('div', {
                             className: 'panels-panel-page',
-                            height: pageColumnHeight + 'px'
+                            height: this._pageHeight + 'px'
                         }, this._scrollContent),
                         columns: []
                     };
                     this._pages.push(page);
                 }
-                var columnIndex = ((i / entriesInColumn) | 0) % columnsOnPage;
-                var column = page.columns[i];
-                if (!column) {
+                var columnIndex = ((i / this._entriesInColumn) | 0) % this._columnsOnPage;
+                var column = page.columns[columnIndex];
+                if (column) {
+                    if (columnIndex === this._columnsOnPage - 1 && page.columns.length > this._columnsOnPage) {
+                        this._removeExcessColumns(page, this._columnsOnPage);
+                    }
+                    if (column.height !== this._pageHeight) {
+                        column.height = this._pageHeight;
+                        column.columnDIV.style.height = this._pageHeight + 'px';
+                    }
+                    if (column.width !== this._columnWidth) {
+                        column.width = this._columnWidth;
+                        column.columnDIV.style.width = this._columnWidth + 'px';
+                    }
+                }
+                else {
                     column = {
+                        height: this._pageHeight,
+                        width: this._columnWidth,
                         columnDIV: elem('div', {
                             className: 'panels-panel-column',
-                            height: pageColumnHeight + 'px',
-                            width: (columnWidth - 1) + 'px'
+                            height: this._pageHeight + 'px',
+                            width: this._columnWidth + 'px'
                         }, page.pageDIV),
                         entries: []
                     };
                     page.columns.push(column);
                 }
                 var dentry = entries[i];
-                var entryIndex = i % entriesInColumn;
+                var entryIndex = i % this._entriesInColumn;
                 var entry = column.entries[entryIndex];
                 if (!entry) {
                     var dirfileClassName = dentry.flags & Panel.EntryFlags.Directory ? ' panels-entry-dir' : ' panels-entry-file';
@@ -2015,39 +2057,55 @@ var panels;
                 else {
                     var expectedSelectionFlags = selectedPathIndex === i ? Panel.SelectionFlags.Current : 0;
                     if (entry.name !== dentry.name) {
+                        entry.name = dentry.name;
                         setText(entry.entryDIV, dentry.name);
                     }
-                    if (entry.path === dentry.path) {
+                    if (entry.path !== dentry.path) {
                         entry.path = dentry.path;
                     }
                     if (entry.flags !== dentry.flags || entry.selectionFlags !== expectedSelectionFlags) {
+                        var dirfileClassName = dentry.flags & Panel.EntryFlags.Directory ? ' panels-entry-dir' : ' panels-entry-file';
                         var entryClassName = 'panels-entry' +
                             dirfileClassName +
                             (selectedPathIndex === i ? ' panels-entry-current' + dirfileClassName + '-current' : '');
                         entry.entryDIV.className = entryClassName;
                     }
+                    if (entryIndex === this._entriesInColumn - 1 && column.entries.length > this._entriesInColumn) {
+                        this._removeExcessEntries(column, this._entriesInColumn);
+                    }
                 }
             }
-            for (var i = this._pages.length - 1; i > pageIndex; i--) {
+            this._removeExcessPages(pageIndex + 1);
+            var p = this._pages[pageIndex];
+            this._removeExcessColumns(p, columnIndex + 1);
+            var c = p.columns[columnIndex];
+            this._removeExcessEntries(c, entryIndex + 1);
+        };
+        Panel.prototype._removeExcessPages = function (expectedCount) {
+            for (var i = this._pages.length - 1; i >= expectedCount; i--) {
                 var p = this._pages[i];
                 p.pageDIV.parentElement.removeChild(p.pageDIV);
                 if (p.leadPaddingDIV)
                     p.leadPaddingDIV.parentElement.removeChild(p.leadPaddingDIV);
             }
-            if (this._pages.length > pageIndex + 1)
-                this._pages = this._pages.slice(0, pageIndex + 1);
-            p = this._pages[pageIndex];
-            for (var i = p.columns.length - 1; i > columnIndex; i--) {
+            if (this._pages.length > expectedCount)
+                this._pages = this._pages.slice(0, expectedCount);
+        };
+        Panel.prototype._removeExcessColumns = function (p, expectedCount) {
+            for (var i = p.columns.length - 1; i >= expectedCount; i--) {
                 var c = p.columns[i];
                 c.columnDIV.parentElement.removeChild(c.columnDIV);
             }
-            if (p.columns.length > columnIndex + 1)
-                p.columns = p.columns.slice(0, columnIndex + 1);
-            c = p.columns[columnIndex];
-            for (var i = c.entries.length; i > entryIndex; i--) {
+            if (p.columns.length > expectedCount)
+                p.columns = p.columns.slice(0, expectedCount);
+        };
+        Panel.prototype._removeExcessEntries = function (c, expectedCount) {
+            for (var i = c.entries.length - 1; i >= expectedCount; i--) {
                 var e = c.entries[i];
                 e.entryDIV.parentElement.removeChild(e.entryDIV);
             }
+            if (c.entries.length > expectedCount)
+                c.entries = c.entries.slice(0, expectedCount);
         };
         return Panel;
     })();
