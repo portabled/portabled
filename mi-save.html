@@ -88,11 +88,15 @@ function setText(obj, text) {
       if (!obj.styleSheet && !obj.type) obj.type = 'text/css';
       obj.styleSheet.cssText = text;
     }
+    else if ('textContent' in obj) {
+      obj.textContent = text;
+    }
     else {
       obj.innerHTML = text;
     }
   }
   else if ('textContent' in obj) {
+    if ('type' in obj && !obj.type) obj.type = 'text/css';
     obj.textContent = text;
   }
   else if (/^INPUT$/i.test(obj.tagName)) {
@@ -2199,20 +2203,6 @@ var panels;
         })(Panel.SelectionFlags || (Panel.SelectionFlags = {}));
         var SelectionFlags = Panel.SelectionFlags;
     })(Panel = panels.Panel || (panels.Panel = {}));
-})(panels || (panels = {}));
-var panels;
-(function (panels) {
-    var PanelEntry = (function () {
-        function PanelEntry(hostMetrics, entry) {
-            this.hostMetrics = hostMetrics;
-            this.entry = entry;
-            this.element = elem('div', {
-                text: entry.name
-            });
-        }
-        return PanelEntry;
-    })();
-    panels.PanelEntry = PanelEntry;
 })(panels || (panels = {}));
 var panels;
 (function (panels) {
