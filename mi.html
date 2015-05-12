@@ -211,7 +211,7 @@ console.groupEnd()):"function"==typeof console.info?console.info("*** TS "+e):"f
 <div class="portabled-flyout-scroller" data-bind="load: flyoutScroller = $element">
   <div class="portabled-flyout-scroller-bg">
 
-    <div class="portabled-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default CodeMirror-focused"><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 512px; left: 616px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none; font-size: 16px;" tabindex="0"></textarea></div><div class="CodeMirror-vscrollbar" cm-not-content="true" style="bottom: 0px; display: block;"><div style="min-width: 1px; height: 6722px;"></div></div><div class="CodeMirror-hscrollbar" cm-not-content="true"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-scrollbar-filler" cm-not-content="true"></div><div class="CodeMirror-gutter-filler" cm-not-content="true"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 45px; margin-bottom: -15px; border-right-width: 15px; min-width: 739.34375px; min-height: 6722px; padding-right: 15px; padding-bottom: 0px;"><div style="position: relative; top: 4230px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><pre>x</pre></div><div class="CodeMirror-measure"><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">var</span> <span class="cm-variable">scrollToCurrent</span>: <span class="cm-variable-3">HTMLElement</span> <span class="cm-operator">=</span> <span class="cm-atom">null</span>;</span></pre></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors"><div class="CodeMirror-cursor" style="left: 571px; top: 918px; height: 18px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">236</div></div><pre class=""><span style="padding-right: 0.1px;">          };</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">237</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">238</div></div><pre class=""><span style="padding-right: 0.1px;">          <span class="cm-variable">column</span>.<span class="cm-property">entries</span>.<span class="cm-property">push</span>(<span class="cm-variable">entry</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">239</div></div><pre class=""><span style="padding-right: 0.1px;">        }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">240</div></div><pre><span style="padding-right: 0.1px;">        <span class="cm-keyword">else</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">241</div></div><pre><span style="padding-right: 0.1px;">          <span class="cm-keyword">var</span> <span class="cm-variable">expectedSelectionFlags</span> <span class="cm-operator">=</span> <span class="cm-keyword">this</span>.<span class="cm-property">_selectedEntryIndex</span> <span class="cm-operator">===</span> <span class="cm-variable">i</span> <span class="cm-operator">?</span> <span class="cm-variable">Panel</span>.<span class="cm-property">SelectionFlags</span>.<span class="cm-property">Current</span> : <span class="cm-number">0</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">242</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">243</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">          <span class="cm-keyword">if</span> (<span class="cm-variable">entry</span>.<span class="cm-property">name</span> <span class="cm-operator">!==</span> <span class="cm-variable">dentry</span>.<span class="cm-property">name</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">244</div></div><pre class=""><span style="padding-right: 0.1px;">            <span class="cm-variable">entry</span>.<span class="cm-property">name</span> <span class="cm-operator">=</span> <span class="cm-variable">dentry</span>.<span class="cm-property">name</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">245</div></div><pre><span style="padding-right: 0.1px;">            <span class="cm-variable">setText</span>(<span class="cm-variable">entry</span>.<span class="cm-property">entryDIV</span>, <span class="cm-variable">dentry</span>.<span class="cm-property">name</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">246</div></div><pre class=""><span style="padding-right: 0.1px;">          }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">247</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">          <span class="cm-keyword">if</span> (<span class="cm-variable">entry</span>.<span class="cm-property">path</span> <span class="cm-operator">!==</span> <span class="cm-variable">dentry</span>.<span class="cm-property">path</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">248</div></div><pre class=""><span style="padding-right: 0.1px;">            <span class="cm-variable">entry</span>.<span class="cm-property">path</span> <span class="cm-operator">=</span> <span class="cm-variable">dentry</span>.<span class="cm-property">path</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">249</div></div><pre class=""><span style="padding-right: 0.1px;">          }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">250</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">          <span class="cm-keyword">if</span> (<span class="cm-variable">entry</span>.<span class="cm-property">flags</span> <span class="cm-operator">!==</span> <span class="cm-variable">dentry</span>.<span class="cm-property">flags</span> <span class="cm-operator">||</span> <span class="cm-variable">entry</span>.<span class="cm-property">selectionFlags</span> <span class="cm-operator">!==</span> <span class="cm-variable">expectedSelectionFlags</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">251</div></div><pre class=""><span style="padding-right: 0.1px;">            <span class="cm-keyword">var</span> <span class="cm-variable">dirfileClassName</span> <span class="cm-operator">=</span> <span class="cm-variable">dentry</span>.<span class="cm-property">flags</span> <span class="cm-operator">&amp;</span> <span class="cm-variable">Panel</span>.<span class="cm-property">EntryFlags</span>.<span class="cm-property">Directory</span> <span class="cm-operator">?</span> <span class="cm-string">' panels-entry-dir'</span> : <span class="cm-string">' panels-entry-file'</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">252</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">253</div></div><pre class=""><span style="padding-right: 0.1px;">            <span class="cm-keyword">var</span> <span class="cm-variable">entryClassName</span> <span class="cm-operator">=</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">254</div></div><pre class=""><span style="padding-right: 0.1px;">              <span class="cm-string">'panels-entry'</span> <span class="cm-operator">+</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">255</div></div><pre class=""><span style="padding-right: 0.1px;">              <span class="cm-variable">dirfileClassName</span> <span class="cm-operator">+</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">256</div></div><pre><span style="padding-right: 0.1px;">              (<span class="cm-keyword">this</span>.<span class="cm-property">_selectedEntryIndex</span> <span class="cm-operator">===</span> <span class="cm-variable">i</span> <span class="cm-operator">?</span> <span class="cm-string">' panels-entry-current'</span> <span class="cm-operator">+</span> <span class="cm-variable">dirfileClassName</span> <span class="cm-operator">+</span> <span class="cm-string">'-current'</span> : <span class="cm-string">''</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">257</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">258</div></div><pre><span style="padding-right: 0.1px;">            <span class="cm-variable">entry</span>.<span class="cm-property">entryDIV</span>.<span class="cm-property">className</span> <span class="cm-operator">=</span> <span class="cm-variable">entryClassName</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">259</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">260</div></div><pre class=""><span style="padding-right: 0.1px;">            <span class="cm-variable">entry</span>.<span class="cm-property">flags</span> <span class="cm-operator">=</span> <span class="cm-variable">dentry</span>.<span class="cm-property">flags</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">261</div></div><pre class=""><span style="padding-right: 0.1px;">            <span class="cm-variable">entry</span>.<span class="cm-property">selectionFlags</span> <span class="cm-operator">=</span> <span class="cm-variable">expectedSelectionFlags</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">262</div></div><pre class=""><span style="padding-right: 0.1px;">          }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">263</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">264</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">          <span class="cm-keyword">if</span> (<span class="cm-keyword">this</span>.<span class="cm-property">_selectedEntryIndex</span> <span class="cm-operator">===</span> <span class="cm-variable">i</span>) {</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">265</div></div><pre><span style="padding-right: 0.1px;">            <span class="cm-variable">scrollToCurrent</span> <span class="cm-operator">=</span> <span class="cm-variable">entry</span>.<span class="cm-property">entryDIV</span>;</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">266</div></div><pre><span style="padding-right: 0.1px;">          }</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">267</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">268</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">          <span class="cm-keyword">if</span> (<span class="cm-variable">entryIndex</span> <span class="cm-operator">===</span> <span class="cm-keyword">this</span>.<span class="cm-property">_entriesInColumn</span> <span class="cm-operator">-</span> <span class="cm-number">1</span> <span class="cm-operator">&amp;&amp;</span> <span class="cm-variable">column</span>.<span class="cm-property">entries</span>.<span class="cm-property">length</span> <span class="cm-operator">&gt;</span> <span class="cm-keyword">this</span>.<span class="cm-property">_entriesInColumn</span>) {</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">269</div></div><pre class=""><span style="padding-right: 0.1px;">            <span class="cm-keyword">this</span>.<span class="cm-property">_removeExcessEntries</span>(<span class="cm-variable">column</span>, <span class="cm-keyword">this</span>.<span class="cm-property">_entriesInColumn</span>);</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">270</div></div><pre><span style="padding-right: 0.1px;">          }</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">271</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">272</div></div><pre><span style="padding-right: 0.1px;">        }</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">273</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">274</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-keyword">this</span>.<span class="cm-property">_entries</span>.<span class="cm-property">push</span>(<span class="cm-variable">entry</span>);</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">275</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">276</div></div><pre><span style="padding-right: 0.1px;">      }</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">277</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">278</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-keyword">this</span>.<span class="cm-property">_removeExcessPages</span>(<span class="cm-variable">pageIndex</span> <span class="cm-operator">+</span> <span class="cm-number">1</span>);</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">279</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">280</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-keyword">var</span> <span class="cm-variable">p</span> <span class="cm-operator">=</span> <span class="cm-keyword">this</span>.<span class="cm-property">_pages</span>[<span class="cm-variable">pageIndex</span>];</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">281</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-keyword">this</span>.<span class="cm-property">_removeExcessColumns</span>(<span class="cm-variable">p</span>, <span class="cm-variable">columnIndex</span> <span class="cm-operator">+</span> <span class="cm-number">1</span>);</span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">282</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;" class=""><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">283</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-keyword">var</span> <span class="cm-variable">c</span> <span class="cm-operator">=</span> <span class="cm-variable">p</span>.<span class="cm-property">columns</span>[<span class="cm-variable">columnIndex</span>];</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">284</div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">this</span>.<span class="cm-property">_removeExcessEntries</span>(<span class="cm-variable">c</span>, <span class="cm-variable">entryIndex</span> <span class="cm-operator">+</span> <span class="cm-number">1</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">285</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">286</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">      <span class="cm-keyword">if</span> (<span class="cm-variable">scrollToCurrent</span> <span class="cm-operator">&amp;&amp;</span> <span class="cm-variable">scrollToCurrent</span>.<span class="cm-property">scrollIntoView</span>) {</span></pre></div><div class="CodeMirror-activeline" style="position: relative;"><div class="CodeMirror-activeline-background CodeMirror-linebackground"></div><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">287</div></div><pre><span style="padding-right: 0.1px;">        <span class="cm-comment">// TODO: better scroll, considering paging and only when requested by user actions</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">288</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre><span style="padding-right: 0.1px;">        <span class="cm-variable">setTimeout</span>(() <span class="cm-operator">=&gt;</span> {</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">289</div></div><pre><span style="padding-right: 0.1px;">          <span class="cm-variable">scrollToCurrent</span>.<span class="cm-property">scrollIntoView</span>(<span class="cm-atom">false</span>);</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">290</div></div><pre><span style="padding-right: 0.1px;">        }, <span class="cm-number">1</span>);</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">291</div></div><pre><span style="padding-right: 0.1px;">      }</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">292</div></div><pre><span style="padding-right: 0.1px;">    }</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">293</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">294</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-tab" role="presentation" cm-text="	">  </span><span class="cm-keyword">private</span> <span class="cm-variable">_removeExcessPages</span>(<span class="cm-variable">expectedCount</span>: <span class="cm-variable-3">number</span>) {</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">295</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-keyword">for</span> (<span class="cm-keyword">var</span> <span class="cm-variable">i</span> <span class="cm-operator">=</span> <span class="cm-keyword">this</span>.<span class="cm-property">_pages</span>.<span class="cm-property">length</span> <span class="cm-operator">-</span> <span class="cm-number">1</span>; <span class="cm-variable">i</span> <span class="cm-operator">&gt;=</span> <span class="cm-variable">expectedCount</span>; <span class="cm-variable">i</span><span class="cm-operator">--</span>) {</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">296</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-keyword">var</span> <span class="cm-variable">p</span> <span class="cm-operator">=</span> <span class="cm-keyword">this</span>.<span class="cm-property">_pages</span>[<span class="cm-variable">i</span>];</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">297</div></div><pre><span style="padding-right: 0.1px;">        <span class="cm-variable">p</span>.<span class="cm-property">pageDIV</span>.<span class="cm-property">parentElement</span>.<span class="cm-property">removeChild</span>(<span class="cm-variable">p</span>.<span class="cm-property">pageDIV</span>);</span></pre></div><div class="" style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">298</div></div><pre><span style="padding-right: 0.1px;">        <span class="cm-keyword">if</span> (<span class="cm-variable">p</span>.<span class="cm-property">leadPaddingDIV</span>)</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">299</div></div><pre><span style="padding-right: 0.1px;">          <span class="cm-variable">p</span>.<span class="cm-property">leadPaddingDIV</span>.<span class="cm-property">parentElement</span>.<span class="cm-property">removeChild</span>(<span class="cm-variable">p</span>.<span class="cm-property">leadPaddingDIV</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">300</div></div><pre class=""><span style="padding-right: 0.1px;">      }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">301</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">302</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-keyword">if</span> (<span class="cm-keyword">this</span>.<span class="cm-property">_pages</span>.<span class="cm-property">length</span> <span class="cm-operator">&gt;</span> <span class="cm-variable">expectedCount</span>)</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">303</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-keyword">this</span>.<span class="cm-property">_pages</span> <span class="cm-operator">=</span> <span class="cm-keyword">this</span>.<span class="cm-property">_pages</span>.<span class="cm-property">slice</span>(<span class="cm-number">0</span>, <span class="cm-variable">expectedCount</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">304</div></div><pre class=""><span style="padding-right: 0.1px;">    }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">305</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">306</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-keyword">private</span> <span class="cm-variable">_removeExcessColumns</span>(<span class="cm-variable">p</span>: { <span class="cm-variable">columns</span>: <span class="cm-variable">Panel</span>.<span class="cm-variable">ColumnData</span>[]; }, <span class="cm-variable">expectedCount</span>: <span class="cm-variable-3">number</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">307</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-keyword">for</span> (<span class="cm-keyword">var</span> <span class="cm-variable">i</span> <span class="cm-operator">=</span> <span class="cm-variable">p</span>.<span class="cm-property">columns</span>.<span class="cm-property">length</span> <span class="cm-operator">-</span> <span class="cm-number">1</span>; <span class="cm-variable">i</span> <span class="cm-operator">&gt;=</span> <span class="cm-variable">expectedCount</span>; <span class="cm-variable">i</span><span class="cm-operator">--</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">308</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-keyword">var</span> <span class="cm-variable">c</span> <span class="cm-operator">=</span> <span class="cm-variable">p</span>.<span class="cm-property">columns</span>[<span class="cm-variable">i</span>];</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 15px; width: 1px; top: 6722px;"></div><div class="CodeMirror-gutters" style="height: 6737px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 33px;"></div><div class="CodeMirror-gutter CodeMirror-foldgutter"></div></div></div></div></div>
+    <div class="portabled-main-content" data-bind="loadRaw: docHostRegions.content = $element"><div class="CodeMirror cm-s-default"><div style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 508px; left: 270px;"><textarea autocorrect="off" autocapitalize="off" spellcheck="false" style="position: absolute; padding: 0px; width: 1000px; height: 1em; outline: none; font-size: 16px;" tabindex="0"></textarea></div><div class="CodeMirror-vscrollbar" cm-not-content="true" style="bottom: 0px; display: block;"><div style="min-width: 1px; height: 2618px;"></div></div><div class="CodeMirror-hscrollbar" cm-not-content="true"><div style="height: 100%; min-height: 1px; width: 0px;"></div></div><div class="CodeMirror-scrollbar-filler" cm-not-content="true"></div><div class="CodeMirror-gutter-filler" cm-not-content="true"></div><div class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer" style="margin-left: 45px; margin-bottom: -15px; border-right-width: 15px; min-width: 854.5px; min-height: 2618px; padding-right: 15px; padding-bottom: 0px;"><div style="position: relative; top: 0px;"><div class="CodeMirror-lines"><div style="position: relative; outline: none;"><div class="CodeMirror-measure"><div class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>145</div></div></div><div class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div class="CodeMirror-cursors" style="visibility: hidden;"><div class="CodeMirror-cursor" style="left: 225px; top: 504px; height: 18px;">&nbsp;</div></div><div class="CodeMirror-code"><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">1</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;"><span class="cm-keyword">function</span> <span class="cm-variable">shellLoader</span>(<span class="cm-def">uniqueKey</span>: <span class="cm-variable-3">string</span>, <span class="cm-def">document</span>: <span class="cm-variable-3">Document</span>, <span class="cm-def">boot</span>: <span class="cm-variable-3">shellLoader</span>.<span class="cm-variable">BootModuleAPI</span>): <span class="cm-variable">shellLoader</span>.<span class="cm-property">ContinueLoading</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">2</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">3</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-keyword">var</span> <span class="cm-variable">driveMount</span> <span class="cm-operator">=</span> <span class="cm-variable">persistence</span>.<span class="cm-property">bootMount</span>(<span class="cm-variable">uniqueKey</span>, <span class="cm-variable">document</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">4</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">5</div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-keyword">return</span> <span class="cm-variable">continueLoading</span>();</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">6</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">7</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-keyword">function</span> <span class="cm-variable">continueLoading</span>(): <span class="cm-variable">shellLoader</span>.<span class="cm-property">ContinueLoading</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">8</div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-variable">driveMount</span>.<span class="cm-property">continueLoading</span>();</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">9</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-keyword">return</span> { <span class="cm-property">continueLoading</span>, <span class="cm-property">finishLoading</span> };</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">10</div></div><pre class=""><span style="padding-right: 0.1px;">  }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">11</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">12</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">  <span class="cm-keyword">function</span> <span class="cm-variable">finishLoading</span>() {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">13</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">14</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">    <span class="cm-variable">driveMount</span>.<span class="cm-property">finishLoading</span>(<span class="cm-def">drive</span> <span class="cm-operator">=&gt;</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">15</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">16</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-keyword">var</span> <span class="cm-def">uiframe</span> <span class="cm-operator">=</span> <span class="cm-variable">createFrame</span>();</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">17</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable-2">uiframe</span>.<span class="cm-property">iframe</span>.<span class="cm-property">style</span>.<span class="cm-property">opacity</span> <span class="cm-operator">=</span> <span class="cm-string">'0'</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">18</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">19</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-keyword">var</span> <span class="cm-def">wasResized</span> <span class="cm-operator">=</span> <span class="cm-atom">false</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">20</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-keyword">var</span> <span class="cm-def">resizeHandlers</span>: <span class="cm-variable-3">any</span>[] <span class="cm-operator">=</span> [];</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">21</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable">elem</span>.<span class="cm-property">on</span>(<span class="cm-variable">window</span>, <span class="cm-string">'resize'</span>, <span class="cm-variable">global_resize</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">22</div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable">elem</span>.<span class="cm-property">on</span>(<span class="cm-variable">document</span>.<span class="cm-property">body</span>, <span class="cm-string">'resize'</span>, <span class="cm-variable">global_resize</span>);</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">23</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">24</div></div><pre class=""><span style="padding-right: 0.1px;">      (<span class="cm-operator">&lt;</span><span class="cm-variable-3">any</span><span class="cm-operator">&gt;</span><span class="cm-variable">shell_elem</span>).<span class="cm-property">on</span> <span class="cm-operator">=</span> <span class="cm-variable">elem</span>.<span class="cm-property">on</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">25</div></div><pre class=""><span style="padding-right: 0.1px;">      (<span class="cm-operator">&lt;</span><span class="cm-variable-3">any</span><span class="cm-operator">&gt;</span><span class="cm-variable">shell_elem</span>).<span class="cm-property">off</span> <span class="cm-operator">=</span> <span class="cm-variable">elem</span>.<span class="cm-property">off</span>;</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">26</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">27</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-variable">loadMod</span>({</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">28</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">path</span>: <span class="cm-string">'/shell/start.js'</span>,</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">29</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property cm-cm-overlay cm-searching">eval</span>: <span class="cm-variable-2">drive</span>.<span class="cm-property">read</span>(<span class="cm-string">'/shell/start.ts.js'</span>),</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">30</div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">ui</span>: <span class="cm-atom">false</span>,</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">31</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-property">scope</span>: {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">32</div></div><pre class=""><span style="padding-right: 0.1px;">          <span class="cm-property">require</span>: <span class="cm-variable">shell_require</span>,</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">33</div></div><pre class=""><span style="padding-right: 0.1px;">          <span class="cm-property">document</span>: <span class="cm-variable-2">uiframe</span>.<span class="cm-property">document</span>,</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">34</div></div><pre class=""><span style="padding-right: 0.1px;">          <span class="cm-property">window</span>: <span class="cm-variable-2">uiframe</span>.<span class="cm-property">global</span>,</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">35</div></div><pre class=""><span style="padding-right: 0.1px;">          <span class="cm-property">console</span>: <span class="cm-variable">window</span>.<span class="cm-property">console</span>,</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">36</div></div><pre class=""><span style="padding-right: 0.1px;">          <span class="cm-property">elem</span>: <span class="cm-variable">shell_elem</span>,</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">37</div></div><pre class=""><span style="padding-right: 0.1px;">          <span class="cm-property">setText</span>: <span class="cm-variable">setText</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">38</div></div><pre class=""><span style="padding-right: 0.1px;">        }</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">39</div></div><pre class=""><span style="padding-right: 0.1px;">      });</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">40</div></div><pre class=""><span style="padding-right: 0.1px;"><span cm-text="">​</span></span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">41</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">      <span class="cm-keyword">function</span> <span class="cm-def">shell_require</span>(<span class="cm-def">moduleName</span>): <span class="cm-variable-3">any</span> {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">42</div><div class="CodeMirror-gutter-elt" style="left: 33px; width: 11px;"><div class="CodeMirror-foldgutter-open CodeMirror-guttermarker-subtle"></div></div></div><pre class=""><span style="padding-right: 0.1px;">        <span class="cm-keyword">switch</span> (<span class="cm-variable">moduleName</span>) {</span></pre></div><div style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -45px; width: 45px;"><div class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 25px;">43</div></div><pre class=""><span style="padding-right: 0.1px;">          <span class="cm-keyword">case</span> <span class="cm-string">'ui'</span>: <span class="cm-keyword">return</span> <span class="cm-variable-2">uiframe</span>;</span></pre></div></div></div></div></div></div><div style="position: absolute; height: 15px; width: 1px; top: 2618px;"></div><div class="CodeMirror-gutters" style="height: 2633px; left: 0px;"><div class="CodeMirror-gutter CodeMirror-linenumbers" style="width: 33px;"></div><div class="CodeMirror-gutter CodeMirror-foldgutter"></div></div></div></div></div>
 
     <div class="portabled-flyout">
 
@@ -220,12 +220,16 @@ console.groupEnd()):"function"==typeof console.info?console.info("*** TS "+e):"f
         <div class="portabled-thick-bar-bg">
           <div class="portabled-thick-bar" data-bind="event: { mousedown: thickbarMouseDown }, loadRaw: docHostRegions.scroller = $element">
           <div style="width: 100%; height: 100%;"><div class="portabled-scroller-outer" data-bind="load: bindHandlers($element)">
-  <div class="portabled-scroller-thumb" data-bind="style: { top: viewportFrom, height: viewportHeight }" style="top: 69.0270752752157%; height: 8.95566795596549%;">
+  <div class="portabled-scroller-thumb" data-bind="style: { top: viewportFrom, height: viewportHeight }" style="top: 0%; height: 11.1481481481481%;">
   </div>
 </div>
 
 <!-- ko foreach: lines -->
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 1%; width: 9%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 52%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 1%; width: 51%; height: 0.33%;">
 </div>
 
 
@@ -233,15 +237,7 @@ console.groupEnd()):"function"==typeof console.info?console.info("*** TS "+e):"f
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 24%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 27%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 29%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 1%; width: 21%; height: 0.33%;">
 </div>
 
 
@@ -249,1027 +245,15 @@ console.groupEnd()):"function"==typeof console.info?console.info("*** TS "+e):"f
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 31%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 1%; width: 49%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 15%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 31%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 23%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 20%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 22%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 20%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 21%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 4%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 22%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 18%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 57%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 20%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 16%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 5%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 14%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 13%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 10%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 27%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 19%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 8%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 9%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 18%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 9%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 18%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 44%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 5%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 18%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 45%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 13%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 42%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 13%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 8%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 6%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 11%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 4%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 14%; width: 9%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 4%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 11%; width: 50%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 46%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 54%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 16%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 11%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 19%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 27%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 26%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 18%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 10%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 32%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 40%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 7%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 21%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 48%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 42%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 41%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 14%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 56%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 15%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 2%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 9%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 59%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 13%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 9%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 16%; width: 20%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 2%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 27%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 13%; width: 21%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 5%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 29%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 36%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 23%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 4%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 11%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 28%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 23%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 53%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 92%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 65%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 85%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 27%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 78%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 63%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 11%; width: 13%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 34%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 59%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 27%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 4%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 31%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 25%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 42%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 16%; width: 19%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 31%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 19%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 11%; width: 50%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 14%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 4%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 13%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 40%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 11%; width: 28%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 21%; width: 22%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 6%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 19%; width: 19%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 20%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 22%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 11%; width: 25%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 21%; width: 22%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 9%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 1%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 18%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 30%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 31%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 10%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 74%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 18%; width: 22%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 33%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 27%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 45%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 16%; width: 17%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 27%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 45%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 14%; width: 6%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 20%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 20%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 23%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 22%; width: 26%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 11%; width: 25%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 13%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 9%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 16%; width: 11%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 19%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 13%; width: 33%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 10%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 90%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 8%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 13%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 14%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 78%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 3%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 14%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 14%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 16%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 67%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 21%; width: 19%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 11%; width: 14%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 11%; width: 41%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 16%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 22%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 4%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 38%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 27%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 20%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 30%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 18%; width: 23%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 70%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 90%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 8%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 11%; width: 13%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 11%; width: 14%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 11%; width: 78%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 17%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 22%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 37%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 14%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 27%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 18%; width: 62%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 10%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 31%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 12%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 37%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 25%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 18%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 45%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 67%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 14%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 14%; width: 18%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 41%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 11%; width: 35%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 38%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 17%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 50%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 31%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 40%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 25%; height: 0.33%;">
 </div>
 
 
 <div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 36%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 50%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 17%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 41%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 14%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 37%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 61%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 17%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 40%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 14%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 37%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
 </div>
 
 
@@ -1281,23 +265,7 @@ console.groupEnd()):"function"==typeof console.info?console.info("*** TS "+e):"f
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 1%; width: 8%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 21%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 31%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 14%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 8%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 1%; width: 22%; height: 0.33%;">
 </div>
 
 
@@ -1305,19 +273,7 @@ console.groupEnd()):"function"==typeof console.info?console.info("*** TS "+e):"f
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 27%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 10%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 12%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 30%; height: 0.33%;">
 </div>
 
 
@@ -1325,43 +281,111 @@ console.groupEnd()):"function"==typeof console.info?console.info("*** TS "+e):"f
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 19%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 24%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 10%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 22%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 24%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 19%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 9%; width: 14%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 17%; height: 0.33%;">
-</div>
-
-
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 30%; height: 0.33%;">
 </div>
 
 
 <div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 19%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 26%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 35%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 41%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 26%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 28%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 7%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 20%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 33%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 8%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 6%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 19%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 23%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 19%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 20%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 14%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 13%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 2%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 35%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 18%; height: 0.33%;">
 </div>
 
 
@@ -1369,55 +393,399 @@ console.groupEnd()):"function"==typeof console.info?console.info("*** TS "+e):"f
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 17%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 23%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 12%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 47%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 11%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 20%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 36%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 18%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 38%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 25%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 11%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 29%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 7%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 9%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 9%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 16%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 4%; width: 9%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 10%; width: 9%; height: 0.33%;">
 </div>
 
 
-<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 0%; height: 0.33%;">
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 10%; width: 37%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 10%; width: 8%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 10%; width: 28%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 2%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 16%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 65%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 24%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 36%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 25%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 25%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 36%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 42%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 29%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 10%; width: 24%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 22%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 19%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 15%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 42%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 38%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 5%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 31%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 29%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 12%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 88%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 91%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 1%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 16%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 42%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 22%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 5%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 10%; width: 9%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 28%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 68%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 37%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 36%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 50%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 45%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 30%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 24%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 25%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 8%; width: 72%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 10%; width: 43%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 6%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 6%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 44%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 5%; width: 37%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 2%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 1%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 17%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 1%; width: 52%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 7%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 15%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 1%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 1%; width: 29%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 30%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 3%; width: 13%; height: 0.33%;">
+</div>
+
+
+<div class="portabled-scroller-line" data-bind="style: { marginLeft: lineLead, width: lineWidth, height: $parent.lineHeight }" style="margin-left: 0%; width: 0%; height: 0.33%;">
 </div>
 
 
@@ -1442,7 +810,7 @@ console.groupEnd()):"function"==typeof console.info?console.info("*** TS "+e):"f
     try { portabled.app.loading('Files...'); } catch (err) { alert(err+' '+err.stack); }
 </script>
 
-      <div class="portabled-file-tree" timestamp="1431455743890" data-bind="loadRaw: fileTreeHost = $element">
+      <div class="portabled-file-tree" timestamp="1431455972674" data-bind="loadRaw: fileTreeHost = $element">
 
         <ul>
 
@@ -1964,7 +1332,7 @@ function loadMod(options) {
 
   alert(msg.join('\n'));
 
-}</pre></li></ul></li><li class="portabled-dir"><span class="portabled-dir-name">load</span><ul><li class="portabled-file              "><span class="portabled-file-name">shellLoader.ts</span><pre class="portabled-file-content">function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.BootModuleAPI): shellLoader.ContinueLoading {
+}</pre></li></ul></li><li class="portabled-dir"><span class="portabled-dir-name">load</span><ul><li class="portabled-file               portabled-file-selected"><span class="portabled-file-name">shellLoader.ts</span><pre class="portabled-file-content">function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.BootModuleAPI): shellLoader.ContinueLoading {
 
   var driveMount = persistence.bootMount(uniqueKey, document);
 
@@ -3683,7 +3051,7 @@ module shellLoader {
     return path;
   }
 
-}</pre></li></ul></li><li class="portabled-dir "><span class="portabled-dir-name">shell</span><ul><li class="portabled-dir"><span class="portabled-dir-name">panels</span><ul><li class="portabled-file                                  portabled-file-selected"><span class="portabled-file-name">Panel.ts</span><pre class="portabled-file-content">module panels {
+}</pre></li></ul></li><li class="portabled-dir "><span class="portabled-dir-name">shell</span><ul><li class="portabled-dir"><span class="portabled-dir-name">panels</span><ul><li class="portabled-file                                  "><span class="portabled-file-name">Panel.ts</span><pre class="portabled-file-content">module panels {
 
   export class Panel {
 
@@ -4703,7 +4071,7 @@ interface SQLResultSet {
 interface SQLResultSetRowList {
   length: number;
   item(index: number): any;
-}</pre></li></ul></li><li class="portabled-file           "><span class="portabled-file-name">index.html</span><pre class="portabled-file-content">&lt;!doctype html&gt;
+}</pre></li></ul></li><li class="portabled-file            "><span class="portabled-file-name">index.html</span><pre class="portabled-file-content">&lt;!doctype html&gt;
 &lt;title&gt;mini shell &lt;/title&gt;
 
 &lt;script data-legit=mi&gt;
@@ -4715,11 +4083,11 @@ interface SQLResultSetRowList {
   &lt;%=embedFile('boot/base.js')%&gt;
   &lt;%=embedFile('boot/earlyBoot.js')%&gt;
   &lt;%=embedFile('boot/bootUI.js')%&gt;
-//# sourceURL=boot/*.js
+//# sourceURL=/boot/base.js
 &lt;/script&gt;
 &lt;script data-legit=mi&gt;
 &lt;%=typescriptBuild('/load/*', '/persistence/*', '/boot/*', '/typings/*')%&gt;
-//# sourceURL=/load/shllLoader.ts.js
+//# sourceURL=/load/shellLoader.ts.js
 &lt;/script&gt;
 
 &lt;!-- total 56Mb, saved 25 Apr 2015 22:52:01.231 --&gt;
@@ -4867,7 +4235,7 @@ OK --&gt;
 </div>
 
 <div class="portabled-status-bar" data-bind="loadRaw: docHostRegions.status = $element">
-<div style="width: 100%; height: 100%;">/shell/panels/Panel.ts</div></div>
+<div style="width: 100%; height: 100%;"><span class="portabled-syntax-methodName">read</span><span class="portabled-syntax-punctuation">(</span><span class="portabled-syntax-current"><span class="portabled-syntax-parameterName">file</span><span class="portabled-syntax-punctuation">:</span><span class="portabled-syntax-space"> </span><span class="portabled-syntax-keyword">string</span></span><span class="portabled-syntax-punctuation">)</span><span class="portabled-syntax-punctuation">:</span><span class="portabled-syntax-space"> </span><span class="portabled-syntax-keyword">string</span></div></div>
 
 <script data-legit="portabled">try { portabled.app.loading('Libraries...'); } catch (err) { alert(err+' '+err.stack); }</script>
 
