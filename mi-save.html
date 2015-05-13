@@ -115,7 +115,7 @@ elem.on = function (obj, eventName, handler) {
     obj.attachEvent('on'+eventName, handler);
   }
   else {
-    obj['on'+eventName] = handler;
+    obj['on'+eventName] = function (e) { return handler(e || this.event); };
   }
 };
 
@@ -127,7 +127,7 @@ elem.off = function (obj, eventName, handler) {
     obj.detachEvent('on'+eventName, handler);
   }
   else {
-    if (obj['on'+eventName] === handler)
+    if (obj['on'+eventName])
       obj['on' + eventName] = null;
   }
 };
@@ -1919,20 +1919,20 @@ var CommanderShell = (function () {
                     e.preventDefault();
                 return true;
             }
-            if (e.keyCode < 32 || e.keyCode > 126) {
-            }
         }
     };
     return CommanderShell;
 })();
 var panels;
 (function (panels) {
+    var panelClass = 'panels-panel-page';
     var Panel = (function () {
         function Panel(_host, _path, _directoryService) {
+            var _this = this;
             this._host = _host;
             this._path = _path;
             this._directoryService = _directoryService;
-            this._selectedEntryIndex = -1;
+            this._cursorEntryIndex = -1;
             this._entries = null;
             this._redrawRequested = 0;
             this._metrics = null;
@@ -1942,15 +1942,54 @@ var panels;
             this._pageInterval = 0;
             this._columnsOnPage = 0;
             this._columnWidth = 0;
+            this._scrollTop = 0;
             this._isActive = false;
+            this._nextRedrawScrollToCurrent = false;
             this._scrollContent = elem('div', this._host);
+            this._scrollContent.isScrollContent = true;
+            elem.on(this._host, 'scroll', function () { return _this._onscroll(); });
             this._queueRedraw();
         }
+        Panel.prototype.onclick = function (e) {
+            if (!this._entries)
+                return;
+            var clickElem = (e.srcElement || e.target || e.currentTarget);
+            var entryDIV;
+            var columnDIV;
+            var pageDIV;
+            var leadPaddingDIV;
+            while (clickElem) {
+                if (clickElem.isScrollContent) {
+                    if (clickElem !== this._scrollContent)
+                        return false;
+                    break;
+                }
+                if (clickElem.isPageDIV)
+                    pageDIV = clickElem;
+                if (clickElem.isColumnDIV)
+                    columnDIV = clickElem;
+                if (clickElem.isEntryDIV)
+                    entryDIV = clickElem;
+                clickElem = clickElem.parentElement;
+            }
+            if (entryDIV) {
+                for (var i = 0; i < this._entries.length; i++) {
+                    if (this._entries[i].entryDIV === entryDIV) {
+                        this._cursorPath = this._entries[i].path;
+                        this._nextRedrawScrollToCurrent = true;
+                        this._queueRedraw();
+                        break;
+                    }
+                }
+                this._redrawNow();
+            }
+            return true;
+        };
         Panel.prototype.currentPath = function () {
             return this._path;
         };
-        Panel.prototype.selectedPath = function () {
-            return this._selectedPath;
+        Panel.prototype.cursorPath = function () {
+            return this._cursorPath;
         };
         Panel.prototype.arrange = function (metrics) {
             this._metrics = metrics;
@@ -1967,7 +2006,7 @@ var panels;
             this._isActive = false;
             this._scrollContent.className = 'panels-panel-inactive';
         };
-        Panel.prototype.selectionGo = function (direction) {
+        Panel.prototype.cursorGo = function (direction) {
             if (!this._entries || !this._entries.length)
                 return;
             var moveStep = 0;
@@ -1978,12 +2017,25 @@ var panels;
                 case +1:
                     moveStep = +1;
                     break;
+                case -10:
+                    moveStep = -this._entriesInColumn;
+                    break;
+                case +10:
+                    moveStep = +this._entriesInColumn;
+                    break;
+                case -100:
+                    moveStep = -this._entriesInColumn * this._columnsOnPage;
+                    break;
+                case +100:
+                    moveStep = +this._entriesInColumn * this._columnsOnPage;
+                    break;
             }
             if (moveStep) {
-                this._selectedEntryIndex = Math.max(0, Math.min(this._entries.length - 1, this._selectedEntryIndex + moveStep));
-                var e = this._entries[this._selectedEntryIndex];
+                var newCursorEntryIndex = Math.max(0, Math.min(this._entries.length - 1, this._cursorEntryIndex + moveStep));
+                var e = this._entries[newCursorEntryIndex];
                 if (e) {
-                    this._selectedPath = this._entries[this._selectedEntryIndex].path;
+                    this._cursorPath = this._entries[newCursorEntryIndex].path;
+                    this._nextRedrawScrollToCurrent = true;
                     this._queueRedraw();
                 }
             }
@@ -1996,7 +2048,7 @@ var panels;
         };
         Panel.prototype._redrawNow = function () {
             this._redrawRequested = 0;
-            var scrollToCurrent = null;
+            var prevOffset = this._calcEntryTopOffset(Math.max(0, this._cursorEntryIndex));
             var entries = this._directoryService(this._path);
             this._entries = [];
             entries.sort(function (e1, e2) {
@@ -2021,16 +2073,16 @@ var panels;
                 this._pages = [];
                 return;
             }
-            this._selectedEntryIndex = -1;
+            this._cursorEntryIndex = -1;
             for (var i = 0; i < entries.length; i++) {
-                if (entries[i].path === this._selectedPath) {
-                    this._selectedEntryIndex = i;
+                if (entries[i].path === this._cursorPath) {
+                    this._cursorEntryIndex = i;
                     break;
                 }
             }
-            if (this._selectedEntryIndex < 0) {
-                this._selectedEntryIndex = 0;
-                this._selectedPath = entries.length > 0 ? entries[0].path : null;
+            if (this._cursorEntryIndex < 0) {
+                this._cursorEntryIndex = 0;
+                this._cursorPath = entries.length > 0 ? entries[0].path : null;
             }
             this._entriesInColumn = Math.max(3, ((this._metrics.hostHeight / this._metrics.windowMetrics.emHeight) | 0) - 2);
             this._pageHeight = this._entriesInColumn * this._metrics.windowMetrics.emHeight;
@@ -2041,7 +2093,7 @@ var panels;
             if (!this._pages)
                 this._pages = [];
             for (var i = 0; i < entries.length; i++) {
-                var pageIndex = (i / (this._columnsOnPage * this._entriesInColumn)) | 0;
+                var pageIndex = this._calcPageIndex(i);
                 var page = this._pages[pageIndex];
                 if (page) {
                     if (page.height !== this._pageHeight) {
@@ -2060,20 +2112,22 @@ var panels;
                             className: 'panels-page-separator',
                             height: this._pageInterval + 'px'
                         }, this._scrollContent);
+                        leadPaddingDIV.isLeadPaddingDIV = true;
                     }
                     page = {
                         leadPaddingDIV: leadPaddingDIV,
                         leadInterval: this._pageInterval,
                         height: this._pageHeight,
                         pageDIV: elem('div', {
-                            className: 'panels-panel-page',
+                            className: panelClass,
                             height: this._pageHeight + 'px'
                         }, this._scrollContent),
                         columns: []
                     };
+                    page.pageDIV.isPageDIV = true;
                     this._pages.push(page);
                 }
-                var columnIndex = ((i / this._entriesInColumn) | 0) % this._columnsOnPage;
+                var columnIndex = this._calcColumnIndex(i);
                 var column = page.columns[columnIndex];
                 if (column) {
                     if (columnIndex === this._columnsOnPage - 1 && page.columns.length > this._columnsOnPage) {
@@ -2099,31 +2153,33 @@ var panels;
                         }, page.pageDIV),
                         entries: []
                     };
+                    column.columnDIV.isColumnDIV = true;
                     page.columns.push(column);
                 }
                 var dentry = entries[i];
-                var entryIndex = i % this._entriesInColumn;
+                var entryIndex = this._calcEntryIndex(i);
                 var entry = column.entries[entryIndex];
                 if (!entry) {
                     var dirfileClassName = dentry.flags & Panel.EntryFlags.Directory ? ' panels-entry-dir' : ' panels-entry-file';
                     var entryClassName = 'panels-entry' +
                         dirfileClassName +
-                        (this._selectedEntryIndex === i ? ' panels-entry-current' + dirfileClassName + '-current' : '');
+                        (this._cursorEntryIndex === i ? ' panels-entry-current' + dirfileClassName + '-current' : '');
                     entry = {
                         name: dentry.name,
                         path: dentry.path,
                         flags: dentry.flags,
-                        selectionFlags: this._selectedEntryIndex === i ? Panel.SelectionFlags.Current : 0,
+                        selectionFlags: this._cursorEntryIndex === i ? Panel.SelectionFlags.Current : 0,
                         entryDIV: elem('div', {
                             className: entryClassName,
                             text: dentry.name,
                             height: this._metrics.windowMetrics.emHeight + 'px'
                         }, column.columnDIV)
                     };
+                    entry.entryDIV.isEntryDIV = true;
                     column.entries.push(entry);
                 }
                 else {
-                    var expectedSelectionFlags = this._selectedEntryIndex === i ? Panel.SelectionFlags.Current : 0;
+                    var expectedSelectionFlags = this._cursorEntryIndex === i ? Panel.SelectionFlags.Current : 0;
                     if (entry.name !== dentry.name) {
                         entry.name = dentry.name;
                         setText(entry.entryDIV, dentry.name);
@@ -2135,13 +2191,10 @@ var panels;
                         var dirfileClassName = dentry.flags & Panel.EntryFlags.Directory ? ' panels-entry-dir' : ' panels-entry-file';
                         var entryClassName = 'panels-entry' +
                             dirfileClassName +
-                            (this._selectedEntryIndex === i ? ' panels-entry-current' + dirfileClassName + '-current' : '');
+                            (this._cursorEntryIndex === i ? ' panels-entry-current' + dirfileClassName + '-current' : '');
                         entry.entryDIV.className = entryClassName;
                         entry.flags = dentry.flags;
                         entry.selectionFlags = expectedSelectionFlags;
-                    }
-                    if (this._selectedEntryIndex === i) {
-                        scrollToCurrent = entry.entryDIV;
                     }
                     if (entryIndex === this._entriesInColumn - 1 && column.entries.length > this._entriesInColumn) {
                         this._removeExcessEntries(column, this._entriesInColumn);
@@ -2154,12 +2207,23 @@ var panels;
             this._removeExcessColumns(p, columnIndex + 1);
             var c = p.columns[columnIndex];
             this._removeExcessEntries(c, entryIndex + 1);
-            if (scrollToCurrent && scrollToCurrent.scrollIntoView) {
-                // TODO: better scroll, considering paging and only when requested by user actions
-                setTimeout(function () {
-                    scrollToCurrent.scrollIntoView(false);
-                }, 1);
+            var newOffset = this._calcEntryTopOffset(Math.max(0, this._cursorEntryIndex));
+            if (this._nextRedrawScrollToCurrent) {
+                this._nextRedrawScrollToCurrent = false;
+                var maxScroll = newOffset - this._metrics.windowMetrics.emHeight * 2;
+                var minScroll = newOffset - this._metrics.hostHeight + this._metrics.windowMetrics.emHeight * 3;
+                var newScrollTop = this._scrollTop < minScroll ? minScroll :
+                    this._scrollTop > maxScroll ? maxScroll :
+                        -1;
+                if (newScrollTop >= 0)
+                    this._host.scrollTop = newScrollTop;
             }
+            else {
+                var prevDistanceFromCenter = prevOffset - this._scrollTop + this._metrics.hostHeight / 2;
+                var newScrollTop = newOffset - prevDistanceFromCenter - this._metrics.hostHeight / 2;
+                this._host.scrollTop = newScrollTop;
+            }
+            // end of _redrawNow()
         };
         Panel.prototype._removeExcessPages = function (expectedCount) {
             for (var i = this._pages.length - 1; i >= expectedCount; i--) {
@@ -2187,6 +2251,30 @@ var panels;
             if (c.entries.length > expectedCount)
                 c.entries = c.entries.slice(0, expectedCount);
         };
+        Panel.prototype._onscroll = function () {
+            if (this._redrawRequested)
+                return;
+            this._scrollTop = this._host.scrollTop;
+        };
+        Panel.prototype._calcPageIndex = function (indexOfEntry) {
+            return (indexOfEntry / (this._columnsOnPage * this._entriesInColumn)) | 0;
+        };
+        Panel.prototype._calcColumnIndex = function (indexOfEntry) {
+            return ((indexOfEntry / this._entriesInColumn) | 0) % this._columnsOnPage;
+        };
+        Panel.prototype._calcEntryIndex = function (indexOfEntry) {
+            return indexOfEntry % this._entriesInColumn;
+        };
+        Panel.prototype._calcEntryTopOffset = function (indexOfEntry) {
+            if (!this._metrics || !this._metrics.windowMetrics)
+                return 0;
+            var pageIndex = this._calcPageIndex(indexOfEntry);
+            var entryIndex = this._calcEntryIndex(indexOfEntry);
+            var offset = pageIndex * this._entriesInColumn * this._metrics.windowMetrics.emHeight +
+                Math.max(0, pageIndex - 1) * this._pageInterval +
+                entryIndex * this._metrics.windowMetrics.emHeight; // distance from the top of the page
+            return offset;
+        };
         return Panel;
     })();
     panels.Panel = Panel;
@@ -2210,6 +2298,7 @@ var panels;
     var panelVMargin = 5;
     var TwoPanels = (function () {
         function TwoPanels(_host, leftPath, rightPath, _drive) {
+            var _this = this;
             this._host = _host;
             this._drive = _drive;
             this._scrollHost = elem('div', { className: 'panels-scroll-host' }, this._host);
@@ -2227,6 +2316,8 @@ var panels;
                 e.preventDefault();
               return false;
             }); */
+            elem.on(this._leftPanelHost, 'click', function (e) { return _this._onclick(e); });
+            elem.on(this._rightPanelHost, 'click', function (e) { return _this._onclick(e); });
         }
         TwoPanels.prototype.measure = function () {
         };
@@ -2282,6 +2373,14 @@ var panels;
                     return this._selectionGo(-1);
                 case 40:
                     return this._selectionGo(+1);
+                case 33:
+                    return this._selectionGo(-100);
+                case 34:
+                    return this._selectionGo(+100);
+                case 37:
+                    return this._selectionGo(-10);
+                case 39:
+                    return this._selectionGo(+10);
                 case 9:
                     this.toggleActivePanel();
                     return true;
@@ -2289,11 +2388,19 @@ var panels;
             return false;
         };
         TwoPanels.prototype._selectionGo = function (direction) {
-            var panel = this._getPanel(this.isLeftActive()).selectionGo(direction);
+            var panel = this._getPanel(this.isLeftActive()).cursorGo(direction);
             return true;
         };
         TwoPanels.prototype._getPanel = function (left) {
             return left ? this._leftPanel : this._rightPanel;
+        };
+        TwoPanels.prototype._onclick = function (e) {
+            var isLeft = this._leftPanel.onclick(e);
+            if (!isLeft && !this._rightPanel.onclick(e))
+                return;
+            if (isLeft === this.isLeftActive())
+                return;
+            this.toggleActivePanel();
         };
         return TwoPanels;
     })();
@@ -2538,6 +2645,11 @@ var terminal;
   color: darkcyan;
   padding-top: 10px;
   padding-bottom: 10px;
+  cursor: default;
+}
+
+.panels-panel * {
+  cursor: default;
 }
 
 .panels-left-panel {
