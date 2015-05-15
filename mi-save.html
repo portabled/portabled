@@ -1917,6 +1917,8 @@ var CommanderShell = (function () {
             this._twoPanels.toggleVisibility();
             return true;
         }
+        if (e.keyCode === 13)
+            this._terminal.clearInput();
         if ((e.keyCode === 13 && this._twoPanels.isVisible() && !this._terminal.hasInput())
             || (e.keyCode !== 13)) {
             if (this._twoPanels.keydown(e))
@@ -2646,7 +2648,10 @@ var terminal;
             }
         };
         Terminal.prototype.hasInput = function () {
-            return !!this._input.value && this._input.value !== '\r\n'; // IE fix
+            return !!this._getInput();
+        };
+        Terminal.prototype._getInput = function () {
+            return (this._input.value || '').replace(/[\r\n]/g, '');
         };
         Terminal.prototype._logAppendObj = function (obj, output, level) {
             switch (typeof obj) {
@@ -2752,13 +2757,20 @@ var terminal;
             this._input.style.left = this._promptWidth + 'px';
             this._input.style.width = (metrics.hostWidth - this._promptWidth) + 'px';
         };
+        Terminal.prototype.clearInput = function () {
+            var _this = this;
+            setTimeout(function () {
+                var cleanInput = _this._getInput();
+                if (_this._input.value !== cleanInput) {
+                    _this._input.value = cleanInput;
+                }
+            }, 10);
+        };
         Terminal.prototype.keydown = function (e, cursorPath) {
             if (e.keyCode === 38) {
             }
             else if (e.keyCode === 13) {
-                var code = this._input.value;
-                if (code == '\r\n')
-                    code = '';
+                var code = this._getInput();
                 if (code) {
                     if (code.slice(-2) === '\r\n')
                         code = code.slice(0, code.length - 2);
