@@ -1965,6 +1965,15 @@ var panels;
             elem.on(this._host, 'scroll', function () { return _this._onscroll(); });
             this._queueRedraw();
         }
+        Panel.prototype.set = function (paths) {
+            if (paths.currentPath)
+                this._path = paths.currentPath;
+            if (paths.cursorPath) {
+                this._cursorPath = paths.cursorPath;
+                this._nextRedrawScrollToCurrent = true;
+            }
+            this._queueRedraw();
+        };
         Panel.prototype.onclick = function (e) {
             if (!this._entries)
                 return;
@@ -2095,7 +2104,9 @@ var panels;
                 var entry = this._entries[this._cursorEntryIndex];
                 if (entry) {
                     if (entry.flags & Panel.EntryFlags.Directory) {
+                        this._cursorPath = this._path;
                         this._path = entry.path;
+                        this._nextRedrawScrollToCurrent = true;
                         this._queueRedraw();
                         return true;
                     }
