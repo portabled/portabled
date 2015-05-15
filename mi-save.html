@@ -1901,24 +1901,38 @@ var CommanderShell = (function () {
         this._terminal.arrange(this._metrics);
     };
     CommanderShell.prototype._keydown = function (e) {
+        var res = this._keydownCore(e);
+        if (res) {
+            if (e.preventDefault)
+                e.preventDefault();
+        }
+        return res;
+    };
+    CommanderShell.prototype._keydownCore = function (e) {
         if (e.keyCode === 27 && !e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
             this._twoPanels.toggleVisibility();
-            if (e.preventDefault)
-                e.preventDefault();
             return true;
         }
-        else if (this._twoPanels.isVisible() && this._twoPanels.keydown(e)) {
-            if (e.preventDefault)
-                e.preventDefault();
-            return true;
-        }
-        else {
-            this._terminal.focus();
-            if (this._terminal.keydown(e)) {
-                if (e.preventDefault)
-                    e.preventDefault();
+        if ((e.keyCode === 13 && this._twoPanels.isVisible() && !this._terminal.hasInput())
+            || (e.keyCode !== 13)) {
+            if (this._twoPanels.keydown(e))
                 return true;
-            }
+        }
+        var cursorPath = this._twoPanels.cursorPath();
+        this._terminal.focus();
+        if (this._terminal.keydown(e, cursorPath))
+            return true;
+        if (e.keyCode === 13)
+            return this._execute(cursorPath);
+        //if (e.keyCode < 32 || e.keyCode > 126) {
+        //	this._terminal.log('CommanderShell::keydown ' + e.yCode);
+        //}
+    };
+    CommanderShell.prototype._execute = function (cursorPath) {
+        var text = this._drive.read(cursorPath);
+        if (typeof text !== 'undefined' && text !== null) {
+            console.log(text);
+            return true;
         }
     };
     return CommanderShell;
@@ -1943,6 +1957,7 @@ var panels;
             this._columnsOnPage = 0;
             this._columnWidth = 0;
             this._scrollTop = 0;
+            this._scrollTopHeight = 0;
             this._isActive = false;
             this._nextRedrawScrollToCurrent = false;
             this._scrollContent = elem('div', this._host);
@@ -2018,10 +2033,45 @@ var panels;
                     moveStep = +1;
                     break;
                 case -10:
-                    moveStep = -this._entriesInColumn;
+                    var entryIndex = this._calcEntryIndex(this._cursorEntryIndex);
+                    if (this._columnsOnPage === 1) {
+                        moveStep = -entryIndex || -1;
+                    }
+                    else {
+                        var columnIndex = this._calcColumnIndex(this._cursorEntryIndex);
+                        if (columnIndex > 0) {
+                            moveStep = -this._entriesInColumn;
+                        }
+                        else {
+                            moveStep = this._entriesInColumn * (this._columnsOnPage - 1) - 1;
+                            // overflow cases
+                            if (this._cursorEntryIndex === 0) {
+                                moveStep = this._entriesInColumn * (this._columnsOnPage - 1);
+                            }
+                            else if (this._cursorEntryIndex + moveStep >= this._entries.length) {
+                                var endEntryIndex = this._calcEntryIndex(this._entries.length - 1);
+                                var endColumnIndex = this._calcColumnIndex(this._entries.length - 1);
+                                // if the last entry is higher vertically, stop at the previous column
+                                var targetColumnIndex = endEntryIndex >= entryIndex ? endColumnIndex : endColumnIndex - 1;
+                                if (targetColumnIndex <= columnIndex) {
+                                    moveStep = -entryIndex; // if nowhere to go right, go all the way up
+                                }
+                                else {
+                                    // there are columns on the right, so go there (and one up after)
+                                    moveStep = (targetColumnIndex - columnIndex) * this._entriesInColumn - 1;
+                                }
+                            }
+                        }
+                    }
                     break;
                 case +10:
-                    moveStep = +this._entriesInColumn;
+                    var columnIndex = this._calcColumnIndex(this._cursorEntryIndex);
+                    if (columnIndex < this._columnsOnPage - 1) {
+                        moveStep = +this._entriesInColumn;
+                    }
+                    else {
+                        moveStep = -this._entriesInColumn * 2 + 1;
+                    }
                     break;
                 case -100:
                     moveStep = -this._entriesInColumn * this._columnsOnPage;
@@ -2040,14 +2090,25 @@ var panels;
                 }
             }
         };
+        Panel.prototype.navigateCursor = function () {
+            if (this._cursorEntryIndex >= 0) {
+                var entry = this._entries[this._cursorEntryIndex];
+                if (entry) {
+                    if (entry.flags & Panel.EntryFlags.Directory) {
+                        this._path = entry.path;
+                        this._queueRedraw();
+                        return true;
+                    }
+                }
+            }
+        };
         Panel.prototype._queueRedraw = function () {
             var _this = this;
             if (this._redrawRequested)
                 return;
-            this._redrawRequested = setTimeout(function () { return _this._redrawNow(); }, 1);
+            this._redrawRequested = setTimeout(function () { return _this._redrawNow(); }, 100);
         };
         Panel.prototype._redrawNow = function () {
-            this._redrawRequested = 0;
             var prevOffset = this._calcEntryTopOffset(Math.max(0, this._cursorEntryIndex));
             var entries = this._directoryService(this._path);
             this._entries = [];
@@ -2215,14 +2276,22 @@ var panels;
                 var newScrollTop = this._scrollTop < minScroll ? minScroll :
                     this._scrollTop > maxScroll ? maxScroll :
                         -1;
-                if (newScrollTop >= 0)
+                if (newScrollTop >= 0) {
+                    //console.log('redraw: scroll to current [' + newScrollTop + ']');
                     this._host.scrollTop = newScrollTop;
+                }
             }
             else {
-                var prevDistanceFromCenter = prevOffset - this._scrollTop + this._metrics.hostHeight / 2;
+                var prevDistanceFromCenter = prevOffset - (this._scrollTop + this._scrollTopHeight / 2);
                 var newScrollTop = newOffset - prevDistanceFromCenter - this._metrics.hostHeight / 2;
+                //console.log({
+                //  prevDistanceFromCenter, prevOffset, this_scrollTop: this._scrollTop, this_scrollTopHeight: this._scrollTopHeight,
+                //  newOffset, this_metrics_hostHeight: this._metrics.hostHeight, newScrollTop
+                //});
+                //console.log('redraw: scroll to approximate prev. [' + newScrollTop + ']');
                 this._host.scrollTop = newScrollTop;
             }
+            this._redrawRequested = 0;
             // end of _redrawNow()
         };
         Panel.prototype._removeExcessPages = function (expectedCount) {
@@ -2255,6 +2324,8 @@ var panels;
             if (this._redrawRequested)
                 return;
             this._scrollTop = this._host.scrollTop;
+            this._scrollTopHeight = this._metrics.hostHeight;
+            console.log('onscroll ' + this._scrollTop);
         };
         Panel.prototype._calcPageIndex = function (indexOfEntry) {
             return (indexOfEntry / (this._columnsOnPage * this._entriesInColumn)) | 0;
@@ -2342,16 +2413,20 @@ var panels;
             this._leftPanelHost.style.width = panelWidth + 'px';
             this._rightPanelHost.style.height = panelsHeight + 'px';
             this._rightPanelHost.style.width = panelWidth + 'px';
-            this._leftPanel.arrange({
-                windowMetrics: metrics,
-                hostWidth: panelWidth - panelHMargin * 2,
-                hostHeight: panelsHeight - panelVMargin * 2
-            });
-            this._rightPanel.arrange({
-                windowMetrics: metrics,
-                hostWidth: panelWidth - panelHMargin * 2,
-                hostHeight: panelsHeight - panelVMargin * 2
-            });
+            if (this._leftPanelHost.style.display !== 'none') {
+                this._leftPanel.arrange({
+                    windowMetrics: metrics,
+                    hostWidth: panelWidth - panelHMargin * 2,
+                    hostHeight: panelsHeight - panelVMargin * 2
+                });
+            }
+            if (this._rightPanelHost.style.display !== 'none') {
+                this._rightPanel.arrange({
+                    windowMetrics: metrics,
+                    hostWidth: panelWidth - panelHMargin * 2,
+                    hostHeight: panelsHeight - panelVMargin * 2
+                });
+            }
         };
         TwoPanels.prototype.isVisible = function () {
             return this._scrollHost.style.display !== 'none';
@@ -2363,6 +2438,8 @@ var panels;
             return this._leftPanel.isActive();
         };
         TwoPanels.prototype.toggleActivePanel = function () {
+            if (!this.isVisible())
+                return;
             var isLeftActive = this._leftPanel.isActive();
             this._getPanel(isLeftActive).deactivate();
             this._getPanel(!isLeftActive).activate();
@@ -2384,8 +2461,67 @@ var panels;
                 case 9:
                     this.toggleActivePanel();
                     return true;
+                case 86:
+                    if (e.ctrlKey || e.metaKey)
+                        return this.togglePanelPaths();
+                    break;
+                case 112:
+                    if (e.ctrlKey || e.metaKey) {
+                        return this.togglePartHidden(true);
+                    }
+                    break;
+                case 113:
+                    if (e.ctrlKey || e.metaKey) {
+                        return this.togglePartHidden(false);
+                    }
+                    break;
+                case 13:
+                    var activePa = this._getPanel(this.isLeftActive());
+                    return activePa.navigateCursor();
+                default:
+                    if (e.ctrlKey) {
+                    }
+                    break;
             }
             return false;
+        };
+        TwoPanels.prototype.togglePartHidden = function (leftPanel) {
+            var togglePanelHost = this._getPanelHost(leftPanel);
+            var oppositePanelHost = this._getPanelHost(!leftPanel);
+            if (!this.isVisible()) {
+                togglePanelHost.style.display = 'block';
+                oppositePanelHost.style.display = 'none';
+                if (this.isLeftActive() !== leftPanel)
+                    this.toggleActivePanel();
+                this.toggleVisibility();
+            }
+            else {
+                if (togglePanelHost.style.display !== 'none') {
+                    if (oppositePanelHost.style.display === 'none') {
+                        togglePanelHost.style.display = 'block';
+                        this.toggleVisibility();
+                    }
+                    else {
+                        togglePanelHost.style.display = 'none';
+                        if (this.isLeftActive() === leftPanel)
+                            this.toggleActivePanel();
+                    }
+                }
+                else {
+                    togglePanelHost.style.display = 'block';
+                }
+            }
+            return true;
+        };
+        TwoPanels.prototype.togglePanelPaths = function () {
+            console.log('Ctrl+U toggle is not implemented.');
+            return false;
+        };
+        TwoPanels.prototype.cursorPath = function () {
+            if (!this.isVisible())
+                return null;
+            var pan = this._getPanel(this.isLeftActive());
+            return pan.cursorPath();
         };
         TwoPanels.prototype._selectionGo = function (direction) {
             var panel = this._getPanel(this.isLeftActive()).cursorGo(direction);
@@ -2393,6 +2529,9 @@ var panels;
         };
         TwoPanels.prototype._getPanel = function (left) {
             return left ? this._leftPanel : this._rightPanel;
+        };
+        TwoPanels.prototype._getPanelHost = function (left) {
+            return left ? this._leftPanelHost : this._rightPanelHost;
         };
         TwoPanels.prototype._onclick = function (e) {
             var isLeft = this._leftPanel.onclick(e);
@@ -2491,6 +2630,9 @@ var terminal;
                 this.arrange(this._hostMetrics);
             }
         };
+        Terminal.prototype.hasInput = function () {
+            return !!this._input.value;
+        };
         Terminal.prototype._logAppendObj = function (obj, output, level) {
             switch (typeof obj) {
                 case 'number':
@@ -2535,6 +2677,15 @@ var terminal;
                             }
                         }
                         elem('span', { text: ']', color: 'white' }, output);
+                    }
+                    else if (obj.createElement + '' === document.createElement + '' && obj.getElementById + '' === document.getElementById + '' && 'title' in obj) {
+                        elem('span', { text: '#document ' + obj.title, color: 'green' }, output);
+                    }
+                    else if (obj.setInterval + '' === window.setInterval + '' && obj.setTimeout + '' === window.setTimeout + '' && 'location' in obj) {
+                        elem('span', { text: '#window ' + obj.location, color: 'green' }, output);
+                    }
+                    else if (typeof obj.tagName === 'string' && obj.getElementsByTagName + '' === document.body.getElementsByTagName + '') {
+                        elem('span', { text: '<' + obj.tagName + '>', color: 'green' }, output);
                     }
                     else if (obj + '' !== '[Object]') {
                         elem('span', { text: '{', color: 'cornflowerblue' }, output);
@@ -2586,7 +2737,7 @@ var terminal;
             this._input.style.left = this._promptWidth + 'px';
             this._input.style.width = (metrics.hostWidth - this._promptWidth) + 'px';
         };
-        Terminal.prototype.keydown = function (e) {
+        Terminal.prototype.keydown = function (e, cursorPath) {
             if (e.keyCode === 38) {
             }
             else if (e.keyCode === 13) {
@@ -2597,25 +2748,31 @@ var terminal;
                         text: code,
                         color: 'gray'
                     }, this._historyContent);
-                    var result;
-                    try {
-                        result = (0, eval)(code);
-                    }
-                    catch (error) {
-                        elem('div', {
-                            text: error && error.stack ? error.stack : error,
-                            color: 'red'
-                        }, this._historyContent);
-                        if (this._hostMetrics) {
-                            this.measure();
-                            this.arrange(this._hostMetrics);
-                        }
-                        return true;
-                    }
-                    this.log(result);
+                    this._evalAndLogResults(code);
                     return true;
                 }
+                else {
+                    return false;
+                }
             }
+        };
+        Terminal.prototype._evalAndLogResults = function (code) {
+            var result;
+            try {
+                result = (0, eval)(code);
+            }
+            catch (error) {
+                elem('div', {
+                    text: error && error.stack ? error.stack : error,
+                    color: 'red'
+                }, this._historyContent);
+                if (this._hostMetrics) {
+                    this.measure();
+                    this.arrange(this._hostMetrics);
+                }
+                return;
+            }
+            this.log(result);
         };
         return Terminal;
     })();
