@@ -2646,7 +2646,7 @@ var terminal;
             }
         };
         Terminal.prototype.hasInput = function () {
-            return !!this._input.value;
+            return !!this._input.value || this._input.value === '\r\n'; // IE fix
         };
         Terminal.prototype._logAppendObj = function (obj, output, level) {
             switch (typeof obj) {
@@ -2757,7 +2757,11 @@ var terminal;
             }
             else if (e.keyCode === 13) {
                 var code = this._input.value;
+                if (code == '\r\n')
+                    code = '';
                 if (code) {
+                    if (code.slice(-2) === '\r\n')
+                        code = code.slice(0, code.length - 2);
                     this._input.value = '';
                     elem('div', {
                         text: code,
