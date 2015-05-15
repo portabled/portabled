@@ -2646,7 +2646,7 @@ var terminal;
             }
         };
         Terminal.prototype.hasInput = function () {
-            return !!this._input.value || this._input.value === '\r\n'; // IE fix
+            return !!this._input.value && this._input.value !== '\r\n'; // IE fix
         };
         Terminal.prototype._logAppendObj = function (obj, output, level) {
             switch (typeof obj) {
