@@ -1864,31 +1864,35 @@ var CommanderShell = (function () {
         this.measure();
         this.arrange();
         elem.on(this._host, 'keydown', function (e) { return _this._keydown(e); });
-        var glob = (function () { return this; })();
-        if (glob.console) {
-            var _oldLog = glob.console.log;
-            var term = this._terminal;
-            console.log = function () {
-                var args = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    args[_i - 0] = arguments[_i];
-                }
-                _oldLog.apply(glob.console, args);
-                term.logArray(args);
-            };
-        }
-        else {
-            var term = this._terminal;
-            glob.console = {
-                log: function () {
+        var _glob = (function () { return this; })();
+        var applyConsole = function (glob) {
+            if (glob.console) {
+                var _oldLog = glob.console.log;
+                var term = _this._terminal;
+                console.log = function () {
                     var args = [];
                     for (var _i = 0; _i < arguments.length; _i++) {
                         args[_i - 0] = arguments[_i];
                     }
+                    _oldLog.apply(glob.console, args);
                     term.logArray(args);
-                }
-            };
-        }
+                };
+            }
+            else {
+                var term = _this._terminal;
+                glob.console = {
+                    log: function () {
+                        var args = [];
+                        for (var _i = 0; _i < arguments.length; _i++) {
+                            args[_i - 0] = arguments[_i];
+                        }
+                        term.logArray(args);
+                    }
+                };
+            }
+        };
+        applyConsole(_glob);
+        applyConsole(window);
     }
     CommanderShell.prototype.measure = function () {
         this._metrics.emWidth = this._metricElem.offsetWidth;
@@ -1931,7 +1935,7 @@ var CommanderShell = (function () {
     CommanderShell.prototype._execute = function (cursorPath) {
         var text = this._drive.read(cursorPath);
         if (typeof text !== 'undefined' && text !== null) {
-            console.log(text);
+            this._terminal.log(text);
             return true;
         }
     };
@@ -2336,7 +2340,7 @@ var panels;
                 return;
             this._scrollTop = this._host.scrollTop;
             this._scrollTopHeight = this._metrics.hostHeight;
-            console.log('onscroll ' + this._scrollTop);
+            //console.log('onscroll ' + this._scrollTop);
         };
         Panel.prototype._calcPageIndex = function (indexOfEntry) {
             return (indexOfEntry / (this._columnsOnPage * this._entriesInColumn)) | 0;
@@ -2754,7 +2758,7 @@ var terminal;
             else if (e.keyCode === 13) {
                 var code = this._input.value;
                 if (code) {
-                    this._input.value = null;
+                    this._input.value = '';
                     elem('div', {
                         text: code,
                         color: 'gray'
