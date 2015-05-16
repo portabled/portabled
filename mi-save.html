@@ -1820,26 +1820,21 @@ var persistence;
 123
 456-->
 
-<!-- /src/LF-file.txt [LF]
-123
-456-->
-
-<!-- /src1/LF-file.txt
-123
-456-->
-
 <!-- /CRLF-file [CRLF]
 123
-          4-->
+456-->
+
+<!-- /CR-file [CR]
+123
+456-->
 
 <!-- /eval-file.txt [eval]
-"new ok" + String.fromCharCode(Math.random()*16000)+" and what\r\n or "+String.fromCharCode(1)+"?"-->
+ "random char: " + String.fromCharCode(Math.random()*16000)+"\n"+
+ "date: "+new Date()+"\n"+
+ "location: "+location -->
 
 <!-- /json-file.txt [json]
 "new ok \u2222 and what\r\n or \u0001?\n\n\n"-->
-
-<!-- /runme.js
-console.log(123)-->
 
 
 
@@ -2767,6 +2762,7 @@ var terminal;
         };
         Terminal.prototype.arrange = function (metrics) {
             this._hostMetrics = metrics;
+            this._history.style.width = metrics.hostWidth + 'px';
             this._history.style.bottom = metrics.emHeight + 'px';
             if (metrics.hostHeight - metrics.emHeight > this._historyContentHeight) {
                 this._history.style.height = this._historyContentHeight + 'px';
@@ -2775,7 +2771,6 @@ var terminal;
                 this._history.style.height = (metrics.hostHeight - metrics.emHeight) + 'px';
                 this._history.scrollTop = this._historyContentHeight - (metrics.hostHeight - metrics.emHeight);
             }
-            this._history.style.width = metrics.hostWidth + 'px';
             this._input.style.left = this._promptWidth + 'px';
             this._input.style.width = (metrics.hostWidth - this._promptWidth) + 'px';
         };
@@ -2832,6 +2827,7 @@ var terminal;
     terminal.Terminal = Terminal;
 })(terminal || (terminal = {}));
 -->
+
 <!-- /shell/style.css
 .panels-scroll-host {
   position: absolute;
@@ -2929,223 +2925,3847 @@ var terminal;
 }
 -->
 
-<!-- /1.txt
-OK -->
-<!-- /4.txt
-OK -->
-<!-- /2.txt
-OK -->
-<!-- /3.txt
-OK -->
-<!-- /500.txt
-OK -->
-<!-- /501.txt
-OK -->
-<!-- /502.txt
-OK -->
-<!-- /503.txt
-OK -->
-<!-- /504.txt
-OK -->
-<!-- /505.txt
-OK -->
-<!-- /506.txt
-OK -->
-<!-- /507.txt
-OK -->
-<!-- /508.txt
-OK -->
-<!-- /509.txt
-OK -->
-<!-- /510.txt
-OK -->
-<!-- /511.txt
-OK -->
-<!-- /512.txt
-OK -->
-<!-- /513.txt
-OK -->
-<!-- /514.txt
-OK -->
-<!-- /515.txt
-OK -->
-<!-- /516.txt
-OK -->
-<!-- /517.txt
-OK -->
-<!-- /518.txt
-OK -->
-<!-- /519.txt
-OK -->
-<!-- /520.txt
-OK -->
-<!-- /521.txt
-OK -->
-<!-- /522.txt
-OK -->
-<!-- /523.txt
-OK -->
-<!-- /524.txt
-OK -->
-<!-- /525.txt
-OK -->
-<!-- /526.txt
-OK -->
-<!-- /527.txt
-OK -->
-<!-- /528.txt
-OK -->
-<!-- /529.txt
-OK -->
-<!-- /530.txt
-OK -->
-<!-- /531.txt
-OK -->
-<!-- /532.txt
-OK -->
-<!-- /533.txt
-OK -->
-<!-- /534.txt
-OK -->
-<!-- /535.txt
-OK -->
-<!-- /536.txt
-OK -->
-<!-- /537.txt
-OK -->
-<!-- /538.txt
-OK -->
-<!-- /539.txt
-OK -->
-<!-- /540.txt
-OK -->
-<!-- /541.txt
-OK -->
-<!-- /542.txt
-OK -->
-<!-- /543.txt
-OK -->
-<!-- /544.txt
-OK -->
-<!-- /545.txt
-OK -->
-<!-- /546.txt
-OK -->
-<!-- /547.txt
-OK -->
-<!-- /548.txt
-OK -->
-<!-- /549.txt
-OK -->
-<!-- /550.txt
-OK -->
-<!-- /551.txt
-OK -->
-<!-- /552.txt
-OK -->
-<!-- /553.txt
-OK -->
-<!-- /554.txt
-OK -->
-<!-- /555.txt
-OK -->
-<!-- /556.txt
-OK -->
-<!-- /557.txt
-OK -->
-<!-- /558.txt
-OK -->
-<!-- /559.txt
-OK -->
-<!-- /560.txt
-OK -->
-<!-- /561.txt
-OK -->
-<!-- /562.txt
-OK -->
-<!-- /563.txt
-OK -->
-<!-- /564.txt
-OK -->
-<!-- /565.txt
-OK -->
-<!-- /566.txt
-OK -->
-<!-- /567.txt
-OK -->
-<!-- /568.txt
-OK -->
-<!-- /569.txt
-OK -->
-<!-- /570.txt
-OK -->
-<!-- /571.txt
-OK -->
-<!-- /572.txt
-OK -->
-<!-- /573.txt
-OK -->
-<!-- /574.txt
-OK -->
-<!-- /575.txt
-OK -->
-<!-- /576.txt
-OK -->
-<!-- /577.txt
-OK -->
-<!-- /578.txt
-OK -->
-<!-- /579.txt
-OK -->
-<!-- /580.txt
-OK -->
-<!-- /581.txt
-OK -->
-<!-- /582.txt
-OK -->
-<!-- /583.txt
-OK -->
-<!-- /584.txt
-OK -->
-<!-- /585.txt
-OK -->
-<!-- /586.txt
-OK -->
-<!-- /587.txt
-OK -->
-<!-- /588.txt
-OK -->
-<!-- /589.txt
-OK -->
-<!-- /590.txt
-OK -->
-<!-- /591.txt
-OK -->
-<!-- /592.txt
-OK -->
-<!-- /593.txt
-OK -->
-<!-- /594.txt
-OK -->
-<!-- /595.txt
-OK -->
-<!-- /596.txt
-OK -->
-<!-- /597.txt
-OK -->
-<!-- /598.txt
-OK -->
-<!-- /599.txt
-OK -->
-<!-- /500.txt
-OK -->
-<!-- /500.txt
-OK -->
-<!-- /500.txt
-OK -->
-<!-- /500.txt
-OK -->
-<!-- /500.txt
-OK -->
-<!-- /500.txt
-OK -->
+<!-- /src/boot/base.d.ts
+declare function getText(element: Element): string;
+declare function getText(fn: Function): string;
+
+declare function setText(element: Element, text: string): void;
+
+declare function elem(tag: string): HTMLElement;
+declare function elem(tag: string, style: {}, parent?: Element): HTMLElement;
+declare function elem(tag: string, parent: Element): HTMLElement;
+declare function elem(elem: HTMLElement, style: {}, parent?: Element): HTMLElement;
+
+declare module elem {
+
+  export function on(obj: Node, eventName: string, handler: (evt: Event) => void);
+  export function on(obj: Window, eventName: string, handler: (evt: Event) => void);
+  export function on(obj: Node, eventName: string, handler: (evt: Event) => void);
+  export function off(obj: Window, eventName: string, handler: (evt: Event) => void);
+
+}
+
+declare function createFrame(style?: {}):
+  { global: Window; document: Document; iframe: HTMLIFrameElement; };
+
+declare function loadMod(
+  options: {
+
+    /** module script */
+    eval: string;
+
+    /** module path to emulate */
+    path?: string;
+
+    /** style or class name for the injected iframe (not needed for headless) */
+    style?: {} | string;
+
+    /** scope to inject, or a function to create such scope using the existing global of the injected iframe */
+    scope?: {} | ((global: any) => {});
+
+    /** whether to show the iframe (false to delete iframe immediately) */
+    ui?: boolean;
+
+  }): { global: any; document: Document; iframe: HTMLIFrameElement; exports: any; };
+
+declare module loadMod {
+  export interface LoadedResult {
+    global: any;
+    document: Document;
+    iframe: HTMLIFrameElement
+  }
+}
+--!>
+<!-- /src/boot/base.js
+function getText(obj) {
+
+  if (typeof obj === 'function') {
+    var result = /\/\*(\*(?!\/)|[^*])*\*\//m.exec(obj+'')[0];
+    if (result) result = result.slice(2, result.length-2);
+    return result;
+  }
+  else if (/^SCRIPT$/i.test(obj.tagName)) {
+    if ('text' in obj)
+      return obj.text;
+    else
+      return obj.innerHTML;
+  }
+  else if (/^STYLE$/i.test(obj.tagName)) {
+    if ('text' in obj)
+      return obj.text;
+    else if (obj.styleSheet)
+      return obj.styleSheet.cssText;
+    else
+      return obj.innerHTML;
+  }
+  else if ('textContent' in obj) {
+    return obj.textContent;
+  }
+  else if (/^INPUT$/i.test(obj.tagName)) {
+    return obj.value;
+  }
+  else {
+    var result = obj.innerText;
+    if (result) {
+      // IE fixes
+      result = result.replace(/\<BR\s*\>/g, '\n').replace(/\r\n/g, '\n');
+    }
+    return result || '';
+  }
+}
+
+function setText(obj, text) {
+
+  if (/^SCRIPT$/i.test(obj.tagName)) {
+    if ('text' in obj)
+      obj.text = text;
+    else
+      obj.innerHTML = text;
+  }
+  else if (/^STYLE$/i.test(obj.tagName)) {
+    if ('text' in obj) {
+      obj.text = text;
+    }
+    else if ('styleSheet' in obj) {
+      if (!obj.styleSheet && !obj.type) obj.type = 'text/css';
+      obj.styleSheet.cssText = text;
+    }
+    else if ('textContent' in obj) {
+      obj.textContent = text;
+    }
+    else {
+      obj.innerHTML = text;
+    }
+  }
+  else if ('textContent' in obj) {
+    if ('type' in obj && !obj.type) obj.type = 'text/css';
+    obj.textContent = text;
+  }
+  else if (/^INPUT$/i.test(obj.tagName)) {
+    obj.value = text;
+  }
+  else {
+    obj.innerText = text;
+  }
+}
+
+elem.on = function (obj, eventName, handler) {
+  if (obj.addEventListener) {
+    obj.addEventListener(eventName, handler, false);
+  }
+  else if (obj.attachEvent) {
+    obj.attachEvent('on'+eventName, handler);
+  }
+  else {
+    obj['on'+eventName] = function (e) { return handler(e || this.event); };
+  }
+};
+
+elem.off = function (obj, eventName, handler) {
+  if (obj.removeEventListener) {
+    obj.removeEventListener(eventName, handler, false);
+  }
+  else if (obj.detachEvent) {
+    obj.detachEvent('on'+eventName, handler);
+  }
+  else {
+    if (obj['on'+eventName])
+      obj['on' + eventName] = null;
+  }
+};
+
+function elem(tag, style, parent) {
+  var e = tag.tagName ? tag : this.document.createElement(tag);
+
+  if (!parent && style && style.tagName) {
+    parent = style;
+    style = null;
+  }
+
+  if (style) {
+    if (typeof style === 'string') {
+      setText(e, style);
+    }
+    else {
+      for (var k in style) if (style.hasOwnProperty(k)) {
+        if (k === 'text') {
+          setText(e, style[k]);
+        }
+        else if (k === 'className') {
+          e.className = style[k];
+        }
+        else if (!(e.style && k in e.style) && k in e) {
+          e[k] = style[k];
+        }
+        else {
+
+          if (style[k] && typeof style[k] === 'object' && typeof style[k].length === 'number') {
+            // array: iterate and apply values
+            var applyValues = style[k];
+						for (var i = 0; i < applyValues.length; i++) {
+              try { e.style[k] = applyValues[i]; }
+              catch (errApplyValues) { }
+            }
+          }
+          else {
+            // not array
+            try {
+              e.style[k] = style[k];
+            }
+            catch (err) {
+              try {
+                if (typeof console !== 'undefined' && typeof console.error === 'function')
+                  console.error(e.tagName+'.style.'+k+'='+style[k]+': '+err.message);
+              }
+              catch (whatevs) {
+                alert(e.tagName+'.style.'+k+'='+style[k]+': '+err.message);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (parent) {
+    try {
+      parent.appendChild(e);
+    }
+    catch (error) {
+      throw new Error(error.message+' adding '+e.tagName+' to '+parent.tagName);
+    }
+  }
+
+  return e;
+}
+
+function createFrame(style) {
+
+  if (!style)
+    style = {
+      position: 'absolute',
+      left: 0, top: 0,
+      width: '100%', height: '100%',
+      border: 'none',
+      src: 'about:blank'
+    };
+
+  var ifr = this.elem('iframe', style, this.document.body);
+
+  var ifrwin = ifr.contentWindow || ifr.window;
+  var ifrdoc = ifrwin.document;
+
+  if (ifrdoc.open) ifrdoc.open();
+  ifrdoc.write(
+    '<!'+'doctype html'+'>'+
+    '<'+'html'+'>'+
+    '<'+'head'+'><'+'style'+'>'+
+    'body,html{margin:0;padding:0;border:none;height:100%;border:none;}'+
+    '*,*:before,*:after{box-sizing:inherit;}'+
+    'html{box-sizing:border-box;}'+
+    '</'+'style'+'>\n'+
+
+    // IE6/7/8 bug: global scope and window are not identical
+    (ifrwin.Function?'':'<'+'script'+'>window.Function=Function</'+'script'+'>')+
+
+    // it's important to have body before any long scripts (especialy external),
+    // so IFRAME is immediately ready
+    '<'+'body'+'><'+'body'+'>'+
+
+  	'</'+'html'+'>');
+  if (ifrdoc.close) ifrdoc.close();
+
+  ifrwin.elem = elem;
+
+  if (window.onerror) {
+    ifrwin.onerror = delegate_onerror;
+  }
+
+  return {
+    document: ifrdoc,
+    global: ifrwin,
+    iframe: ifr
+  };
+
+  function delegate_onerror() {
+    window.onerror.apply(window, arguments);
+  }
+
+}
+
+function loadMod(options) {
+
+  var style = options.style;
+  if (!options.ui) {
+    style = { display: 'none' };
+  }
+  else if (typeof style === 'string') {
+    style = { className: style, display: 'none' };
+  }
+
+  var frame = this.createFrame(style);
+  var frameFunction = frame.global.Function;
+
+  if (options.scope) {
+    var scope = typeof options.scope === 'function' ? (options.scope)(frame.global) : options.scope;
+    for (var k in scope) if (scope.hasOwnProperty(k)) {
+      try { frame.global[k] = scope[k]; } catch (err) { }
+    }
+  }
+
+  if (options.eval) {
+
+    var exportsInScope = scope && 'exports' in scope;
+    var evalArgNames = exportsInScope ? [] : ['exports'];
+    var evalArgs = exportsInScope ? [] : [{}];
+    if (scope) {
+      for (var k in scope) if (scope.hasOwnProperty(k)) {
+        evalArgNames.push(k);
+        evalArgs.push(scope[k]);
+      }
+    }
+
+    if (!options.ui) {
+      var allowedGlobals = {
+        setTimeout: 1, setInterval: 1, clearTimeout: 1, clearInterval: 1,
+        eval: 1,
+        console: 1,
+        undefined: 1,
+        Array: 1, Date: 1, Function: 1, String: 1, Boolean: 1, Number: 1,
+        Infinity: 1, NaN: 1, isNaN: 1, isFinite: 1, parseInt: 1, parseFloat: 1,
+        escape: 1, unescape: 1,
+
+        Int32Array: 1, Int8Array: 1, Int16Array: 1,
+        UInt32Array: 1, UInt8Array: 1, UInt8ClampedArray: 1, UInt16Array: 1,
+        Float32Array: 1, Float64Array: 1, ArrayBuffer: 1,
+
+        Math: 1, JSON: 1, RegExp: 1,
+        Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,
+
+        toString: 1, toJSON: 1, toValue: 1,
+
+        Map: 1
+      };
+
+      var hiddenKeys = {};
+
+      // normal properties
+      for (var k in frame.global) {
+        if (scope && scope.hasOwnProperty(k)) continue;
+        if (allowedGlobals.hasOwnProperty(k)) continue;
+        evalArgNames.push(k);
+        hiddenKeys[k] = 1;
+      }
+
+      // non-enumerable properties directly on global
+      if (Object.getOwnPropertyNames) {
+        var props = Object.getOwnPropertyNames(frame.global);
+        for (var i = 0; i < props.length; i++) {
+          if (scope && scope.hasOwnProperty(props[i])) continue;
+          if (allowedGlobals.hasOwnProperty(props[i])) continue;
+          if (hiddenKeys.hasOwnProperty(props[i])) continue;
+          evalArgNames.push(props[i]);
+        }
+
+        // non-enumerable properties on global's prototype
+        if (frame.global.constructor
+          && frame.global.constructor.prototype
+          && frame.global.constructor.prototype != Object
+          && frame.global.constructor.prototype != Object.prototype) {
+          props = Object.getOwnPropertyNames(frame.global.constructor.prototype);
+          for (var i = 0; i < props.length; i++) {
+            if (scope && scope.hasOwnProperty(props[i])) continue;
+            if (allowedGlobals.hasOwnProperty(props[i])) continue;
+            if (hiddenKeys.hasOwnProperty(props[i])) continue;
+            evalArgNames.push(props[i]);
+          }
+        }
+      }
+    }
+
+    var innerEval = frameFunction.apply(frame.global, ['return function(txt) { return eval(txt); }'])();
+
+    var wrappedText = '(function() { return function('+evalArgNames.join(',')+'){'+
+      options.eval + '\nreturn exports; }; })()'+
+      (options.path ? ' //# sourceURL=' + options.path : '');
+
+    //evalArgNames.push(
+    //  options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval + '\nreturn exports;');
+
+    var evalFn = innerEval(wrappedText);
+    //var evalFn = frameFunction.apply(frame.global, evalArgNames);
+
+    var modExports = evalFn.apply(frame.global, evalArgs);
+
+    return {
+      document: frame.document,
+      global: frame.global,
+      iframe: frame.iframe,
+      exports: modExports
+    };
+  }
+
+  return frame;
+
+}
+--!>
+<!-- /src/boot/bootUI.js
+function bootUI(document, window, elem) {
+
+  elem(document.body, {
+    background: 'black'
+  });
+  elem('div', {
+    background: 'rgb(3,11,61)',
+    height: '90%'
+  }, document.body);
+
+  var header = elem('h2', { text: 'Loading...' }, document.body);
+
+  return {
+    loaded: function() {
+      setText(header, 'Loaded.');
+    }
+  };
+}
+--!>
+<!-- /src/boot/earlyBoot.js
+function earlyBoot() {
+
+  var earlyBootStart = new Date().valueOf();
+
+  document.write(
+    '<'+'style'+' data-legit=mi>'+
+    '*{display:none;background:white;color:white;}'+
+    'html,body{display:block;}'+
+    '</'+'style'+'>'+
+    (document.body ? '' : '<body>'));
+
+  elem(document.body, {
+    height: '100%',
+  	margin: 0,
+    padding: 0,
+    overflow: 'hidden'
+  });
+  elem(document.body.parentElement, {
+    overflow: 'hidden'
+  });
+
+  var allStyleElements = document.getElementsByTagName('style');
+  var addedStyle = allStyleElements[allStyleElements.length-1];
+
+  var bootFrame = createFrame();
+  bootFrame.iframe.style.zIndex = 2000;
+  bootFrame.iframe.style.display = 'block';
+
+  bootFrame.global.elem = elem;
+
+  var bootAPI = bootUI(bootFrame.document, bootFrame.global, function elemProxy(a,b,c) { return bootFrame.global.elem(a,b,c); });
+  bootFrame.api = bootAPI;
+  bootFrame.startTime = earlyBootStart;
+
+  var uniqueKey = deriveUniqueKey(location);
+
+  var shellLoaderInstance = null;
+	var shellLoadInterval = setInterval(function() {
+    if (typeof shellLoader === 'undefined') return;
+    if (!shellLoadInterval) return; // protect against old Opera's super-async habits
+    shellLoaderInstance = shellLoaderInstance ? shellLoaderInstance.continueLoading() : shellLoader ? shellLoader(uniqueKey, document, bootFrame) : null;
+  }, 100);
+
+  window.onload = function() {
+
+    clearInterval(shellLoadInterval);
+    shellLoadInterval = 0;
+
+    removeSpyElements();
+    bootFrame.iframe.style.zIndex = 1000;
+    if (addedStyle.parentElement)
+    	addedStyle.parentElement.removeChild(addedStyle);
+    bootFrame.iframe.style.display = '';
+
+    (shellLoaderInstance || shellLoader(uniqueKey, document, bootFrame)).finishLoading();
+
+  };
+
+  function deriveUniqueKey(locationSeed) {
+    var key = (locationSeed + '').split('?')[0].split('#')[0].toLowerCase();
+
+    var posIndexTrail = key.search(/\/index\.html$/);
+    if (posIndexTrail>0) key = key.slice(0, posIndexTrail);
+
+    if (key.charAt(0) === '/')
+      key = key.slice(1);
+    if (key.slice(-1) === '/')
+      key = key.slice(0, key.length - 1);
+
+    return smallHash(key) + '-' + smallHash(key.slice(1) + 'a');
+
+    function smallHash(key) {
+      for (var h=0, i=0; i < key.length; i++) {
+        h = Math.pow(31, h + 31 / key.charCodeAt(i));
+        h -= h | 0;
+      }
+      return (h * 2000000000) | 0;
+    }
+
+  }
+
+  function removeSpyElements() {
+
+    removeElements('iframe', function(ifr) { return ifr !== bootFrame.iframe; });
+    removeElements('style', function(sty) { return sty.getAttribute('data-legit') !== 'mi'; });
+    removeElements('script', function(sty) { return sty.getAttribute('data-legit') !== 'mi'; });
+
+    function removeElements(tagName, predicateToRemove) {
+    	var list = document.getElementsByTagName(tagName);
+      for (var i = 0; i < list.length; i++) {
+        var elem = list[i] || list.item(i);
+        if (predicateToRemove(elem)) {
+          elem.parentElement.removeChild(elem);
+          i--;
+        }
+      }
+    }
+  }
+
+}
+--!>
+<!-- /src/boot/onerror.js
+window.onerror = function onerror() {
+
+  var msg = [];
+  for (var i = 0; i < arguments.length; i++) {
+    var a = arguments[i];
+    if (a && (typeof a === 'object')) {
+
+      if (a.stack) {
+        msg.push(a.stack);
+      }
+      else {
+        var msg1 = [];
+        for (var k in a) {
+          var r = a[k];
+          if (typeof r === 'function' || (typeof r === 'object' && !r)) continue;
+          msg1.push(k+':'+r);
+        }
+        msg.push(msg1.join(', '));
+      }
+    }
+    else {
+      msg.push(a===null ? 'null' : a);
+    }
+
+  }
+
+  alert(msg.join('\n'));
+
+}
+--!>
+<!-- /src/load/shellLoader.ts
+function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.BootModuleAPI): shellLoader.ContinueLoading {
+
+  var driveMount = persistence.bootMount(uniqueKey, document);
+
+  return continueLoading();
+
+  function continueLoading(): shellLoader.ContinueLoading {
+    driveMount.continueLoading();
+    return { continueLoading, finishLoading };
+  }
+
+  function finishLoading() {
+
+    driveMount.finishLoading(drive => {
+
+      var uiframe = createFrame();
+      uiframe.iframe.style.opacity = '0';
+
+      var wasResized = false;
+      var resizeHandlers: any[] = [];
+      elem.on(window, 'resize', global_resize_detect);
+      elem.on(document.body, 'resize', global_resize_detect);
+      elem.on(uiframe.document.body, 'touchstart', global_resize_detect);
+      elem.on(uiframe.document.body, 'touchmove', global_resize_detect);
+      elem.on(uiframe.document.body, 'touchend', global_resize_detect);
+      elem.on(uiframe.document.body, 'pointerdown', global_resize_detect);
+      elem.on(uiframe.document.body, 'pointerup', global_resize_detect);
+      elem.on(uiframe.document.body, 'pointerout', global_resize_detect);
+      elem.on(uiframe.document.body, 'keydown', global_resize_detect);
+      elem.on(uiframe.document.body, 'keyup', global_resize_detect);
+
+
+      (<any>shell_elem).on = elem.on;
+      (<any>shell_elem).off = elem.off;
+
+      loadMod({
+        path: '/shell/start.js',
+        eval: drive.read('/shell/start.ts.js'),
+        ui: false,
+        scope: {
+          require: shell_require,
+          document: uiframe.document,
+          window: uiframe.global,
+          console: window.console,
+          elem: shell_elem,
+          setText: setText
+        }
+      });
+
+      function shell_require(moduleName): any {
+        switch (moduleName) {
+          case 'ui': return uiframe;
+          case 'drive': return drive;
+          case 'resize': return { on: onresize, off: offresize };
+        }
+
+        if ((moduleName + '').charAt(0) === '.') {
+          moduleName = '/shell/' + moduleName.slice(2);
+        }
+
+        var code = drive.read(moduleName);
+        if (code) {
+          var mod = loadMod({
+            eval: code,
+            path: persistence.normalizePath(moduleName),
+            ui: false,
+            scope: { require: shell_require }
+          });
+    			return mod.exports;
+        }
+      }
+
+      function shell_elem(x, y, z) { return (<any>uiframe.global).elem(x, y, z); }
+
+      function onresize(handler) {
+        if (typeof handler !== 'function') return;
+        resizeHandlers.push(handler);
+      }
+
+      function offresize(handler) {
+        if (typeof handler !== 'function') return;
+        for (var i = 0; i < resizeHandlers.length; i++) {
+          if (resizeHandlers[i]===handler) {
+            resizeHandlers.splice(i, 1);
+          }
+        }
+      }
+
+      function global_resize_detect() {
+        if (wasResized) return;
+        wasResized = true;
+
+        if (typeof requestAnimationFrame ==='function') {
+          requestAnimationFrame(global_resize_delayed);
+        }
+        else {
+          setTimeout(global_resize_delayed, 5);
+        }
+      }
+
+      var lastMetrics: any = {};
+      function global_resize_delayed() {
+        wasResized = false;
+
+        var metrics = getMetrics();
+        if (metrics.windowWidth !== lastMetrics.windowWidth
+          && metrics.windowHeight !== lastMetrics.windowHeight) {
+          lastMetrics = metrics;
+
+          for (var i = 0; i < resizeHandlers.length; i++) {
+            var f = resizeHandlers[i];
+            if (f)
+              f(metrics);
+          }
+        }
+      }
+
+      function getMetrics() {
+        var metrics = {
+          windowWidth: window.innerWidth || document.body.parentElement.clientWidth || document.body.clientWidth,
+          windowHeight: window.innerHeight || document.body.parentElement.clientHeight || document.body.clientHeight
+        };
+        return metrics;
+      }
+
+      var start = new Date().valueOf();
+      var fadeintTime = Math.min(500, (new Date().valueOf() - boot.startTime) * 0.9);
+      var animateFadeIn = setInterval(function() {
+        var passed = new Date().valueOf() - start;
+        var opacity = Math.min(passed, fadeintTime) / fadeintTime;
+        boot.iframe.style.opacity = (1 - opacity).toString();
+        uiframe.iframe.style.opacity = '1';
+
+        if (passed >= fadeintTime) {
+          clearInterval(animateFadeIn);
+          if (boot.iframe.parentElement) // old Opera may keep firing even after clearInterval
+          	boot.iframe.parentElement.removeChild(boot.iframe);
+        }
+      }, 10);
+
+      //if (typeof console !== 'undefined' && console.log)
+      //  console.log(window['dbgDrive'] = drive);
+
+    });
+
+  }
+
+}
+
+module shellLoader {
+
+  export interface BootModuleAPI extends loadMod.LoadedResult {
+    api: any;
+    startTime: number;
+  }
+
+  export interface ContinueLoading {
+
+    continueLoading(): ContinueLoading;
+
+    finishLoading();
+
+  }
+
+}
+--!>
+<!-- /src/persistence/attached/indexedDB.ts
+module persistence {
+
+  function getIndexedDB() {
+    try {
+      return typeof indexedDB === 'undefined' || typeof indexedDB.open !== 'function' ? null : indexedDB;
+    }
+    catch (error) {
+      return null;
+    }
+  }
+
+  export module attached.indexedDB {
+
+    export var name = 'indexedDB';
+
+    export function detect(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
+      try {
+        detectCore(uniqueKey, callback);
+      }
+      catch (error) {
+        callback(null);
+      }
+    }
+
+    function detectCore(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
+
+      var indexedDBInstance = getIndexedDB();
+      if (!indexedDBInstance) {
+        callback(null);
+        return;
+      }
+
+      var dbName = uniqueKey || 'portabled';
+
+      var openRequest = indexedDBInstance.open(dbName, 1);
+      openRequest.onerror = (errorEvent) => callback(null);
+
+      openRequest.onupgradeneeded = createDBAndTables;
+
+      openRequest.onsuccess = (event) => {
+        var db: IDBDatabase = openRequest.result;
+
+        try {
+          var transaction = db.transaction(['files', 'metadata']);
+          // files mentioned here, but not really used to detect
+          // broken multi-store transaction implementation in Safari
+
+          transaction.onerror = (errorEvent) => callback(null);
+
+          var metadataStore = transaction.objectStore('metadata');
+          var filesStore = transaction.objectStore('files');
+          var editedUTCRequest = metadataStore.get('editedUTC');
+        }
+        catch (getStoreError) {
+          callback(null);
+          return;
+        }
+
+        if (!editedUTCRequest) {
+          callback(null);
+          return;
+        }
+
+        editedUTCRequest.onerror = (errorEvent) => {
+          var detached = new IndexedDBDetached(db, null);
+          callback(detached);
+        };
+
+        editedUTCRequest.onsuccess = (event) => {
+          var result: MetadataData = editedUTCRequest.result;
+          var detached = new IndexedDBDetached(db, result && typeof result.value === 'number' ? result.value : null);
+          callback(detached);
+        };
+      }
+
+
+      function createDBAndTables() {
+        var db: IDBDatabase = openRequest.result;
+        var filesStore = db.createObjectStore('files', { keyPath: 'path' });
+        var metadataStore = db.createObjectStore('metadata', { keyPath: 'property' })
+      }
+    }
+
+
+
+    class IndexedDBDetached implements Drive.Detached {
+
+      constructor(
+        private _db: IDBDatabase,
+        public timestamp: number) {
+      }
+
+      applyTo(mainDrive: Drive, callback: Drive.Detached.CallbackWithShadow): void {
+        var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
+        var metadataStore = transaction.objectStore('metadata');
+        var filesStore = transaction.objectStore('files');
+
+        var countRequest = filesStore.count();
+        countRequest.onerror = (errorEvent) => {
+          console.error('Could not count files store.');
+          callback(null);
+        };
+
+        countRequest.onsuccess = (event) => {
+
+          var storeCount: number = countRequest.result;
+
+          var cursorRequest = filesStore.openCursor();
+          cursorRequest.onerror = (errorEvent) => callback(null);
+
+          // to cleanup any files which content is the same on the main drive
+          var deleteList: string[] = [];
+          var anyLeft = false;
+
+          var processedCount = 0;
+
+          cursorRequest.onsuccess = (event) => {
+            var cursor: IDBCursor = cursorRequest.result;
+
+            if (!cursor) {
+
+              // cleaning up files whose content is duplicating the main drive
+              if (anyLeft) {
+                for (var i = 0; i < deleteList.length; i++) {
+                  filesStore['delete'](deleteList[i]);
+                }
+              }
+              else {
+                filesStore.clear();
+                metadataStore.clear();
+              }
+
+              callback(new IndexedDBShadow(this._db, this.timestamp));
+              return;
+            }
+
+            if (callback.progress)
+              callback.progress(processedCount, storeCount);
+            processedCount++;
+
+            var result: FileData = (<any>cursor).value;
+            if (result && result.path) {
+
+              var existingContent = mainDrive.read(result.path);
+              if (existingContent === result.content) {
+                deleteList.push(result.path);
+              }
+              else {
+                mainDrive.timestamp = this.timestamp;
+                mainDrive.write(result.path, result.content);
+                anyLeft = true;
+              }
+            }
+
+            cursor['continue']();
+          }; // cursorRequest.onsuccess
+
+        }; // countRequest.onsuccess
+
+      }
+
+      purge(callback: Drive.Detached.CallbackWithShadow): void {
+        var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
+
+        var filesStore = transaction.objectStore('files');
+        filesStore.clear();
+
+        var metadataStore = transaction.objectStore('metadata');
+        metadataStore.clear();
+
+        callback(new IndexedDBShadow(this._db, -1));
+      }
+
+    }
+
+    class IndexedDBShadow implements Drive.Shadow {
+
+      constructor(private _db: IDBDatabase, public timestamp: number) {
+      }
+
+      write(file: string, content: string) {
+        var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
+        var filesStore = transaction.objectStore('files');
+        var metadataStore = transaction.objectStore('metadata');
+
+        // no file deletion here: we need to keep account of deletions too!
+        var fileData: FileData = {
+          path: file,
+          content: content,
+          state: null
+        };
+
+        var putFile = filesStore.put(fileData);
+
+        var md: MetadataData = {
+          property: 'editedUTC',
+          value: Date.now()
+        };
+
+        metadataStore.put(md);
+
+      }
+    }
+
+    interface FileData {
+      path: string;
+      content: string;
+      state: string;
+    }
+
+    interface MetadataData {
+      property: string;
+      value: any;
+    }
+
+
+  }
+
+}
+--!>
+<!-- /src/persistence/attached/localStorage.ts
+module persistence {
+
+  function getLocalStorage() {
+    return typeof localStorage === 'undefined' || typeof localStorage.length !== 'number' ? null : localStorage;
+  }
+
+  // is it OK&
+  export module attached.localStorage {
+
+    export var name = 'localStorage';
+
+    export function detect(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
+      var localStorageInstance = getLocalStorage();
+      if (!localStorageInstance) {
+        callback(null);
+        return;
+      }
+
+      var access = new LocalStorageAccess(localStorageInstance, uniqueKey);
+      var dt = new LocalStorageDetached(access);
+      callback(dt);
+    }
+
+    class LocalStorageAccess {
+      private _cache: { [key: string]: string; } = {};
+
+      constructor(private _localStorage: Storage, private _prefix: string) {
+      }
+
+      get (key: string): string {
+        var k = this._expandKey(key);
+        var r = this._localStorage.getItem(k);
+        return r;
+      }
+    
+    	set(key: string, value: string): void {
+        var k = this._expandKey(key);
+        return this._localStorage.setItem(k, value);
+      }
+
+      remove(key: string): void {
+        var k = this._expandKey(key);
+        return this._localStorage.removeItem(k);
+      }
+
+      keys(): string[] {
+        var result: string[] = [];
+        var len = this._localStorage.length;
+        for (var i = 0; i < len; i++) {
+          var str = this._localStorage.key(i);
+          if (str.length > this._prefix.length && str.slice(0, this._prefix.length) === this._prefix)
+            result.push(str.slice(this._prefix.length));
+        }
+        return result;
+      }
+
+      private _expandKey(key: string): string {
+        var k: string;
+
+        if (!key) {
+          k = this._prefix;
+        }
+        else {
+          k = this._cache[key];
+          if (!k)
+            this._cache[key] = k = this._prefix + key;
+        }
+        
+        return k;
+      }
+  	}
+
+
+    class LocalStorageDetached implements Drive.Detached {
+
+      timestamp: number = 0;
+
+      constructor(private _access: LocalStorageAccess) {
+        var timestampStr = this._access.get('*timestamp');
+        if (timestampStr && timestampStr.charAt(0)>='0' && timestampStr.charAt(0)<='9') {
+          try {
+            this.timestamp = parseInt(timestampStr);
+          }
+          catch (parseError) {
+          }
+        }
+      }
+
+      applyTo(mainDrive: Drive, callback: Drive.Detached.CallbackWithShadow): void {
+        var keys = this._access.keys();
+        for (var i = 0; i < keys.length; i++) {
+          var k = keys[i];
+          if (k.charAt(0)==='/') {
+            var value = this._access.get(k);
+            mainDrive.write(k, value);
+          }
+        }
+        
+        var shadow = new LocalStorageShadow(this._access, mainDrive.timestamp);
+        callback(shadow);
+      }
+
+      purge(callback: Drive.Detached.CallbackWithShadow): void {
+        var keys = this._access.keys();
+        for (var i = 0; i < keys.length; i++) {
+          var k = keys[i];
+          if (k.charAt(0)==='/') {
+            var value = this._access.remove(k);
+          }
+        }
+
+        var shadow = new LocalStorageShadow(this._access, this.timestamp);
+        callback(shadow);
+      }
+
+    }
+    
+    class LocalStorageShadow implements Drive.Shadow {
+
+      constructor(private _access: LocalStorageAccess, public timestamp: number) {
+      }
+
+      write(file: string, content: string) {
+        this._access.set(file, content);
+        this._access.set('*timestamp', <any>this.timestamp);
+      }
+
+    }
+
+  }
+  
+}Â 
+--!>
+<!-- /src/persistence/attached/webSQL.ts
+module persistence {
+
+  function getOpenDatabase() {
+    return typeof openDatabase !== 'function' ? null : openDatabase;
+  }
+
+  export module attached.webSQL {
+
+    export var name = 'webSQL';
+
+    export function detect(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
+
+      var openDatabaseInstance = getOpenDatabase();
+      if (!openDatabaseInstance) {
+        callback(null);
+        return;
+      }
+
+      var dbName = uniqueKey || 'portabled';
+
+      var db = openDatabase(
+        dbName, // name
+        1, // version
+        'Portabled virtual filesystem data', // displayName
+        1024 * 1024); // size
+      // upgradeCallback?
+
+
+      db.readTransaction(
+        transaction => {
+          transaction.executeSql(
+            'SELECT value from "*metadata" WHERE name=\'editedUTC\'',
+            [],
+            (transaction, result) => {
+              var editedValue: number = null;
+              if (result.rows && result.rows.length === 1) {
+                var editedValueStr = result.rows.item(0).value;
+                if (typeof editedValueStr === 'string') {
+                  try {
+                    editedValue = parseInt(editedValueStr);
+                  }
+                  catch (error) {
+                    // unexpected value for the timestamp, continue as if no value found
+                  }
+                }
+                else if (typeof editedValueStr === 'number') {
+                  editedValue = editedValueStr;
+                }
+              }
+
+              callback(new WebSQLDetached(db, editedValue || 0, true));
+            },
+            (transaction, sqlError) => {
+              // no data
+              callback(new WebSQLDetached(db, 0, false));
+            });
+        },
+        sqlError=> {
+          // failed to load
+          callback(null);
+        });
+
+    }
+
+    class WebSQLDetached implements Drive.Detached {
+
+      constructor(
+        private _db: Database,
+        public timestamp: number,
+        private _metadataTableIsValid: boolean) {
+      }
+
+      applyTo(mainDrive: Drive, callback: Drive.Detached.CallbackWithShadow): void {
+        this._db.readTransaction(
+          transaction => listAllTables(
+            transaction,
+            tables => {
+
+              var ftab = getFilenamesFromTables(tables);
+
+              this._applyToWithFiles(transaction, ftab, mainDrive, callback);
+            },
+            sqlError => {
+              reportSQLError('Failed to list tables for the webSQL database.', sqlError);
+              callback(new WebSQLShadow(this._db, this.timestamp, this._metadataTableIsValid));
+            }),
+          sqlError => {
+            reportSQLError('Failed to open read transaction for the webSQL database.', sqlError);
+            callback(new WebSQLShadow(this._db, this.timestamp, this._metadataTableIsValid));
+          });
+      }
+
+      purge(callback: Drive.Detached.CallbackWithShadow): void {
+        this._db.transaction(
+          transaction => listAllTables(
+            transaction,
+            tables => {
+              this._purgeWithTables(transaction, tables, callback);
+            },
+            sqlError => {
+              reportSQLError('Failed to list tables for the webSQL database.', sqlError);
+              callback(new WebSQLShadow(this._db, 0, false));
+            }),
+          sqlError => {
+            reportSQLError('Failed to open read-write transaction for the webSQL database.', sqlError);
+            callback(new WebSQLShadow(this._db, 0, false));
+          });
+      }
+
+      private _applyToWithFiles(transaction: SQLTransaction, ftab: { file: string; table: string; }[], mainDrive: Drive, callback: Drive.Detached.CallbackWithShadow): void {
+
+        if (!ftab.length) {
+          callback(new WebSQLShadow(this._db, this.timestamp, this._metadataTableIsValid));
+          return;
+        }
+
+        var reportedFileCount = 0;
+
+        var completeOne = () => {
+          reportedFileCount++;
+          if (reportedFileCount === ftab.length) {
+            callback(new WebSQLShadow(this._db, this.timestamp, this._metadataTableIsValid));
+          }
+        };
+
+        var applyFile = (file: string, table: string) => {
+          transaction.executeSql(
+            'SELECT * FROM "' + table + '"',
+            [],
+            (transaction, result) => {
+              if (result.rows.length) {
+                var row = result.rows.item(0);
+                if (row.value === null)
+                  mainDrive.write(file, null);
+                else if (typeof row.value === 'string')
+                  mainDrive.write(file, fromSqlText(row.value));
+              }
+              completeOne();
+            },
+            sqlError => {
+              completeOne();
+            });
+        };
+
+        for (var i = 0; i < ftab.length; i++) {
+          applyFile(ftab[i].file, ftab[i].table);
+        }
+
+      }
+
+      private _purgeWithTables(transaction: SQLTransaction, tables: string[], callback: Drive.Detached.CallbackWithShadow) {
+        if (!tables.length) {
+          callback(new WebSQLShadow(this._db, 0, false));
+          return;
+        }
+
+        var droppedCount = 0;
+
+        var completeOne = () => {
+          droppedCount++;
+          if (droppedCount === tables.length) {
+            callback(new WebSQLShadow(this._db, 0, false));
+          }
+        };
+
+        for (var i = 0; i < tables.length; i++) {
+          transaction.executeSql(
+            'DROP TABLE "' + tables[i] + '"',
+            [],
+            (transaction, result) => {
+              completeOne();
+            },
+            (transaction, sqlError) => {
+              reportSQLError('Failed to drop table for the webSQL database.', sqlError);
+              completeOne();
+            });
+        }
+      }
+
+    }
+
+    class WebSQLShadow implements Drive.Shadow {
+
+      private _cachedUpdateStatementsByFile: { [name: string]: string; } = {};
+      private _closures = {
+        updateMetadata: (transaction: SQLTransaction) => this._updateMetadata(transaction)
+      };
+
+      constructor(private _db: Database, public timestamp: number, private _metadataTableIsValid: boolean) {
+      }
+
+      write(file: string, content: string) {
+
+        if (content || typeof content === 'string') {
+          this._updateCore(file, content);
+        }
+        else {
+          this._dropFileTable(file);
+        }
+      }
+
+      private _updateCore(file: string, content: string) {
+        var updateSQL = this._cachedUpdateStatementsByFile[file];
+        if (!updateSQL) {
+          var tableName = mangleDatabaseObjectName(file);
+          updateSQL = this._createUpdateStatement(file, tableName);
+        }
+        this._db.transaction(
+          transaction => {
+            transaction.executeSql(
+              updateSQL,
+              ['content', content],
+              this._closures.updateMetadata,
+              (transaction, sqlError) => this._createTableAndUpdate(transaction, file, tableName, updateSQL, content));
+          },
+          sqlError => {
+            reportSQLError('Transaction failure updating file "' + file + '".', sqlError);
+          });
+      }
+
+      private _createTableAndUpdate(transaction: SQLTransaction, file: string, tableName: string, updateSQL: string, content: string) {
+        if (!tableName)
+          tableName = mangleDatabaseObjectName(file);
+
+        transaction.executeSql(
+          'CREATE TABLE "' + tableName + '" (name PRIMARY KEY, value)',
+          [],
+          (transaction, result) => {
+            transaction.executeSql(
+              updateSQL,
+              ['content', content],
+              this._closures.updateMetadata,
+              (transaction, sqlError) => {
+                reportSQLError('Failed to update table "' + tableName + '" for file "' + file + '" after creation.', sqlError);
+              });
+          },
+          (transaction, sqlError) => {
+            reportSQLError('Failed to create a table "' + tableName + '" for file "' + file + '".', sqlError);
+          });
+      }
+
+      private _dropFileTable(file: string) {
+        var tableName = mangleDatabaseObjectName(file);
+        this._db.transaction(
+          transaction => {
+            transaction.executeSql(
+              'DROP TABLE "' + tableName + '"',
+              [],
+              this._closures.updateMetadata,
+              (transaction, sqlError) => {
+                reportSQLError('Failed to drop table "' + tableName + '" for file "' + file + '".', sqlError);
+              });
+          },
+          sqlError => {
+            reportSQLError('Transaction failure dropping table "' + tableName + '" for file "' + file + '".', sqlError);
+          });
+      }
+
+      private _updateMetadata(transaction: SQLTransaction) {
+        var updateMetadataSQL = 'INSERT OR REPLACE INTO "*metadata" VALUES (?,?)';
+        transaction.executeSql(
+          updateMetadataSQL,
+          ['editedUTC', this.timestamp],
+          (transaction, result) => { }, // TODO: generate closure statically
+          (transaction, error) => {
+            transaction.executeSql(
+              'CREATE TABLE "*metadata" (name PRIMARY KEY, value)',
+              [],
+              (transaction, result) => {
+                transaction.executeSql(updateMetadataSQL, [], () => { }, () => { });
+              },
+              (transaction, sqlError) => {
+                reportSQLError('Failed to update metadata table after creation.', sqlError);
+              });
+          });
+
+      }
+
+      private _createUpdateStatement(file: string, tableName: string): string {
+        return this._cachedUpdateStatementsByFile[file] =
+          'INSERT OR REPLACE INTO "' + tableName + '" VALUES (?,?)';
+      }
+    }
+
+
+    function mangleDatabaseObjectName(name: string): string {
+      // no need to polyfill btoa, if webSQL exists
+      if (name.toLowerCase() === name)
+        return name;
+      else
+        return '=' + btoa(name);
+    }
+
+    function unmangleDatabaseObjectName(name: string): string {
+      if (!name || name.charAt(0) === '*') return null;
+
+      if (name.charAt(0) !== '=') return name;
+
+      try {
+        return atob(name.slice(1));
+      }
+      catch (error) {
+        return name;
+      }
+    }
+
+    export function listAllTables(
+      transaction: SQLTransaction,
+      callback: (tables: string[]) => void,
+      errorCallback: (sqlError: SQLError) => void) {
+      transaction.executeSql(
+        'SELECT tbl_name  from sqlite_master WHERE type=\'table\'',
+        [],
+        (transaction, result) => {
+          var tables: string[] = [];
+          for (var i = 0; i < result.rows.length; i++) {
+            var row = result.rows.item(i);
+            var table = row.tbl_name;
+            if (!table || (table[0] !== '*' && table.charAt(0) !== '=' && table.charAt(0) !== '/')) continue;
+            tables.push(row.tbl_name);
+          }
+          callback(tables);
+        },
+        (transaction, sqlError) => errorCallback(sqlError));
+    }
+
+    function getFilenamesFromTables(tables: string[]) {
+      var filenames: { table: string; file: string; }[] = [];
+      for (var i = 0; i < tables.length; i++) {
+        var file = unmangleDatabaseObjectName(tables[i]);
+        if (file)
+          filenames.push({ table: tables[i], file: file });
+      }
+      return filenames;
+    }
+
+    function toSqlText(text: string) {
+      if (text.indexOf('\u00FF') < 0 && text.indexOf('\u0000') < 0) return text;
+
+      return text.replace(/\u00FF/g, '\u00FFf').replace(/\u0000/g, '\u00FF0');
+    }
+
+    function fromSqlText(sqlText: string) {
+      if (sqlText.indexOf('\u00FF') < 0 && sqlText.indexOf('\u0000') < 0) return sqlText;
+
+      return sqlText.replace(/\u00FFf/g, '\u00FF').replace(/\u00FF0/g, '\u0000');
+    }
+
+    function reportSQLError(message: string, sqlError: SQLError);
+    function reportSQLError(sqlError: SQLError);
+    function reportSQLError(message, sqlError?) {
+      if (typeof console !== 'undefined' && typeof console.error === 'function') {
+        if (sqlError)
+          console.error(message, sqlError);
+        else
+          console.error(sqlError);
+      }
+    }
+
+
+  }
+
+}
+--!>
+<!-- /src/persistence/dom/CommentHeader.ts
+module persistence.dom {
+
+  export class CommentHeader {
+
+    header: string;
+    contentOffset: number;
+    contentLength: number;
+
+    constructor(public node: Comment) {
+      var headerLine: string;
+      var content: string;
+      if (typeof node.substringData === 'function'
+        && typeof node.length === 'number') {
+        var chunkSize = 128;
+
+        if (node.length >= chunkSize) {
+          // TODO: cut chunks off the start and look for newlines
+          var headerChunks: string[] = [];
+          while (headerChunks.length * chunkSize < node.length) {
+            var nextChunk = node.substringData(headerChunks.length * chunkSize, chunkSize);
+            var posEOL = nextChunk.search(/\r|\n/);
+            if (posEOL < 0) {
+              headerChunks.push(nextChunk);
+              continue;
+            }
+
+            this.header = headerChunks.join('') + nextChunk.slice(0, posEOL);
+            this.contentOffset = this.header.length + 1; // if header is separated by a single CR or LF
+
+            if (posEOL === nextChunk.length - 1) { // we may have LF part of CRLF in the next chunk!
+              if (nextChunk.charAt(nextChunk.length - 1) === '\r'
+                && node.substringData((headerChunks.length + 1) * chunkSize, 1) === '\n')
+                this.contentOffset++;
+            }
+            else if (nextChunk.slice(posEOL, posEOL + 2) === '\r\n') {
+              this.contentOffset++;
+            }
+
+            this.contentLength = node.length - this.contentOffset;
+            return;
+          }
+
+          this.header = headerChunks.join('');
+          this.contentOffset = this.header.length;
+          this.contentLength = node.length - content.length;
+          return;
+        }
+      }
+
+      var wholeCommentText = node.nodeValue;
+      var posEOL = wholeCommentText.search(/\r|\n/);
+      if (posEOL < 0) {
+        this.header = wholeCommentText;
+        this.contentOffset = wholeCommentText.length;
+        this.contentLength = wholeCommentText.length - this.contentOffset;
+        return;
+      }
+
+      this.contentOffset = wholeCommentText.slice(posEOL, posEOL + 2) === '\r\n' ?
+        posEOL + 2 : // ends with CRLF
+        posEOL + 1; // ends with singular CR or LF
+
+      this.header = wholeCommentText.slice(0, posEOL),
+      this.contentLength = wholeCommentText.length - this.contentOffset
+    }
+
+  }
+
+}
+--!>
+<!-- /src/persistence/dom/DOMDrive.ts
+module persistence.dom {
+
+  export class DOMDrive implements Drive {
+
+    private _byPath: { [path: string]: DOMFile; } = {};
+
+    public timestamp: number;
+
+    constructor(
+      private _totals: DOMTotals,
+      files: DOMFile[],
+      private _document: DOMDrive.DocumentSubset) {
+
+      this.timestamp = this._totals ? this._totals.timestamp : 0;
+
+      for (var i = 0; i < files.length; i++) {
+        this._byPath[files[i].path] = files[i];
+      }
+    }
+
+    files(): string[] {
+
+      if (typeof Object.keys === 'string') {
+        var result = Object.keys(this._byPath);
+      }
+      else {
+        var result: string[] = [];
+        for (var k in this._byPath) if (this._byPath.hasOwnProperty(k)) {
+          result.push(k);
+        }
+      }
+
+      result.sort();
+
+      return result;
+    }
+
+    read(file: string): string {
+      var file = normalizePath(file);
+      var f = this._byPath[file];
+      if (!f)
+        return null;
+      else
+        return f.read();
+    }
+
+    write(file: string, content: string) {
+
+      var totalDelta = 0;
+
+      var file = normalizePath(file);
+      var f = this._byPath[file];
+
+      if (content === null) {
+        // removal
+        if (f) {
+          totalDelta -= f.contentLength;
+          f.node.parentElement.removeChild(f.node);
+          delete this._byPath[file];
+        }
+      }
+      else {
+        // addition
+        if (f) {
+          var lengthBefore = f.contentLength;
+          f.write(content);
+          totalDelta += f.contentLength - lengthBefore;
+        }
+        else {
+          var comment = document.createComment('');
+          var f = new DOMFile(comment, file, null, 0, 0);
+          f.write(content);
+          this._document.body.appendChild(f.node);
+          totalDelta += f.contentLength;
+        }
+      }
+
+      this._totals.timestamp = this.timestamp;
+      this._totals.updateNode();
+    }
+
+  }
+
+  export module DOMDrive {
+
+    export interface DocumentSubset {
+      body: HTMLBodyElementSubset;
+
+      createComment(data: string): Comment;
+    }
+
+    export interface HTMLBodyElementSubset {
+      appendChild(node: Node);
+      insertBefore(newChild: Node, refNode?: Node);
+      firstChild: Node;
+    }
+  }
+}
+--!>
+<!-- /src/persistence/dom/DOMFile.ts
+module persistence.dom {
+
+  export class DOMFile {
+
+    private _encodedPath: string = null;
+
+    constructor(
+      public node: Comment,
+      public path: string,
+      private _encoding: (text: string) => any,
+      private _contentOffset: number,
+      public contentLength: number) {
+    }
+
+    static tryParse(cmheader: CommentHeader): DOMFile {
+
+      //    /file/path/continue
+      //    "/file/path/continue"
+      //    /file/path/continue   [encoding]
+
+      var parseFmt = /^\s*((\/|\"\/)(\s|\S)*[^\]])\s*(\[((\s|\S)*)\])?\s*$/;
+      var parsed = parseFmt.exec(cmheader.header);
+      if (!parsed) return null; // does not match the format
+
+      var filePath = parsed[1];
+      var encodingName = parsed[5];
+
+      if (filePath.charAt(0) === '"') {
+        if (filePath.charAt(filePath.length - 1) !== '"') return null; // unpaired leading quote
+        try {
+          if (typeof JSON !== 'undefined' && typeof JSON.parse === 'function')
+            filePath = JSON.parse(filePath);
+          else
+            filePath = eval(filePath); // security doesn't seem to be compromised, input is coming from the same file
+        }
+        catch (parseError) {
+          return null; // quoted path but wrong format (JSON expected)
+        }
+      }
+      else { // filePath NOT started with quote
+        if (encodingName) {
+          // regex above won't strip trailing whitespace from filePath if encoding is specified
+          // (because whitespace matches 'non-bracket' class too)
+          filePath = filePath.slice(0, filePath.search(/\S(\s*)$/) + 1);
+        }
+      }
+
+      var encoding = encodings[encodingName || 'LF'];
+      // invalid encoding considered a bogus comment, skipped
+      if (encoding)
+        return new DOMFile(cmheader.node, filePath, encoding, cmheader.contentOffset, cmheader.contentLength);
+
+      return null;
+    }
+
+
+    read() {
+
+      // proper HTML5 has substringDate to read only a chunk
+      // (that saves on string memory allocations
+      // comparing to fetching the whole text including the file name)
+      var contentText = typeof this.node.substringData === 'function' ?
+        this.node.substringData(this._contentOffset, 1000000000) :
+        this.node.nodeValue.slice(this._contentOffset);
+
+      // XML end-comment is escaped when stored in DOM,
+      // unescape it back
+      var restoredText = contentText.replace(/\-\-\*(\**)\>/g, '--*$1>');
+
+      // decode
+      var decodedText = this._encoding(restoredText);
+
+      // update just in case it's been off
+      this.contentLength = decodedText.length;
+
+      return decodedText;
+    }
+
+    write(content: any) {
+
+      var encoded = bestEncode(content);
+      var protectedText = encoded.content.replace(/\-\-(\**)\>/g, '--*$1>');
+
+      if (!this._encodedPath) {
+        // most cases path is path,
+        // but if enything is weird, it's going to be quoted
+        // (actually encoded with JSON format)
+        var encp = bestEncode(this.path, true /*escapePath*/);
+        this._encodedPath = encp.content;
+      }
+
+      var leadText = ' ' + this._encodedPath + (encoded.encoding === 'LF' ? '' : ' [' + encoded.encoding + ']') + '\n';
+      this.node.nodeValue = leadText + encoded.content;
+
+      this.contentLength = content.length;
+    }
+
+  }
+
+}
+--!>
+<!-- /src/persistence/dom/DOMTotals.ts
+module persistence.dom {
+
+  var monthsPrettyCase = ('Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec').split('|');
+  var monthsUpperCase = ('Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec').toUpperCase().split('|');
+
+  export class DOMTotals {
+
+    constructor(
+    	public timestamp: number,
+    	public totalSize: number,
+      private _node: Comment) {
+    }
+
+    static tryParse(cmheader: CommentHeader): DOMTotals {
+
+      // TODO: preserve unknowns when parsing
+
+      var parts = cmheader.header.split(',');
+      var anythingParsed = false;
+      var totalSize = 0;
+      var timestamp = 0;
+
+      for (var i = 0; i < parts.length; i++) {
+
+        // total 234Kb
+        // total 23
+        // total 6Mb
+
+        var totalFmt = /^\s*total\s+(\d*)\s*([KkMm])?b?\s*$/;
+        var totalMatch = totalFmt.exec(parts[i]);
+        if (totalMatch) {
+          try {
+            var total = parseInt(totalMatch[1]);
+            if ((totalMatch[2] + '').toUpperCase() === 'K')
+              total *= 1024;
+            else if ((totalMatch[2] + '').toUpperCase() === 'M')
+              total *= 1024 * 1024;
+            totalSize = total;
+            anythingParsed = true;
+          }
+          catch (totalParseError) { }
+          continue;
+        }
+
+        var savedFmt = /^\s*saved\s+(\d+)\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d+)\s+(\d+)\:(\d+)(\:(\d+(\.(\d+))?))\s*(GMT\s*[\-\+]?\d+\:?\d*)?\s*$/i;
+        var savedMatch = savedFmt.exec(parts[i]);
+        if (savedMatch) {
+          // 25 Apr 2015 22:52:01.231
+          try {
+            var savedDay = parseInt(savedMatch[1]);
+            var savedMonth = monthsUpperCase.indexOf(savedMatch[2].toUpperCase());
+            var savedYear = parseInt(savedMatch[3]);
+            if (savedYear < 100)
+              savedYear += 2000; // no 19xx notation anymore :-(
+            var savedHour = parseInt(savedMatch[4]);
+            var savedMinute = parseInt(savedMatch[5]);
+            var savedSecond = savedMatch[7] ? parseFloat(savedMatch[7]) : 0;
+
+            timestamp = new Date(savedYear, savedMonth, savedDay, savedHour, savedMinute, savedSecond | 0).valueOf();
+            timestamp += (savedSecond - (savedSecond | 0))*1000; // milliseconds
+
+            var savedGMTStr = savedMatch[10];
+            if (savedGMTStr) {
+              var gmtColonPos = savedGMTStr.indexOf(':');
+              if (gmtColonPos>0) {
+                var gmtH = parseInt(savedGMTStr.slice(0, gmtColonPos));
+                timestamp += gmtH * 60 /*min*/ * 60 /*sec*/ * 1000 /*msec*/;
+                var gmtM = parseInt(savedGMTStr.slice(gmtColonPos + 1));
+                timestamp += gmtM * 60 /*sec*/ * 1000 /*msec*/;
+              }
+            }
+
+            anythingParsed = true;
+          }
+          catch (savedParseError) { }
+        }
+
+      }
+
+      if (anythingParsed)
+        return new DOMTotals(timestamp, totalSize, cmheader.node);
+      else
+        return null;
+    }
+
+  	updateNode() {
+      // TODO: update the node content
+
+      // total 4Kb, saved 25 Apr 2015 22:52:01.231
+      var newTotals =
+        'total ' + (
+          this.totalSize < 1024 * 2 ? this.totalSize + '' :
+            this.totalSize < 1024 * 1024 * 2 ? ((this.totalSize / 1024) | 0) + 'Kb' :
+              ((this.totalSize / (1024 * 1024)) | 0) + 'Mb') + ', ' +
+        'saved ';
+
+      var saveDate = new Date(this.timestamp);
+      newTotals +=
+        saveDate.getDate() + ' ' +
+        monthsPrettyCase[saveDate.getMonth()] + ' ' +
+      	saveDate.getFullYear() + ' ' +
+      	num2(saveDate.getHours()) + ':' +
+        num2(saveDate.getMinutes()) + ':' +
+        num2(saveDate.getSeconds()) + '.' +
+        this.timestamp.toString().slice(-3);
+
+      var saveDateLocalStr = saveDate.toString();
+      var gmtMatch = (/(GMT\s*[\-\+]\d+(\:\d+)?)/i).exec(saveDateLocalStr);
+      if (gmtMatch)
+        newTotals += ' ' + gmtMatch[1];
+
+      this._node.nodeValue = newTotals;
+
+      function num2(n: number) {
+        return n <= 9 ? '0' + n : '' + n;
+      }
+
+    }
+
+  }
+
+
+}
+--!>
+<!-- /src/persistence/dom/parseDOMStorage.ts
+module persistence.dom {
+
+  export function parseDOMStorage(document: parseDOMStorage.DocumentSubset): parseDOMStorage.ContinueParsing {
+
+    var loadedFiles: DOMFile[] = [];
+    var loadedTotals: DOMTotals;
+    var lastNode: Node;
+    var loadedSize = 0;
+
+    return continueParsing();
+
+    function continueParsing(): parseDOMStorage.ContinueParsing {
+
+      continueParsingDOM(false);
+
+      return {
+        continueParsing,
+        finishParsing,
+        loadedSize,
+        totalSize: loadedTotals ? loadedTotals.totalSize : 0,
+        loadedFileCount: loadedFiles.length
+      };
+
+    }
+
+    function finishParsing(): DOMDrive {
+
+      continueParsingDOM(true);
+
+      if (loadedTotals) {
+        loadedTotals.totalSize = loadedSize;
+        loadedTotals.updateNode();
+      }
+
+      var drive = new DOMDrive(loadedTotals, loadedFiles, document);
+
+      return drive;
+    }
+
+    function continueParsingDOM(finish: boolean) {
+      if (document.body) {
+        if (!lastNode)
+          lastNode = document.body.firstChild;
+
+        while (true) {
+          if (!lastNode) return;
+          else if (!finish && lastNode == document.body.lastChild) return;
+
+
+          if (lastNode.nodeType === 8) {
+            processNode(<Comment>lastNode);
+          }
+
+          lastNode = lastNode.nextSibling;
+        }
+      }
+    }
+
+    function processNode(node: Comment): boolean {
+      var cmheader = new CommentHeader(node);
+
+      var file = DOMFile.tryParse(cmheader);
+      if (file) {
+        loadedFiles.push(file);
+        loadedSize += file.contentLength;
+        return true;
+      }
+
+      var totals = DOMTotals.tryParse(cmheader);
+      if (totals)
+        loadedTotals = totals;
+    }
+  }
+
+  export module parseDOMStorage {
+
+    export interface ContinueParsing {
+
+      continueParsing(): ContinueParsing;
+
+      finishParsing(): DOMDrive;
+
+      loadedFileCount: number;
+      loadedSize: number;
+      totalSize: number;
+
+    }
+
+    export interface DocumentSubset extends DOMDrive.DocumentSubset {
+      body: HTMLBodyElementSubset;
+    }
+
+    export interface HTMLBodyElementSubset extends DOMDrive.HTMLBodyElementSubset {
+      lastChild: Node;
+    }
+
+  }
+
+}
+--!>
+<!-- /src/persistence/encodings/CR.ts
+module persistence.encodings {
+
+  export function CR(text: string): string {
+Â  Â  return text.
+      replace(/\r\n|\n/g, '\r').
+      replace(/\-\-\*(\**)\>/g, '--$1>');
+  }
+
+}
+--!>
+<!-- /src/persistence/encodings/CRLF.ts
+module persistence.encodings {
+
+  export function CRLF(text: string): string {
+Â  Â  return text.
+      replace(/\r|\n/g, '\r\n').
+      replace(/\-\-\*(\**)\>/g, '--$1>');
+  }
+
+}
+--!>
+<!-- /src/persistence/encodings/LF.ts
+module persistence.encodings {
+
+  export function LF(text: string): string {
+    return text.
+      replace(/\r\n|\r/g, '\n').
+      replace(/\-\-\*(\**)\>/g, '--$1>');
+  }
+
+}
+--!>
+<!-- /src/persistence/encodings/base64.ts
+module persistence.encodings {
+
+  export function base64(text: string): any {
+    // TODO: convert from base64 to text
+    // TODO: invent a prefix to signify binary data
+    throw new Error('Base64 encoding is not implemented yet.');
+  }
+
+}
+--!>
+<!-- /src/persistence/encodings/eval.ts
+module persistence.encodings {
+
+  export function eval(text: string): any {
+    return (0, window['eval'])(text);
+  }
+
+}
+--!>
+<!-- /src/persistence/encodings/json.ts
+module persistence.encodings {
+
+  export function json(text: string): any {
+    var result = typeof JSON ==='undefined' ? eval(text) : JSON.parse(text);
+
+    if (result && typeof result !== 'string' && result.type) {
+      var ctor: any = window[result.type];
+      result = new ctor(result);
+    }
+
+    return result;
+  }
+
+}
+--!>
+<!-- /src/persistence/Drive.ts
+module persistence {
+
+  export interface Drive {
+
+    timestamp: number;
+
+    files(): string[];
+
+    read(file: string): string;
+
+    write(file: string, content: string);
+
+  }
+
+  export module Drive {
+
+    export interface Shadow {
+
+      timestamp: number;
+
+      write(file: string, content: string): void;
+
+    }
+
+    export interface Optional {
+
+      name: string;
+
+      detect(uniqueKey: string, callback: (detached: Detached) => void): void;
+
+    }
+
+    export interface Detached {
+
+      timestamp: number;
+      totalSize?: number;
+
+      applyTo(mainDrive: Drive, callback: Detached.CallbackWithShadow): void;
+
+      purge(callback: Detached.CallbackWithShadow): void;
+
+    }
+
+    export module Detached {
+      export interface CallbackWithShadow {
+
+        (loaded: Shadow): void;
+        progress?: (current: number, total: number) => void;
+      }
+    }
+
+  }
+}
+--!>
+<!-- /src/persistence/bestEncode.ts
+module persistence {
+
+  export function bestEncode(content: any, escapePath?: boolean): { content: string; encoding: string; } {
+
+    if (content.length>1024*16) {
+      // TODO: consider packing tightly and using eval encoding to unpack
+    }
+
+    if (typeof content!=='string')
+      return { content: encodeArrayOrSimilarAsJSON(content), encoding: 'json' };
+
+    var needsEscaping: boolean;
+    if (escapePath) {
+      // zero-char, newlines, leading/trailing spaces, quote and apostrophe
+      needsEscaping = /\u0000|\r|\n|^\s|\s$|\"|\'/.test(content);
+    }
+    else {
+      needsEscaping = /\u0000|\r/.test(content);
+    }
+
+    if (needsEscaping) {
+      // ZERO character is officially unsafe in HTML,
+      // CR is contentious in IE (which converts any CR or LF into CRLF)
+
+      return { content: encodeUnusualStringAsJSON(content), encoding: 'json' };
+    }
+    else {
+      return { content: content, encoding: 'LF' };
+    }
+  }
+
+  function encodeUnusualStringAsJSON(content: string): string {
+    if (typeof JSON !== 'undefined' && typeof JSON.stringify === 'function') {
+      var simpleJSON = JSON.stringify(content);
+      var sanitizedJSON = simpleJSON.
+        replace(/\u0000/g, '\\u0000').
+        replace(/\r/g, '\\r').
+        replace(/\n/g, '\\n');
+      return sanitizedJSON;
+    }
+    else {
+      var result = content.replace(
+        /\"\u0000|\u0001|\u0002|\u0003|\u0004|\u0005|\u0006|\u0007|\u0008|\u0009|\u00010|\u00011|\u00012|\u00013|\u00014|\u00015|\u0016|\u0017|\u0018|\u0019|\u0020|\u0021|\u0022|\u0023|\u0024|\u0025|\u0026|\u0027|\u0028|\u0029|\u0030|\u0031/g,
+        (chr) =>
+          chr === '\t' ? '\\t' :
+            chr === '\r' ? '\\r' :
+              chr === '\n' ? '\\n' :
+                chr === '\"' ? '\\"' :
+                  chr < '\u0010' ? '\\u000' + chr.charCodeAt(0).toString(16) :
+                    '\\u00' + chr.charCodeAt(0).toString(16));
+      return result;
+    }
+  }
+
+  function encodeArrayOrSimilarAsJSON(content: any): string {
+      var type = content instanceof Array ? null : content.constructor.name || content.type;
+      if (typeof JSON !== 'undefined' && typeof JSON.stringify === 'function') {
+        if (type) {
+          var wrapped = { type, content };
+          var wrappedJSON = JSON.stringify(wrapped);
+          return wrappedJSON;
+        }
+        else {
+          var contentJSON = JSON.stringify(content);
+          return contentJSON;
+        }
+      }
+      else {
+        var jsonArr: string[] = [];
+        if (type) {
+          jsonArr.push('{"type": "');
+          jsonArr.push(content.type || content.prototype.constructor.name);
+          jsonArr.push('", "content": [');
+        }
+        else {
+          jsonArr.push('[');
+        }
+
+        for (var i = 0; i < content.length; i++) {
+          if (i) jsonArr.push(',');
+          jsonArr.push(content[i]);
+        }
+
+        if (type)
+          jsonArr.push(']}');
+        else
+          jsonArr.push(']');
+
+        return jsonArr.join('');
+      }
+  }
+}
+--!>
+<!-- /src/persistence/bootMount.ts
+module persistence {
+
+  // TODO: pass in progress callback
+  export function bootMount(uniqueKey: string, document: Document): bootMount.ContinueLoading {
+
+    var continueParse: persistence.dom.parseDOMStorage.ContinueParsing;
+
+    var ondomdriveloaded;
+    var domDriveLoaded: Drive;
+    var storedFinishCallback;
+
+    mountDrive(
+      callback => {
+        if (domDriveLoaded)
+          callback(domDriveLoaded);
+        else
+          ondomdriveloaded = callback;
+      },
+      uniqueKey,
+      [attached.indexedDB, attached.webSQL, attached.localStorage],
+      mountedDrive => {
+
+        storedFinishCallback(mountedDrive);
+
+      });
+
+    return continueLoading();
+
+    function continueLoading(): bootMount.ContinueLoading {
+
+      continueDOMLoading();
+
+      // TODO: record progress
+
+      return { continueLoading, finishLoading };
+    }
+
+    function finishLoading(finishCallback: (monutedDrive: Drive) => void) {
+
+      storedFinishCallback = finishCallback;
+
+      continueDOMLoading();
+
+      domDriveLoaded = continueParse.finishParsing();
+
+      if (ondomdriveloaded) {
+        ondomdriveloaded(domDriveLoaded);
+      }
+
+    }
+
+
+    function continueDOMLoading() {
+      continueParse = continueParse ? continueParse.continueParsing() : dom.parseDOMStorage(document);
+    }
+
+  }
+
+  module bootMount {
+
+    export interface ContinueLoading {
+
+      continueLoading(): ContinueLoading;
+
+      finishLoading(finishCallback: (mountedDrive: Drive) => void);
+
+    }
+
+  }
+}
+--!>
+<!-- /src/persistence/mountDrive.ts
+module persistence {
+
+  export function mountDrive(
+    loadDOMDrive: (callback: (dom: Drive) => void)=> void,
+    uniqueKey: string,
+    optionalModules: Drive.Optional[],
+    callback: mountDrive.Callback): void {
+
+    var driveIndex = 0;
+
+    loadNextOptional();
+
+    function loadNextOptional() {
+
+      while (driveIndex < optionalModules.length &&
+        (!optionalModules[driveIndex] || typeof optionalModules[driveIndex].detect !== 'function')) {
+        driveIndex++;
+      }
+
+      if (driveIndex >= optionalModules.length) {
+        loadDOMDrive(dom => callback(new MountedDrive(dom, null)));
+        return;
+      }
+
+      var op = optionalModules[driveIndex];
+      op.detect(
+        uniqueKey,
+        detached => {
+          if (!detached) {
+            driveIndex++;
+            loadNextOptional();
+            return;
+          }
+
+          loadDOMDrive(dom => {
+            if (detached.timestamp > dom.timestamp) {
+              var callbackWithShadow: Drive.Detached.CallbackWithShadow = loadedDrive => {
+                dom.timestamp = detached.timestamp;
+                callback(new MountedDrive(dom, loadedDrive));
+              };
+              if (callback.progress)
+                callbackWithShadow.progress = callback.progress;
+              loadDOMDrive(dom => detached.applyTo(dom, callbackWithShadow));
+            }
+            else {
+              var callbackWithShadow: Drive.Detached.CallbackWithShadow = loadedDrive => {
+                callback(new MountedDrive(dom, loadedDrive));
+              };
+              if (callback.progress)
+                callbackWithShadow.progress = callback.progress;
+              detached.purge(callbackWithShadow);
+            }
+          });
+
+        });
+    }
+
+  }
+
+  export module mountDrive {
+
+    export interface Callback {
+
+      (drive: Drive): void;
+
+      progress?: (current: number, total: number) => void;
+
+    }
+
+  }
+
+  class MountedDrive implements Drive {
+
+    timestamp: number = 0;
+
+    constructor (private _dom: Drive, private _shadow: Drive.Shadow) {
+      this.timestamp = this._dom.timestamp;
+    }
+
+    files(): string[] {
+      return this._dom.files();
+    }
+
+    read(file: string): string {
+      return this._dom.read(file);
+    }
+
+    write(file: string, content: string) {
+      this._dom.timestamp = this.timestamp;
+      this._dom.write(file, content);
+      if (this._shadow) {
+        this._shadow.timestamp = this.timestamp;
+        this._shadow.write(file, content);
+      }
+    }
+  }
+
+}
+--!>
+<!-- /src/persistence/normalizePath.ts
+module persistence {
+
+  export function normalizePath(path: string) : string {
+
+    if (!path) return '/'; // empty paths converted to root
+
+    while (' \n\t\r'.indexOf(path.charAt(0))>=0) // removing leading whitespace
+      path = path.slice(1);
+
+    while ('\n\t\r\\'.indexOf(path.charAt(path.length - 1))>=0) // removing trailing whitespace and trailing slashes
+      path = path.slice(0, path.length - 1);
+
+    if (path.charAt(0) !== '/') // ensuring leading slash
+      path = '/' + path;
+
+    path = path.replace(/\/\/*/g, '/'); // replacing duplicate slashes with single
+
+    return path;
+  }
+
+}
+--!>
+<!-- /src/shell/panels/Panel.ts
+module panels {
+
+  var panelClass = 'panels-panel-page';
+
+  export class Panel {
+
+    private _cursorPath: string;
+    private _cursorEntryIndex = -1;
+    private _entries: Panel.PageEntry[] = null;
+    private _redrawRequested = 0;
+
+    private _metrics: Panel.Metrics = null;
+
+    private _scrollContent: HTMLElementWithFlags;
+
+    private _pages: Panel.PageData[] = [];
+
+		private _entriesInColumn = 0;
+    private _pageHeight = 0;
+    private _pageInterval = 0;
+    private _columnsOnPage = 0;
+    private _columnWidth = 0;
+
+    private _scrollTop = 0;
+    private _scrollTopHeight = 0;
+    private _isActive = false;
+    private _nextRedrawScrollToCurrent = false;
+
+    constructor(
+      private _host: HTMLElement,
+      private _path: string,
+      private _directoryService: (path: string) => Panel.DirectoryEntry[]) {
+
+      this._scrollContent = <HTMLElementWithFlags>elem('div', this._host);
+      this._scrollContent.isScrollContent = true;
+
+      elem.on(this._host, 'scroll', () => this._onscroll());
+
+      this._queueRedraw();
+    }
+
+    set(paths: {currentPath?: string; cursorPath?: string}) {
+      if (paths.currentPath)
+        this._path = paths.currentPath;
+      if (paths.cursorPath) {
+        this._cursorPath = paths.cursorPath;
+        this._nextRedrawScrollToCurrent = true;
+      }
+      this._queueRedraw();
+    }
+
+  	onclick(e: MouseEvent) {
+      if (!this._entries) return;
+
+      var clickElem = <HTMLElementWithFlags>(e.srcElement || e.target || e.currentTarget);
+      var entryDIV: HTMLElementWithFlags;
+      var columnDIV: HTMLElementWithFlags;
+      var pageDIV: HTMLElementWithFlags;
+      var leadPaddingDIV: HTMLElementWithFlags;
+
+      while (clickElem) {
+
+        if (clickElem.isScrollContent) {
+          if (clickElem !== this._scrollContent) return false;
+          break;
+        }
+
+        if (clickElem.isPageDIV)
+          pageDIV = clickElem;
+
+        if (clickElem.isColumnDIV)
+          columnDIV = clickElem;
+
+        if (clickElem.isEntryDIV)
+          entryDIV = clickElem;
+
+        clickElem = <any>clickElem.parentElement;
+      }
+
+      if (entryDIV) {
+        for (var i = 0; i < this._entries.length; i++) {
+          if (this._entries[i].entryDIV === entryDIV) {
+            this._cursorPath = this._entries[i].path;
+            this._nextRedrawScrollToCurrent = true;
+            this._queueRedraw();
+            break;
+          }
+        }
+        this._redrawNow();
+      }
+
+      return true;
+    }
+
+    currentPath() {
+      return this._path;
+    }
+
+    cursorPath() {
+      return this._cursorPath;
+    }
+
+    arrange(metrics: Panel.Metrics) {
+      this._metrics = metrics;
+      this._redrawNow();
+    }
+
+  	isActive() {
+      return this._isActive;
+    }
+
+    activate() {
+      this._isActive = true;
+      this._scrollContent.className = 'panels-panel-active';
+    }
+
+    deactivate() {
+      this._isActive = false;
+      this._scrollContent.className = 'panels-panel-inactive';
+    }
+
+    cursorGo(direction: number) {
+      if (!this._entries || !this._entries.length) return;
+
+      var moveStep = 0;
+
+      switch (direction) {
+
+        case -1: // up
+          moveStep = -1;
+          break;
+
+        case +1: // down
+          moveStep = +1;
+          break;
+
+        case -10: // left
+          var entryIndex = this._calcEntryIndex(this._cursorEntryIndex);
+          if (this._columnsOnPage === 1) {
+            moveStep = -entryIndex || -1;
+          }
+          else {
+            var columnIndex = this._calcColumnIndex(this._cursorEntryIndex);
+            if (columnIndex > 0) {
+              moveStep = -this._entriesInColumn;
+            }
+            else {
+              moveStep = this._entriesInColumn * (this._columnsOnPage - 1) - 1;
+
+              // overflow cases
+              if (this._cursorEntryIndex === 0) {
+                moveStep = this._entriesInColumn * (this._columnsOnPage - 1);
+              }
+              else if (this._cursorEntryIndex + moveStep >= this._entries.length) { // there is no rightmost column
+
+                var endEntryIndex = this._calcEntryIndex(this._entries.length - 1);
+                var endColumnIndex = this._calcColumnIndex(this._entries.length - 1);
+
+                // if the last entry is higher vertically, stop at the previous column
+                var targetColumnIndex = endEntryIndex >= entryIndex ? endColumnIndex : endColumnIndex - 1;
+
+                if (targetColumnIndex <= columnIndex) {
+                  moveStep = -entryIndex; // if nowhere to go right, go all the way up
+                }
+                else {
+                  // there are columns on the right, so go there (and one up after)
+                  moveStep = (targetColumnIndex - columnIndex) * this._entriesInColumn - 1;
+                }
+              }
+            }
+          }
+          break;
+
+        case +10: // right
+          var columnIndex = this._calcColumnIndex(this._cursorEntryIndex);
+          if (columnIndex < this._columnsOnPage - 1) {
+            moveStep = +this._entriesInColumn;
+          }
+          else {
+            moveStep = -this._entriesInColumn * 2 + 1;
+          }
+          break;
+
+        case -100: // page up
+          moveStep = -this._entriesInColumn * this._columnsOnPage;
+          break;
+
+        case +100: // page down
+          moveStep = +this._entriesInColumn * this._columnsOnPage;
+          break;
+      }
+
+      if (moveStep) {
+        var newCursorEntryIndex = Math.max(0, Math.min(this._entries.length-1, this._cursorEntryIndex + moveStep));
+        var e = this._entries[newCursorEntryIndex];
+        if (e) {
+          this._cursorPath = this._entries[newCursorEntryIndex].path;
+          this._nextRedrawScrollToCurrent = true;
+          this._queueRedraw();
+        }
+      }
+    }
+
+    navigateCursor() {
+      if (this._cursorEntryIndex >= 0) {
+        var entry = this._entries[this._cursorEntryIndex];
+        if (entry) {
+          if (entry.flags & Panel.EntryFlags.Directory) {
+            this._cursorPath = this._path;
+            this._path = entry.path;
+            this._nextRedrawScrollToCurrent = true;
+            this._queueRedraw();
+            return true;
+          }
+        }
+      }
+    }
+
+    private _queueRedraw() {
+      if (this._redrawRequested) return;
+      this._redrawRequested = setTimeout(() => this._redrawNow(), 100);
+    }
+
+    private _redrawNow() {
+
+      var prevOffset = this._calcEntryTopOffset(Math.max(0, this._cursorEntryIndex));
+
+      var entries = this._directoryService(this._path);
+      this._entries = [];
+
+      entries.sort((e1, e2) => {
+        var flagCompare = (e1.flags & Panel.EntryFlags.Directory) ?
+          ((e2.flags & Panel.EntryFlags.Directory) ? 0 : -1) :
+          ((e2.flags & Panel.EntryFlags.Directory) ? +1 : 0);
+        if (flagCompare) return flagCompare;
+
+        var nameCompare = e1.name > e2.name ? 1 : e1.name < e2.name ? -1 : 0;
+        return nameCompare;
+      });
+
+      if (this._path !== '/') {
+        var parentPath = this._path.slice(0, this._path.lastIndexOf('/')) || '/';
+        entries.unshift({
+          name: '..',
+          path: parentPath,
+          flags: Panel.EntryFlags.Directory
+        });
+      }
+
+      if (!entries || !entries.length) {
+        this._scrollContent.innerHTML = '';
+        this._pages = [];
+        return;
+      }
+
+      this._cursorEntryIndex = -1;
+      for (var i = 0; i < entries.length; i++) {
+        if (entries[i].path === this._cursorPath) {
+          this._cursorEntryIndex = i;
+          break;
+        }
+      }
+
+      if (this._cursorEntryIndex < 0) {
+        this._cursorEntryIndex = 0;
+        this._cursorPath = entries.length > 0 ? entries[0].path : null;
+      }
+
+      this._entriesInColumn = Math.max(3, ((this._metrics.hostHeight / this._metrics.windowMetrics.emHeight) | 0) - 2);
+      this._pageHeight = this._entriesInColumn * this._metrics.windowMetrics.emHeight;
+      this._pageInterval = this._metrics.hostHeight - this._pageHeight - this._metrics.windowMetrics.emHeight;
+
+      var desiredColumnWidth = 17 * this._metrics.windowMetrics.emWidth;
+      this._columnsOnPage = Math.max(1, Math.round(this._metrics.hostWidth / desiredColumnWidth) | 0);
+      this._columnWidth = ((this._metrics.hostWidth / this._columnsOnPage) | 0) - 1;
+
+      if (!this._pages)
+        this._pages = [];
+
+      for (var i = 0; i < entries.length; i++) {
+        var pageIndex = this._calcPageIndex(i);
+        var page = this._pages[pageIndex];
+
+        if (page) {
+          if (page.height !== this._pageHeight) {
+            page.height = this._pageHeight;
+            page.pageDIV.style.height = this._pageHeight + 'px';
+          }
+          if (page.leadInterval !== this._pageInterval) {
+            page.leadInterval = this._pageInterval;
+            if (page.leadPaddingDIV)
+              page.leadPaddingDIV.style.height = this._pageInterval + 'px';
+          }
+        }
+        else {
+          if (pageIndex) {
+            var leadPaddingDIV = <HTMLElementWithFlags>elem('div', {
+              className: 'panels-page-separator',
+              height: this._pageInterval + 'px'
+            }, this._scrollContent);
+            leadPaddingDIV.isLeadPaddingDIV = true;
+          }
+
+          page = {
+            leadPaddingDIV,
+            leadInterval: this._pageInterval,
+            height: this._pageHeight,
+            pageDIV: <HTMLElementWithFlags>elem('div', {
+              className: panelClass,
+              height: this._pageHeight + 'px'
+            }, this._scrollContent),
+            columns: []
+          };
+
+          page.pageDIV.isPageDIV = true;
+          this._pages.push(page);
+        }
+
+        var columnIndex = this._calcColumnIndex(i);
+        var column = page.columns[columnIndex];
+        if (column) {
+          if (columnIndex === this._columnsOnPage - 1 && page.columns.length > this._columnsOnPage) {
+            this._removeExcessColumns(page, this._columnsOnPage);
+          }
+          if (column.height !== this._pageHeight) {
+            column.height = this._pageHeight;
+            column.columnDIV.style.height = this._pageHeight + 'px';
+          }
+          if (column.width !== this._columnWidth) {
+            column.width = this._columnWidth;
+            column.columnDIV.style.width = this._columnWidth + 'px';
+          }
+        }
+        else {
+          column = {
+            height: this._pageHeight,
+            width: this._columnWidth,
+            columnDIV: <HTMLElementWithFlags>elem('div', {
+              className: 'panels-panel-column',
+              height: this._pageHeight + 'px',
+              width: this._columnWidth + 'px'
+            }, page.pageDIV),
+            entries: []
+          };
+          column.columnDIV.isColumnDIV = true;
+          page.columns.push(column);
+        }
+
+        var dentry = entries[i];
+
+        var entryIndex = this._calcEntryIndex(i);
+        var entry = column.entries[entryIndex];
+        if (!entry) {
+
+          var dirfileClassName = dentry.flags & Panel.EntryFlags.Directory ? ' panels-entry-dir' : ' panels-entry-file';
+
+          var entryClassName =
+            'panels-entry' +
+            dirfileClassName +
+            (this._cursorEntryIndex === i ? ' panels-entry-current' + dirfileClassName + '-current' : '');
+
+          entry = {
+            name: dentry.name,
+            path: dentry.path,
+            flags: dentry.flags,
+            selectionFlags: this._cursorEntryIndex === i ? Panel.SelectionFlags.Current : 0,
+            entryDIV: <HTMLElementWithFlags>elem('div', {
+              className: entryClassName,
+              text: dentry.name,
+              height: this._metrics.windowMetrics.emHeight + 'px'
+            }, column.columnDIV)
+          };
+
+          entry.entryDIV.isEntryDIV = true;
+
+          column.entries.push(entry);
+        }
+        else {
+          var expectedSelectionFlags = this._cursorEntryIndex === i ? Panel.SelectionFlags.Current : 0;
+
+          if (entry.name !== dentry.name) {
+            entry.name = dentry.name;
+            setText(entry.entryDIV, dentry.name);
+          }
+          if (entry.path !== dentry.path) {
+            entry.path = dentry.path;
+          }
+          if (entry.flags !== dentry.flags || entry.selectionFlags !== expectedSelectionFlags) {
+            var dirfileClassName = dentry.flags & Panel.EntryFlags.Directory ? ' panels-entry-dir' : ' panels-entry-file';
+
+            var entryClassName =
+              'panels-entry' +
+              dirfileClassName +
+              (this._cursorEntryIndex === i ? ' panels-entry-current' + dirfileClassName + '-current' : '');
+
+            entry.entryDIV.className = entryClassName;
+
+            entry.flags = dentry.flags;
+            entry.selectionFlags = expectedSelectionFlags;
+          }
+
+
+          if (entryIndex === this._entriesInColumn - 1 && column.entries.length > this._entriesInColumn) {
+            this._removeExcessEntries(column, this._entriesInColumn);
+          }
+
+        }
+
+        this._entries.push(entry);
+
+      }
+
+      this._removeExcessPages(pageIndex + 1);
+
+      var p = this._pages[pageIndex];
+      this._removeExcessColumns(p, columnIndex + 1);
+
+      var c = p.columns[columnIndex];
+      this._removeExcessEntries(c, entryIndex + 1);
+
+
+
+      var newOffset = this._calcEntryTopOffset(Math.max(0, this._cursorEntryIndex));
+      if (this._nextRedrawScrollToCurrent) {
+        this._nextRedrawScrollToCurrent = false;
+        var maxScroll = newOffset - this._metrics.windowMetrics.emHeight*2;
+        var minScroll = newOffset - this._metrics.hostHeight + this._metrics.windowMetrics.emHeight*3;
+
+        var newScrollTop =
+            this._scrollTop < minScroll ? minScroll :
+        		this._scrollTop > maxScroll ? maxScroll :
+        		-1;
+
+        if (newScrollTop >=0) {
+          //console.log('redraw: scroll to current [' + newScrollTop + ']');
+          this._host.scrollTop = newScrollTop
+        }
+      }
+      else {
+        var prevDistanceFromCenter = prevOffset - (this._scrollTop + this._scrollTopHeight / 2);
+
+        var newScrollTop = newOffset - prevDistanceFromCenter - this._metrics.hostHeight / 2;
+        //console.log({
+        //  prevDistanceFromCenter, prevOffset, this_scrollTop: this._scrollTop, this_scrollTopHeight: this._scrollTopHeight,
+        //  newOffset, this_metrics_hostHeight: this._metrics.hostHeight, newScrollTop
+        //});
+        //console.log('redraw: scroll to approximate prev. [' + newScrollTop + ']');
+        this._host.scrollTop = newScrollTop;
+      }
+
+
+      this._redrawRequested = 0;
+
+      // end of _redrawNow()
+    }
+
+
+
+  	private _removeExcessPages(expectedCount: number) {
+      for (var i = this._pages.length - 1; i >= expectedCount; i--) {
+        var p = this._pages[i];
+        p.pageDIV.parentElement.removeChild(p.pageDIV);
+        if (p.leadPaddingDIV)
+          p.leadPaddingDIV.parentElement.removeChild(p.leadPaddingDIV);
+      }
+
+      if (this._pages.length > expectedCount)
+        this._pages = this._pages.slice(0, expectedCount);
+    }
+
+
+    private _removeExcessColumns(p: { columns: Panel.ColumnData[]; }, expectedCount: number) {
+      for (var i = p.columns.length - 1; i >= expectedCount; i--) {
+        var c = p.columns[i];
+        c.columnDIV.parentElement.removeChild(c.columnDIV);
+      }
+
+      if (p.columns.length > expectedCount)
+        p.columns = p.columns.slice(0, expectedCount);
+    }
+
+
+    private _removeExcessEntries(c: { entries: Panel.PageEntry[]; }, expectedCount: number) {
+      for (var i = c.entries.length - 1; i >= expectedCount; i--) {
+        var e = c.entries[i];
+        e.entryDIV.parentElement.removeChild(e.entryDIV);
+      }
+
+      if (c.entries.length > expectedCount)
+        c.entries = c.entries.slice(0, expectedCount);
+    }
+
+
+  	private _onscroll() {
+      if (this._redrawRequested) return;
+      this._scrollTop = this._host.scrollTop;
+      this._scrollTopHeight = this._metrics.hostHeight;
+      //console.log('onscroll ' + this._scrollTop);
+    }
+
+
+    private _calcPageIndex(indexOfEntry: number): number {
+      return (indexOfEntry / (this._columnsOnPage * this._entriesInColumn)) | 0;
+    }
+
+  	private _calcColumnIndex(indexOfEntry: number) {
+      return ((indexOfEntry / this._entriesInColumn) | 0) % this._columnsOnPage;
+    }
+
+  	private _calcEntryIndex(indexOfEntry: number) {
+      return indexOfEntry % this._entriesInColumn;
+    }
+
+  	private _calcEntryTopOffset(indexOfEntry: number) {
+      if (!this._metrics || !this._metrics.windowMetrics) return 0;
+
+      var pageIndex = this._calcPageIndex(indexOfEntry);
+      var entryIndex = this._calcEntryIndex(indexOfEntry);
+      var offset =
+        pageIndex * this._entriesInColumn * this._metrics.windowMetrics.emHeight + // whole pages
+        Math.max(0, pageIndex - 1) * this._pageInterval + // inter-page spaces
+        entryIndex * this._metrics.windowMetrics.emHeight; // distance from the top of the page
+
+      return offset;
+    }
+  }
+
+	interface HTMLElementWithFlags extends HTMLElement {
+    isScrollContent: boolean;
+    isLeadPaddingDIV?: boolean;
+    isPageDIV: boolean;
+    isColumnDIV: boolean;
+    isEntryDIV: boolean;
+  }
+
+  export module Panel {
+
+    export interface Metrics {
+      windowMetrics: CommanderShell.Metrics;
+      hostWidth: number;
+      hostHeight: number;
+    }
+
+    export interface DirectoryEntry {
+      name: string;
+      path: string;
+      flags: EntryFlags;
+    }
+
+    export enum EntryFlags {
+      Directory = 1
+    }
+
+    export interface PageData {
+      leadPaddingDIV: HTMLElementWithFlags;
+      pageDIV: HTMLElementWithFlags;
+      columns: ColumnData[];
+      height: number;
+      leadInterval: number;
+    }
+
+    export interface ColumnData {
+      columnDIV: HTMLElementWithFlags;
+      entries: PageEntry[];
+      height: number;
+      width: number;
+    }
+
+    export interface PageEntry extends DirectoryEntry {
+      entryDIV: HTMLElementWithFlags;
+      selectionFlags: SelectionFlags;
+    }
+
+    export enum SelectionFlags {
+      None = 0,
+      Current = 1,
+      Selected = 2
+    }
+
+  }
+
+}
+--!>
+<!-- /src/shell/panels/TwoPanels.ts
+module panels {
+
+  var panelHMargin = 10;
+  var panelVMargin = 5;
+
+  export class TwoPanels {
+
+    private _scrollHost: HTMLDivElement;
+    private _scrollContent: HTMLDivElement;
+
+    private _leftPanelHost: HTMLDivElement;
+    private _rightPanelHost: HTMLDivElement;
+
+    private _leftPanel: Panel;
+    private _rightPanel: Panel;
+
+    constructor(
+      private _host: HTMLElement,
+      leftPath: string,
+      rightPath: string,
+      private _drive: persistence.Drive) {
+
+      this._scrollHost = <any>elem('div', { className: 'panels-scroll-host' }, this._host);
+      this._scrollContent = <any>elem('div', { className: 'panels-scroll-content' }, this._scrollHost);
+
+      this._leftPanelHost = <any>elem('div', { className: 'panels-panel panels-left-panel' }, this._scrollContent);
+      this._rightPanelHost = <any>elem('div', { className: 'panels-panel panels-right-panel' }, this._scrollContent);
+
+      var directoryService = driveDirectoryService(this._drive);
+
+      this._leftPanel = new Panel(
+        this._leftPanelHost,
+        leftPath,
+        directoryService);
+
+      this._rightPanel = new Panel(
+        this._rightPanelHost,
+        rightPath,
+        directoryService);
+
+      this._leftPanel.activate();
+      /*
+      TODO: ensure focus stays with the text input at the bottom
+      elem.on(this._leftPanel, 'mousedown', e=> {
+        if (e.preventDefault)
+          e.preventDefault();
+        return false;
+      }); */
+
+      elem.on(this._leftPanelHost, 'click', (e: MouseEvent) => this._onclick(e));
+      elem.on(this._rightPanelHost, 'click', (e: MouseEvent) => this._onclick(e));
+
+    }
+
+    measure() {
+    }
+
+    arrange(metrics: CommanderShell.Metrics) {
+
+      var contentWidth = 0;
+
+Â  Â  Â  if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {Â 
+        // flippable layout
+        contentWidth = Math.max(metrics.hostWidth / 2, metrics.hostWidth * 2 - metrics.emWidth * 3);
+      }
+      else {
+        // full layout
+        contentWidth = metrics.hostWidth;
+      }
+
+      var bottomGap = Math.min(metrics.hostHeight / 3, metrics.emHeight * 3);
+
+      this._scrollHost.style.width = metrics.hostWidth + 'px';
+      var panelsHeight = metrics.hostHeight - bottomGap;
+      this._scrollHost.style.height = panelsHeight + 'px';
+
+      this._scrollContent.style.width = contentWidth + 'px';
+      this._scrollContent.style.height = panelsHeight + 'px';
+
+      var panelWidth = (contentWidth / 2 - 0.5) | 0;
+
+      this._leftPanelHost.style.height = panelsHeight + 'px';
+      this._leftPanelHost.style.width = panelWidth + 'px';
+
+      this._rightPanelHost.style.height = panelsHeight + 'px';
+      this._rightPanelHost.style.width = panelWidth + 'px';
+
+      if (this._leftPanelHost.style.display !== 'none') {
+        this._leftPanel.arrange({
+          windowMetrics: metrics,
+          hostWidth: panelWidth - panelHMargin * 2,
+          hostHeight: panelsHeight - panelVMargin * 2
+        });
+      }
+
+      if (this._rightPanelHost.style.display !== 'none') {
+        this._rightPanel.arrange({
+          windowMetrics: metrics,
+          hostWidth: panelWidth - panelHMargin * 2,
+          hostHeight: panelsHeight - panelVMargin * 2
+        });
+      }
+    }
+
+    isVisible() {
+      return this._scrollHost.style.display !== 'none';
+    }
+
+    toggleVisibility() {
+      this._scrollHost.style.display = this.isVisible() ? 'none' : 'block';
+    }
+
+    isLeftActive() {
+      return this._leftPanel.isActive();
+    }
+
+    toggleActivePanel() {
+      if (!this.isVisible()) return;
+
+      var isLeftActive = this._leftPanel.isActive();
+      this._getPanel(isLeftActive).deactivate();
+      this._getPanel(!isLeftActive).activate();
+    }
+
+    keydown(e: KeyboardEvent): boolean {
+      switch (e.keyCode) {
+        case 38:
+          return this._selectionGo(-1);
+        case 40:
+          return this._selectionGo(+1);
+        case 33:
+          return this._selectionGo(-100);
+        case 34:
+          return this._selectionGo(+100);
+        case 37:
+          return this._selectionGo(-10);
+        case 39:
+          return this._selectionGo(+10);
+        case 9:
+          this.toggleActivePanel();
+          return true;
+        case 86: // U
+          if (e.ctrlKey || e.metaKey)
+            return this.togglePanelPaths();
+          break;
+
+        case 112: // F1
+          if (e.ctrlKey || e.metaKey) {
+            return this.togglePartHidden(true);
+          }
+          break;
+
+        case 113: // F2
+          if (e.ctrlKey || e.metaKey) {
+            return this.togglePartHidden(false);
+          }
+          break;
+
+        case 13: // Enter
+          var activePa = this._getPanel(this.isLeftActive());
+          return activePa.navigateCursor();
+
+        default:
+          if (e.ctrlKey) {
+            //console.log('ctrl ' + e.keyCode);
+          }
+          break;
+      }
+
+      return false;
+    }
+
+    togglePartHidden(leftPanel: boolean) {
+      var togglePanelHost = this._getPanelHost(leftPanel);
+      var oppositePanelHost = this._getPanelHost(!leftPanel);
+
+      if (!this.isVisible()) {
+        togglePanelHost.style.display = 'block';
+        oppositePanelHost.style.display = 'none';
+        if (this.isLeftActive() !== leftPanel)
+          this.toggleActivePanel();
+        this.toggleVisibility();
+      }
+      else {
+        if (togglePanelHost.style.display !== 'none') {
+          if (oppositePanelHost.style.display === 'none') {
+            togglePanelHost.style.display = 'block';
+            this.toggleVisibility();
+          }
+          else {
+          	togglePanelHost.style.display = 'none';
+        		if (this.isLeftActive() === leftPanel)
+              this.toggleActivePanel();
+          }
+        }
+        else {
+          togglePanelHost.style.display = 'block';
+        }
+      }
+      return true;
+    }
+
+    togglePanelPaths() {
+      console.log('Ctrl+U toggle is not implemented.');
+      return false;
+    }
+
+  	cursorPath() {
+      if (!this.isVisible()) return null;
+      var pan = this._getPanel(this.isLeftActive());
+      return pan.cursorPath();
+    }
+
+    private _selectionGo(direction: number) {
+      var panel = this._getPanel(this.isLeftActive()).cursorGo(direction);
+      return true;
+    }
+
+    private _getPanel(left: boolean) {
+      return left ? this._leftPanel : this._rightPanel;
+    }
+
+    private _getPanelHost(left: boolean) {
+      return left ? this._leftPanelHost : this._rightPanelHost;
+    }
+
+    private _onclick(e: MouseEvent) {
+      var isLeft = this._leftPanel.onclick(e);
+      if (!isLeft && !this._rightPanel.onclick(e))
+        return;
+
+      if (isLeft === this.isLeftActive()) return;
+
+      this.toggleActivePanel();
+    }
+
+  }
+
+}
+--!>
+<!-- /src/shell/panels/driveDirectoryService.ts
+module panels {
+
+  export function driveDirectoryService(drive: persistence.Drive) {
+
+    return path => {
+      var pathPrefix = path === '/' ? path : path + '/';
+      var result: Panel.DirectoryEntry[] = [];
+      var resByName: { [name: string]: Panel.DirectoryEntry; } = {};
+      var files = drive.files();
+      for (var i = 0; i < files.length; i++) {
+        var fi = files[i];
+        if (fi.length < pathPrefix.length + 1) continue;
+
+        if (fi.slice(0, pathPrefix.length) !== pathPrefix) continue;
+
+        var name: string;
+        var entryPath = fi;
+        var isDirectory = false;
+        var nextSlashPos = fi.indexOf('/', pathPrefix.length);
+        if (nextSlashPos < 0) {
+          name = fi.slice(pathPrefix.length);
+        }
+        else {
+          name = fi.slice(pathPrefix.length, nextSlashPos);
+          entryPath = fi.slice(0, nextSlashPos);
+          isDirectory = true;
+        }
+
+        if (resByName.hasOwnProperty(name)) continue;
+        var entry = { path: entryPath, name, flags: isDirectory ? Panel.EntryFlags.Directory : 0 };
+        result.push(entry);
+        resByName[name] = entry;
+      }
+      return result;
+    };
+
+  }
+
+}
+--!>
+<!-- /src/shell/panels/panels.css
+.panels-scroll-host {
+  position: absolute;
+  left: 0; top: 0; width: 0; height: 0;
+  overflow: auto;
+  overflow-y: hidden;
+  background: black;
+  background: transparent;
+}
+
+.panels-scroll-content {
+  width: 0; height: 0;   overflow: hidden;
+}
+
+.panels-panel {
+  width: 0; height: 0;
+  overflow: auto;
+  overflow-x: hidden;
+  background: rgba(4, 12, 64, 0.95) !important;
+  background: navy;
+  color: darkcyan;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  cursor: default;
+}
+
+.panels-panel * {
+  cursor: default;
+}
+
+.panels-left-panel {
+  float: left;
+}
+
+.panels-right-panel {
+  float: right;
+}
+
+.panels-panel-page {
+  clear: both;
+}
+
+.panels-page-separator {
+  clear: both;
+}
+
+.panels-panel-column {
+  float: left;
+}
+
+.panels-entry {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.panels-entry-dir {
+  color: white;
+}
+
+.panels-panel-active .panels-entry-current {
+  background: darkcyan;
+}
+
+.panels-panel-active .panels-entry-file-current {
+  color: navy;
+}
+--!>
+<!-- /src/shell/terminal/Terminal.ts
+module terminal {
+
+  export class Terminal {
+
+    private _history: HTMLDivElement;
+    private _historyContent: HTMLDivElement;
+    private _prompt: HTMLDivElement;
+    private _input: HTMLTextAreaElement;
+
+    private _promptWidth = 0;
+    private _historyContentHeight = 0;
+    private _hostMetrics: CommanderShell.Metrics = null;
+
+    constructor(private _host: HTMLElement) {
+      this._history = <any>elem('div', { className: 'terminal-history' }, this._host);
+      this._historyContent = <any>elem('pre', {
+        className: 'terminal-history-content',
+        text: 'Hello world from mini-shell\n\nVersion 0.7m\nMay 2015\nOleg Mihailik\n\nPlease be careful.'
+      }, this._history);
+
+      this._prompt = <any>elem('div', { className: 'terminal-prompt', text: '>' }, this._host);
+
+      this._input = <any>elem('textarea', { className: 'terminal-input', autofocus: true }, this._host);
+
+      setTimeout(() => this._input.focus(), 1);
+
+    }
+
+    log(...args: any[]) {
+      return this.logArray(args);
+    }
+
+    logArray(args: any[]) {
+      var output = elem('div', this._historyContent);
+      for (var i = 0; i < args.length; i++) {
+        if (i > 0)
+          elem('span', { text: ' ' }, output);
+        if (args[i] === null) {
+          elem('span', { text: 'null', color: 'green' }, output);
+        }
+        else {
+          this._logAppendObj(args[i], <any>output, 0);
+        }
+      }
+
+      if (this._hostMetrics) {
+        this.measure();
+        this.arrange(this._hostMetrics);
+      }
+    }
+
+    hasInput() {
+      return !!this._getInput();
+    }
+
+  	private _getInput() {
+      return (this._input.value || '').replace(/[\r\n]/g, '');
+    }
+
+    private _logAppendObj(obj: any, output: HTMLDivElement, level: number) {
+      switch (typeof obj) {
+        case 'number':
+        case 'boolean':
+          elem('span', { text: obj, color: 'green' }, output);
+          break;
+
+        case 'undefined':
+          elem('span', { text: 'undefined', color: 'green', opacity: 0.5 }, output);
+          break;
+
+        case 'function':
+          var funContainer = elem('span', output);
+          var funFunction = elem('span', { text: 'function ', color: 'silver', opacity: 0.5 }, funContainer);
+          var funName = elem('span', { text: obj.name, color: 'cornflowerblue', fontWeight: 'bold' }, funContainer);
+          funContainer.title = obj;
+          break;
+
+        case 'string':
+          var strContainer = elem('span', output);
+          elem('span', { text: '"', color: 'tomato' }, strContainer);
+          elem('span', { text: obj, color: 'tomato', opacity: 0.5 }, strContainer);
+          elem('span', { text: '"', color: 'tomato' }, strContainer);
+          break;
+
+        default:
+          if (obj && obj.constructor && obj.construct && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
+            elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
+            if (obj.constructor.prototype && obj.constructor.prototype.constructor
+              && obj.constructor.prototype.constructor.name
+              && obj.constructor.prototype.constructor.name !== 'Object' && obj.constructor.prototype.constructor.name !== 'Array')
+              elem('span', { text: ':' + obj.contructor.prototype.constructor.name, color: 'cornflowerblue', opacity: 0.5 }, output);
+            elem('span', output);
+          }
+
+          if (obj && typeof obj.length === 'number' && obj.length >= 0) {
+            elem('span', { text: '[', color: 'white' }, output);
+            if (level > 1) {
+              elem('span', { text: '...', color: 'silver' }, output);
+              // TODO: handle click
+            }
+            else {
+              for (var i = 0; i < obj.length; i++) {
+                if (i > 0) elem('span', { text: ', ', color: 'gray' }, output);
+                if (typeof obj[i] !== 'undefined')
+                  this._logAppendObj(obj[i], output, level + 1);
+              }
+            }
+            elem('span', { text: ']', color: 'white' }, output);
+          }
+          else if (obj.createElement + '' === document.createElement + '' && obj.getElementById + '' === document.getElementById + '' && 'title' in obj) {
+            elem('span', { text: '#document ' + obj.title, color: 'green' }, output);
+          }
+          else if (obj.setInterval + '' === window.setInterval + '' && obj.setTimeout + '' === window.setTimeout + '' && 'location' in obj) {
+            elem('span', { text: '#window ' + obj.location, color: 'green' }, output);
+          }
+          else if (typeof obj.tagName === 'string' && obj.getElementsByTagName + '' === document.body.getElementsByTagName + '') {
+            elem('span', { text: '<' + obj.tagName + '>', color: 'green' }, output);
+          }
+          else if (obj + '' !== '[Object]') {
+            elem('span', { text: '{', color: 'cornflowerblue' }, output);
+            if (level > 1) {
+              elem('span', { text: '...', color: 'cornflowerblue', opacity: 0.5 }, output);
+              // TODO: handle click
+            }
+            else {
+              var first = true;
+              for (var k in obj) {
+                if (obj.hasOwnProperty && !obj.hasOwnProperty(k)) continue;
+                if (first) {
+                  first = false;
+                }
+                else {
+                  elem('span', { text: ', ', color: 'cornflowerblue', opacity: 0.3 }, output);
+                  first = false;
+                }
+                elem('span', { text: k, color: 'cornflowerblue', fontWeight: 'bold' }, output);
+                elem('span', { text: ': ', color: 'cornflowerblue', opacity: 0.5 }, output);
+                this._logAppendObj(obj[k], output, level + 1);
+              }
+            }
+            elem('span', { text: '}', color: 'cornflowerblue' }, output);
+          }
+          else {
+            elem('span', { text: obj, color: 'cornflowerblue' }, output);
+          }
+          break;
+      }
+    }
+
+    focus() {
+      this._input.focus();
+    }
+
+    measure() {
+      this._promptWidth = this._prompt.offsetWidth;
+      this._historyContentHeight = this._historyContent.offsetHeight;
+    }
+
+    arrange(metrics: CommanderShell.Metrics) {
+
+      this._hostMetrics = metrics;
+
+      this._history.style.width = metrics.hostWidth + 'px';
+
+      this._history.style.bottom = metrics.emHeight + 'px';
+      if (metrics.hostHeight - metrics.emHeight > this._historyContentHeight) {
+        this._history.style.height = this._historyContentHeight + 'px';
+      }
+      else {
+        this._history.style.height = (metrics.hostHeight - metrics.emHeight) + 'px';
+        this._history.scrollTop = this._historyContentHeight - (metrics.hostHeight - metrics.emHeight);
+      }
+      this._input.style.left = this._promptWidth + 'px';
+      this._input.style.width = (metrics.hostWidth - this._promptWidth) + 'px';
+    }
+
+  	clearInput() {
+      setTimeout(() => {
+        var cleanInput = this._getInput();
+        if (this._input.value !== cleanInput) {
+          this._input.value = cleanInput;
+        }
+      }, 10);
+    }
+
+    keydown(e: KeyboardEvent, cursorPath: string) {
+      if (e.keyCode === 38) {
+        // TODO history
+      }
+      else if (e.keyCode === 13) {
+        var code = this._getInput();
+
+        if (code) {
+          if (code.slice(-2) === '\r\n')
+            code = code.slice(0, code.length - 2);
+          this._input.value = '';
+          elem('div', {
+            text: code,
+            color: 'gray'
+          }, this._historyContent);
+
+          this._evalAndLogResults(code);
+          return true;
+        }
+        else {
+          return false;
+        }
+      }
+    }
+
+    private _evalAndLogResults(code: string) {
+      var result;
+      try {
+        result = (0, eval)(code);
+      }
+      catch (error) {
+        elem('div', {
+          text: error && error.stack ? error.stack : error,
+          color: 'red'
+        }, this._historyContent);
+        if (this._hostMetrics) {
+          this.measure();
+          this.arrange(this._hostMetrics);
+        }
+        return;
+      }
+
+      this.log(result);
+    }
+
+
+  }
+
+}
+--!>
+<!-- /src/shell/terminal/terminal.css
+.terminal-history {
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 100%; height: 0;
+  overflow: auto;
+}
+
+.terminal-history-content {
+  margin: 0; padding: 0;
+}
+
+.terminal-prompt {
+  position: absolute;
+  left: 0; bottom: 0;
+  height: 1em;
+}
+
+.terminal-input {
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 0; height: 1em;
+  font: inherit;
+  border: none;
+  background: transparent;
+  color: silver;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+}
+--!>
+<!-- /src/shell/CommanderShell.ts
+class CommanderShell {
+
+  private _metricElem: HTMLDivElement;
+  private _twoPanels: panels.TwoPanels;
+  private _terminal: terminal.Terminal;
+
+  private _metrics: CommanderShell.Metrics = {
+    hostWidth: 0,
+    hostHeight: 0,
+    emWidth: 0,
+    emHeight: 0
+  };
+
+  private _onsizechangedTimeout: number = 0;
+
+  constructor(private _host: HTMLElement, private _drive: persistence.Drive) {
+
+    elem(this._host, {
+      background: 'black',
+      color: 'silver'
+    });
+
+    this._metricElem = <any>elem('div', {
+      position: 'absolute',
+      opacity: 0,
+      left: '-200px', top: '-200px',
+      wdith: 'auto', height: 'auto',
+      text: 'M'
+    }, document.body);
+
+    this._terminal = new terminal.Terminal(this._host);
+    this._twoPanels = new panels.TwoPanels(this._host, '/', '/src', this._drive);
+
+    var resizeMod = require('resize');
+    resizeMod.on(winMetrics => {
+      this._metrics.hostWidth = winMetrics.windowWidth;
+      this._metrics.hostHeight = winMetrics.windowHeight;
+      this.measure();
+      this.arrange();
+    });
+
+    this._metrics.hostWidth = document.body.offsetWidth;
+    this._metrics.hostHeight = document.body.offsetHeight;
+
+    this.measure();
+    this.arrange();
+
+    elem.on(this._host, 'keydown', e => this._keydown(<any>e));
+
+    var _glob = (function() { return this; })();
+    var applyConsole = (glob) => {
+      if (glob.console) {
+        var _oldLog = glob.console.log;
+        var term = this._terminal;
+        console.log = function(...args: any[]) {
+          _oldLog.apply(glob.console, args);
+          term.logArray(args);
+        };
+      }
+      else {
+        var term = this._terminal;
+        glob.console = {
+          log: function(...args: any[]) {
+            term.logArray(args);
+          }
+        };
+      }
+    };
+
+    applyConsole(_glob);
+    applyConsole(window);
+  }
+
+  measure() {
+    this._metrics.emWidth = this._metricElem.offsetWidth;
+    this._metrics.emHeight = this._metricElem.offsetHeight;
+    this._twoPanels.measure();
+    this._terminal.measure();
+  }
+
+	arrange() {
+    this._host.style.width = this._metrics.hostWidth + 'px';
+    this._host.style.height = this._metrics.hostHeight + 'px';
+    this._twoPanels.arrange(this._metrics);
+    this._terminal.arrange(this._metrics);
+  }
+
+  private _keydown(e: KeyboardEvent) {
+    var res = this._keydownCore(e);
+    if (res) {
+      if (e.preventDefault)
+        e.preventDefault();
+    }
+    return res;
+  }
+
+  private _keydownCore(e: KeyboardEvent) {
+    if (e.keyCode === 27 && !e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      this._twoPanels.toggleVisibility();
+      return true;
+    }
+
+    if (e.keyCode === 13)
+      this._terminal.clearInput();
+
+    if ((e.keyCode === 13 && this._twoPanels.isVisible() && !this._terminal.hasInput())
+      || (e.keyCode !== 13)) {
+      if (this._twoPanels.keydown(e)) return true;
+    }
+
+    var cursorPath = this._twoPanels.cursorPath();
+
+    this._terminal.focus();
+    if (this._terminal.keydown(e, cursorPath)) return true;
+
+    if (e.keyCode === 13)
+      return this._execute(cursorPath);
+
+    //if (e.keyCode < 32 || e.keyCode > 126) {
+    //	this._terminal.log('CommanderShell::keydown ' + e.yCode);
+      //}
+  }
+
+	private _execute(cursorPath: string) {
+    var text = this._drive.read(cursorPath);
+    if (typeof text !== 'undefined' && text !== null) {
+    	this._terminal.log(text);
+      return true;
+    }
+  }
+
+}
+
+module CommanderShell {
+
+  export interface Metrics {
+    hostWidth: number;
+    hostHeight: number;
+    emWidth: number;
+    emHeight: number;
+  }
+
+}
+--!>
+<!-- /src/shell/start.ts
+declare var require;
+
+setTimeout(() => showCommander(require('drive')), 10);
+
+function showCommander(drive: persistence.Drive) {
+  document.body.style.overflow = 'hidden';
+  document.body.parentElement.style.overflow = 'hidden';
+
+  var styleText = drive.read('/shell/style.css');
+  elem('style', { text: styleText }, document.body);
+  var commander = new CommanderShell(document.body, drive);
+}
+--!>
+<!-- /src/typings/webSQL.d.ts
+declare function openDatabase(
+  name: string,
+  version: any,
+  displayName: string,
+  size: number,
+  upgrade?: DatabaseCallback): Database;
+
+interface DatabaseCallback {
+  (database: Database): void;
+}
+
+interface Database {
+  transaction(
+    callback: (transaction: SQLTransaction) => void,
+    errorCallback?: (error: SQLError) => void,
+    successCallback?: () => void);
+
+  readTransaction(
+    callback: (transaction: SQLTransaction) => void,
+    errorCallback?: (error: SQLError) => void,
+    successCallback?: () => void);
+
+  version: string;
+
+  changeVersion(
+    oldVersion: string,
+    newVersion: string,
+    callback: (transaction: SQLTransaction) => void,
+    errorCallback?: (error: SQLError) => void,
+    successCallback?: () => void);
+}
+
+interface SQLTransaction {
+  executeSql(
+    sqlStatement: string,
+    arguments?: any[],
+    callback?: (transaction: SQLTransaction, result: SQLResultSet) => void,
+    errorCallback?: (transaction: SQLTransaction, error: SQLError) => void): void;
+}
+
+interface SQLError {
+  /**
+   * UNKNOWN_ERR = 0;
+   * DATABASE_ERR = 1;
+   * VERSION_ERR = 2;
+   * TOO_LARGE_ERR = 3;
+   * QUOTA_ERR = 4;
+   * SYNTAX_ERR = 5;
+   * CONSTRAINT_ERR = 6;
+  * TIMEOUT_ERR = 7;
+   */
+  code: number;
+  message: string
+}
+
+interface SQLResultSet {
+  insertId: number;
+  rowsAffected: number;
+  rows: SQLResultSetRowList;
+}
+
+interface SQLResultSetRowList {
+  length: number;
+  item(index: number): any;
+}
+--!>
+<!-- /src/index.html
+<!doctype html>
+<title>mini shell </title>
+
+<script data-legit=mi>
+  <%=embedFile('boot/onerror.js')%>
+//# sourceURL=boot/onerror.js
+</script>
+<script data-legit=mi>
+  earlyBoot();
+  <%=embedFile('boot/base.js')%>
+  <%=embedFile('boot/earlyBoot.js')%>
+  <%=embedFile('boot/bootUI.js')%>
+//# sourceURL=/boot/base.js
+</script>
+<script data-legit=mi>
+<%=typescriptBuild('/load/*', '/persistence/*', '/boot/*', '/typings/*')%>
+//# sourceURL=/load/shellLoader.ts.js
+</script>
+
+<!-- total 56Mb, saved 25 Apr 2015 22:52:01.231 --*>
+
+<!-- /LF-file.txt
+123
+456--*>
+
+<!-- /CRLF-file [CRLF]
+123
+456--*>
+
+<!-- /CR-file [CR]
+123
+456--*>
+
+<!-- /eval-file.txt [eval]
+ "random char: " + String.fromCharCode(Math.random()*16000)+"\n"+
+ "date: "+new Date()+"\n"+
+ "location: "+location --*>
+
+<!-- /json-file.txt [json]
+"new ok \u2222 and what\r\n or \u0001?\n\n\n"--*>
+
+
+
+<!-- /shell/start.ts.js
+<%=typescriptBuild('/shell/*', '/boot/base.d.ts', '/persistence/Drive.ts')%>--*>
+
+<!-- /shell/style.css
+<%=(function() {
+	var drive = portabled.build.processTemplate.mainDrive;
+	var files = drive.files();
+	var styleText = [];
+  for (var i = 0; i < files.length; i++) {
+    if (/^\/shell\/[\s\S]*\.css$/.test(files[i]))
+      styleText.push(drive.read(files[i]));
+  }
+	return styleText.join('\n');
+
+})()%>
+--*>
+
+<%=(function() {
+
+	var drive = portabled.build.processTemplate.mainDrive;
+	var files = drive.files();
+	var fileDump = [];
+  for (var i = 0; i < files.length; i++) {
+    var content = drive.read(files[i]);
+    var decoratedContent = content.replace(/\-\-(\**)\>/g, '--*$1>');
+	  fileDump.push('<'+'!'+'-- '+'/src'+files[i]);
+    fileDump.push(decoratedContent);
+    fileDump.push('--'+'!'+'>');
+  }
+	return fileDump.join('\n');
+
+})()%>
+
+
+--!>
+<!-- /src/readme.md
+#New mini portable shell development
+--!>
