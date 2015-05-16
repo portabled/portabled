@@ -2775,6 +2775,7 @@ var terminal;
                 this._history.style.height = (metrics.hostHeight - metrics.emHeight) + 'px';
                 this._history.scrollTop = this._historyContentHeight - (metrics.hostHeight - metrics.emHeight);
             }
+            this._history.style.width = metrics.hostWidth + 'px';
             this._input.style.left = this._promptWidth + 'px';
             this._input.style.width = (metrics.hostWidth - this._promptWidth) + 'px';
         };
