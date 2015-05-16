@@ -573,16 +573,16 @@ function shellLoader(uniqueKey, document, boot) {
             }
             var lastMetrics = {};
             function global_resize_delayed() {
-                var metrics = getMetrics();
-                if (metrics.windowWidth === lastMetrics.windowWidth
-                    && metrics.windowHeight === lastMetrics.windowHeight)
-                    return;
-                lastMetrics = metrics;
                 wasResized = false;
-                for (var i = 0; i < resizeHandlers.length; i++) {
-                    var f = resizeHandlers[i];
-                    if (f)
-                        f(metrics);
+                var metrics = getMetrics();
+                if (metrics.windowWidth !== lastMetrics.windowWidth
+                    && metrics.windowHeight !== lastMetrics.windowHeight) {
+                    lastMetrics = metrics;
+                    for (var i = 0; i < resizeHandlers.length; i++) {
+                        var f = resizeHandlers[i];
+                        if (f)
+                            f(metrics);
+                    }
                 }
             }
             function getMetrics() {
@@ -1918,6 +1918,8 @@ var CommanderShell = (function () {
         this._terminal.measure();
     };
     CommanderShell.prototype.arrange = function () {
+        this._host.style.width = this._metrics.hostWidth + 'px';
+        this._host.style.height = this._metrics.hostHeight + 'px';
         this._twoPanels.arrange(this._metrics);
         this._terminal.arrange(this._metrics);
     };
@@ -2040,7 +2042,7 @@ var panels;
         };
         Panel.prototype.arrange = function (metrics) {
             this._metrics = metrics;
-            this._queueRedraw();
+            this._redrawNow();
         };
         Panel.prototype.isActive = function () {
             return this._isActive;
@@ -2628,6 +2630,7 @@ var terminal;
 (function (terminal) {
     var Terminal = (function () {
         function Terminal(_host) {
+            var _this = this;
             this._host = _host;
             this._promptWidth = 0;
             this._historyContentHeight = 0;
@@ -2639,6 +2642,7 @@ var terminal;
             }, this._history);
             this._prompt = elem('div', { className: 'terminal-prompt', text: '>' }, this._host);
             this._input = elem('textarea', { className: 'terminal-input', autofocus: true }, this._host);
+            setTimeout(function () { return _this._input.focus(); }, 1);
         }
         Terminal.prototype.log = function () {
             var args = [];
