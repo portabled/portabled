@@ -6033,6 +6033,7 @@ var panels;
                 for (var i = 0; i < this._entries.length; i++) {
                     if (this._entries[i].entryDIV === entryDIV) {
                         if (this._cursorPath === this._entries[i].path && (this._entries[i].flags & Panel.EntryFlags.Directory)) {
+                            this._cursorPath = this._path;
                             this._path = this._entries[i].path; // double click (or second click) opens directory
                         }
                         else {
@@ -9378,6 +9379,7 @@ module panels {
         for (var i = 0; i < this._entries.length; i++) {
           if (this._entries[i].entryDIV === entryDIV) {
             if (this._cursorPath ===this._entries[i].path && (this._entries[i].flags & Panel.EntryFlags.Directory)) {
+              this._cursorPath = this._path;
               this._path = this._entries[i].path; // double click (or second click) opens directory
             }
             else {
