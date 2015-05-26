@@ -1466,7 +1466,7 @@ var persistence;
                 return null;
             };
             DOMFile.prototype.read = function () {
-                // proper HTML5 has substringDate to read only a chunk
+                // proper HTML5 has substringData to read only a chunk
                 // (that saves on string memory allocations
                 // comparing to fetching the whole text including the file name)
                 var contentText = typeof this.node.substringData === 'function' ?
@@ -1809,10 +1809,6 @@ var persistence;
     function normalizePath(path) {
         if (!path)
             return '/'; // empty paths converted to root
-        while (' \n\t\r'.indexOf(path.charAt(0)) >= 0)
-            path = path.slice(1);
-        while ('\n\t\r\\'.indexOf(path.charAt(path.length - 1)) >= 0)
-            path = path.slice(0, path.length - 1);
         if (path.charAt(0) !== '/')
             path = '/' + path;
         path = path.replace(/\/\/*/g, '/'); // replacing duplicate slashes with single
@@ -1825,6 +1821,10 @@ var persistence;
 </script>
 
 <!-- total 56Mb, saved 25 Apr 2015 22:52:01.231 -->
+
+<!-- /empty/
+-->
+
 
 <!-- /LF-file.txt
 123
@@ -6847,6 +6847,1208 @@ var terminal;
 })(terminal || (terminal = {}));
 -->
 
+<!-- /shell/node.ts.js
+-->
+
+<!-- /shell/persistence.ts.js
+var persistence;
+(function (persistence) {
+    function getIndexedDB() {
+        try {
+            return typeof indexedDB === 'undefined' || typeof indexedDB.open !== 'function' ? null : indexedDB;
+        }
+        catch (error) {
+            return null;
+        }
+    }
+    var attached;
+    (function (attached) {
+        var indexedDB;
+        (function (indexedDB) {
+            indexedDB.name = 'indexedDB';
+            function detect(uniqueKey, callback) {
+                try {
+                    detectCore(uniqueKey, callback);
+                }
+                catch (error) {
+                    callback(null);
+                }
+            }
+            indexedDB.detect = detect;
+            function detectCore(uniqueKey, callback) {
+                var indexedDBInstance = getIndexedDB();
+                if (!indexedDBInstance) {
+                    callback(null);
+                    return;
+                }
+                var dbName = uniqueKey || 'portabled';
+                var openRequest = indexedDBInstance.open(dbName, 1);
+                openRequest.onerror = function (errorEvent) { return callback(null); };
+                openRequest.onupgradeneeded = createDBAndTables;
+                openRequest.onsuccess = function (event) {
+                    var db = openRequest.result;
+                    try {
+                        var transaction = db.transaction(['files', 'metadata']);
+                        // files mentioned here, but not really used to detect
+                        // broken multi-store transaction implementation in Safari
+                        transaction.onerror = function (errorEvent) { return callback(null); };
+                        var metadataStore = transaction.objectStore('metadata');
+                        var filesStore = transaction.objectStore('files');
+                        var editedUTCRequest = metadataStore.get('editedUTC');
+                    }
+                    catch (getStoreError) {
+                        callback(null);
+                        return;
+                    }
+                    if (!editedUTCRequest) {
+                        callback(null);
+                        return;
+                    }
+                    editedUTCRequest.onerror = function (errorEvent) {
+                        var detached = new IndexedDBDetached(db, null);
+                        callback(detached);
+                    };
+                    editedUTCRequest.onsuccess = function (event) {
+                        var result = editedUTCRequest.result;
+                        var detached = new IndexedDBDetached(db, result && typeof result.value === 'number' ? result.value : null);
+                        callback(detached);
+                    };
+                };
+                function createDBAndTables() {
+                    var db = openRequest.result;
+                    var filesStore = db.createObjectStore('files', { keyPath: 'path' });
+                    var metadataStore = db.createObjectStore('metadata', { keyPath: 'property' });
+                }
+            }
+            var IndexedDBDetached = (function () {
+                function IndexedDBDetached(_db, timestamp) {
+                    this._db = _db;
+                    this.timestamp = timestamp;
+                }
+                IndexedDBDetached.prototype.applyTo = function (mainDrive, callback) {
+                    var _this = this;
+                    var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
+                    var metadataStore = transaction.objectStore('metadata');
+                    var filesStore = transaction.objectStore('files');
+                    var countRequest = filesStore.count();
+                    countRequest.onerror = function (errorEvent) {
+                        console.error('Could not count files store.');
+                        callback(null);
+                    };
+                    countRequest.onsuccess = function (event) {
+                        var storeCount = countRequest.result;
+                        var cursorRequest = filesStore.openCursor();
+                        cursorRequest.onerror = function (errorEvent) { return callback(null); };
+                        // to cleanup any files which content is the same on the main drive
+                        var deleteList = [];
+                        var anyLeft = false;
+                        var processedCount = 0;
+                        cursorRequest.onsuccess = function (event) {
+                            var cursor = cursorRequest.result;
+                            if (!cursor) {
+                                // cleaning up files whose content is duplicating the main drive
+                                if (anyLeft) {
+                                    for (var i = 0; i < deleteList.length; i++) {
+                                        filesStore['delete'](deleteList[i]);
+                                    }
+                                }
+                                else {
+                                    filesStore.clear();
+                                    metadataStore.clear();
+                                }
+                                callback(new IndexedDBShadow(_this._db, _this.timestamp));
+                                return;
+                            }
+                            if (callback.progress)
+                                callback.progress(processedCount, storeCount);
+                            processedCount++;
+                            var result = cursor.value;
+                            if (result && result.path) {
+                                var existingContent = mainDrive.read(result.path);
+                                if (existingContent === result.content) {
+                                    deleteList.push(result.path);
+                                }
+                                else {
+                                    mainDrive.timestamp = _this.timestamp;
+                                    mainDrive.write(result.path, result.content);
+                                    anyLeft = true;
+                                }
+                            }
+                            cursor['continue']();
+                        }; // cursorRequest.onsuccess
+                    }; // countRequest.onsuccess
+                };
+                IndexedDBDetached.prototype.purge = function (callback) {
+                    var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
+                    var filesStore = transaction.objectStore('files');
+                    filesStore.clear();
+                    var metadataStore = transaction.objectStore('metadata');
+                    metadataStore.clear();
+                    callback(new IndexedDBShadow(this._db, -1));
+                };
+                return IndexedDBDetached;
+            })();
+            var IndexedDBShadow = (function () {
+                function IndexedDBShadow(_db, timestamp) {
+                    this._db = _db;
+                    this.timestamp = timestamp;
+                }
+                IndexedDBShadow.prototype.write = function (file, content) {
+                    var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
+                    var filesStore = transaction.objectStore('files');
+                    var metadataStore = transaction.objectStore('metadata');
+                    // no file deletion here: we need to keep account of deletions too!
+                    var fileData = {
+                        path: file,
+                        content: content,
+                        state: null
+                    };
+                    var putFile = filesStore.put(fileData);
+                    var md = {
+                        property: 'editedUTC',
+                        value: Date.now()
+                    };
+                    metadataStore.put(md);
+                };
+                return IndexedDBShadow;
+            })();
+        })(indexedDB = attached.indexedDB || (attached.indexedDB = {}));
+    })(attached = persistence.attached || (persistence.attached = {}));
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    function getLocalStorage() {
+        return typeof localStorage === 'undefined' || typeof localStorage.length !== 'number' ? null : localStorage;
+    }
+    // is it OK&
+    var attached;
+    (function (attached) {
+        var localStorage;
+        (function (localStorage) {
+            localStorage.name = 'localStorage';
+            function detect(uniqueKey, callback) {
+                var localStorageInstance = getLocalStorage();
+                if (!localStorageInstance) {
+                    callback(null);
+                    return;
+                }
+                var access = new LocalStorageAccess(localStorageInstance, uniqueKey);
+                var dt = new LocalStorageDetached(access);
+                callback(dt);
+            }
+            localStorage.detect = detect;
+            var LocalStorageAccess = (function () {
+                function LocalStorageAccess(_localStorage, _prefix) {
+                    this._localStorage = _localStorage;
+                    this._prefix = _prefix;
+                    this._cache = {};
+                }
+                LocalStorageAccess.prototype.get = function (key) {
+                    var k = this._expandKey(key);
+                    var r = this._localStorage.getItem(k);
+                    return r;
+                };
+                LocalStorageAccess.prototype.set = function (key, value) {
+                    var k = this._expandKey(key);
+                    return this._localStorage.setItem(k, value);
+                };
+                LocalStorageAccess.prototype.remove = function (key) {
+                    var k = this._expandKey(key);
+                    return this._localStorage.removeItem(k);
+                };
+                LocalStorageAccess.prototype.keys = function () {
+                    var result = [];
+                    var len = this._localStorage.length;
+                    for (var i = 0; i < len; i++) {
+                        var str = this._localStorage.key(i);
+                        if (str.length > this._prefix.length && str.slice(0, this._prefix.length) === this._prefix)
+                            result.push(str.slice(this._prefix.length));
+                    }
+                    return result;
+                };
+                LocalStorageAccess.prototype._expandKey = function (key) {
+                    var k;
+                    if (!key) {
+                        k = this._prefix;
+                    }
+                    else {
+                        k = this._cache[key];
+                        if (!k)
+                            this._cache[key] = k = this._prefix + key;
+                    }
+                    return k;
+                };
+                return LocalStorageAccess;
+            })();
+            var LocalStorageDetached = (function () {
+                function LocalStorageDetached(_access) {
+                    this._access = _access;
+                    this.timestamp = 0;
+                    var timestampStr = this._access.get('*timestamp');
+                    if (timestampStr && timestampStr.charAt(0) >= '0' && timestampStr.charAt(0) <= '9') {
+                        try {
+                            this.timestamp = parseInt(timestampStr);
+                        }
+                        catch (parseError) {
+                        }
+                    }
+                }
+                LocalStorageDetached.prototype.applyTo = function (mainDrive, callback) {
+                    var keys = this._access.keys();
+                    for (var i = 0; i < keys.length; i++) {
+                        var k = keys[i];
+                        if (k.charAt(0) === '/') {
+                            var value = this._access.get(k);
+                            mainDrive.write(k, value);
+                        }
+                    }
+                    var shadow = new LocalStorageShadow(this._access, mainDrive.timestamp);
+                    callback(shadow);
+                };
+                LocalStorageDetached.prototype.purge = function (callback) {
+                    var keys = this._access.keys();
+                    for (var i = 0; i < keys.length; i++) {
+                        var k = keys[i];
+                        if (k.charAt(0) === '/') {
+                            var value = this._access.remove(k);
+                        }
+                    }
+                    var shadow = new LocalStorageShadow(this._access, this.timestamp);
+                    callback(shadow);
+                };
+                return LocalStorageDetached;
+            })();
+            var LocalStorageShadow = (function () {
+                function LocalStorageShadow(_access, timestamp) {
+                    this._access = _access;
+                    this.timestamp = timestamp;
+                }
+                LocalStorageShadow.prototype.write = function (file, content) {
+                    this._access.set(file, content);
+                    this._access.set('*timestamp', this.timestamp);
+                };
+                return LocalStorageShadow;
+            })();
+        })(localStorage = attached.localStorage || (attached.localStorage = {}));
+    })(attached = persistence.attached || (persistence.attached = {}));
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    function getOpenDatabase() {
+        return typeof openDatabase !== 'function' ? null : openDatabase;
+    }
+    var attached;
+    (function (attached) {
+        var webSQL;
+        (function (webSQL) {
+            webSQL.name = 'webSQL';
+            function detect(uniqueKey, callback) {
+                var openDatabaseInstance = getOpenDatabase();
+                if (!openDatabaseInstance) {
+                    callback(null);
+                    return;
+                }
+                var dbName = uniqueKey || 'portabled';
+                var db = openDatabase(dbName, 1, 'Portabled virtual filesystem data', 1024 * 1024); // size
+                // upgradeCallback?
+                db.readTransaction(function (transaction) {
+                    transaction.executeSql('SELECT value from "*metadata" WHERE name=\'editedUTC\'', [], function (transaction, result) {
+                        var editedValue = null;
+                        if (result.rows && result.rows.length === 1) {
+                            var editedValueStr = result.rows.item(0).value;
+                            if (typeof editedValueStr === 'string') {
+                                try {
+                                    editedValue = parseInt(editedValueStr);
+                                }
+                                catch (error) {
+                                }
+                            }
+                            else if (typeof editedValueStr === 'number') {
+                                editedValue = editedValueStr;
+                            }
+                        }
+                        callback(new WebSQLDetached(db, editedValue || 0, true));
+                    }, function (transaction, sqlError) {
+                        // no data
+                        callback(new WebSQLDetached(db, 0, false));
+                    });
+                }, function (sqlError) {
+                    // failed to load
+                    callback(null);
+                });
+            }
+            webSQL.detect = detect;
+            var WebSQLDetached = (function () {
+                function WebSQLDetached(_db, timestamp, _metadataTableIsValid) {
+                    this._db = _db;
+                    this.timestamp = timestamp;
+                    this._metadataTableIsValid = _metadataTableIsValid;
+                }
+                WebSQLDetached.prototype.applyTo = function (mainDrive, callback) {
+                    var _this = this;
+                    this._db.readTransaction(function (transaction) { return listAllTables(transaction, function (tables) {
+                        var ftab = getFilenamesFromTables(tables);
+                        _this._applyToWithFiles(transaction, ftab, mainDrive, callback);
+                    }, function (sqlError) {
+                        reportSQLError('Failed to list tables for the webSQL database.', sqlError);
+                        callback(new WebSQLShadow(_this._db, _this.timestamp, _this._metadataTableIsValid));
+                    }); }, function (sqlError) {
+                        reportSQLError('Failed to open read transaction for the webSQL database.', sqlError);
+                        callback(new WebSQLShadow(_this._db, _this.timestamp, _this._metadataTableIsValid));
+                    });
+                };
+                WebSQLDetached.prototype.purge = function (callback) {
+                    var _this = this;
+                    this._db.transaction(function (transaction) { return listAllTables(transaction, function (tables) {
+                        _this._purgeWithTables(transaction, tables, callback);
+                    }, function (sqlError) {
+                        reportSQLError('Failed to list tables for the webSQL database.', sqlError);
+                        callback(new WebSQLShadow(_this._db, 0, false));
+                    }); }, function (sqlError) {
+                        reportSQLError('Failed to open read-write transaction for the webSQL database.', sqlError);
+                        callback(new WebSQLShadow(_this._db, 0, false));
+                    });
+                };
+                WebSQLDetached.prototype._applyToWithFiles = function (transaction, ftab, mainDrive, callback) {
+                    var _this = this;
+                    if (!ftab.length) {
+                        callback(new WebSQLShadow(this._db, this.timestamp, this._metadataTableIsValid));
+                        return;
+                    }
+                    var reportedFileCount = 0;
+                    var completeOne = function () {
+                        reportedFileCount++;
+                        if (reportedFileCount === ftab.length) {
+                            callback(new WebSQLShadow(_this._db, _this.timestamp, _this._metadataTableIsValid));
+                        }
+                    };
+                    var applyFile = function (file, table) {
+                        transaction.executeSql('SELECT * FROM "' + table + '"', [], function (transaction, result) {
+                            if (result.rows.length) {
+                                var row = result.rows.item(0);
+                                if (row.value === null)
+                                    mainDrive.write(file, null);
+                                else if (typeof row.value === 'string')
+                                    mainDrive.write(file, fromSqlText(row.value));
+                            }
+                            completeOne();
+                        }, function (sqlError) {
+                            completeOne();
+                        });
+                    };
+                    for (var i = 0; i < ftab.length; i++) {
+                        applyFile(ftab[i].file, ftab[i].table);
+                    }
+                };
+                WebSQLDetached.prototype._purgeWithTables = function (transaction, tables, callback) {
+                    var _this = this;
+                    if (!tables.length) {
+                        callback(new WebSQLShadow(this._db, 0, false));
+                        return;
+                    }
+                    var droppedCount = 0;
+                    var completeOne = function () {
+                        droppedCount++;
+                        if (droppedCount === tables.length) {
+                            callback(new WebSQLShadow(_this._db, 0, false));
+                        }
+                    };
+                    for (var i = 0; i < tables.length; i++) {
+                        transaction.executeSql('DROP TABLE "' + tables[i] + '"', [], function (transaction, result) {
+                            completeOne();
+                        }, function (transaction, sqlError) {
+                            reportSQLError('Failed to drop table for the webSQL database.', sqlError);
+                            completeOne();
+                        });
+                    }
+                };
+                return WebSQLDetached;
+            })();
+            var WebSQLShadow = (function () {
+                function WebSQLShadow(_db, timestamp, _metadataTableIsValid) {
+                    var _this = this;
+                    this._db = _db;
+                    this.timestamp = timestamp;
+                    this._metadataTableIsValid = _metadataTableIsValid;
+                    this._cachedUpdateStatementsByFile = {};
+                    this._closures = {
+                        updateMetadata: function (transaction) { return _this._updateMetadata(transaction); }
+                    };
+                }
+                WebSQLShadow.prototype.write = function (file, content) {
+                    if (content || typeof content === 'string') {
+                        this._updateCore(file, content);
+                    }
+                    else {
+                        this._dropFileTable(file);
+                    }
+                };
+                WebSQLShadow.prototype._updateCore = function (file, content) {
+                    var _this = this;
+                    var updateSQL = this._cachedUpdateStatementsByFile[file];
+                    if (!updateSQL) {
+                        var tableName = mangleDatabaseObjectName(file);
+                        updateSQL = this._createUpdateStatement(file, tableName);
+                    }
+                    this._db.transaction(function (transaction) {
+                        transaction.executeSql(updateSQL, ['content', content], _this._closures.updateMetadata, function (transaction, sqlError) { return _this._createTableAndUpdate(transaction, file, tableName, updateSQL, content); });
+                    }, function (sqlError) {
+                        reportSQLError('Transaction failure updating file "' + file + '".', sqlError);
+                    });
+                };
+                WebSQLShadow.prototype._createTableAndUpdate = function (transaction, file, tableName, updateSQL, content) {
+                    var _this = this;
+                    if (!tableName)
+                        tableName = mangleDatabaseObjectName(file);
+                    transaction.executeSql('CREATE TABLE "' + tableName + '" (name PRIMARY KEY, value)', [], function (transaction, result) {
+                        transaction.executeSql(updateSQL, ['content', content], _this._closures.updateMetadata, function (transaction, sqlError) {
+                            reportSQLError('Failed to update table "' + tableName + '" for file "' + file + '" after creation.', sqlError);
+                        });
+                    }, function (transaction, sqlError) {
+                        reportSQLError('Failed to create a table "' + tableName + '" for file "' + file + '".', sqlError);
+                    });
+                };
+                WebSQLShadow.prototype._dropFileTable = function (file) {
+                    var _this = this;
+                    var tableName = mangleDatabaseObjectName(file);
+                    this._db.transaction(function (transaction) {
+                        transaction.executeSql('DROP TABLE "' + tableName + '"', [], _this._closures.updateMetadata, function (transaction, sqlError) {
+                            reportSQLError('Failed to drop table "' + tableName + '" for file "' + file + '".', sqlError);
+                        });
+                    }, function (sqlError) {
+                        reportSQLError('Transaction failure dropping table "' + tableName + '" for file "' + file + '".', sqlError);
+                    });
+                };
+                WebSQLShadow.prototype._updateMetadata = function (transaction) {
+                    var updateMetadataSQL = 'INSERT OR REPLACE INTO "*metadata" VALUES (?,?)';
+                    transaction.executeSql(updateMetadataSQL, ['editedUTC', this.timestamp], function (transaction, result) { }, function (transaction, error) {
+                        transaction.executeSql('CREATE TABLE "*metadata" (name PRIMARY KEY, value)', [], function (transaction, result) {
+                            transaction.executeSql(updateMetadataSQL, [], function () { }, function () { });
+                        }, function (transaction, sqlError) {
+                            reportSQLError('Failed to update metadata table after creation.', sqlError);
+                        });
+                    });
+                };
+                WebSQLShadow.prototype._createUpdateStatement = function (file, tableName) {
+                    return this._cachedUpdateStatementsByFile[file] =
+                        'INSERT OR REPLACE INTO "' + tableName + '" VALUES (?,?)';
+                };
+                return WebSQLShadow;
+            })();
+            function mangleDatabaseObjectName(name) {
+                // no need to polyfill btoa, if webSQL exists
+                if (name.toLowerCase() === name)
+                    return name;
+                else
+                    return '=' + btoa(name);
+            }
+            function unmangleDatabaseObjectName(name) {
+                if (!name || name.charAt(0) === '*')
+                    return null;
+                if (name.charAt(0) !== '=')
+                    return name;
+                try {
+                    return atob(name.slice(1));
+                }
+                catch (error) {
+                    return name;
+                }
+            }
+            function listAllTables(transaction, callback, errorCallback) {
+                transaction.executeSql('SELECT tbl_name  from sqlite_master WHERE type=\'table\'', [], function (transaction, result) {
+                    var tables = [];
+                    for (var i = 0; i < result.rows.length; i++) {
+                        var row = result.rows.item(i);
+                        var table = row.tbl_name;
+                        if (!table || (table[0] !== '*' && table.charAt(0) !== '=' && table.charAt(0) !== '/'))
+                            continue;
+                        tables.push(row.tbl_name);
+                    }
+                    callback(tables);
+                }, function (transaction, sqlError) { return errorCallback(sqlError); });
+            }
+            webSQL.listAllTables = listAllTables;
+            function getFilenamesFromTables(tables) {
+                var filenames = [];
+                for (var i = 0; i < tables.length; i++) {
+                    var file = unmangleDatabaseObjectName(tables[i]);
+                    if (file)
+                        filenames.push({ table: tables[i], file: file });
+                }
+                return filenames;
+            }
+            function toSqlText(text) {
+                if (text.indexOf('\u00FF') < 0 && text.indexOf('\u0000') < 0)
+                    return text;
+                return text.replace(/\u00FF/g, '\u00FFf').replace(/\u0000/g, '\u00FF0');
+            }
+            function fromSqlText(sqlText) {
+                if (sqlText.indexOf('\u00FF') < 0 && sqlText.indexOf('\u0000') < 0)
+                    return sqlText;
+                return sqlText.replace(/\u00FFf/g, '\u00FF').replace(/\u00FF0/g, '\u0000');
+            }
+            function reportSQLError(message, sqlError) {
+                if (typeof console !== 'undefined' && typeof console.error === 'function') {
+                    if (sqlError)
+                        console.error(message, sqlError);
+                    else
+                        console.error(sqlError);
+                }
+            }
+        })(webSQL = attached.webSQL || (attached.webSQL = {}));
+    })(attached = persistence.attached || (persistence.attached = {}));
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    function bestEncode(content, escapePath) {
+        if (content.length > 1024 * 16) {
+        }
+        if (typeof content !== 'string')
+            return { content: encodeArrayOrSimilarAsJSON(content), encoding: 'json' };
+        var needsEscaping;
+        if (escapePath) {
+            // zero-char, newlines, leading/trailing spaces, quote and apostrophe
+            needsEscaping = /\u0000|\r|\n|^\s|\s$|\"|\'/.test(content);
+        }
+        else {
+            needsEscaping = /\u0000|\r/.test(content);
+        }
+        if (needsEscaping) {
+            // ZERO character is officially unsafe in HTML,
+            // CR is contentious in IE (which converts any CR or LF into CRLF)
+            return { content: encodeUnusualStringAsJSON(content), encoding: 'json' };
+        }
+        else {
+            return { content: content, encoding: 'LF' };
+        }
+    }
+    persistence.bestEncode = bestEncode;
+    function encodeUnusualStringAsJSON(content) {
+        if (typeof JSON !== 'undefined' && typeof JSON.stringify === 'function') {
+            var simpleJSON = JSON.stringify(content);
+            var sanitizedJSON = simpleJSON.
+                replace(/\u0000/g, '\\u0000').
+                replace(/\r/g, '\\r').
+                replace(/\n/g, '\\n');
+            return sanitizedJSON;
+        }
+        else {
+            var result = content.replace(/\"\u0000|\u0001|\u0002|\u0003|\u0004|\u0005|\u0006|\u0007|\u0008|\u0009|\u00010|\u00011|\u00012|\u00013|\u00014|\u00015|\u0016|\u0017|\u0018|\u0019|\u0020|\u0021|\u0022|\u0023|\u0024|\u0025|\u0026|\u0027|\u0028|\u0029|\u0030|\u0031/g, function (chr) {
+                return chr === '\t' ? '\\t' :
+                    chr === '\r' ? '\\r' :
+                        chr === '\n' ? '\\n' :
+                            chr === '\"' ? '\\"' :
+                                chr < '\u0010' ? '\\u000' + chr.charCodeAt(0).toString(16) :
+                                    '\\u00' + chr.charCodeAt(0).toString(16);
+            });
+            return result;
+        }
+    }
+    function encodeArrayOrSimilarAsJSON(content) {
+        var type = content instanceof Array ? null : content.constructor.name || content.type;
+        if (typeof JSON !== 'undefined' && typeof JSON.stringify === 'function') {
+            if (type) {
+                var wrapped = { type: type, content: content };
+                var wrappedJSON = JSON.stringify(wrapped);
+                return wrappedJSON;
+            }
+            else {
+                var contentJSON = JSON.stringify(content);
+                return contentJSON;
+            }
+        }
+        else {
+            var jsonArr = [];
+            if (type) {
+                jsonArr.push('{"type": "');
+                jsonArr.push(content.type || content.prototype.constructor.name);
+                jsonArr.push('", "content": [');
+            }
+            else {
+                jsonArr.push('[');
+            }
+            for (var i = 0; i < content.length; i++) {
+                if (i)
+                    jsonArr.push(',');
+                jsonArr.push(content[i]);
+            }
+            if (type)
+                jsonArr.push(']}');
+            else
+                jsonArr.push(']');
+            return jsonArr.join('');
+        }
+    }
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    // TODO: pass in progress callback
+    function bootMount(uniqueKey, document) {
+        var continueParse;
+        var ondomdriveloaded;
+        var domDriveLoaded;
+        var storedFinishCallback;
+        persistence.mountDrive(function (callback) {
+            if (domDriveLoaded)
+                callback(domDriveLoaded);
+            else
+                ondomdriveloaded = callback;
+        }, uniqueKey, [persistence.attached.indexedDB, persistence.attached.webSQL, persistence.attached.localStorage], function (mountedDrive) {
+            storedFinishCallback(mountedDrive);
+        });
+        return continueLoading();
+        function continueLoading() {
+            continueDOMLoading();
+            // TODO: record progress
+            return { continueLoading: continueLoading, finishLoading: finishLoading };
+        }
+        function finishLoading(finishCallback) {
+            storedFinishCallback = finishCallback;
+            continueDOMLoading();
+            domDriveLoaded = continueParse.finishParsing();
+            if (ondomdriveloaded) {
+                ondomdriveloaded(domDriveLoaded);
+            }
+        }
+        function continueDOMLoading() {
+            continueParse = continueParse ? continueParse.continueParsing() : persistence.dom.parseDOMStorage(document);
+        }
+    }
+    persistence.bootMount = bootMount;
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    var dom;
+    (function (dom) {
+        var CommentHeader = (function () {
+            function CommentHeader(node) {
+                this.node = node;
+                var headerLine;
+                var content;
+                if (typeof node.substringData === 'function'
+                    && typeof node.length === 'number') {
+                    var chunkSize = 128;
+                    if (node.length >= chunkSize) {
+                        // TODO: cut chunks off the start and look for newlines
+                        var headerChunks = [];
+                        while (headerChunks.length * chunkSize < node.length) {
+                            var nextChunk = node.substringData(headerChunks.length * chunkSize, chunkSize);
+                            var posEOL = nextChunk.search(/\r|\n/);
+                            if (posEOL < 0) {
+                                headerChunks.push(nextChunk);
+                                continue;
+                            }
+                            this.header = headerChunks.join('') + nextChunk.slice(0, posEOL);
+                            this.contentOffset = this.header.length + 1; // if header is separated by a single CR or LF
+                            if (posEOL === nextChunk.length - 1) {
+                                if (nextChunk.charAt(nextChunk.length - 1) === '\r'
+                                    && node.substringData((headerChunks.length + 1) * chunkSize, 1) === '\n')
+                                    this.contentOffset++;
+                            }
+                            else if (nextChunk.slice(posEOL, posEOL + 2) === '\r\n') {
+                                this.contentOffset++;
+                            }
+                            this.contentLength = node.length - this.contentOffset;
+                            return;
+                        }
+                        this.header = headerChunks.join('');
+                        this.contentOffset = this.header.length;
+                        this.contentLength = node.length - content.length;
+                        return;
+                    }
+                }
+                var wholeCommentText = node.nodeValue;
+                var posEOL = wholeCommentText.search(/\r|\n/);
+                if (posEOL < 0) {
+                    this.header = wholeCommentText;
+                    this.contentOffset = wholeCommentText.length;
+                    this.contentLength = wholeCommentText.length - this.contentOffset;
+                    return;
+                }
+                this.contentOffset = wholeCommentText.slice(posEOL, posEOL + 2) === '\r\n' ?
+                    posEOL + 2 :
+                    posEOL + 1; // ends with singular CR or LF
+                this.header = wholeCommentText.slice(0, posEOL),
+                    this.contentLength = wholeCommentText.length - this.contentOffset;
+            }
+            return CommentHeader;
+        })();
+        dom.CommentHeader = CommentHeader;
+    })(dom = persistence.dom || (persistence.dom = {}));
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    var dom;
+    (function (dom) {
+        var DOMDrive = (function () {
+            function DOMDrive(_totals, files, _document) {
+                this._totals = _totals;
+                this._document = _document;
+                this._byPath = {};
+                this.timestamp = this._totals ? this._totals.timestamp : 0;
+                for (var i = 0; i < files.length; i++) {
+                    this._byPath[files[i].path] = files[i];
+                }
+            }
+            DOMDrive.prototype.files = function () {
+                if (typeof Object.keys === 'string') {
+                    var result = Object.keys(this._byPath);
+                }
+                else {
+                    var result = [];
+                    for (var k in this._byPath)
+                        if (this._byPath.hasOwnProperty(k)) {
+                            result.push(k);
+                        }
+                }
+                result.sort();
+                return result;
+            };
+            DOMDrive.prototype.read = function (file) {
+                var file = persistence.normalizePath(file);
+                var f = this._byPath[file];
+                if (!f)
+                    return null;
+                else
+                    return f.read();
+            };
+            DOMDrive.prototype.write = function (file, content) {
+                var totalDelta = 0;
+                var file = persistence.normalizePath(file);
+                var f = this._byPath[file];
+                if (content === null) {
+                    // removal
+                    if (f) {
+                        totalDelta -= f.contentLength;
+                        f.node.parentElement.removeChild(f.node);
+                        delete this._byPath[file];
+                    }
+                }
+                else {
+                    // addition
+                    if (f) {
+                        var lengthBefore = f.contentLength;
+                        f.write(content);
+                        totalDelta += f.contentLength - lengthBefore;
+                    }
+                    else {
+                        var comment = document.createComment('');
+                        var f = new dom.DOMFile(comment, file, null, 0, 0);
+                        f.write(content);
+                        this._document.body.appendChild(f.node);
+                        totalDelta += f.contentLength;
+                    }
+                }
+                this._totals.timestamp = this.timestamp;
+                this._totals.updateNode();
+            };
+            return DOMDrive;
+        })();
+        dom.DOMDrive = DOMDrive;
+    })(dom = persistence.dom || (persistence.dom = {}));
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    var dom;
+    (function (dom) {
+        var DOMFile = (function () {
+            function DOMFile(node, path, _encoding, _contentOffset, contentLength) {
+                this.node = node;
+                this.path = path;
+                this._encoding = _encoding;
+                this._contentOffset = _contentOffset;
+                this.contentLength = contentLength;
+                this._encodedPath = null;
+            }
+            DOMFile.tryParse = function (cmheader) {
+                //    /file/path/continue
+                //    "/file/path/continue"
+                //    /file/path/continue   [encoding]
+                var parseFmt = /^\s*((\/|\"\/)(\s|\S)*[^\]])\s*(\[((\s|\S)*)\])?\s*$/;
+                var parsed = parseFmt.exec(cmheader.header);
+                if (!parsed)
+                    return null; // does not match the format
+                var filePath = parsed[1];
+                var encodingName = parsed[5];
+                if (filePath.charAt(0) === '"') {
+                    if (filePath.charAt(filePath.length - 1) !== '"')
+                        return null; // unpaired leading quote
+                    try {
+                        if (typeof JSON !== 'undefined' && typeof JSON.parse === 'function')
+                            filePath = JSON.parse(filePath);
+                        else
+                            filePath = eval(filePath); // security doesn't seem to be compromised, input is coming from the same file
+                    }
+                    catch (parseError) {
+                        return null; // quoted path but wrong format (JSON expected)
+                    }
+                }
+                else {
+                    if (encodingName) {
+                        // regex above won't strip trailing whitespace from filePath if encoding is specified
+                        // (because whitespace matches 'non-bracket' class too)
+                        filePath = filePath.slice(0, filePath.search(/\S(\s*)$/) + 1);
+                    }
+                }
+                var encoding = persistence.encodings[encodingName || 'LF'];
+                // invalid encoding considered a bogus comment, skipped
+                if (encoding)
+                    return new DOMFile(cmheader.node, filePath, encoding, cmheader.contentOffset, cmheader.contentLength);
+                return null;
+            };
+            DOMFile.prototype.read = function () {
+                // proper HTML5 has substringData to read only a chunk
+                // (that saves on string memory allocations
+                // comparing to fetching the whole text including the file name)
+                var contentText = typeof this.node.substringData === 'function' ?
+                    this.node.substringData(this._contentOffset, 1000000000) :
+                    this.node.nodeValue.slice(this._contentOffset);
+                // XML end-comment is escaped when stored in DOM,
+                // unescape it back
+                var restoredText = contentText.replace(/\-\-\*(\**)\>/g, '--*$1>');
+                // decode
+                var decodedText = this._encoding(restoredText);
+                // update just in case it's been off
+                this.contentLength = decodedText.length;
+                return decodedText;
+            };
+            DOMFile.prototype.write = function (content) {
+                var encoded = persistence.bestEncode(content);
+                var protectedText = encoded.content.replace(/\-\-(\**)\>/g, '--*$1>');
+                if (!this._encodedPath) {
+                    // most cases path is path,
+                    // but if enything is weird, it's going to be quoted
+                    // (actually encoded with JSON format)
+                    var encp = persistence.bestEncode(this.path, true /*escapePath*/);
+                    this._encodedPath = encp.content;
+                }
+                var leadText = ' ' + this._encodedPath + (encoded.encoding === 'LF' ? '' : ' [' + encoded.encoding + ']') + '\n';
+                this.node.nodeValue = leadText + encoded.content;
+                this.contentLength = content.length;
+            };
+            return DOMFile;
+        })();
+        dom.DOMFile = DOMFile;
+    })(dom = persistence.dom || (persistence.dom = {}));
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    var dom;
+    (function (dom) {
+        var monthsPrettyCase = ('Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec').split('|');
+        var monthsUpperCase = ('Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec').toUpperCase().split('|');
+        var DOMTotals = (function () {
+            function DOMTotals(timestamp, totalSize, _node) {
+                this.timestamp = timestamp;
+                this.totalSize = totalSize;
+                this._node = _node;
+            }
+            DOMTotals.tryParse = function (cmheader) {
+                // TODO: preserve unknowns when parsing
+                var parts = cmheader.header.split(',');
+                var anythingParsed = false;
+                var totalSize = 0;
+                var timestamp = 0;
+                for (var i = 0; i < parts.length; i++) {
+                    // total 234Kb
+                    // total 23
+                    // total 6Mb
+                    var totalFmt = /^\s*total\s+(\d*)\s*([KkMm])?b?\s*$/;
+                    var totalMatch = totalFmt.exec(parts[i]);
+                    if (totalMatch) {
+                        try {
+                            var total = parseInt(totalMatch[1]);
+                            if ((totalMatch[2] + '').toUpperCase() === 'K')
+                                total *= 1024;
+                            else if ((totalMatch[2] + '').toUpperCase() === 'M')
+                                total *= 1024 * 1024;
+                            totalSize = total;
+                            anythingParsed = true;
+                        }
+                        catch (totalParseError) { }
+                        continue;
+                    }
+                    var savedFmt = /^\s*saved\s+(\d+)\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d+)\s+(\d+)\:(\d+)(\:(\d+(\.(\d+))?))\s*(GMT\s*[\-\+]?\d+\:?\d*)?\s*$/i;
+                    var savedMatch = savedFmt.exec(parts[i]);
+                    if (savedMatch) {
+                        // 25 Apr 2015 22:52:01.231
+                        try {
+                            var savedDay = parseInt(savedMatch[1]);
+                            var savedMonth = monthsUpperCase.indexOf(savedMatch[2].toUpperCase());
+                            var savedYear = parseInt(savedMatch[3]);
+                            if (savedYear < 100)
+                                savedYear += 2000; // no 19xx notation anymore :-(
+                            var savedHour = parseInt(savedMatch[4]);
+                            var savedMinute = parseInt(savedMatch[5]);
+                            var savedSecond = savedMatch[7] ? parseFloat(savedMatch[7]) : 0;
+                            timestamp = new Date(savedYear, savedMonth, savedDay, savedHour, savedMinute, savedSecond | 0).valueOf();
+                            timestamp += (savedSecond - (savedSecond | 0)) * 1000; // milliseconds
+                            var savedGMTStr = savedMatch[10];
+                            if (savedGMTStr) {
+                                var gmtColonPos = savedGMTStr.indexOf(':');
+                                if (gmtColonPos > 0) {
+                                    var gmtH = parseInt(savedGMTStr.slice(0, gmtColonPos));
+                                    timestamp += gmtH * 60 /*min*/ * 60 /*sec*/ * 1000 /*msec*/;
+                                    var gmtM = parseInt(savedGMTStr.slice(gmtColonPos + 1));
+                                    timestamp += gmtM * 60 /*sec*/ * 1000 /*msec*/;
+                                }
+                            }
+                            anythingParsed = true;
+                        }
+                        catch (savedParseError) { }
+                    }
+                }
+                if (anythingParsed)
+                    return new DOMTotals(timestamp, totalSize, cmheader.node);
+                else
+                    return null;
+            };
+            DOMTotals.prototype.updateNode = function () {
+                // TODO: update the node content
+                // total 4Kb, saved 25 Apr 2015 22:52:01.231
+                var newTotals = 'total ' + (this.totalSize < 1024 * 2 ? this.totalSize + '' :
+                    this.totalSize < 1024 * 1024 * 2 ? ((this.totalSize / 1024) | 0) + 'Kb' :
+                        ((this.totalSize / (1024 * 1024)) | 0) + 'Mb') + ', ' +
+                    'saved ';
+                var saveDate = new Date(this.timestamp);
+                newTotals +=
+                    saveDate.getDate() + ' ' +
+                        monthsPrettyCase[saveDate.getMonth()] + ' ' +
+                        saveDate.getFullYear() + ' ' +
+                        num2(saveDate.getHours()) + ':' +
+                        num2(saveDate.getMinutes()) + ':' +
+                        num2(saveDate.getSeconds()) + '.' +
+                        this.timestamp.toString().slice(-3);
+                var saveDateLocalStr = saveDate.toString();
+                var gmtMatch = (/(GMT\s*[\-\+]\d+(\:\d+)?)/i).exec(saveDateLocalStr);
+                if (gmtMatch)
+                    newTotals += ' ' + gmtMatch[1];
+                this._node.nodeValue = newTotals;
+                function num2(n) {
+                    return n <= 9 ? '0' + n : '' + n;
+                }
+            };
+            return DOMTotals;
+        })();
+        dom.DOMTotals = DOMTotals;
+    })(dom = persistence.dom || (persistence.dom = {}));
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    var dom;
+    (function (dom) {
+        function parseDOMStorage(document) {
+            var loadedFiles = [];
+            var loadedTotals;
+            var lastNode;
+            var loadedSize = 0;
+            return continueParsing();
+            function continueParsing() {
+                continueParsingDOM(false);
+                return {
+                    continueParsing: continueParsing,
+                    finishParsing: finishParsing,
+                    loadedSize: loadedSize,
+                    totalSize: loadedTotals ? loadedTotals.totalSize : 0,
+                    loadedFileCount: loadedFiles.length
+                };
+            }
+            function finishParsing() {
+                continueParsingDOM(true);
+                if (loadedTotals) {
+                    loadedTotals.totalSize = loadedSize;
+                    loadedTotals.updateNode();
+                }
+                var drive = new dom.DOMDrive(loadedTotals, loadedFiles, document);
+                return drive;
+            }
+            function continueParsingDOM(finish) {
+                if (document.body) {
+                    if (!lastNode)
+                        lastNode = document.body.firstChild;
+                    while (true) {
+                        if (!lastNode)
+                            return;
+                        else if (!finish && lastNode == document.body.lastChild)
+                            return;
+                        if (lastNode.nodeType === 8) {
+                            processNode(lastNode);
+                        }
+                        lastNode = lastNode.nextSibling;
+                    }
+                }
+            }
+            function processNode(node) {
+                var cmheader = new dom.CommentHeader(node);
+                var file = dom.DOMFile.tryParse(cmheader);
+                if (file) {
+                    loadedFiles.push(file);
+                    loadedSize += file.contentLength;
+                    return true;
+                }
+                var totals = dom.DOMTotals.tryParse(cmheader);
+                if (totals)
+                    loadedTotals = totals;
+            }
+        }
+        dom.parseDOMStorage = parseDOMStorage;
+    })(dom = persistence.dom || (persistence.dom = {}));
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    var encodings;
+    (function (encodings) {
+        function CR(text) {
+            return text.
+                replace(/\r\n|\n/g, '\r').
+                replace(/\-\-\*(\**)\>/g, '--$1>');
+        }
+        encodings.CR = CR;
+    })(encodings = persistence.encodings || (persistence.encodings = {}));
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    var encodings;
+    (function (encodings) {
+        function CRLF(text) {
+            return text.
+                replace(/\r|\n/g, '\r\n').
+                replace(/\-\-\*(\**)\>/g, '--$1>');
+        }
+        encodings.CRLF = CRLF;
+    })(encodings = persistence.encodings || (persistence.encodings = {}));
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    var encodings;
+    (function (encodings) {
+        function LF(text) {
+            return text.
+                replace(/\r\n|\r/g, '\n').
+                replace(/\-\-\*(\**)\>/g, '--$1>');
+        }
+        encodings.LF = LF;
+    })(encodings = persistence.encodings || (persistence.encodings = {}));
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    var encodings;
+    (function (encodings) {
+        function base64(text) {
+            // TODO: convert from base64 to text
+            // TODO: invent a prefix to signify binary data
+            throw new Error('Base64 encoding is not implemented yet.');
+        }
+        encodings.base64 = base64;
+    })(encodings = persistence.encodings || (persistence.encodings = {}));
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    var encodings;
+    (function (encodings) {
+        function eval(text) {
+            return (0, window['eval'])(text);
+        }
+        encodings.eval = eval;
+    })(encodings = persistence.encodings || (persistence.encodings = {}));
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    var encodings;
+    (function (encodings) {
+        function json(text) {
+            var result = typeof JSON === 'undefined' ? encodings.eval(text) : JSON.parse(text);
+            if (result && typeof result !== 'string' && result.type) {
+                var ctor = window[result.type];
+                result = new ctor(result);
+            }
+            return result;
+        }
+        encodings.json = json;
+    })(encodings = persistence.encodings || (persistence.encodings = {}));
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    function mountDrive(loadDOMDrive, uniqueKey, optionalModules, callback) {
+        var driveIndex = 0;
+        loadNextOptional();
+        function loadNextOptional() {
+            while (driveIndex < optionalModules.length &&
+                (!optionalModules[driveIndex] || typeof optionalModules[driveIndex].detect !== 'function')) {
+                driveIndex++;
+            }
+            if (driveIndex >= optionalModules.length) {
+                loadDOMDrive(function (dom) { return callback(new MountedDrive(dom, null)); });
+                return;
+            }
+            var op = optionalModules[driveIndex];
+            op.detect(uniqueKey, function (detached) {
+                if (!detached) {
+                    driveIndex++;
+                    loadNextOptional();
+                    return;
+                }
+                loadDOMDrive(function (dom) {
+                    if (detached.timestamp > dom.timestamp) {
+                        var callbackWithShadow = function (loadedDrive) {
+                            dom.timestamp = detached.timestamp;
+                            callback(new MountedDrive(dom, loadedDrive));
+                        };
+                        if (callback.progress)
+                            callbackWithShadow.progress = callback.progress;
+                        loadDOMDrive(function (dom) { return detached.applyTo(dom, callbackWithShadow); });
+                    }
+                    else {
+                        var callbackWithShadow = function (loadedDrive) {
+                            callback(new MountedDrive(dom, loadedDrive));
+                        };
+                        if (callback.progress)
+                            callbackWithShadow.progress = callback.progress;
+                        detached.purge(callbackWithShadow);
+                    }
+                });
+            });
+        }
+    }
+    persistence.mountDrive = mountDrive;
+    var MountedDrive = (function () {
+        function MountedDrive(_dom, _shadow) {
+            this._dom = _dom;
+            this._shadow = _shadow;
+            this.timestamp = 0;
+            this.timestamp = this._dom.timestamp;
+        }
+        MountedDrive.prototype.files = function () {
+            return this._dom.files();
+        };
+        MountedDrive.prototype.read = function (file) {
+            return this._dom.read(file);
+        };
+        MountedDrive.prototype.write = function (file, content) {
+            this._dom.timestamp = this.timestamp;
+            this._dom.write(file, content);
+            if (this._shadow) {
+                this._shadow.timestamp = this.timestamp;
+                this._shadow.write(file, content);
+            }
+        };
+        return MountedDrive;
+    })();
+})(persistence || (persistence = {}));
+var persistence;
+(function (persistence) {
+    function normalizePath(path) {
+        if (!path)
+            return '/'; // empty paths converted to root
+        if (path.charAt(0) !== '/')
+            path = '/' + path;
+        path = path.replace(/\/\/*/g, '/'); // replacing duplicate slashes with single
+        return path;
+    }
+    persistence.normalizePath = normalizePath;
+})(persistence || (persistence = {}));
+-->
+
 <!-- /shell/style.css
 .panels-scroll-host {
   position: absolute;
@@ -7662,6 +8864,2811 @@ module shellLoader {
   }
 
 }
+--!>
+<!-- /src/nodeapi/base/defs.d.ts
+interface no_require {
+  (id: string): any;
+  resolve(id: string): string;
+  cache: any;
+  extensions: any;
+  main: any;
+}
+
+interface no_module {
+  exports: any;
+  require(id: string): any;
+  id: string;
+  filename: string;
+  loaded: boolean;
+  parent: any;
+  children: any[];
+}
+
+interface no_ErrnoError extends Error {
+}
+
+interface no_Buffer {
+  [index: number]: number;
+  write(string: string, offset?: number, length?: number, encoding?: string): number;
+  toString(encoding?: string, start?: number, end?: number): string;
+  toJSON(): any;
+  length: number;
+  copy(targetBuffer: no_Buffer, targetStart?: number, sourceStart?: number, sourceEnd?: number): number;
+  slice(start?: number, end?: number): no_Buffer;
+  readUInt8(offset: number, noAsset?: boolean): number;
+  readUInt16LE(offset: number, noAssert?: boolean): number;
+  readUInt16BE(offset: number, noAssert?: boolean): number;
+  readUInt32LE(offset: number, noAssert?: boolean): number;
+  readUInt32BE(offset: number, noAssert?: boolean): number;
+  readInt8(offset: number, noAssert?: boolean): number;
+  readInt16LE(offset: number, noAssert?: boolean): number;
+  readInt16BE(offset: number, noAssert?: boolean): number;
+  readInt32LE(offset: number, noAssert?: boolean): number;
+  readInt32BE(offset: number, noAssert?: boolean): number;
+  readFloatLE(offset: number, noAssert?: boolean): number;
+  readFloatBE(offset: number, noAssert?: boolean): number;
+  readDoubleLE(offset: number, noAssert?: boolean): number;
+  readDoubleBE(offset: number, noAssert?: boolean): number;
+  writeUInt8(value: number, offset: number, noAssert?: boolean): void;
+  writeUInt16LE(value: number, offset: number, noAssert?: boolean): void;
+  writeUInt16BE(value: number, offset: number, noAssert?: boolean): void;
+  writeUInt32LE(value: number, offset: number, noAssert?: boolean): void;
+  writeUInt32BE(value: number, offset: number, noAssert?: boolean): void;
+  writeInt8(value: number, offset: number, noAssert?: boolean): void;
+  writeInt16LE(value: number, offset: number, noAssert?: boolean): void;
+  writeInt16BE(value: number, offset: number, noAssert?: boolean): void;
+  writeInt32LE(value: number, offset: number, noAssert?: boolean): void;
+  writeInt32BE(value: number, offset: number, noAssert?: boolean): void;
+  writeFloatLE(value: number, offset: number, noAssert?: boolean): void;
+  writeFloatBE(value: number, offset: number, noAssert?: boolean): void;
+  writeDoubleLE(value: number, offset: number, noAssert?: boolean): void;
+  writeDoubleBE(value: number, offset: number, noAssert?: boolean): void;
+  fill(value: any, offset?: number, end?: number): void;
+}
+--!>
+<!-- /src/nodeapi/base/getStartMatcher.ts
+function no_getStartMatcher(start: string) {
+  if (!start)
+    return (str: string) => true;
+
+  return (str: string) => {
+  };
+}
+--!>
+<!-- /src/nodeapi/base/wrapAsync.ts
+function no_wrapAsync(fn: Function): Function {
+  return function() {
+    var args = [];
+    for (var i = 0; i < arguments.length-1; i++) {
+      args.push(arguments[i]);
+    }
+    var callback = arguments[arguments.length - 1];
+
+    noprocess_nextTick(function() {
+      try {
+        var result = fn.apply(null, args);
+      }
+      catch (error) {
+        callback(error);
+      }
+      callback(null, result);
+    });
+  }
+}
+
+function no_wrapAsyncNoError(fn: Function): Function {
+  return function() {
+    var args = [];
+    for (var i = 0; i < arguments.length-1; i++) {
+      args.push(arguments[i]);
+    }
+    var callback = arguments[arguments.length - 1];
+
+    noprocess_nextTick(function() {
+      try {
+        var result = fn.apply(null, args);
+      }
+      catch (error) {
+        callback(error);
+      }
+      callback(result);
+    });
+  }
+}
+--!>
+<!-- /src/nodeapi/events/defs.d.ts
+interface noevents_EventEmitter {
+  //static listenerCount(emitter: EventEmitter, event: string): number;
+
+  addListener(event: string, listener: Function): noevents_EventEmitter;
+
+  on(event: string, listener: Function): noevents_EventEmitter;
+
+  once(event: string, listener: Function): noevents_EventEmitter;
+
+  removeListener(event: string, listener: Function): noevents_EventEmitter;
+
+  removeAllListeners(event?: string): noevents_EventEmitter;
+
+  setMaxListeners(n: number): void;
+
+  listeners(event: string): Function[];
+
+  emit(event: string, ...args: any[]): boolean;
+
+}
+--!>
+<!-- /src/nodeapi/fs/_load.ts
+var _nofs_module_: nofs;
+
+function nofs_load() {
+
+  if (!_nofs_module_)
+    _nofs_module_ = <nofs>{
+
+      renameSync: nofs_renameSync,
+      rename: no_wrapAsync(nofs_renameSync),
+
+      readFileSync: nofs_readFileSync,
+      readFile: no_wrapAsync(nofs_readFileSync),
+
+      writeFileSync: nofs_writeFileSync,
+      writeFile: no_wrapAsync(nofs_writeFileSync)
+    };
+
+  return _nofs_module_;
+}
+--!>
+<!-- /src/nodeapi/fs/defs.d.ts
+interface nofs {
+
+  rename(oldPath: string, newPath: string, callback?: (err?: no_ErrnoError) => void): void;
+  renameSync(oldPath: string, newPath: string): void;
+
+
+  truncate(path: string, callback?: (err?: no_ErrnoError) => void): void;
+  truncate(path: string, len: number, callback?: (err?: no_ErrnoError) => void): void;
+  truncateSync(path: string, len?: number): void;
+
+  ftruncate(fd: number, callback?: (err?: no_ErrnoError) => void): void;
+  ftruncate(fd: number, len: number, callback?: (err?: no_ErrnoError) => void): void;
+  ftruncateSync(fd: number, len?: number): void;
+
+
+  chown(path: string, uid: number, gid: number, callback?: (err?: no_ErrnoError) => void): void;
+  chownSync(path: string, uid: number, gid: number): void;
+
+  fchown(fd: number, uid: number, gid: number, callback?: (err?: no_ErrnoError) => void): void;
+  fchownSync(fd: number, uid: number, gid: number): void;
+
+  lchown(path: string, uid: number, gid: number, callback?: (err?: no_ErrnoError) => void): void;
+  lchownSync(path: string, uid: number, gid: number): void;
+
+
+  chmod(path: string, mode: number, callback?: (err?: no_ErrnoError) => void): void;
+  chmod(path: string, mode: string, callback?: (err?: no_ErrnoError) => void): void;
+  chmodSync(path: string, mode: number): void;
+  chmodSync(path: string, mode: string): void;
+
+  fchmod(fd: number, mode: number, callback?: (err?: no_ErrnoError) => void): void;
+  fchmod(fd: number, mode: string, callback?: (err?: no_ErrnoError) => void): void;
+  fchmodSync(fd: number, mode: number): void;
+  fchmodSync(fd: number, mode: string): void;
+
+  lchmod(path: string, mode: number, callback?: (err?: no_ErrnoError) => void): void;
+  lchmod(path: string, mode: string, callback?: (err?: no_ErrnoError) => void): void;
+  lchmodSync(path: string, mode: number): void;
+  lchmodSync(path: string, mode: string): void;
+
+
+  stat(path: string, callback?: (err: no_ErrnoError, stats: nofs_Stats) => any): void;
+  lstat(path: string, callback?: (err: no_ErrnoError, stats: nofs_Stats) => any): void;
+  fstat(fd: number, callback?: (err: no_ErrnoError, stats: nofs_Stats) => any): void;
+  statSync(path: string): nofs_Stats;
+  lstatSync(path: string): nofs_Stats;
+  fstatSync(fd: number): nofs_Stats;
+
+
+  link(srcpath: string, dstpath: string, callback?: (err?: no_ErrnoError) => void): void;
+  linkSync(srcpath: string, dstpath: string): void;
+
+  symlink(srcpath: string, dstpath: string, type?: string, callback?: (err?: no_ErrnoError) => void): void;
+  symlinkSync(srcpath: string, dstpath: string, type?: string): void;
+
+
+  readlink(path: string, callback?: (err: no_ErrnoError, linkString: string) => any): void;
+  readlinkSync(path: string): string;
+
+
+  realpath(path: string, callback?: (err: no_ErrnoError, resolvedPath: string) => any): void;
+  realpath(path: string, cache: { [path: string]: string }, callback: (err: no_ErrnoError, resolvedPath: string) => any): void;
+  realpathSync(path: string, cache?: { [path: string]: string }): string;
+
+
+  unlink(path: string, callback?: (err?: no_ErrnoError) => void): void;
+  unlinkSync(path: string): void;
+
+
+  rmdir(path: string, callback?: (err?: no_ErrnoError) => void): void;
+  rmdirSync(path: string): void;
+
+
+  mkdir(path: string, callback?: (err?: no_ErrnoError) => void): void;
+  mkdir(path: string, mode: number, callback?: (err?: no_ErrnoError) => void): void;
+  mkdir(path: string, mode: string, callback?: (err?: no_ErrnoError) => void): void;
+  mkdirSync(path: string, mode?: number): void;
+  mkdirSync(path: string, mode?: string): void;
+
+
+  readdir(path: string, callback?: (err: no_ErrnoError, files: string[]) => void): void;
+  readdirSync(path: string): string[];
+
+
+  close(fd: number, callback?: (err?: no_ErrnoError) => void): void;
+  closeSync(fd: number): void;
+
+
+  open(path: string, flags: string, callback?: (err: no_ErrnoError, fd: number) => any): void;
+  open(path: string, flags: string, mode: number, callback?: (err: no_ErrnoError, fd: number) => any): void;
+  open(path: string, flags: string, mode: string, callback?: (err: no_ErrnoError, fd: number) => any): void;
+  openSync(path: string, flags: string, mode?: number): number;
+  openSync(path: string, flags: string, mode?: string): number;
+
+
+  utimes(path: string, atime: number, mtime: number, callback?: (err?: no_ErrnoError) => void): void;
+  utimes(path: string, atime: Date, mtime: Date, callback?: (err?: no_ErrnoError) => void): void;
+  utimesSync(path: string, atime: number, mtime: number): void;
+  utimesSync(path: string, atime: Date, mtime: Date): void;
+
+  futimes(fd: number, atime: number, mtime: number, callback?: (err?: no_ErrnoError) => void): void;
+  futimes(fd: number, atime: Date, mtime: Date, callback?: (err?: no_ErrnoError) => void): void;
+  futimesSync(fd: number, atime: number, mtime: number): void;
+  futimesSync(fd: number, atime: Date, mtime: Date): void;
+
+
+  fsync(fd: number, callback?: (err?: no_ErrnoError) => void): void;
+  fsyncSync(fd: number): void;
+
+
+  read(fd: number, buffer: no_Buffer, offset: number, length: number, position: number, callback?: (err: no_ErrnoError, bytesRead: number, buffer: no_Buffer) => void): void;
+  readSync(fd: number, buffer: no_Buffer, offset: number, length: number, position: number): number;
+
+  readFile(filename: string, encoding: string, callback: (err: no_ErrnoError, data: string) => void): void;
+  readFile(filename: string, options: { encoding: string; flag?: string; }, callback: (err: no_ErrnoError, data: string) => void): void;
+  readFile(filename: string, options: { flag?: string; }, callback: (err: no_ErrnoError, data: no_Buffer) => void): void;
+  readFile(filename: string, callback: (err: no_ErrnoError, data: no_Buffer) => void): void;
+  readFileSync(filename: string, encoding: string): string;
+  readFileSync(filename: string, options: { encoding: string; flag?: string; }): string;
+  readFileSync(filename: string, options?: { flag?: string; }): no_Buffer;
+
+  write(fd: number, buffer: no_Buffer, offset: number, length: number, position: number, callback?: (err: no_ErrnoError, written: number, buffer: no_Buffer) => void): void;
+  writeSync(fd: number, buffer: no_Buffer, offset: number, length: number, position: number): number;
+
+  writeFile(filename: string, data: any, callback?: (err: no_ErrnoError) => void): void;
+  writeFile(filename: string, data: any, options: { encoding?: string; mode?: number; flag?: string; }, callback?: (err: no_ErrnoError) => void): void;
+  writeFile(filename: string, data: any, options: { encoding?: string; mode?: string; flag?: string; }, callback?: (err: no_ErrnoError) => void): void;
+  writeFileSync(filename: string, data: any, options?: { encoding?: string; mode?: number; flag?: string; }): void;
+  writeFileSync(filename: string, data: any, options?: { encoding?: string; mode?: string; flag?: string; }): void;
+
+
+  appendFile(filename: string, data: any, options: { encoding?: string; mode?: number; flag?: string; }, callback?: (err: no_ErrnoError) => void): void;
+  appendFile(filename: string, data: any, options: { encoding?: string; mode?: string; flag?: string; }, callback?: (err: no_ErrnoError) => void): void;
+  appendFile(filename: string, data: any, callback?: (err: no_ErrnoError) => void): void;
+  appendFileSync(filename: string, data: any, options?: { encoding?: string; mode?: number; flag?: string; }): void;
+  appendFileSync(filename: string, data: any, options?: { encoding?: string; mode?: string; flag?: string; }): void;
+
+
+  watchFile(filename: string, listener: (curr: nofs_Stats, prev: nofs_Stats) => void): void;
+  watchFile(filename: string, options: { persistent?: boolean; interval?: number; }, listener: (curr: nofs_Stats, prev: nofs_Stats) => void): void;
+
+  unwatchFile(filename: string, listener?: (curr: nofs_Stats, prev: nofs_Stats) => void): void;
+
+  watch(filename: string, listener?: (event: string, filename: string) => any): nofs_Watcher;
+  watch(filename: string, options: { persistent?: boolean; }, listener?: (event: string, filename: string) => any): nofs_Watcher;
+
+
+  exists(path: string, callback?: (exists: boolean) => void): void;
+  existsSync(path: string): boolean;
+
+
+  createReadStream(path: string, options?: { flags?: string; encoding?: string; fd?: string; mode?: number; bufferSize?: number; }): nofs_ReadStream;
+  createReadStream(path: string, options?: { flags?: string; encoding?: string; fd?: string; mode?: string; bufferSize?: number; }): nofs_ReadStream;
+
+  createWriteStream(path: string, options?: { flags?: string; encoding?: string; string?: string; }): nofs_WriteStream;
+
+}
+
+interface nofs_Stats {
+  isFile(): boolean;
+  isDirectory(): boolean;
+  isBlockDevice(): boolean;
+  isCharacterDevice(): boolean;
+  isSymbolicLink(): boolean;
+  isFIFO(): boolean;
+  isSocket(): boolean;
+  dev: number;
+  ino: number;
+  mode: number;
+  nlink: number;
+  uid: number;
+  gid: number;
+  rdev: number;
+  size: number;
+  blksize: number;
+  blocks: number;
+  atime: Date;
+  mtime: Date;
+  ctime: Date;
+}
+
+interface nofs_Watcher extends noevents_EventEmitter {
+  close(): void;
+}
+
+interface nofs_ReadStream extends nostream_Readable {
+  close(): void;
+}
+interface nofs_WriteStream extends nostream_Writable {
+  close(): void;
+}
+
+--!>
+<!-- /src/nodeapi/fs/readFile.ts
+function nofs_readFileSync(filename: string, options?: { encoding?: string; flag?: string; }) {
+
+  // TODO: handle encoding and other
+  return no_drive.read(filename);
+
+}
+--!>
+<!-- /src/nodeapi/fs/rename.ts
+function nofs_renameSync(oldPath: string, newPath: string): void {
+
+  var oldContent = no_drive.read(oldPath);
+  if (oldContent !== null) {
+    // TODO: check if directory is in the way
+    // if (nofs
+    no_drive.write(newPath, oldContent);
+    no_drive.write(oldPath, null);
+    return;
+  }
+
+  if (no_drive.read(newPath) !== null) {
+    // node actually reports oldPath here, but let's be reasonable
+    throw new Error('ENOTDIR, not a directory \'' + newPath + '\'');
+  }
+
+  var norm_oldPath = nopath_resolve(oldPath);
+  if (norm_oldPath === '/')
+    throw new Error('EBUSY, resource busy or locked \'/\'');
+  else
+    norm_oldPath += '/';
+
+  var norm_newPath = nopath_resolve(newPath);
+  if (norm_newPath === '/')
+    throw new Error('EBUSY, resource busy or locked \'/\'');
+  else
+    norm_newPath += '/';
+
+
+  var files = no_drive.files();
+
+
+  var startAsOld = no_getStartMatcher(norm_oldPath);
+
+  for (var i = 0; i < files.length; i++) {
+    var fi = files[i];
+    if (startAsOld(fi)) {
+      var oldContent = no_drive.read(fi);
+      var restPath = fi.slice(norm_newPath.length);
+      var newFiPath = norm_newPath + restPath;
+      no_drive.write(newFiPath, oldContent);
+      no_drive.write(newFiPath, null);
+    }
+  }
+
+}
+--!>
+<!-- /src/nodeapi/fs/stat.ts
+function nofs_statSync(path: string): nofs_Stats {
+  // TODO: implement
+  throw new Error('Not implemented');
+}
+
+/*
+  stat(path: string, callback?: (err: no_ErrnoError, stats: nofs_Stats) => any): void;
+  lstat(path: string, callback?: (err: no_ErrnoError, stats: nofs_Stats) => any): void;
+  fstat(fd: number, callback?: (err: no_ErrnoError, stats: nofs_Stats) => any): void;
+  statSync(path: string): nofs_Stats;
+  lstatSync(path: string): nofs_Stats;
+  fstatSync(fd: number): nofs_Stats;
+*/
+--!>
+<!-- /src/nodeapi/fs/writeFile.ts
+function nofs_writeFileSync(filename: string, content: string) {
+
+  no_drive.write(filename, content);
+
+}
+--!>
+<!-- /src/nodeapi/imports/base64-js/b64.js
+var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+
+;(function (exports) {
+  'use strict'
+
+  var Arr = (typeof Uint8Array !== 'undefined')
+    ? Uint8Array
+    : Array
+
+  var PLUS = '+'.charCodeAt(0)
+  var SLASH = '/'.charCodeAt(0)
+  var NUMBER = '0'.charCodeAt(0)
+  var LOWER = 'a'.charCodeAt(0)
+  var UPPER = 'A'.charCodeAt(0)
+  var PLUS_URL_SAFE = '-'.charCodeAt(0)
+  var SLASH_URL_SAFE = '_'.charCodeAt(0)
+
+  function decode (elt) {
+    var code = elt.charCodeAt(0)
+    if (code === PLUS || code === PLUS_URL_SAFE) return 62 // '+'
+    if (code === SLASH || code === SLASH_URL_SAFE) return 63 // '/'
+    if (code < NUMBER) return -1 // no match
+    if (code < NUMBER + 10) return code - NUMBER + 26 + 26
+    if (code < UPPER + 26) return code - UPPER
+    if (code < LOWER + 26) return code - LOWER + 26
+  }
+
+  function b64ToByteArray (b64) {
+    var i, j, l, tmp, placeHolders, arr
+
+    if (b64.length % 4 > 0) {
+      throw new Error('Invalid string. Length must be a multiple of 4')
+    }
+
+    // the number of equal signs (place holders)
+    // if there are two placeholders, than the two characters before it
+    // represent one byte
+    // if there is only one, then the three characters before it represent 2 bytes
+    // this is just a cheap hack to not do indexOf twice
+    var len = b64.length
+    placeHolders = b64.charAt(len - 2) === '=' ? 2 : b64.charAt(len - 1) === '=' ? 1 : 0
+
+    // base64 is 4/3 + up to two characters of the original data
+    arr = new Arr(b64.length * 3 / 4 - placeHolders)
+
+    // if there are placeholders, only get up to the last complete 4 chars
+    l = placeHolders > 0 ? b64.length - 4 : b64.length
+
+    var L = 0
+
+    function push (v) {
+      arr[L++] = v
+    }
+
+    for (i = 0, j = 0; i < l; i += 4, j += 3) {
+      tmp = (decode(b64.charAt(i)) << 18) | (decode(b64.charAt(i + 1)) << 12) | (decode(b64.charAt(i + 2)) << 6) | decode(b64.charAt(i + 3))
+      push((tmp & 0xFF0000) >> 16)
+      push((tmp & 0xFF00) >> 8)
+      push(tmp & 0xFF)
+    }
+
+    if (placeHolders === 2) {
+      tmp = (decode(b64.charAt(i)) << 2) | (decode(b64.charAt(i + 1)) >> 4)
+      push(tmp & 0xFF)
+    } else if (placeHolders === 1) {
+      tmp = (decode(b64.charAt(i)) << 10) | (decode(b64.charAt(i + 1)) << 4) | (decode(b64.charAt(i + 2)) >> 2)
+      push((tmp >> 8) & 0xFF)
+      push(tmp & 0xFF)
+    }
+
+    return arr
+  }
+
+  function uint8ToBase64 (uint8) {
+    var i
+    var extraBytes = uint8.length % 3 // if we have 1 byte left, pad 2 bytes
+    var output = ''
+    var temp, length
+
+    function encode (num) {
+      return lookup.charAt(num)
+    }
+
+    function tripletToBase64 (num) {
+      return encode(num >> 18 & 0x3F) + encode(num >> 12 & 0x3F) + encode(num >> 6 & 0x3F) + encode(num & 0x3F)
+    }
+
+    // go through the array every three bytes, we'll deal with trailing stuff later
+    for (i = 0, length = uint8.length - extraBytes; i < length; i += 3) {
+      temp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
+      output += tripletToBase64(temp)
+    }
+
+    // pad the end with zeros, but make sure to not forget the extra bytes
+    switch (extraBytes) {
+      case 1:
+        temp = uint8[uint8.length - 1]
+        output += encode(temp >> 2)
+        output += encode((temp << 4) & 0x3F)
+        output += '=='
+        break
+      case 2:
+        temp = (uint8[uint8.length - 2] << 8) + (uint8[uint8.length - 1])
+        output += encode(temp >> 10)
+        output += encode((temp >> 4) & 0x3F)
+        output += encode((temp << 2) & 0x3F)
+        output += '='
+        break
+      default:
+        break
+    }
+
+    return output
+  }
+
+  exports.toByteArray = b64ToByteArray
+  exports.fromByteArray = uint8ToBase64
+}(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
+
+--!>
+<!-- /src/nodeapi/imports/buffer/index.js
+/*!
+ * The buffer module from node.js, for the browser.
+ *
+ * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
+ * @license  MIT
+ */
+
+var base64 = require('base64-js')
+var ieee754 = require('ieee754')
+var isArray = require('is-array')
+
+exports.Buffer = Buffer
+exports.SlowBuffer = SlowBuffer
+exports.INSPECT_MAX_BYTES = 50
+Buffer.poolSize = 8192 // not used by this implementation
+
+var kMaxLength = 0x3fffffff
+var rootParent = {}
+
+/**
+ * If `Buffer.TYPED_ARRAY_SUPPORT`:
+ *   === true    Use Uint8Array implementation (fastest)
+ *   === false   Use Object implementation (most compatible, even IE6)
+ *
+ * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
+ * Opera 11.6+, iOS 4.2+.
+ *
+ * Note:
+ *
+ * - Implementation must support adding new properties to `Uint8Array` instances.
+ *   Firefox 4-29 lacked support, fixed in Firefox 30+.
+ *   See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438.
+ *
+ *  - Chrome 9-10 is missing the `TypedArray.prototype.subarray` function.
+ *
+ *  - IE10 has a broken `TypedArray.prototype.subarray` function which returns arrays of
+ *    incorrect length in some situations.
+ *
+ * We detect these buggy browsers and set `Buffer.TYPED_ARRAY_SUPPORT` to `false` so they will
+ * get the Object implementation, which is slower but will work correctly.
+ */
+Buffer.TYPED_ARRAY_SUPPORT = (function () {
+  try {
+    var buf = new ArrayBuffer(0)
+    var arr = new Uint8Array(buf)
+    arr.foo = function () { return 42 }
+    return arr.foo() === 42 && // typed array instances can be augmented
+        typeof arr.subarray === 'function' && // chrome 9-10 lack `subarray`
+        new Uint8Array(1).subarray(1, 1).byteLength === 0 // ie10 has broken `subarray`
+  } catch (e) {
+    return false
+  }
+})()
+
+/**
+ * Class: Buffer
+ * =============
+ *
+ * The Buffer constructor returns instances of `Uint8Array` that are augmented
+ * with function properties for all the node `Buffer` API functions. We use
+ * `Uint8Array` so that square bracket notation works as expected -- it returns
+ * a single octet.
+ *
+ * By augmenting the instances, we can avoid modifying the `Uint8Array`
+ * prototype.
+ */
+function Buffer (arg) {
+  if (!(this instanceof Buffer)) {
+    // Avoid going through an ArgumentsAdaptorTrampoline in the common case.
+    if (arguments.length > 1) return new Buffer(arg, arguments[1])
+    return new Buffer(arg)
+  }
+
+  this.length = 0
+  this.parent = undefined
+
+  // Common case.
+  if (typeof arg === 'number') {
+    return fromNumber(this, arg)
+  }
+
+  // Slightly less common case.
+  if (typeof arg === 'string') {
+    return fromString(this, arg, arguments.length > 1 ? arguments[1] : 'utf8')
+  }
+
+  // Unusual.
+  return fromObject(this, arg)
+}
+
+function fromNumber (that, length) {
+  that = allocate(that, length < 0 ? 0 : checked(length) | 0)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) {
+    for (var i = 0; i < length; i++) {
+      that[i] = 0
+    }
+  }
+  return that
+}
+
+function fromString (that, string, encoding) {
+  if (typeof encoding !== 'string' || encoding === '') encoding = 'utf8'
+
+  // Assumption: byteLength() return value is always < kMaxLength.
+  var length = byteLength(string, encoding) | 0
+  that = allocate(that, length)
+
+  that.write(string, encoding)
+  return that
+}
+
+function fromObject (that, object) {
+  if (Buffer.isBuffer(object)) return fromBuffer(that, object)
+
+  if (isArray(object)) return fromArray(that, object)
+
+  if (object == null) {
+    throw new TypeError('must start with number, buffer, array or string')
+  }
+
+  if (typeof ArrayBuffer !== 'undefined' && object.buffer instanceof ArrayBuffer) {
+    return fromTypedArray(that, object)
+  }
+
+  if (object.length) return fromArrayLike(that, object)
+
+  return fromJsonObject(that, object)
+}
+
+function fromBuffer (that, buffer) {
+  var length = checked(buffer.length) | 0
+  that = allocate(that, length)
+  buffer.copy(that, 0, 0, length)
+  return that
+}
+
+function fromArray (that, array) {
+  var length = checked(array.length) | 0
+  that = allocate(that, length)
+  for (var i = 0; i < length; i += 1) {
+    that[i] = array[i] & 255
+  }
+  return that
+}
+
+// Duplicate of fromArray() to keep fromArray() monomorphic.
+function fromTypedArray (that, array) {
+  var length = checked(array.length) | 0
+  that = allocate(that, length)
+  // Truncating the elements is probably not what people expect from typed
+  // arrays with BYTES_PER_ELEMENT > 1 but it's compatible with the behavior
+  // of the old Buffer constructor.
+  for (var i = 0; i < length; i += 1) {
+    that[i] = array[i] & 255
+  }
+  return that
+}
+
+function fromArrayLike (that, array) {
+  var length = checked(array.length) | 0
+  that = allocate(that, length)
+  for (var i = 0; i < length; i += 1) {
+    that[i] = array[i] & 255
+  }
+  return that
+}
+
+// Deserialize { type: 'Buffer', data: [1,2,3,...] } into a Buffer object.
+// Returns a zero-length buffer for inputs that don't conform to the spec.
+function fromJsonObject (that, object) {
+  var array
+  var length = 0
+
+  if (object.type === 'Buffer' && isArray(object.data)) {
+    array = object.data
+    length = checked(array.length) | 0
+  }
+  that = allocate(that, length)
+
+  for (var i = 0; i < length; i += 1) {
+    that[i] = array[i] & 255
+  }
+  return that
+}
+
+function allocate (that, length) {
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    // Return an augmented `Uint8Array` instance, for best performance
+    that = Buffer._augment(new Uint8Array(length))
+  } else {
+    // Fallback: Return an object instance of the Buffer class
+    that.length = length
+    that._isBuffer = true
+  }
+
+  var fromPool = length !== 0 && length <= Buffer.poolSize >>> 1
+  if (fromPool) that.parent = rootParent
+
+  return that
+}
+
+function checked (length) {
+  // Note: cannot use `length < kMaxLength` here because that fails when
+  // length is NaN (which is otherwise coerced to zero.)
+  if (length >= kMaxLength) {
+    throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
+                         'size: 0x' + kMaxLength.toString(16) + ' bytes')
+  }
+  return length | 0
+}
+
+function SlowBuffer (subject, encoding) {
+  if (!(this instanceof SlowBuffer)) return new SlowBuffer(subject, encoding)
+
+  var buf = new Buffer(subject, encoding)
+  delete buf.parent
+  return buf
+}
+
+Buffer.isBuffer = function isBuffer (b) {
+  return !!(b != null && b._isBuffer)
+}
+
+Buffer.compare = function compare (a, b) {
+  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+    throw new TypeError('Arguments must be Buffers')
+  }
+
+  if (a === b) return 0
+
+  var x = a.length
+  var y = b.length
+
+  var i = 0
+  var len = Math.min(x, y)
+  while (i < len) {
+    if (a[i] !== b[i]) break
+
+    ++i
+  }
+
+  if (i !== len) {
+    x = a[i]
+    y = b[i]
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+Buffer.isEncoding = function isEncoding (encoding) {
+  switch (String(encoding).toLowerCase()) {
+    case 'hex':
+    case 'utf8':
+    case 'utf-8':
+    case 'ascii':
+    case 'binary':
+    case 'base64':
+    case 'raw':
+    case 'ucs2':
+    case 'ucs-2':
+    case 'utf16le':
+    case 'utf-16le':
+      return true
+    default:
+      return false
+  }
+}
+
+Buffer.concat = function concat (list, length) {
+  if (!isArray(list)) throw new TypeError('list argument must be an Array of Buffers.')
+
+  if (list.length === 0) {
+    return new Buffer(0)
+  } else if (list.length === 1) {
+    return list[0]
+  }
+
+  var i
+  if (length === undefined) {
+    length = 0
+    for (i = 0; i < list.length; i++) {
+      length += list[i].length
+    }
+  }
+
+  var buf = new Buffer(length)
+  var pos = 0
+  for (i = 0; i < list.length; i++) {
+    var item = list[i]
+    item.copy(buf, pos)
+    pos += item.length
+  }
+  return buf
+}
+
+function byteLength (string, encoding) {
+  if (typeof string !== 'string') string = String(string)
+
+  if (string.length === 0) return 0
+
+  switch (encoding || 'utf8') {
+    case 'ascii':
+    case 'binary':
+    case 'raw':
+      return string.length
+    case 'ucs2':
+    case 'ucs-2':
+    case 'utf16le':
+    case 'utf-16le':
+      return string.length * 2
+    case 'hex':
+      return string.length >>> 1
+    case 'utf8':
+    case 'utf-8':
+      return utf8ToBytes(string).length
+    case 'base64':
+      return base64ToBytes(string).length
+    default:
+      return string.length
+  }
+}
+Buffer.byteLength = byteLength
+
+// pre-set for values that may exist in the future
+Buffer.prototype.length = undefined
+Buffer.prototype.parent = undefined
+
+// toString(encoding, start=0, end=buffer.length)
+Buffer.prototype.toString = function toString (encoding, start, end) {
+  var loweredCase = false
+
+  start = start | 0
+  end = end === undefined || end === Infinity ? this.length : end | 0
+
+  if (!encoding) encoding = 'utf8'
+  if (start < 0) start = 0
+  if (end > this.length) end = this.length
+  if (end <= start) return ''
+
+  while (true) {
+    switch (encoding) {
+      case 'hex':
+        return hexSlice(this, start, end)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Slice(this, start, end)
+
+      case 'ascii':
+        return asciiSlice(this, start, end)
+
+      case 'binary':
+        return binarySlice(this, start, end)
+
+      case 'base64':
+        return base64Slice(this, start, end)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return utf16leSlice(this, start, end)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = (encoding + '').toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+Buffer.prototype.equals = function equals (b) {
+  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  if (this === b) return true
+  return Buffer.compare(this, b) === 0
+}
+
+Buffer.prototype.inspect = function inspect () {
+  var str = ''
+  var max = exports.INSPECT_MAX_BYTES
+  if (this.length > 0) {
+    str = this.toString('hex', 0, max).match(/.{2}/g).join(' ')
+    if (this.length > max) str += ' ... '
+  }
+  return '<Buffer ' + str + '>'
+}
+
+Buffer.prototype.compare = function compare (b) {
+  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  if (this === b) return 0
+  return Buffer.compare(this, b)
+}
+
+Buffer.prototype.indexOf = function indexOf (val, byteOffset) {
+  if (byteOffset > 0x7fffffff) byteOffset = 0x7fffffff
+  else if (byteOffset < -0x80000000) byteOffset = -0x80000000
+  byteOffset >>= 0
+
+  if (this.length === 0) return -1
+  if (byteOffset >= this.length) return -1
+
+  // Negative offsets start from the end of the buffer
+  if (byteOffset < 0) byteOffset = Math.max(this.length + byteOffset, 0)
+
+  if (typeof val === 'string') {
+    if (val.length === 0) return -1 // special case: looking for empty string always fails
+    return String.prototype.indexOf.call(this, val, byteOffset)
+  }
+  if (Buffer.isBuffer(val)) {
+    return arrayIndexOf(this, val, byteOffset)
+  }
+  if (typeof val === 'number') {
+    if (Buffer.TYPED_ARRAY_SUPPORT && Uint8Array.prototype.indexOf === 'function') {
+      return Uint8Array.prototype.indexOf.call(this, val, byteOffset)
+    }
+    return arrayIndexOf(this, [ val ], byteOffset)
+  }
+
+  function arrayIndexOf (arr, val, byteOffset) {
+    var foundIndex = -1
+    for (var i = 0; byteOffset + i < arr.length; i++) {
+      if (arr[byteOffset + i] === val[foundIndex === -1 ? 0 : i - foundIndex]) {
+        if (foundIndex === -1) foundIndex = i
+        if (i - foundIndex + 1 === val.length) return byteOffset + foundIndex
+      } else {
+        foundIndex = -1
+      }
+    }
+    return -1
+  }
+
+  throw new TypeError('val must be string, number or Buffer')
+}
+
+// `get` will be removed in Node 0.13+
+Buffer.prototype.get = function get (offset) {
+  console.log('.get() is deprecated. Access using array indexes instead.')
+  return this.readUInt8(offset)
+}
+
+// `set` will be removed in Node 0.13+
+Buffer.prototype.set = function set (v, offset) {
+  console.log('.set() is deprecated. Access using array indexes instead.')
+  return this.writeUInt8(v, offset)
+}
+
+function hexWrite (buf, string, offset, length) {
+  offset = Number(offset) || 0
+  var remaining = buf.length - offset
+  if (!length) {
+    length = remaining
+  } else {
+    length = Number(length)
+    if (length > remaining) {
+      length = remaining
+    }
+  }
+
+  // must be an even number of digits
+  var strLen = string.length
+  if (strLen % 2 !== 0) throw new Error('Invalid hex string')
+
+  if (length > strLen / 2) {
+    length = strLen / 2
+  }
+  for (var i = 0; i < length; i++) {
+    var parsed = parseInt(string.substr(i * 2, 2), 16)
+    if (isNaN(parsed)) throw new Error('Invalid hex string')
+    buf[offset + i] = parsed
+  }
+  return i
+}
+
+function utf8Write (buf, string, offset, length) {
+  return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+function asciiWrite (buf, string, offset, length) {
+  return blitBuffer(asciiToBytes(string), buf, offset, length)
+}
+
+function binaryWrite (buf, string, offset, length) {
+  return asciiWrite(buf, string, offset, length)
+}
+
+function base64Write (buf, string, offset, length) {
+  return blitBuffer(base64ToBytes(string), buf, offset, length)
+}
+
+function ucs2Write (buf, string, offset, length) {
+  return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+Buffer.prototype.write = function write (string, offset, length, encoding) {
+  // Buffer#write(string)
+  if (offset === undefined) {
+    encoding = 'utf8'
+    length = this.length
+    offset = 0
+  // Buffer#write(string, encoding)
+  } else if (length === undefined && typeof offset === 'string') {
+    encoding = offset
+    length = this.length
+    offset = 0
+  // Buffer#write(string, offset[, length][, encoding])
+  } else if (isFinite(offset)) {
+    offset = offset | 0
+    if (isFinite(length)) {
+      length = length | 0
+      if (encoding === undefined) encoding = 'utf8'
+    } else {
+      encoding = length
+      length = undefined
+    }
+  // legacy write(string, encoding, offset, length) - remove in v0.13
+  } else {
+    var swap = encoding
+    encoding = offset
+    offset = length | 0
+    length = swap
+  }
+
+  var remaining = this.length - offset
+  if (length === undefined || length > remaining) length = remaining
+
+  if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
+    throw new RangeError('attempt to write outside buffer bounds')
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  var loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'hex':
+        return hexWrite(this, string, offset, length)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Write(this, string, offset, length)
+
+      case 'ascii':
+        return asciiWrite(this, string, offset, length)
+
+      case 'binary':
+        return binaryWrite(this, string, offset, length)
+
+      case 'base64':
+        // Warning: maxLength not taken into account in base64Write
+        return base64Write(this, string, offset, length)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return ucs2Write(this, string, offset, length)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+Buffer.prototype.toJSON = function toJSON () {
+  return {
+    type: 'Buffer',
+    data: Array.prototype.slice.call(this._arr || this, 0)
+  }
+}
+
+function base64Slice (buf, start, end) {
+  if (start === 0 && end === buf.length) {
+    return base64.fromByteArray(buf)
+  } else {
+    return base64.fromByteArray(buf.slice(start, end))
+  }
+}
+
+function utf8Slice (buf, start, end) {
+  var res = ''
+  var tmp = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; i++) {
+    if (buf[i] <= 0x7F) {
+      res += decodeUtf8Char(tmp) + String.fromCharCode(buf[i])
+      tmp = ''
+    } else {
+      tmp += '%' + buf[i].toString(16)
+    }
+  }
+
+  return res + decodeUtf8Char(tmp)
+}
+
+function asciiSlice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; i++) {
+    ret += String.fromCharCode(buf[i] & 0x7F)
+  }
+  return ret
+}
+
+function binarySlice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; i++) {
+    ret += String.fromCharCode(buf[i])
+  }
+  return ret
+}
+
+function hexSlice (buf, start, end) {
+  var len = buf.length
+
+  if (!start || start < 0) start = 0
+  if (!end || end < 0 || end > len) end = len
+
+  var out = ''
+  for (var i = start; i < end; i++) {
+    out += toHex(buf[i])
+  }
+  return out
+}
+
+function utf16leSlice (buf, start, end) {
+  var bytes = buf.slice(start, end)
+  var res = ''
+  for (var i = 0; i < bytes.length; i += 2) {
+    res += String.fromCharCode(bytes[i] + bytes[i + 1] * 256)
+  }
+  return res
+}
+
+Buffer.prototype.slice = function slice (start, end) {
+  var len = this.length
+  start = ~~start
+  end = end === undefined ? len : ~~end
+
+  if (start < 0) {
+    start += len
+    if (start < 0) start = 0
+  } else if (start > len) {
+    start = len
+  }
+
+  if (end < 0) {
+    end += len
+    if (end < 0) end = 0
+  } else if (end > len) {
+    end = len
+  }
+
+  if (end < start) end = start
+
+  var newBuf
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    newBuf = Buffer._augment(this.subarray(start, end))
+  } else {
+    var sliceLen = end - start
+    newBuf = new Buffer(sliceLen, undefined)
+    for (var i = 0; i < sliceLen; i++) {
+      newBuf[i] = this[i + start]
+    }
+  }
+
+  if (newBuf.length) newBuf.parent = this.parent || this
+
+  return newBuf
+}
+
+/*
+ * Need to make sure that buffer isn't trying to write out of bounds.
+ */
+function checkOffset (offset, ext, length) {
+  if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
+  if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
+}
+
+Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) {
+    checkOffset(offset, byteLength, this.length)
+  }
+
+  var val = this[offset + --byteLength]
+  var mul = 1
+  while (byteLength > 0 && (mul *= 0x100)) {
+    val += this[offset + --byteLength] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  return this[offset]
+}
+
+Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return this[offset] | (this[offset + 1] << 8)
+}
+
+Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return (this[offset] << 8) | this[offset + 1]
+}
+
+Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return ((this[offset]) |
+      (this[offset + 1] << 8) |
+      (this[offset + 2] << 16)) +
+      (this[offset + 3] * 0x1000000)
+}
+
+Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] * 0x1000000) +
+    ((this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    this[offset + 3])
+}
+
+Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var i = byteLength
+  var mul = 1
+  var val = this[offset + --i]
+  while (i > 0 && (mul *= 0x100)) {
+    val += this[offset + --i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  if (!(this[offset] & 0x80)) return (this[offset])
+  return ((0xff - this[offset] + 1) * -1)
+}
+
+Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset] | (this[offset + 1] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset + 1] | (this[offset] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset]) |
+    (this[offset + 1] << 8) |
+    (this[offset + 2] << 16) |
+    (this[offset + 3] << 24)
+}
+
+Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] << 24) |
+    (this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    (this[offset + 3])
+}
+
+Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, true, 23, 4)
+}
+
+Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, false, 23, 4)
+}
+
+Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, true, 52, 8)
+}
+
+Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, false, 52, 8)
+}
+
+function checkInt (buf, value, offset, ext, max, min) {
+  if (!Buffer.isBuffer(buf)) throw new TypeError('buffer must be a Buffer instance')
+  if (value > max || value < min) throw new RangeError('value is out of bounds')
+  if (offset + ext > buf.length) throw new RangeError('index out of range')
+}
+
+Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkInt(this, value, offset, byteLength, Math.pow(2, 8 * byteLength), 0)
+
+  var mul = 1
+  var i = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkInt(this, value, offset, byteLength, Math.pow(2, 8 * byteLength), 0)
+
+  var i = byteLength - 1
+  var mul = 1
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
+  this[offset] = value
+  return offset + 1
+}
+
+function objectWriteUInt16 (buf, value, offset, littleEndian) {
+  if (value < 0) value = 0xffff + value + 1
+  for (var i = 0, j = Math.min(buf.length - offset, 2); i < j; i++) {
+    buf[offset + i] = (value & (0xff << (8 * (littleEndian ? i : 1 - i)))) >>>
+      (littleEndian ? i : 1 - i) * 8
+  }
+}
+
+Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = value
+    this[offset + 1] = (value >>> 8)
+  } else {
+    objectWriteUInt16(this, value, offset, true)
+  }
+  return offset + 2
+}
+
+Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 8)
+    this[offset + 1] = value
+  } else {
+    objectWriteUInt16(this, value, offset, false)
+  }
+  return offset + 2
+}
+
+function objectWriteUInt32 (buf, value, offset, littleEndian) {
+  if (value < 0) value = 0xffffffff + value + 1
+  for (var i = 0, j = Math.min(buf.length - offset, 4); i < j; i++) {
+    buf[offset + i] = (value >>> (littleEndian ? i : 3 - i) * 8) & 0xff
+  }
+}
+
+Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset + 3] = (value >>> 24)
+    this[offset + 2] = (value >>> 16)
+    this[offset + 1] = (value >>> 8)
+    this[offset] = value
+  } else {
+    objectWriteUInt32(this, value, offset, true)
+  }
+  return offset + 4
+}
+
+Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 24)
+    this[offset + 1] = (value >>> 16)
+    this[offset + 2] = (value >>> 8)
+    this[offset + 3] = value
+  } else {
+    objectWriteUInt32(this, value, offset, false)
+  }
+  return offset + 4
+}
+
+Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) {
+    var limit = Math.pow(2, 8 * byteLength - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = 0
+  var mul = 1
+  var sub = value < 0 ? 1 : 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) {
+    var limit = Math.pow(2, 8 * byteLength - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = byteLength - 1
+  var mul = 1
+  var sub = value < 0 ? 1 : 0
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
+  if (value < 0) value = 0xff + value + 1
+  this[offset] = value
+  return offset + 1
+}
+
+Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = value
+    this[offset + 1] = (value >>> 8)
+  } else {
+    objectWriteUInt16(this, value, offset, true)
+  }
+  return offset + 2
+}
+
+Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 8)
+    this[offset + 1] = value
+  } else {
+    objectWriteUInt16(this, value, offset, false)
+  }
+  return offset + 2
+}
+
+Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = value
+    this[offset + 1] = (value >>> 8)
+    this[offset + 2] = (value >>> 16)
+    this[offset + 3] = (value >>> 24)
+  } else {
+    objectWriteUInt32(this, value, offset, true)
+  }
+  return offset + 4
+}
+
+Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (value < 0) value = 0xffffffff + value + 1
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 24)
+    this[offset + 1] = (value >>> 16)
+    this[offset + 2] = (value >>> 8)
+    this[offset + 3] = value
+  } else {
+    objectWriteUInt32(this, value, offset, false)
+  }
+  return offset + 4
+}
+
+function checkIEEE754 (buf, value, offset, ext, max, min) {
+  if (value > max || value < min) throw new RangeError('value is out of bounds')
+  if (offset + ext > buf.length) throw new RangeError('index out of range')
+  if (offset < 0) throw new RangeError('index out of range')
+}
+
+function writeFloat (buf, value, offset, littleEndian, noAssert) {
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 23, 4)
+  return offset + 4
+}
+
+Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, false, noAssert)
+}
+
+function writeDouble (buf, value, offset, littleEndian, noAssert) {
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 52, 8)
+  return offset + 8
+}
+
+Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, false, noAssert)
+}
+
+// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
+Buffer.prototype.copy = function copy (target, targetStart, start, end) {
+  if (!start) start = 0
+  if (!end && end !== 0) end = this.length
+  if (targetStart >= target.length) targetStart = target.length
+  if (!targetStart) targetStart = 0
+  if (end > 0 && end < start) end = start
+
+  // Copy 0 bytes; we're done
+  if (end === start) return 0
+  if (target.length === 0 || this.length === 0) return 0
+
+  // Fatal error conditions
+  if (targetStart < 0) {
+    throw new RangeError('targetStart out of bounds')
+  }
+  if (start < 0 || start >= this.length) throw new RangeError('sourceStart out of bounds')
+  if (end < 0) throw new RangeError('sourceEnd out of bounds')
+
+  // Are we oob?
+  if (end > this.length) end = this.length
+  if (target.length - targetStart < end - start) {
+    end = target.length - targetStart + start
+  }
+
+  var len = end - start
+
+  if (len < 1000 || !Buffer.TYPED_ARRAY_SUPPORT) {
+    for (var i = 0; i < len; i++) {
+      target[i + targetStart] = this[i + start]
+    }
+  } else {
+    target._set(this.subarray(start, start + len), targetStart)
+  }
+
+  return len
+}
+
+// fill(value, start=0, end=buffer.length)
+Buffer.prototype.fill = function fill (value, start, end) {
+  if (!value) value = 0
+  if (!start) start = 0
+  if (!end) end = this.length
+
+  if (end < start) throw new RangeError('end < start')
+
+  // Fill 0 bytes; we're done
+  if (end === start) return
+  if (this.length === 0) return
+
+  if (start < 0 || start >= this.length) throw new RangeError('start out of bounds')
+  if (end < 0 || end > this.length) throw new RangeError('end out of bounds')
+
+  var i
+  if (typeof value === 'number') {
+    for (i = start; i < end; i++) {
+      this[i] = value
+    }
+  } else {
+    var bytes = utf8ToBytes(value.toString())
+    var len = bytes.length
+    for (i = start; i < end; i++) {
+      this[i] = bytes[i % len]
+    }
+  }
+
+  return this
+}
+
+/**
+ * Creates a new `ArrayBuffer` with the *copied* memory of the buffer instance.
+ * Added in Node 0.12. Only available in browsers that support ArrayBuffer.
+ */
+Buffer.prototype.toArrayBuffer = function toArrayBuffer () {
+  if (typeof Uint8Array !== 'undefined') {
+    if (Buffer.TYPED_ARRAY_SUPPORT) {
+      return (new Buffer(this)).buffer
+    } else {
+      var buf = new Uint8Array(this.length)
+      for (var i = 0, len = buf.length; i < len; i += 1) {
+        buf[i] = this[i]
+      }
+      return buf.buffer
+    }
+  } else {
+    throw new TypeError('Buffer.toArrayBuffer not supported in this browser')
+  }
+}
+
+// HELPER FUNCTIONS
+// ================
+
+var BP = Buffer.prototype
+
+/**
+ * Augment a Uint8Array *instance* (not the Uint8Array class!) with Buffer methods
+ */
+Buffer._augment = function _augment (arr) {
+  arr.constructor = Buffer
+  arr._isBuffer = true
+
+  // save reference to original Uint8Array set method before overwriting
+  arr._set = arr.set
+
+  // deprecated, will be removed in node 0.13+
+  arr.get = BP.get
+  arr.set = BP.set
+
+  arr.write = BP.write
+  arr.toString = BP.toString
+  arr.toLocaleString = BP.toString
+  arr.toJSON = BP.toJSON
+  arr.equals = BP.equals
+  arr.compare = BP.compare
+  arr.indexOf = BP.indexOf
+  arr.copy = BP.copy
+  arr.slice = BP.slice
+  arr.readUIntLE = BP.readUIntLE
+  arr.readUIntBE = BP.readUIntBE
+  arr.readUInt8 = BP.readUInt8
+  arr.readUInt16LE = BP.readUInt16LE
+  arr.readUInt16BE = BP.readUInt16BE
+  arr.readUInt32LE = BP.readUInt32LE
+  arr.readUInt32BE = BP.readUInt32BE
+  arr.readIntLE = BP.readIntLE
+  arr.readIntBE = BP.readIntBE
+  arr.readInt8 = BP.readInt8
+  arr.readInt16LE = BP.readInt16LE
+  arr.readInt16BE = BP.readInt16BE
+  arr.readInt32LE = BP.readInt32LE
+  arr.readInt32BE = BP.readInt32BE
+  arr.readFloatLE = BP.readFloatLE
+  arr.readFloatBE = BP.readFloatBE
+  arr.readDoubleLE = BP.readDoubleLE
+  arr.readDoubleBE = BP.readDoubleBE
+  arr.writeUInt8 = BP.writeUInt8
+  arr.writeUIntLE = BP.writeUIntLE
+  arr.writeUIntBE = BP.writeUIntBE
+  arr.writeUInt16LE = BP.writeUInt16LE
+  arr.writeUInt16BE = BP.writeUInt16BE
+  arr.writeUInt32LE = BP.writeUInt32LE
+  arr.writeUInt32BE = BP.writeUInt32BE
+  arr.writeIntLE = BP.writeIntLE
+  arr.writeIntBE = BP.writeIntBE
+  arr.writeInt8 = BP.writeInt8
+  arr.writeInt16LE = BP.writeInt16LE
+  arr.writeInt16BE = BP.writeInt16BE
+  arr.writeInt32LE = BP.writeInt32LE
+  arr.writeInt32BE = BP.writeInt32BE
+  arr.writeFloatLE = BP.writeFloatLE
+  arr.writeFloatBE = BP.writeFloatBE
+  arr.writeDoubleLE = BP.writeDoubleLE
+  arr.writeDoubleBE = BP.writeDoubleBE
+  arr.fill = BP.fill
+  arr.inspect = BP.inspect
+  arr.toArrayBuffer = BP.toArrayBuffer
+
+  return arr
+}
+
+var INVALID_BASE64_RE = /[^+\/0-9A-z\-]/g
+
+function base64clean (str) {
+  // Node strips out invalid characters like \n and \t from the string, base64-js does not
+  str = stringtrim(str).replace(INVALID_BASE64_RE, '')
+  // Node converts strings with length < 2 to ''
+  if (str.length < 2) return ''
+  // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
+  while (str.length % 4 !== 0) {
+    str = str + '='
+  }
+  return str
+}
+
+function stringtrim (str) {
+  if (str.trim) return str.trim()
+  return str.replace(/^\s+|\s+$/g, '')
+}
+
+function toHex (n) {
+  if (n < 16) return '0' + n.toString(16)
+  return n.toString(16)
+}
+
+function utf8ToBytes (string, units) {
+  units = units || Infinity
+  var codePoint
+  var length = string.length
+  var leadSurrogate = null
+  var bytes = []
+  var i = 0
+
+  for (; i < length; i++) {
+    codePoint = string.charCodeAt(i)
+
+    // is surrogate component
+    if (codePoint > 0xD7FF && codePoint < 0xE000) {
+      // last char was a lead
+      if (leadSurrogate) {
+        // 2 leads in a row
+        if (codePoint < 0xDC00) {
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          leadSurrogate = codePoint
+          continue
+        } else {
+          // valid surrogate pair
+          codePoint = leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00 | 0x10000
+          leadSurrogate = null
+        }
+      } else {
+        // no lead yet
+
+        if (codePoint > 0xDBFF) {
+          // unexpected trail
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        } else if (i + 1 === length) {
+          // unpaired lead
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        } else {
+          // valid lead
+          leadSurrogate = codePoint
+          continue
+        }
+      }
+    } else if (leadSurrogate) {
+      // valid bmp char, but last char was a lead
+      if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+      leadSurrogate = null
+    }
+
+    // encode utf8
+    if (codePoint < 0x80) {
+      if ((units -= 1) < 0) break
+      bytes.push(codePoint)
+    } else if (codePoint < 0x800) {
+      if ((units -= 2) < 0) break
+      bytes.push(
+        codePoint >> 0x6 | 0xC0,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x10000) {
+      if ((units -= 3) < 0) break
+      bytes.push(
+        codePoint >> 0xC | 0xE0,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x200000) {
+      if ((units -= 4) < 0) break
+      bytes.push(
+        codePoint >> 0x12 | 0xF0,
+        codePoint >> 0xC & 0x3F | 0x80,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else {
+      throw new Error('Invalid code point')
+    }
+  }
+
+  return bytes
+}
+
+function asciiToBytes (str) {
+  var byteArray = []
+  for (var i = 0; i < str.length; i++) {
+    // Node's code seems to be doing this and not & 0x7F..
+    byteArray.push(str.charCodeAt(i) & 0xFF)
+  }
+  return byteArray
+}
+
+function utf16leToBytes (str, units) {
+  var c, hi, lo
+  var byteArray = []
+  for (var i = 0; i < str.length; i++) {
+    if ((units -= 2) < 0) break
+
+    c = str.charCodeAt(i)
+    hi = c >> 8
+    lo = c % 256
+    byteArray.push(lo)
+    byteArray.push(hi)
+  }
+
+  return byteArray
+}
+
+function base64ToBytes (str) {
+  return base64.toByteArray(base64clean(str))
+}
+
+function blitBuffer (src, dst, offset, length) {
+  for (var i = 0; i < length; i++) {
+    if ((i + offset >= dst.length) || (i >= src.length)) break
+    dst[i + offset] = src[i]
+  }
+  return i
+}
+
+function decodeUtf8Char (str) {
+  try {
+    return decodeURIComponent(str)
+  } catch (err) {
+    return String.fromCharCode(0xFFFD) // UTF 8 invalid char
+  }
+}
+
+--!>
+<!-- /src/nodeapi/imports/ieee754/index.js
+exports.read = function (buffer, offset, isLE, mLen, nBytes) {
+  var e, m,
+      eLen = nBytes * 8 - mLen - 1,
+      eMax = (1 << eLen) - 1,
+      eBias = eMax >> 1,
+      nBits = -7,
+      i = isLE ? (nBytes - 1) : 0,
+      d = isLE ? -1 : 1,
+      s = buffer[offset + i]
+
+  i += d
+
+  e = s & ((1 << (-nBits)) - 1)
+  s >>= (-nBits)
+  nBits += eLen
+  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8) {}
+
+  m = e & ((1 << (-nBits)) - 1)
+  e >>= (-nBits)
+  nBits += mLen
+  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8) {}
+
+  if (e === 0) {
+    e = 1 - eBias
+  } else if (e === eMax) {
+    return m ? NaN : ((s ? -1 : 1) * Infinity)
+  } else {
+    m = m + Math.pow(2, mLen)
+    e = e - eBias
+  }
+  return (s ? -1 : 1) * m * Math.pow(2, e - mLen)
+}
+
+exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
+  var e, m, c,
+      eLen = nBytes * 8 - mLen - 1,
+      eMax = (1 << eLen) - 1,
+      eBias = eMax >> 1,
+      rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0),
+      i = isLE ? 0 : (nBytes - 1),
+      d = isLE ? 1 : -1,
+      s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0
+
+  value = Math.abs(value)
+
+  if (isNaN(value) || value === Infinity) {
+    m = isNaN(value) ? 1 : 0
+    e = eMax
+  } else {
+    e = Math.floor(Math.log(value) / Math.LN2)
+    if (value * (c = Math.pow(2, -e)) < 1) {
+      e--
+      c *= 2
+    }
+    if (e + eBias >= 1) {
+      value += rt / c
+    } else {
+      value += rt * Math.pow(2, 1 - eBias)
+    }
+    if (value * c >= 2) {
+      e++
+      c /= 2
+    }
+
+    if (e + eBias >= eMax) {
+      m = 0
+      e = eMax
+    } else if (e + eBias >= 1) {
+      m = (value * c - 1) * Math.pow(2, mLen)
+      e = e + eBias
+    } else {
+      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen)
+      e = 0
+    }
+  }
+
+  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8) {}
+
+  e = (e << mLen) | m
+  eLen += mLen
+  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8) {}
+
+  buffer[offset + i - d] |= s * 128
+}
+
+--!>
+<!-- /src/nodeapi/imports/is-array/index.js
+
+/**
+ * isArray
+ */
+
+var isArray = Array.isArray;
+
+/**
+ * toString
+ */
+
+var str = Object.prototype.toString;
+
+/**
+ * Whether or not the given `val`
+ * is an array.
+ *
+ * example:
+ *
+ *        isArray([]);
+ *        // > true
+ *        isArray(arguments);
+ *        // > false
+ *        isArray('');
+ *        // > false
+ *
+ * @param {mixed} val
+ * @return {bool}
+ */
+
+module.exports = isArray || function (val) {
+  return !! val && '[object Array]' == str.call(val);
+};
+
+--!>
+<!-- /src/nodeapi/path/_load.ts
+var _nopath_module_: nopath;
+
+function nopath_load() {
+
+  if (!_nopath_module_)
+    _nopath_module_ = <nopath>{
+      normalize: nopath_normalize,
+      join: nopath_join,
+      resolve: nopath_resolve,
+      isAbsolute: nopath_isAbsolute,
+      dirname: nopath_dirname,
+      basename: nopath_basename,
+      extname: nopath_extname,
+      sep: '/',
+      delimiter: '/'
+    };
+
+  return _nopath_module_;
+}
+--!>
+<!-- /src/nodeapi/path/basename.ts
+function nopath_basename(p: string, ext?: string): string {
+
+  p = nopath_normalize(p);
+  if (p === '/')
+    return '';
+
+  var result: string;
+
+  var lastSlash = p.lastIndexOf('/');
+  if (lastSlash===p.length-1) {
+    var prevSlash = p.lastIndexOf('/', lastSlash - 1);
+    if (prevSlash < 0)
+      prevSlash = 0;
+    result = p.slice(prevSlash + 1, lastSlash);
+  }
+  else {
+    result = p.slice(lastSlash + 1);
+  }
+
+  if (ext && result.length >= ext.length && result.slice(-ext.length) === ext)
+    result = result.slice(0, result.length - ext.length);
+}
+--!>
+<!-- /src/nodeapi/path/defs.d.ts
+interface nopath {
+
+  normalize(p: string): string;
+  join(...paths: any[]): string;
+  resolve(...pathSegments: any[]): string;
+  isAbsolute(p: string): boolean;
+  relative(from: string, to: string): string;
+  dirname(p: string): string;
+  basename(p: string, ext?: string): string;
+  extname(p: string): string;
+  sep: string;
+  delimiter: string;
+
+  // new apis? definitely not in v0.10.38
+  parse?(p: string): { root: string; dir: string; base: string; ext: string; name: string; };
+  format?(pP: { root: string; dir: string; base: string; ext: string; name: string; }): string;
+
+}
+--!>
+<!-- /src/nodeapi/path/dirname.ts
+function nopath_dirname(p: string): string {
+  var p = nopath_normalize(p);
+  if (p === '/') return '/';
+  var lastSlash = p.lastIndexOf('/');
+  if (lastSlash === p.length - 1)
+    lastSlash = p.lastIndexOf('/', lastSlash - 1);
+  return p.slice(0, lastSlash + 1);
+}
+
+--!>
+<!-- /src/nodeapi/path/extname.ts
+function nopath_extname(p: string): string {
+
+  var base = nopath_basename(p);
+  var lastDot = base.lastIndexOf('.');
+  if (lastDot >= 0)
+    return base.slice(lastDot);
+  else
+    return '';
+
+}
+--!>
+<!-- /src/nodeapi/path/is.ts
+function nopath_isAbsolute(p: string): boolean {
+
+  return /^\//.test(p);
+}
+
+--!>
+<!-- /src/nodeapi/path/join.ts
+function nopath_join(...paths: any[]): string {
+  return nopath_join_core(paths);
+}
+
+function nopath_join_core(paths: any[]): string {
+    var parts: string[] = [];
+  var trailSlash = false;
+  for (var i = 0; i < paths.length; i++) {
+    var part = paths[i];
+    if (!part) continue;
+
+    if (parts.length) {
+      var wlead = part;
+      part = part.replace(/^\/*/, '');
+      if (!part) continue;
+      if (wlead.length > part.length)
+        parts.push('');
+    }
+    var wtrail = part;
+    part = part.replace(/\/*$/, '');
+    if (!part) continue;
+    parts.push(part);
+
+    trailSlash = wtrail.length > part.length;
+  }
+
+  if (trailSlash)
+    parts.push('/');
+
+  return parts.join('/');
+}
+--!>
+<!-- /src/nodeapi/path/normalize.ts
+function nopath_normalize(p: string): string {
+
+  return p;
+
+}
+
+--!>
+<!-- /src/nodeapi/path/relative.ts
+function nopath_relative(from: string, to: string): string {
+
+  throw new Error('path/relative is not implemented');
+
+}
+
+--!>
+<!-- /src/nodeapi/path/resolve.ts
+function nopath_resolve(...pathSegments: any[]): string {
+
+  var res = nopath_join_core(pathSegments);
+
+  if (!/^\//.test(res))
+    res = no_process.cwd() + res;
+
+  return res;
+}
+--!>
+<!-- /src/nodeapi/process/_load.ts
+var _noprocess_: no_process;
+
+function noprocess_load() {
+
+  if (!_noprocess_)
+    _noprocess_ = <no_process>{
+
+      stdout: noprocess_stdout_load(),
+      stderr: noprocess_stderr_load(),
+      stdin: noprocess_stdin_load(),
+
+      // these are taken from the real node ran on ubuntu
+      argv: ['node'],
+      execPath: '/usr/bin/nodejs',
+      title: 'node',
+      arch: 'ia32',
+      platform: 'linux',
+
+      memoryUsage: noprocess_memoryUsage,
+
+      env: nodeprocess_env_load(),
+
+      pid: noprocess_pid_load(),
+
+      chdir: noprocess_chdir,
+      cwd: noprocess_cwd,
+
+      version: nodeprocess_version_load(),
+      versions: nodeprocess_versions_load(),
+
+      config: nodeprocess_config_load(),
+
+      abort: noprocess_abort,
+      exit: noprocess_exit,
+
+      kill: nodeprocess_kill,
+
+      getgid: nodeprocess_getgid,
+      setgid: nodeprocess_setgid,
+      getuid: nodeprocess_getgid,
+      setuid: nodeprocess_setuid,
+
+      nextTick: noprocess_nextTick,
+      uptime: noprocess_uptime,
+
+      umask: noprocess_umask
+    };
+
+  return _noprocess_;
+}
+--!>
+<!-- /src/nodeapi/process/abort.ts
+function noprocess_abort() {
+  // TODO: what does shutdown mean here?
+}
+--!>
+<!-- /src/nodeapi/process/chdir_cwd.ts
+// TODO: pass it in?
+var _noprocess_cwd_: string = '/';
+
+function noprocess_chdir(directory: string) {
+  var dirStat = nofs_statSync(directory);
+
+  if (dirStat && dirStat.isDirectory()) {
+    if (directory !== noprocess_cwd()) {
+      var normDirectory = nopath_normalize(directory);
+      if (noprocess_cwd() !== normDirectory) {
+        _noprocess_cwd_ = normDirectory;
+      }
+    }
+  }
+  else {
+    // TODO: throw a node-shaped error instead
+    throw new Error('ENOENT, no such file or directory');
+  }
+}
+
+function noprocess_cwd(): string {
+  return _noprocess_cwd_;
+}
+
+--!>
+<!-- /src/nodeapi/process/config.ts
+var _nodeprocess_config_;
+
+function nodeprocess_config_load() {
+  if (!_nodeprocess_config_) {
+    _nodeprocess_config_ = {
+      target_defaults:
+      {
+        cflags: [],
+        default_configuration: 'Release',
+        defines: [],
+        include_dirs: [],
+        libraries: []
+      },
+      variables:
+      {
+        clang: 0,
+        gcc_version: 48,
+        host_arch: 'ia32',
+        node_install_npm: true,
+        node_prefix: '/usr',
+        node_shared_cares: false,
+        node_shared_http_parser: false,
+        node_shared_libuv: false,
+        node_shared_openssl: false,
+        node_shared_v8: false,
+        node_shared_zlib: false,
+        node_tag: '',
+        node_unsafe_optimizations: 0,
+        node_use_dtrace: false,
+        node_use_etw: false,
+        node_use_openssl: true,
+        node_use_perfctr: false,
+        node_use_systemtap: false,
+        openssl_no_asm: 0,
+        python: '/usr/bin/python',
+        target_arch: 'ia32',
+        v8_enable_gdbjit: 0,
+        v8_no_strict_aliasing: 1,
+        v8_use_snapshot: false,
+        want_separate_host_toolset: 0
+      }
+    };
+  }
+  return _nodeprocess_config_;
+}
+--!>
+<!-- /src/nodeapi/process/defs.d.ts
+interface no_process extends noevents_EventEmitter {
+
+  stdout: nostream_WritableStream;
+  stderr: nostream_WritableStream;
+  stdin: nostream_ReadableStream;
+
+  argv: string[];
+
+  execPath: string;
+
+  abort(): void;
+
+  chdir(directory: string): void;
+  cwd(): string;
+
+  env: any;
+
+  exit(code?: number): void;
+
+  getgid(): number;
+  setgid(id: number): void;
+  setgid(id: string): void;
+
+  getuid(): number;
+  setuid(id: number): void;
+  setuid(id: string): void;
+
+  version: string;
+  versions: {
+    http_parser: string;
+    node: string;
+    v8: string;
+    ares: string;
+    uv: string;
+    zlib: string;
+    openssl: string;
+  };
+
+  config: {
+    target_defaults: {
+      cflags: any[];
+      default_configuration: string;
+      defines: string[];
+      include_dirs: string[];
+      libraries: string[];
+    };
+    variables: {
+      clang: number;
+      host_arch: string;
+      node_install_npm: boolean;
+      node_install_waf: boolean;
+      node_prefix: string;
+      node_shared_openssl: boolean;
+      node_shared_v8: boolean;
+      node_shared_zlib: boolean;
+      node_use_dtrace: boolean;
+      node_use_etw: boolean;
+      node_use_openssl: boolean;
+      target_arch: string;
+
+      v8_no_strict_aliasing: number;
+      v8_use_snapshot: boolean;
+      visibility: string;
+    };
+  };
+
+  kill(pid: number, signal?: string): void;
+
+  pid: number;
+
+  title: string;
+
+  arch: string;
+  platform: string;
+
+  memoryUsage(): { rss: number; heapTotal: number; heapUsed: number; };
+
+  nextTick(callback: Function): void;
+
+  umask(mask?: number): number;
+
+  uptime(): number;
+  hrtime(time?: number[]): number[];
+
+  // Worker
+  send?(message: any, sendHandle?: any): void;
+}
+
+--!>
+<!-- /src/nodeapi/process/env.ts
+var _nodeprocess_env_: any;
+
+function nodeprocess_env_load() {
+  if (!_nodeprocess_env_) {
+    _nodeprocess_env_ = {};
+  }
+  return _nodeprocess_env_;
+}
+--!>
+<!-- /src/nodeapi/process/exit.ts
+function noprocess_exit(code ?: number) {
+  // TODO: what does shutdown mean here?
+}
+
+--!>
+<!-- /src/nodeapi/process/getgid_setgid_getuid_setuid.ts
+function nodeprocess_getgid() {
+  // taken from node running on ubuntu
+  return 1000;
+}
+
+function nodeprocess_setgid(id: any) {
+  // TODO: use node-shaped error
+  throw new Error('EPERM, Operation not permitted');
+}
+
+function nodeprocess_getuid(): number {
+  // taken from node running on ubuntu
+  return 1000;
+}
+
+function nodeprocess_setuid(id: any) {
+  // TODO: use node-shaped error
+  throw new Error('EPERM, Operation not permitted');
+}
+
+--!>
+<!-- /src/nodeapi/process/kill.ts
+function nodeprocess_kill(pid: number, signal?: string) {
+  // when we emulate processes, implement process termination
+}
+--!>
+<!-- /src/nodeapi/process/memoryUsage.ts
+function noprocess_memoryUsage(): { rss: number; heapTotal: number; heapUsed: number; } {
+  return {
+    rss: 13225984 + ((Math.random() * 3000) | 0),
+    heapTotal: 7130752 + ((Math.random() * 3000) | 0),
+    heapUsed: 2449612 + ((Math.random() * 3000) | 0)
+  };
+}
+--!>
+<!-- /src/nodeapi/process/nextTick.ts
+function noprocess_nextTick(callback: Function): void {
+
+  function fire() {
+    if (fired) return;
+    fired = true;
+    callback();
+  }
+
+  var fired = false;
+  setTimeout(fire, 0);
+  if (typeof requestAnimationFrame!=='undefined') {
+    requestAnimationFrame(fire);
+  }
+  else if (typeof msRequestAnimationFrame !== 'undefined') {
+    msRequestAnimationFrame(fire);
+  }
+
+}
+--!>
+<!-- /src/nodeapi/process/pid.ts
+var _noprocess_pid_;
+
+function noprocess_pid_load() {
+  if (typeof _noprocess_pid_ === 'undefined') {
+    _noprocess_pid_ = 32754 + ((Math.random() * 500) | 0);
+  }
+  return _noprocess_pid_;
+}
+--!>
+<!-- /src/nodeapi/process/stdout.ts
+var _noprocess_stdout_: nostream_WritableStream;
+var _noprocess_stderr_: nostream_WritableStream;
+var _noprocess_stdin_: nostream_ReadableStream;
+
+function noprocess_stdout_load() {
+  if (!_noprocess_stdout_) {
+
+    // TODO: init stdout, stderr, stdin
+    _noprocess_stdout_ = <nostream_WritableStream>{
+    };
+    _noprocess_stderr_ = <nostream_WritableStream>{
+    };
+    _noprocess_stdin_ = <nostream_ReadableStream>{
+    };
+  }
+
+  return _noprocess_stdout_;
+}
+
+function noprocess_stderr_load() {
+  noprocess_stdout_load();
+  return _noprocess_stderr_;
+}
+
+function noprocess_stdin_load() {
+  noprocess_stdout_load();
+  return _noprocess_stdin_;
+}
+--!>
+<!-- /src/nodeapi/process/umask.ts
+var _noprocess_umask_;
+
+function noprocess_umask(mask?: number): number {
+  if (typeof _noprocess_umask_ !== 'number') {
+    _noprocess_umask_ = 2;
+  }
+
+  if (typeof mask === 'number') {
+    var res = _noprocess_umask_;
+    _noprocess_umask_ = mask;
+    return res;
+  }
+
+  return _noprocess_umask_;
+}
+--!>
+<!-- /src/nodeapi/process/uptime.ts
+var _noprocess_uptime_start_ = +(new Date());
+
+function noprocess_uptime() {
+
+  if (typeof _noprocess_uptime_start_ !== 'number') {
+    _noprocess_uptime_start_ = +(new Date());
+  }
+
+  var now = typeof Date.now === 'function' ? Date.now() : +(new Date());
+
+  return now - _noprocess_uptime_start_;
+}
+--!>
+<!-- /src/nodeapi/process/versions.ts
+var _nodeprocess_version_: string;
+var _nodeprocess_versions_;
+
+function nodeprocess_version_load() {
+
+  // real node running on ubuntu as of Friday 22 of May 2015
+  if (!_nodeprocess_version_) {
+    _nodeprocess_version_ = 'v0.10.38';
+  }
+  return _nodeprocess_version_;
+}
+
+function nodeprocess_versions_load() {
+  if (!_nodeprocess_versions_) {
+
+    // real node running on ubuntu as of Friday 22 of May 2015
+    // (these might not be properly implemented when hosted in browser)
+    _nodeprocess_versions_ = {
+      http_parser: '1.0',
+      node: '0.10.38',
+      v8: '3.14.5.9',
+      ares: '1.9.0-DEV',
+      uv: '0.10.36',
+      zlib: '1.2.8',
+      modules: '11',
+      openssl: '1.0.1m'
+    };
+
+  }
+  return _nodeprocess_versions_;
+}
+--!>
+<!-- /src/nodeapi/stream/defs.d.ts
+interface nostream_ReadableStream extends noevents_EventEmitter {
+  readable: boolean;
+  read(size?: number): string|no_Buffer;
+  setEncoding(encoding: string): void;
+  pause(): void;
+  resume(): void;
+  pipe<T extends nostream_WritableStream>(destination: T, options?: { end?: boolean; }): T;
+  unpipe<T extends nostream_WritableStream>(destination?: T): void;
+  unshift(chunk: string): void;
+  unshift(chunk: no_Buffer): void;
+  wrap(oldStream: nostream_ReadableStream): nostream_ReadableStream;
+}
+
+interface nostream_WritableStream extends noevents_EventEmitter {
+  writable: boolean;
+  write(buffer: no_Buffer, cb?: Function): boolean;
+  write(str: string, cb?: Function): boolean;
+  write(str: string, encoding?: string, cb?: Function): boolean;
+  end(): void;
+  end(buffer: no_Buffer, cb?: Function): void;
+  end(str: string, cb?: Function): void;
+  end(str: string, encoding?: string, cb?: Function): void
+}
+
+interface nostream_Stream extends noevents_EventEmitter {
+  pipe<T extends nostream_WritableStream>(destination: T, options?: { end?: boolean; }): T;
+}
+
+interface nostream_ReadableOptions {
+  highWaterMark?: number;
+  encoding?: string;
+  objectMode?: boolean;
+}
+
+  interface nostream_Readable extends noevents_EventEmitter, nostream_ReadableStream {
+  readable: boolean;
+  //constructor(opts?: ReadableOptions)
+  _read(size: number): void;
+
+  read(size?: number): string|no_Buffer;
+
+	setEncoding(encoding: string): void;
+
+  pause(): void;
+
+  resume(): void;
+
+  pipe<T extends nostream_WritableStream>(destination: T, options?: { end?: boolean; }): T;
+
+  unpipe(destination?: nostream_WritableStream): void;
+
+	unshift(chunk: string): void;
+
+  unshift(chunk: no_Buffer): void;
+
+  wrap(oldStream: nostream_ReadableStream): nostream_ReadableStream;
+
+  push(chunk: any, encoding?: string): boolean;
+
+}
+
+interface nostream_WritableOptions {
+  highWaterMark?: number;
+  decodeStrings?: boolean;
+}
+
+interface nostream_Writable extends noevents_EventEmitter, nostream_WritableStream {
+  writable: boolean;
+  // constructor(opts?: WritableOptions)
+
+  _write(data: no_Buffer, encoding: string, callback: Function): void;
+
+  _write(data: string, encoding: string, callback: Function): void;
+
+  write(buffer: no_Buffer, cb?: Function): boolean;
+
+  write(str: string, cb?: Function): boolean;
+
+  write(str: string, encoding?: string, cb?: Function): boolean;
+
+  end(): void;
+
+  end(buffer: no_Buffer, cb?: Function): void;
+
+  end(str: string, cb?: Function): void;
+
+  end(str: string, encoding?: string, cb?: Function): void;
+
+}
+
+interface nostream_DuplexOptions extends nostream_ReadableOptions, nostream_WritableOptions {
+  allowHalfOpen?: boolean;
+}
+
+  /**
+   * Note: Duplex extends both Readable and Writable.
+   */
+  interface nostream_Duplex extends nostream_Readable {
+  writable: boolean;
+  // constructor(opts?: DuplexOptions);
+
+  _write(data: no_Buffer, encoding: string, callback: Function);
+  _write(data: string, encoding: string, callback: Function): void;
+
+  write(buffer: no_Buffer, cb?: Function);
+  write(str: string, cb?: Function);
+  write(str: string, encoding?: string, cb?: Function): boolean;
+
+  end(): void;
+  end(buffer: no_Buffer, cb?: Function): void;
+  end(str: string, cb?: Function): void;
+  end(str: string, encoding?: string, cb?: Function): void;
+
+}
+
+interface nostream_TransformOptions extends nostream_ReadableOptions, nostream_WritableOptions { }
+
+/**
+   * Note: Transform lacks the _read and _write methods of Readable/Writable.
+   */
+interface nostream_Transform extends noevents_EventEmitter {
+  readable: boolean;
+  writable: boolean;
+  // constructor(opts?: TransformOptions)
+
+  _transform(chunk: no_Buffer, encoding: string, callback: Function): void;
+  _transform(chunk: string, encoding: string, callback: Function): void;
+
+  _flush(callback: Function): void;
+
+  read(size?: number): any;
+
+	setEncoding(encoding: string): void;
+
+  pause(): void;
+
+  resume(): void;
+
+  pipe<T extends nostream_WritableStream>(destination: T, options?: { end?: boolean; }): T;
+
+  unpipe(destination?: nostream_WritableStream): void;
+
+	unshift(chunk: string): void;
+
+  unshift(chunk: no_Buffer): void;
+
+  wrap(oldStream: nostream_ReadableStream): nostream_ReadableStream;
+
+  push(chunk: any, encoding?: string): boolean;
+
+  write(buffer: no_Buffer, cb?: Function): boolean;
+  write(str: string, cb?: Function): boolean;
+  write(str: string, encoding?: string, cb?: Function): boolean;
+
+  end(): void;
+  end(buffer: no_Buffer, cb?: Function): void;
+  end(str: string, cb?: Function): void;
+  end(str: string, encoding?: string, cb?: Function): void;
+
+}
+--!>
+<!-- /src/nodeapi/statics.ts
+declare var no_drive: persistence.Drive;
+declare var no_homepath: string;
+
 --!>
 <!-- /src/persistence/attached/indexedDB.ts
 module persistence {
@@ -8613,7 +12620,7 @@ module persistence.dom {
 
     read() {
 
-      // proper HTML5 has substringDate to read only a chunk
+      // proper HTML5 has substringData to read only a chunk
       // (that saves on string memory allocations
       // comparing to fetching the whole text including the file name)
       var contentText = typeof this.node.substringData === 'function' ?
@@ -9278,12 +13285,6 @@ module persistence {
   export function normalizePath(path: string) : string {
 
     if (!path) return '/'; // empty paths converted to root
-
-    while (' \n\t\r'.indexOf(path.charAt(0))>=0) // removing leading whitespace
-      path = path.slice(1);
-
-    while ('\n\t\r\\'.indexOf(path.charAt(path.length - 1))>=0) // removing trailing whitespace and trailing slashes
-      path = path.slice(0, path.length - 1);
 
     if (path.charAt(0) !== '/') // ensuring leading slash
       path = '/' + path;
@@ -10754,6 +14755,10 @@ interface SQLResultSetRowList {
 
 <!-- total 56Mb, saved 25 Apr 2015 22:52:01.231 --*>
 
+<!-- /empty/
+--*>
+
+
 <!-- /LF-file.txt
 123
 456--*>
@@ -10788,7 +14793,13 @@ return dump.join('\n');
 
 
 <!-- /shell/start.ts.js
-<%=typescriptBuild('/shell/*', '/boot/base.d.ts', '/persistence/Drive.ts')%>--*>
+<%=typescriptBuild('/shell/*', '/boot/base.d.ts', '/persistence/Drive.ts', '/typings/*')%>--*>
+
+<!-- /shell/node.ts.js
+<%=typescriptBuild('/node/*', '/boot/base.d.ts', '/persistence/Drive.ts')%>--*>
+
+<!-- /shell/persistence.ts.js
+<%=typescriptBuild('/persistence/*', '/typings/*')%>--*>
 
 <!-- /shell/style.css
 <%=(function() {
@@ -10824,4 +14835,13 @@ return dump.join('\n');
 --!>
 <!-- /src/readme.md
 #New mini portable shell development
+
+Used these open-source libraries:
+
+ * [feross/buffer] (https://github.com/feross/buffer) - MIT
+ * [beatgammit/base64-js] (https://github.com/beatgammit/base64-js) - MIT
+ * [feross/ieee754] (https://github.com/feross/ieee754) - MIT
+ * [retrofox/is-array] (https://github.com/retrofox/is-array) - MIT
+
+
 --!>
