@@ -6900,8 +6900,12 @@ var terminal;
                     '.js';
                 if (!this._processMod) {
                     this._processMod = loadMod({
-                        eval: 'exports = { evalFn: eval };',
-                        ui: false
+                        eval: 'exports = { evalFn: function(c) { return eval(c); } };',
+                        ui: false,
+                        scope: {
+                            require: function (mod) { return _this._require(mod); },
+                            process: this._nodeMod.exports.process
+                        }
                     });
                 }
                 var result = this._processMod.exports.evalFn(code);
@@ -15737,8 +15741,12 @@ module terminal {
 
         if (!this._processMod) {
           this._processMod = loadMod({
-            eval: 'exports = { evalFn: eval };',
-            ui: false
+            eval: 'exports = { evalFn: function(c) { return eval(c); } };',
+            ui: false,
+            scope: {
+              require: mod => this._require(mod),
+              process: this._nodeMod.exports.process
+            }
           });
         }
         var result = this._processMod.exports.evalFn(code);
