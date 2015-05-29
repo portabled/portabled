@@ -250,122 +250,6 @@ function createFrame(style) {
   }
 
 }
-
-function loadMod(options) {
-
-  var style = options.style;
-  if (!options.ui) {
-    style = { display: 'none' };
-  }
-  else if (typeof style === 'string') {
-    style = { className: style, display: 'none' };
-  }
-
-  var frame = this.createFrame(style);
-  var frameFunction = frame.global.Function;
-
-  if (options.scope) {
-    var scope = typeof options.scope === 'function' ? (options.scope)(frame.global) : options.scope;
-    for (var k in scope) if (scope.hasOwnProperty(k)) {
-      try { frame.global[k] = scope[k]; } catch (err) { }
-    }
-  }
-
-  if (options.eval) {
-
-    var exportsInScope = scope && 'exports' in scope;
-    var evalArgNames = exportsInScope ? [] : ['exports'];
-    var evalArgs = exportsInScope ? [] : [{}];
-    if (scope) {
-      for (var k in scope) if (scope.hasOwnProperty(k)) {
-        evalArgNames.push(k);
-        evalArgs.push(scope[k]);
-      }
-    }
-
-    if (!options.ui) {
-      var allowedGlobals = {
-        setTimeout: 1, setInterval: 1, clearTimeout: 1, clearInterval: 1,
-        eval: 1,
-        console: 1,
-        undefined: 1,
-        Object: 1, Array: 1, Date: 1, Function: 1, String: 1, Boolean: 1, Number: 1,
-        Infinity: 1, NaN: 1, isNaN: 1, isFinite: 1, parseInt: 1, parseFloat: 1,
-        escape: 1, unescape: 1,
-
-        Int32Array: 1, Int8Array: 1, Int16Array: 1,
-        UInt32Array: 1, UInt8Array: 1, UInt8ClampedArray: 1, UInt16Array: 1,
-        Float32Array: 1, Float64Array: 1, ArrayBuffer: 1,
-
-        Math: 1, JSON: 1, RegExp: 1,
-        Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,
-
-        toString: 1, toJSON: 1, toValue: 1,
-
-        Map: 1
-      };
-
-      var hiddenKeys = {};
-
-      // normal properties
-      for (var k in frame.global) {
-        if (scope && scope.hasOwnProperty(k)) continue;
-        if (allowedGlobals.hasOwnProperty(k)) continue;
-        evalArgNames.push(k);
-        hiddenKeys[k] = 1;
-      }
-
-      // non-enumerable properties directly on global
-      if (Object.getOwnPropertyNames) {
-        var props = Object.getOwnPropertyNames(frame.global);
-        for (var i = 0; i < props.length; i++) {
-          if (scope && scope.hasOwnProperty(props[i])) continue;
-          if (allowedGlobals.hasOwnProperty(props[i])) continue;
-          if (hiddenKeys.hasOwnProperty(props[i])) continue;
-          evalArgNames.push(props[i]);
-        }
-
-        // non-enumerable properties on global's prototype
-        if (frame.global.constructor
-          && frame.global.constructor.prototype
-          && frame.global.constructor.prototype != Object
-          && frame.global.constructor.prototype != Object.prototype) {
-          props = Object.getOwnPropertyNames(frame.global.constructor.prototype);
-          for (var i = 0; i < props.length; i++) {
-            if (scope && scope.hasOwnProperty(props[i])) continue;
-            if (allowedGlobals.hasOwnProperty(props[i])) continue;
-            if (hiddenKeys.hasOwnProperty(props[i])) continue;
-            evalArgNames.push(props[i]);
-          }
-        }
-      }
-    }
-
-    var innerEval = frameFunction.apply(frame.global, ['return function(txt) { return eval(txt); }'])();
-
-    var wrappedText = '(function() { return function('+evalArgNames.join(',')+'){'+
-      options.eval + '\nreturn exports; }; })()'+
-      (options.path ? ' //# sourceURL=' + options.path : '');
-
-    //evalArgNames.push(
-    //  options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval + '\nreturn exports;');
-
-    var evalFn = innerEval(wrappedText);
-    //var evalFn = frameFunction.apply(frame.global, evalArgNames);
-
-    var modExports = evalFn.apply(frame.global, evalArgs);
-
-    return {
-      document: frame.document,
-      global: frame.global,
-      iframe: frame.iframe,
-      exports: modExports
-    };
-  }
-
-  return frame;
-
-}
   function earlyBoot() {
 
   var earlyBootStart = new Date().valueOf();
@@ -1791,6 +1675,7 @@ var persistence;
         function MountedDrive(_dom, _shadow) {
             this._dom = _dom;
             this._shadow = _shadow;
+            this.updateTime = true;
             this.timestamp = 0;
             this.timestamp = this._dom.timestamp;
         }
@@ -1801,6 +1686,9 @@ var persistence;
             return this._dom.read(file);
         };
         MountedDrive.prototype.write = function (file, content) {
+            if (this.updateTime) {
+                this.timestamp = +new Date();
+            }
             this._dom.timestamp = this.timestamp;
             this._dom.write(file, content);
             if (this._shadow) {
@@ -1823,6 +1711,123 @@ var persistence;
     }
     persistence.normalizePath = normalizePath;
 })(persistence || (persistence = {}));
+
+
+function loadMod(options) {
+
+  var style = options.style;
+  if (!options.ui) {
+    style = { display: 'none' };
+  }
+  else if (typeof style === 'string') {
+    style = { className: style, display: 'none' };
+  }
+
+  var frame = this.createFrame(style);
+  var frameFunction = frame.global.Function;
+
+  if (options.scope) {
+    var scope = typeof options.scope === 'function' ? (options.scope)(frame.global) : options.scope;
+    for (var k in scope) if (scope.hasOwnProperty(k)) {
+      try { frame.global[k] = scope[k]; } catch (err) { }
+    }
+  }
+
+  if (options.eval) {
+
+    var exportsInScope = scope && 'exports' in scope;
+    var evalArgNames = exportsInScope ? [] : ['exports'];
+    var evalArgs = exportsInScope ? [] : [{}];
+    if (scope) {
+      for (var k in scope) if (scope.hasOwnProperty(k)) {
+        evalArgNames.push(k);
+        evalArgs.push(scope[k]);
+      }
+    }
+
+    if (!options.ui) {
+      var allowedGlobals = {
+        setTimeout: 1, setInterval: 1, clearTimeout: 1, clearInterval: 1,
+        eval: 1,
+        console: 1,
+        undefined: 1,
+        Object: 1, Array: 1, Date: 1, Function: 1, String: 1, Boolean: 1, Number: 1,
+        Infinity: 1, NaN: 1, isNaN: 1, isFinite: 1, parseInt: 1, parseFloat: 1,
+        escape: 1, unescape: 1,
+
+        Int32Array: 1, Int8Array: 1, Int16Array: 1,
+        UInt32Array: 1, UInt8Array: 1, UInt8ClampedArray: 1, UInt16Array: 1,
+        Float32Array: 1, Float64Array: 1, ArrayBuffer: 1,
+
+        Math: 1, JSON: 1, RegExp: 1,
+        Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,
+
+        toString: 1, toJSON: 1, toValue: 1,
+
+        Map: 1
+      };
+
+      var hiddenKeys = {};
+
+      // normal properties
+      for (var k in frame.global) {
+        if (scope && scope.hasOwnProperty(k)) continue;
+        if (allowedGlobals.hasOwnProperty(k)) continue;
+        evalArgNames.push(k);
+        hiddenKeys[k] = 1;
+      }
+
+      // non-enumerable properties directly on global
+      if (Object.getOwnPropertyNames) {
+        var props = Object.getOwnPropertyNames(frame.global);
+        for (var i = 0; i < props.length; i++) {
+          if (scope && scope.hasOwnProperty(props[i])) continue;
+          if (allowedGlobals.hasOwnProperty(props[i])) continue;
+          if (hiddenKeys.hasOwnProperty(props[i])) continue;
+          evalArgNames.push(props[i]);
+        }
+
+        // non-enumerable properties on global's prototype
+        if (frame.global.constructor
+          && frame.global.constructor.prototype
+          && frame.global.constructor.prototype != Object
+          && frame.global.constructor.prototype != Object.prototype) {
+          props = Object.getOwnPropertyNames(frame.global.constructor.prototype);
+          for (var i = 0; i < props.length; i++) {
+            if (scope && scope.hasOwnProperty(props[i])) continue;
+            if (allowedGlobals.hasOwnProperty(props[i])) continue;
+            if (hiddenKeys.hasOwnProperty(props[i])) continue;
+            evalArgNames.push(props[i]);
+          }
+        }
+      }
+    }
+
+    var innerEval = frameFunction.apply(frame.global, ['return function(txt) { return eval(txt); }'])();
+
+    var wrappedText = '(function() { return function('+evalArgNames.join(',')+'){'+
+      options.eval + '\nreturn exports; }; })()'+
+      (options.path ? ' //# sourceURL=' + options.path : '');
+
+    //evalArgNames.push(
+    //  options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval + '\nreturn exports;');
+
+    var evalFn = innerEval(wrappedText);
+    //var evalFn = frameFunction.apply(frame.global, evalArgNames);
+
+    var modExports = evalFn.apply(frame.global, evalArgs);
+
+    return {
+      document: frame.document,
+      global: frame.global,
+      iframe: frame.iframe,
+      exports: modExports
+    };
+  }
+
+  return frame;
+
+}
 
 //# sourceURL=/load/shellLoader.ts.js
 </script>
@@ -5881,6 +5886,7 @@ var CommanderShell = (function () {
         };
         this._onsizechangedTimeout = 0;
         this._node = new terminal.NodeHost(this._drive);
+        this._node.log = function (args) { return _this._terminal.log.apply(_this._terminal, args); };
         elem(this._host, {
             background: 'black',
             color: 'silver'
@@ -6873,6 +6879,7 @@ var terminal;
             this._nodeMod = null;
             this._nodeModCache = null;
             this._processMod = null;
+            this.log = null;
             this._nodeModCache = {};
             var nocode = this._drive.read('/shell/node.ts.js');
             this._nodeMod = loadMod({
@@ -6882,7 +6889,19 @@ var terminal;
                 scope: {
                     no_drive: this._drive,
                     no_homepath: '/',
-                    require: function (mod) { return _this._require(mod); }
+                    require: function (mod) { return _this._require(mod); },
+                    console: {
+                        log: function () {
+                            var args = [];
+                            for (var _i = 0; _i < arguments.length; _i++) {
+                                args[_i - 0] = arguments[_i];
+                            }
+                            if (_this.log)
+                                _this.log(args);
+                            else if (typeof console !== 'undefined')
+                                console.log(args);
+                        }
+                    }
                 }
             });
             this._nodeModCache = this._nodeMod.exports;
@@ -6907,7 +6926,19 @@ var terminal;
                         scope: {
                             require: function (mod) { return _this._require(mod); },
                             process: this._nodeMod.exports.process,
-                            module: this._nodeMod.exports.module
+                            module: this._nodeMod.exports.module,
+                            console: {
+                                log: function () {
+                                    var args = [];
+                                    for (var _i = 0; _i < arguments.length; _i++) {
+                                        args[_i - 0] = arguments[_i];
+                                    }
+                                    if (_this.log)
+                                        _this.log(args);
+                                    else if (typeof console !== 'undefined')
+                                        console.log(args);
+                                }
+                            }
                         }
                     });
                 }
@@ -6922,7 +6953,19 @@ var terminal;
                     scope: {
                         require: function (mod) { return _this._require(mod); },
                         process: this._nodeMod.exports.process,
-                        module: this._nodeMod.exports.module
+                        module: this._nodeMod.exports.module,
+                        console: {
+                            log: function () {
+                                var args = [];
+                                for (var _i = 0; _i < arguments.length; _i++) {
+                                    args[_i - 0] = arguments[_i];
+                                }
+                                if (_this.log)
+                                    _this.log(args);
+                                else if (typeof console !== 'undefined')
+                                    console.log(args);
+                            }
+                        }
                     }
                 });
                 var result = resMod.exports;
@@ -7208,7 +7251,13 @@ function nofs_load() {
             writeFileSync: nofs_writeFileSync,
             writeFile: no_wrapAsync(nofs_writeFileSync),
             existsSync: nofs_existsSync,
-            exists: no_wrapAsyncNoError(nofs_existsSync)
+            exists: no_wrapAsyncNoError(nofs_existsSync),
+            openSync: nofs_openSync,
+            open: no_wrapAsync(nofs_openSync),
+            readSync: nofs_readSync,
+            read: no_wrapAsync(nofs_readSync),
+            writeSync: nofs_writeSync,
+            write: no_wrapAsync(nofs_writeSync)
         };
     return _nofs_module_;
 }
@@ -7218,6 +7267,32 @@ function nofs_existsSync(file) {
         return false;
     else
         return true;
+}
+var _nofs_fdbase_;
+var _nofs_fdtable_;
+function nofs_fdtable() {
+    if (!_nofs_fdtable_) {
+        _nofs_fdtable_ = [];
+        _nofs_fdbase_ = 34957346;
+    }
+    return _nofs_fdtable_;
+}
+function nofs_openSync(path, flags, mode) {
+    var fdtable = nofs_fdtable();
+    for (var fd in fdtable) {
+        var fpath = fdtable[fd];
+        if (fpath === path) {
+            return Number(fd);
+        }
+    }
+    var newFD = _nofs_fdbase_++;
+    fdtable[newFD] = path;
+    return newFD;
+}
+function nofs_readSync(fd, buffer, offset, length, position) {
+    // TODO: consider also std handles
+    //var path = nofs_fdtable()[fd];
+    throw new Error('Buffer-aware API fs.readSync is not implemented.');
 }
 function nofs_readFileSync(filename, options) {
     // TODO: handle encoding and other
@@ -7271,6 +7346,15 @@ function nofs_statSync(path) {
   lstatSync(path: string): nofs_Stats;
   fstatSync(fd: number): nofs_Stats;
 */ 
+function nofs_writeSync(fd, buffer, offset, length, position) {
+    if (fd === 1) {
+        if (typeof console !== 'undefined')
+            console.log(buffer);
+        return length;
+    }
+    var path = nofs_fdtable()[fd];
+    throw new Error('Buffer-aware API fs.writeSync is not implemented.');
+}
 function nofs_writeFileSync(filename, content) {
     no_drive.write(filename, content);
 }
@@ -8822,6 +8906,7 @@ var persistence;
         function MountedDrive(_dom, _shadow) {
             this._dom = _dom;
             this._shadow = _shadow;
+            this.updateTime = true;
             this.timestamp = 0;
             this.timestamp = this._dom.timestamp;
         }
@@ -8832,6 +8917,9 @@ var persistence;
             return this._dom.read(file);
         };
         MountedDrive.prototype.write = function (file, content) {
+            if (this.updateTime) {
+                this.timestamp = +new Date();
+            }
             this._dom.timestamp = this.timestamp;
             this._dom.write(file, content);
             if (this._shadow) {
@@ -9228,122 +9316,6 @@ function createFrame(style) {
   }
 
 }
-
-function loadMod(options) {
-
-  var style = options.style;
-  if (!options.ui) {
-    style = { display: 'none' };
-  }
-  else if (typeof style === 'string') {
-    style = { className: style, display: 'none' };
-  }
-
-  var frame = this.createFrame(style);
-  var frameFunction = frame.global.Function;
-
-  if (options.scope) {
-    var scope = typeof options.scope === 'function' ? (options.scope)(frame.global) : options.scope;
-    for (var k in scope) if (scope.hasOwnProperty(k)) {
-      try { frame.global[k] = scope[k]; } catch (err) { }
-    }
-  }
-
-  if (options.eval) {
-
-    var exportsInScope = scope && 'exports' in scope;
-    var evalArgNames = exportsInScope ? [] : ['exports'];
-    var evalArgs = exportsInScope ? [] : [{}];
-    if (scope) {
-      for (var k in scope) if (scope.hasOwnProperty(k)) {
-        evalArgNames.push(k);
-        evalArgs.push(scope[k]);
-      }
-    }
-
-    if (!options.ui) {
-      var allowedGlobals = {
-        setTimeout: 1, setInterval: 1, clearTimeout: 1, clearInterval: 1,
-        eval: 1,
-        console: 1,
-        undefined: 1,
-        Object: 1, Array: 1, Date: 1, Function: 1, String: 1, Boolean: 1, Number: 1,
-        Infinity: 1, NaN: 1, isNaN: 1, isFinite: 1, parseInt: 1, parseFloat: 1,
-        escape: 1, unescape: 1,
-
-        Int32Array: 1, Int8Array: 1, Int16Array: 1,
-        UInt32Array: 1, UInt8Array: 1, UInt8ClampedArray: 1, UInt16Array: 1,
-        Float32Array: 1, Float64Array: 1, ArrayBuffer: 1,
-
-        Math: 1, JSON: 1, RegExp: 1,
-        Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,
-
-        toString: 1, toJSON: 1, toValue: 1,
-
-        Map: 1
-      };
-
-      var hiddenKeys = {};
-
-      // normal properties
-      for (var k in frame.global) {
-        if (scope && scope.hasOwnProperty(k)) continue;
-        if (allowedGlobals.hasOwnProperty(k)) continue;
-        evalArgNames.push(k);
-        hiddenKeys[k] = 1;
-      }
-
-      // non-enumerable properties directly on global
-      if (Object.getOwnPropertyNames) {
-        var props = Object.getOwnPropertyNames(frame.global);
-        for (var i = 0; i < props.length; i++) {
-          if (scope && scope.hasOwnProperty(props[i])) continue;
-          if (allowedGlobals.hasOwnProperty(props[i])) continue;
-          if (hiddenKeys.hasOwnProperty(props[i])) continue;
-          evalArgNames.push(props[i]);
-        }
-
-        // non-enumerable properties on global's prototype
-        if (frame.global.constructor
-          && frame.global.constructor.prototype
-          && frame.global.constructor.prototype != Object
-          && frame.global.constructor.prototype != Object.prototype) {
-          props = Object.getOwnPropertyNames(frame.global.constructor.prototype);
-          for (var i = 0; i < props.length; i++) {
-            if (scope && scope.hasOwnProperty(props[i])) continue;
-            if (allowedGlobals.hasOwnProperty(props[i])) continue;
-            if (hiddenKeys.hasOwnProperty(props[i])) continue;
-            evalArgNames.push(props[i]);
-          }
-        }
-      }
-    }
-
-    var innerEval = frameFunction.apply(frame.global, ['return function(txt) { return eval(txt); }'])();
-
-    var wrappedText = '(function() { return function('+evalArgNames.join(',')+'){'+
-      options.eval + '\nreturn exports; }; })()'+
-      (options.path ? ' //# sourceURL=' + options.path : '');
-
-    //evalArgNames.push(
-    //  options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval + '\nreturn exports;');
-
-    var evalFn = innerEval(wrappedText);
-    //var evalFn = frameFunction.apply(frame.global, evalArgNames);
-
-    var modExports = evalFn.apply(frame.global, evalArgs);
-
-    return {
-      document: frame.document,
-      global: frame.global,
-      iframe: frame.iframe,
-      exports: modExports
-    };
-  }
-
-  return frame;
-
-}
 --!>
 <!-- /src/boot/bootUI.js
 function bootUI(document, window, elem) {
@@ -9505,6 +9477,123 @@ window.onerror = function onerror() {
   }
 
   alert(msg.join('\n'));
+
+}
+--!>
+<!-- /src/load/loadMod.js
+function loadMod(options) {
+
+  var style = options.style;
+  if (!options.ui) {
+    style = { display: 'none' };
+  }
+  else if (typeof style === 'string') {
+    style = { className: style, display: 'none' };
+  }
+
+  var frame = this.createFrame(style);
+  var frameFunction = frame.global.Function;
+
+  if (options.scope) {
+    var scope = typeof options.scope === 'function' ? (options.scope)(frame.global) : options.scope;
+    for (var k in scope) if (scope.hasOwnProperty(k)) {
+      try { frame.global[k] = scope[k]; } catch (err) { }
+    }
+  }
+
+  if (options.eval) {
+
+    var exportsInScope = scope && 'exports' in scope;
+    var evalArgNames = exportsInScope ? [] : ['exports'];
+    var evalArgs = exportsInScope ? [] : [{}];
+    if (scope) {
+      for (var k in scope) if (scope.hasOwnProperty(k)) {
+        evalArgNames.push(k);
+        evalArgs.push(scope[k]);
+      }
+    }
+
+    if (!options.ui) {
+      var allowedGlobals = {
+        setTimeout: 1, setInterval: 1, clearTimeout: 1, clearInterval: 1,
+        eval: 1,
+        console: 1,
+        undefined: 1,
+        Object: 1, Array: 1, Date: 1, Function: 1, String: 1, Boolean: 1, Number: 1,
+        Infinity: 1, NaN: 1, isNaN: 1, isFinite: 1, parseInt: 1, parseFloat: 1,
+        escape: 1, unescape: 1,
+
+        Int32Array: 1, Int8Array: 1, Int16Array: 1,
+        UInt32Array: 1, UInt8Array: 1, UInt8ClampedArray: 1, UInt16Array: 1,
+        Float32Array: 1, Float64Array: 1, ArrayBuffer: 1,
+
+        Math: 1, JSON: 1, RegExp: 1,
+        Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,
+
+        toString: 1, toJSON: 1, toValue: 1,
+
+        Map: 1
+      };
+
+      var hiddenKeys = {};
+
+      // normal properties
+      for (var k in frame.global) {
+        if (scope && scope.hasOwnProperty(k)) continue;
+        if (allowedGlobals.hasOwnProperty(k)) continue;
+        evalArgNames.push(k);
+        hiddenKeys[k] = 1;
+      }
+
+      // non-enumerable properties directly on global
+      if (Object.getOwnPropertyNames) {
+        var props = Object.getOwnPropertyNames(frame.global);
+        for (var i = 0; i < props.length; i++) {
+          if (scope && scope.hasOwnProperty(props[i])) continue;
+          if (allowedGlobals.hasOwnProperty(props[i])) continue;
+          if (hiddenKeys.hasOwnProperty(props[i])) continue;
+          evalArgNames.push(props[i]);
+        }
+
+        // non-enumerable properties on global's prototype
+        if (frame.global.constructor
+          && frame.global.constructor.prototype
+          && frame.global.constructor.prototype != Object
+          && frame.global.constructor.prototype != Object.prototype) {
+          props = Object.getOwnPropertyNames(frame.global.constructor.prototype);
+          for (var i = 0; i < props.length; i++) {
+            if (scope && scope.hasOwnProperty(props[i])) continue;
+            if (allowedGlobals.hasOwnProperty(props[i])) continue;
+            if (hiddenKeys.hasOwnProperty(props[i])) continue;
+            evalArgNames.push(props[i]);
+          }
+        }
+      }
+    }
+
+    var innerEval = frameFunction.apply(frame.global, ['return function(txt) { return eval(txt); }'])();
+
+    var wrappedText = '(function() { return function('+evalArgNames.join(',')+'){'+
+      options.eval + '\nreturn exports; }; })()'+
+      (options.path ? ' //# sourceURL=' + options.path : '');
+
+    //evalArgNames.push(
+    //  options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval + '\nreturn exports;');
+
+    var evalFn = innerEval(wrappedText);
+    //var evalFn = frameFunction.apply(frame.global, evalArgNames);
+
+    var modExports = evalFn.apply(frame.global, evalArgs);
+
+    return {
+      document: frame.document,
+      global: frame.global,
+      iframe: frame.iframe,
+      exports: modExports
+    };
+  }
+
+  return frame;
 
 }
 --!>
@@ -9824,7 +9913,16 @@ function nofs_load() {
       writeFile: no_wrapAsync(nofs_writeFileSync),
 
       existsSync: nofs_existsSync,
-      exists: no_wrapAsyncNoError(nofs_existsSync)
+      exists: no_wrapAsyncNoError(nofs_existsSync),
+
+      openSync: nofs_openSync,
+      open: no_wrapAsync(nofs_openSync),
+
+      readSync: nofs_readSync,
+      read: no_wrapAsync(nofs_readSync),
+
+      writeSync: nofs_writeSync,
+      write: no_wrapAsync(nofs_writeSync)
     };
 
   return _nofs_module_;
@@ -10024,6 +10122,58 @@ interface nofs_WriteStream extends nostream_Writable {
 }
 
 --!>
+<!-- /src/nodeapi/fs/exists.ts
+function nofs_existsSync(file: string): boolean {
+  var content = no_drive.read(file);
+  if (!content && (content === null || typeof content === 'undefined'))
+    return false;
+  else
+    return true;
+}
+--!>
+<!-- /src/nodeapi/fs/fdtable.ts
+var _nofs_fdbase_;
+var _nofs_fdtable_: string[];
+
+function nofs_fdtable() {
+
+  if (!_nofs_fdtable_) {
+    _nofs_fdtable_ = [];
+    _nofs_fdbase_ = 34957346;
+  }
+
+  return _nofs_fdtable_;
+}
+--!>
+<!-- /src/nodeapi/fs/open.ts
+function nofs_openSync(path: string, flags: string, mode?: number): number;
+function nofs_openSync(path: string, flags: string, mode ?: string): number;
+function nofs_openSync(path: string, flags?: string, mode?: any): number {
+
+  var fdtable = nofs_fdtable();
+
+  for( var fd in fdtable) {
+    var fpath = fdtable[fd];
+    if (fpath === path) {
+      return Number(fd);
+    }
+  }
+
+  var newFD = _nofs_fdbase_++;
+  fdtable[newFD] = path;
+  return newFD;
+}
+--!>
+<!-- /src/nodeapi/fs/read.ts
+function nofs_readSync(fd: number, buffer: no_Buffer, offset: number, length: number, position: number): number {
+
+  // TODO: consider also std handles
+  //var path = nofs_fdtable()[fd];
+
+  throw new Error('Buffer-aware API fs.readSync is not implemented.');
+}
+
+--!>
 <!-- /src/nodeapi/fs/readFile.ts
 function nofs_readFileSync(filename: string, options?: { encoding?: string; flag?: string; }) {
 
@@ -10094,6 +10244,21 @@ function nofs_statSync(path: string): nofs_Stats {
   lstatSync(path: string): nofs_Stats;
   fstatSync(fd: number): nofs_Stats;
 */
+--!>
+<!-- /src/nodeapi/fs/write.ts
+function nofs_writeSync(fd: number, buffer: no_Buffer, offset: number, length: number, position: number): number {
+
+  if (fd===1) {
+    if (typeof console !== 'undefined')
+      console.log(buffer);
+
+    return length;
+  }
+
+  var path = nofs_fdtable()[fd];
+
+  throw new Error('Buffer-aware API fs.writeSync is not implemented.');
+}
 --!>
 <!-- /src/nodeapi/fs/writeFile.ts
 function nofs_writeFileSync(filename: string, content: string) {
@@ -11728,7 +11893,6 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
 --!>
 <!-- /src/nodeapi/imports/is-array/index.js
-
 /**
  * isArray
  */
@@ -11762,6 +11926,96 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
+--!>
+<!-- /src/nodeapi/module/_load.ts
+var _nomodule_: no_module;
+
+function nomodule_load() {
+
+  if (!_nomodule_)
+    _nomodule_ = <no_module>{
+      exports: exports,
+      require: require,
+      id: '',
+      filename: '',
+      loaded: true
+    };
+
+  return _nomodule_;
+}
+
+--!>
+<!-- /src/nodeapi/module/defs.d.ts
+interface no_module {
+  exports: any;
+  require(id: string): any;
+  id: string;
+  filename: string;
+  loaded: boolean;
+  parent: any;
+  children: any[];
+}
+--!>
+<!-- /src/nodeapi/os/_load.ts
+var _noos_: no_os;
+
+function noos_load() {
+
+  if (!_noos_)
+    _noos_ = <no_os>{
+      EOL: '\n',
+      tmpdir: () => '/.tmp',
+      hostname: () => 'localhost',
+      type: () => 'Linux',
+      arch: () => noprocess_load().arch,
+      platform: () => noprocess_load().platform,
+      release: () => '3.16.0-38-generic',
+      uptime: () => noprocess_uptime(),
+      loadavg: () => [0.7275390625, 0.65576171875, 0.4658203125],
+      totalmem: () => 3680739328 + ((Math.random() * 1000) | 0),
+      freemem: () => 2344873984 - ((Math.random() * 1000) | 0),
+      cpus: () => [{
+        model: 'AMD A4-1250 APU with Radeon(TM) HD Graphics',
+        speed: 800,
+        times: { user: 8058000, nice: 29600, sys: 1079400, idle: 128185400, }
+      },
+        {
+          model: 'AMD A4-1250 APU with Radeon(TM) HD Graphics    ',
+          speed: 800,
+          times: { user: 7779400, nice: 33000, sys: 1069200, idle: 127970900, irq: 0 }
+        }],
+      networkInterfaces: () => {
+        return {
+          lo:
+          [{ address: '127.0.0.1', family: 'IPv4', internal: true },
+            { address: '::1', family: 'IPv6', internal: true }],
+          wlan0:
+          [{ address: '192.168.1.3', family: 'IPv4', internal: false },
+            { address: 'fe80::8256:f2ff:fe04:3d29', family: 'IPv6', internal: false }]
+        }
+      }
+    };
+
+  return _noos_;
+}
+
+--!>
+<!-- /src/nodeapi/os/defs.d.ts
+interface no_os {
+  tmpdir(): string;
+  hostname(): string;
+  type(): string;
+  platform(): string;
+  arch(): string;
+  release(): string;
+  uptime(): number;
+  loadavg(): number[];
+  totalmem(): number;
+  freemem(): number;
+  cpus(): { model: string; speed: number; times: { user: number; nice: number; sys: number; idle: number; irq?: number; }; }[];
+  networkInterfaces(): any;
+  EOL: string;
+}
 --!>
 <!-- /src/nodeapi/path/_load.ts
 var _nopath_module_: nopath;
@@ -14067,6 +14321,7 @@ module persistence {
 
   class MountedDrive implements Drive {
 
+    updateTime = true;
     timestamp: number = 0;
 
     constructor (private _dom: Drive, private _shadow: Drive.Shadow) {
@@ -14082,6 +14337,10 @@ module persistence {
     }
 
     write(file: string, content: string) {
+      if (this.updateTime) {
+        this.timestamp = +new Date();
+      }
+
       this._dom.timestamp = this.timestamp;
       this._dom.write(file, content);
       if (this._shadow) {
@@ -15249,7 +15508,15 @@ module terminal {
         scope: {
           no_drive: this._drive,
           no_homepath: '/',
-          require: mod => this._require(mod)
+          require: mod => this._require(mod),
+          console: {
+            log: (...args: any[]) => {
+              if (this.log)
+                this.log(args);
+              else if (typeof console !== 'undefined')
+                console.log(args);
+            }
+          }
         }
       });
 
@@ -15257,6 +15524,7 @@ module terminal {
     }
 
 
+    log: (args: any[]) => void = null;
 
     run(code: string, path: string) {
 
@@ -15280,7 +15548,15 @@ module terminal {
             scope: {
               require: mod => this._require(mod),
               process: this._nodeMod.exports.process,
-              module: this._nodeMod.exports.module
+              module: this._nodeMod.exports.module,
+              console: {
+                log: (...args: any[]) => {
+                  if (this.log)
+                    this.log(args);
+                  else if (typeof console !== 'undefined')
+                    console.log(args);
+                }
+              }
             }
           });
         }
@@ -15295,7 +15571,15 @@ module terminal {
           scope: {
             require: mod => this._require(mod),
             process: this._nodeMod.exports.process,
-            module: this._nodeMod.exports.module
+            module: this._nodeMod.exports.module,
+            console: {
+              log: (...args: any[]) => {
+                if (this.log)
+                  this.log(args);
+                else if (typeof console !== 'undefined')
+                  console.log(args);
+              }
+            }
           }
         });
         var result = resMod.exports;
@@ -15610,6 +15894,7 @@ class CommanderShell {
   constructor(private _host: HTMLElement, private _drive: persistence.Drive) {
 
     this._node = new terminal.NodeHost(this._drive);
+    this._node.log = args => this._terminal.log.apply(this._terminal, args);
 
     elem(this._host, {
       background: 'black',
@@ -59126,6 +59411,12 @@ interface SQLResultSetRowList {
   item(index: number): any;
 }
 --!>
+<!-- /src/dummy.ts
+class Apple {
+  constructor(public color = 'red') {
+  }
+}
+--!>
 <!-- /src/index.html
 <!doctype html>
 <title>mini shell </title>
@@ -59143,6 +59434,9 @@ interface SQLResultSetRowList {
 </script>
 <script data-legit=mi>
 <%=typescriptBuild('/load/*', '/persistence/*', '/boot/*', '/typings/*')%>
+
+<%=embedFile('/load/loadMod.js')%>
+
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
@@ -59253,104 +59547,112 @@ Used these open-source libraries:
  * [feross/ieee754] (https://github.com/feross/ieee754) - MIT
  * [retrofox/is-array] (https://github.com/retrofox/is-array) - MIT
 
+## Boot process
 
---!>
-<!-- /src/nodeapi/module/_load.ts
-var _nomodule_: no_module;
+The boot process begins with first bytes of the page received, during the loading of the content,
+then would continue for a little after the page is loaded.
 
-function nomodule_load() {
+The main post-content-load is completing the data fetch from the local storage. It may well finish earlier,
+but may take some time.
 
-  if (!_nomodule_)
-    _nomodule_ = <no_module>{
-      exports: exports,
-      require: require,
-      id: '',
-      filename: '',
-      loaded: true
-    };
+During the boot process, and at the end of it the code is supposed to show sensible UI
+and implement neat handover animations (unless the whole boot finishes very fast).
 
-  return _nomodule_;
-}
+### Early boot
 
---!>
-<!-- /src/nodeapi/module/defs.d.ts
-interface no_module {
-  exports: any;
-  require(id: string): any;
-  id: string;
-  filename: string;
-  loaded: boolean;
-  parent: any;
-  children: any[];
-}
---!>
-<!-- /src/nodeapi/os/defs.d.ts
-interface no_os {
-  tmpdir(): string;
-  hostname(): string;
-  type(): string;
-  platform(): string;
-  arch(): string;
-  release(): string;
-  uptime(): number;
-  loadavg(): number[];
-  totalmem(): number;
-  freemem(): number;
-  cpus(): { model: string; speed: number; times: { user: number; nice: number; sys: number; idle: number; irq?: number; }; }[];
-  networkInterfaces(): any;
-  EOL: string;
-}
---!>
-<!-- /src/nodeapi/os/_load.ts
-var _noos_: no_os;
+The mission of this stage is to create the temporary boot UI (very quickly!) and hand over to the shell loader.
+The boot UI is something like a splash screen, boot animation, washed-out live-like image or whatever.
 
-function noos_load() {
+ * Error handler is installed at the first opportunity
+ * Base.js library with primitives for basic DOM manipulation is loaded
+ * BootUI iframe is created
+ * BootUI function is invoked to draw the boot animation
 
-  if (!_noos_)
-    _noos_ = <no_os>{
-      EOL: '\n',
-      tmpdir: () => '/.tmp',
-      hostname: () => 'localhost',
-      type: () => 'Linux',
-      arch: () => noprocess_load().arch,
-      platform: () => noprocess_load().platform,
-      release: () => '3.16.0-38-generic',
-      uptime: () => noprocess_uptime(),
-      loadavg: () => [0.7275390625, 0.65576171875, 0.4658203125],
-      totalmem: () => 3680739328 + ((Math.random() * 1000) | 0),
-      freemem: () => 2344873984 - ((Math.random() * 1000) | 0),
-      cpus: () => [{
-        model: 'AMD A4-1250 APU with Radeon(TM) HD Graphics',
-        speed: 800,
-        times: { user: 8058000, nice: 29600, sys: 1079400, idle: 128185400, }
-      },
-        {
-          model: 'AMD A4-1250 APU with Radeon(TM) HD Graphics    ',
-          speed: 800,
-          times: { user: 7779400, nice: 33000, sys: 1069200, idle: 127970900, irq: 0 }
-        }],
-      networkInterfaces: () => {
-        return {
-          lo:
-          [{ address: '127.0.0.1', family: 'IPv4', internal: true },
-            { address: '::1', family: 'IPv6', internal: true }],
-          wlan0:
-          [{ address: '192.168.1.3', family: 'IPv4', internal: false },
-            { address: 'fe80::8256:f2ff:fe04:3d29', family: 'IPv6', internal: false }]
-        }
-      }
-    };
+### Shell loader
 
-  return _noos_;
-}
+Shell loader's task is to initialise the persistence (virtual filesystem backed by DOM and local storage).
 
---!>
-<!-- /src/nodeapi/fs/exists.ts
-function nofs_existsSync(file: string): boolean {
-  var content = no_drive.read(file);
-  if (!content && (content === null || typeof content === 'undefined'))
-    return false;
-  else
-    return true;
-}
+During that persistence loading the shell loader passes progress events to the boot UI. Upon completion
+it starts the actual shell and finally animates from boot UI to the shell.
+
+ * Persistence loading is started
+ * Persistence keeps polling the DOM state, fishing for pieces of 'virtual filesystem'
+ * Progress is supposed to be reported to the BootUI
+ * Persistence also need to load the locally-stored state, reconciling it with the DOM (by timestamps)
+ * Eventualy persistence report completion
+ * Shell iframe is created with opacity=0
+ * Shell start code is loaded (normally from the filesystem) and kicked off
+ * Animating BootUI.opacity -> 0; Shell.opacity->1
+
+ ### Shell
+
+When shell begins to load, the persistence is fully functional, so it's up to the shell what to do with it.
+
+The interactive node-like shell emulates node.js to a great extent: by laying node.js API on top of the persistence and various browser features.
+
+At the moment the shell also has file-manager-like panels, so virtual filesystem can be navigated
+and necessary tasks (copying/editing/moving of files or directories) performed interactively.
+
+Other shells may host more specialised apps. These are planned examples:
+
+ * PC.js virtual machine hosting early PC images (DOS, early Windows, OS/2 and such)
+ * Markdown viewer/editor
+ * SVG editor
+ * Slide editor
+ * Spreadsheet editor
+
+## Involved libaries and sub-modules
+
+First of all, the sequence above explicitly mentiones three mini-libraries:
+
+ * Base.js
+ * BootUI
+ * Persistence
+
+Those indeed can be considered separately, with a degree of isolation from the rest of the boot process.
+
+### Base.js
+
+This set of functions is entirely driven by the needs of the booting code to deal with DOM,
+handling the weird browser differences and reducing repetitiveness.
+
+Base.js is not meant for a general consumption, and if a given function or flow branch is not needed here,
+it should be pruned.
+
+These are broad features of the mini-library:
+
+ * Setting/getting text of a DOM element (older IE handling, special workarounds for some elements)
+ * Creating elements and setting properties/CSS attributes in JSON-like syntax
+ * Subscribing to events
+ * Creating IFRAME and retrieving its key objects (inner window, inner document)
+ * Loading JS code in an isolated 'module' container in an IFRAME
+
+### BootUI
+
+The boot-time UI is largely free in what it renders. It is hosted in a separate IFRAME
+with limited communication to the rest of the code.
+
+It is expected that various shells provide each their fine-tuned boot UI 'library'.
+
+A good option would be to render the state of the application as the user left,
+with a tasteful overlay reflecting the boot progress.
+
+### Persistence
+
+The task of emulating an embedded virtual filesystem of files/directories is implemented in the persistence mini-library.
+
+The persistence API is described in terms of a Drive object (with read/write methods) and its construction stages.
+
+Several sources of storage are implemented towards the same API:
+
+ * DOM
+ * IndexedDB
+ * WebSQL
+ * LocalStorage
+
+DOM storage is expected to exist at a very minimum (we are running in the context of a page already!),
+then one of the local storage options is added upon a brief detection process.
+
+From the external caller the persistence mini-library expects a single call to *mountDrive* function,
+passing in a few inputs and a callback.
 --!>
