@@ -1,7 +1,7 @@
 <!doctype html>
-<title>mini shell </title>
+<html style="overflow: hidden;"><head><title>mini shell </title>
 
-<script data-legit=mi>
+<script data-legit="mi">
   window.onerror = function onerror() {
 
   var msg = [];
@@ -33,7 +33,7 @@
 }
 //# sourceURL=boot/onerror.js
 </script>
-<script data-legit=mi>
+<script data-legit="mi">
   earlyBoot();
   function getText(obj) {
 
@@ -280,7 +280,7 @@ function createFrame(style) {
 
   bootFrame.global.elem = elem;
 
-  var bootAPI = bootUI(bootFrame.document, bootFrame.global, function elemProxy(a,b,c) { return bootFrame.global.elem(a,b,c); });
+  var bootAPI = bootUI(bootFrame.document, bootFrame.global, { elem: function elemProxy(a,b,c) { return bootFrame.global.elem(a,b,c); } });
   bootFrame.api = bootAPI;
   bootFrame.startTime = earlyBootStart;
 
@@ -350,21 +350,21 @@ function createFrame(style) {
   }
 
 }
-  function bootUI(document, window, elem) {
+  function bootUI(document, window, base) {
 
-  elem(document.body, {
+  base.elem(document.body, {
     background: 'rgb(3,11,61)',
     color: 'cyan',
     border: 'none',
     overflow: 'hidden'
   });
 
-  var header = elem('h2', {
+  var header = base.elem('h2', {
     text: 'Loading...',
     fontWeight: 'light'
   }, document.body);
 
-  var darkBottom = elem('div', {
+  var darkBottom = base.elem('div', {
     position: 'absolute',
     bottom: 0,
     width: '100%',
@@ -379,8 +379,8 @@ function createFrame(style) {
   };
 }
 //# sourceURL=/boot/base.js
-</script>
-<script data-legit=mi>
+</script></head><body style="height: 100%; margin: 0px; padding: 0px; overflow: hidden;">
+<script data-legit="mi">
 function shellLoader(uniqueKey, document, boot) {
     var driveMount = persistence.bootMount(uniqueKey, document);
     return continueLoading();
@@ -1365,7 +1365,9 @@ var persistence;
                     this.node.nodeValue.slice(this._contentOffset);
                 // XML end-comment is escaped when stored in DOM,
                 // unescape it back
-                var restoredText = contentText.replace(/\-\-\*(\**)\>/g, '--*$1>');
+                var restoredText = contentText.
+                    replace(/\-\-\*(\**)\>/g, '--$1>').
+                    replace(/\<\*(\**)\!/g, '<$1!');
                 // decode
                 var decodedText = this._encoding(restoredText);
                 // update just in case it's been off
@@ -1374,7 +1376,9 @@ var persistence;
             };
             DOMFile.prototype.write = function (content) {
                 var encoded = persistence.bestEncode(content);
-                var protectedText = encoded.content.replace(/\-\-(\**)\>/g, '--*$1>');
+                var protectedText = encoded.content.
+                    replace(/\-\-(\**)\>/g, '--*$1>').
+                    replace(/\<(\**)\!/g, '<*$1!');
                 if (!this._encodedPath) {
                     // most cases path is path,
                     // but if anything is weird, it's going to be quoted
@@ -1560,8 +1564,7 @@ var persistence;
     (function (encodings) {
         function CR(text) {
             return text.
-                replace(/\r\n|\n/g, '\r').
-                replace(/\-\-\*(\**)\>/g, '--$1>');
+                replace(/\r\n|\n/g, '\r');
         }
         encodings.CR = CR;
     })(encodings = persistence.encodings || (persistence.encodings = {}));
@@ -1572,8 +1575,7 @@ var persistence;
     (function (encodings) {
         function CRLF(text) {
             return text.
-                replace(/\r|\n/g, '\r\n').
-                replace(/\-\-\*(\**)\>/g, '--$1>');
+                replace(/\r|\n/g, '\r\n');
         }
         encodings.CRLF = CRLF;
     })(encodings = persistence.encodings || (persistence.encodings = {}));
@@ -1584,8 +1586,7 @@ var persistence;
     (function (encodings) {
         function LF(text) {
             return text.
-                replace(/\r\n|\r/g, '\n').
-                replace(/\-\-\*(\**)\>/g, '--$1>');
+                replace(/\r\n|\r/g, '\n');
         }
         encodings.LF = LF;
     })(encodings = persistence.encodings || (persistence.encodings = {}));
@@ -1832,7 +1833,1332 @@ function loadMod(options) {
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<!-- total 56Mb, saved 25 Apr 2015 22:52:01.231 -->
+<!--total 2Mb, saved 25 Apr 2015 22:52:01.231 GMT+0100-->
+
+<!-- /shell/start.ts.js
+var CommanderShell = (function () {
+    function CommanderShell(_host, _drive) {
+        var _this = this;
+        this._host = _host;
+        this._drive = _drive;
+        this._metrics = {
+            hostWidth: 0,
+            hostHeight: 0,
+            emWidth: 0,
+            emHeight: 0
+        };
+        this._onsizechangedTimeout = 0;
+        this._node = new terminal.NodeHost(this._drive);
+        this._node.log = function (args) { return _this._terminal.log.apply(_this._terminal, args); };
+        elem(this._host, {
+            background: 'black',
+            color: 'silver'
+        });
+        this._metricElem = elem('div', {
+            position: 'absolute',
+            opacity: 0,
+            left: '-200px', top: '-200px',
+            wdith: 'auto', height: 'auto',
+            text: 'M'
+        }, document.body);
+        this._terminal = new terminal.Terminal(this._host, this._node);
+        this._twoPanels = new panels.TwoPanels(this._host, '/', '/src', this._drive);
+        var resizeMod = require('resize');
+        resizeMod.on(function (winMetrics) {
+            _this._metrics.hostWidth = winMetrics.windowWidth;
+            _this._metrics.hostHeight = winMetrics.windowHeight;
+            _this.measure();
+            _this.arrange();
+        });
+        this._metrics.hostWidth = document.body.offsetWidth;
+        this._metrics.hostHeight = document.body.offsetHeight;
+        this.measure();
+        this.arrange();
+        elem.on(this._host, 'keydown', function (e) { return _this._keydown(e); });
+        var _glob = (function () { return this; })();
+        var applyConsole = function (glob) {
+            if (glob.console) {
+                var _oldLog = glob.console.log;
+                var term = _this._terminal;
+                console.log = function () {
+                    var args = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        args[_i - 0] = arguments[_i];
+                    }
+                    _oldLog.apply(glob.console, args);
+                    term.logArray(args);
+                };
+            }
+            else {
+                var term = _this._terminal;
+                glob.console = {
+                    log: function () {
+                        var args = [];
+                        for (var _i = 0; _i < arguments.length; _i++) {
+                            args[_i - 0] = arguments[_i];
+                        }
+                        term.logArray(args);
+                    }
+                };
+            }
+        };
+        applyConsole(_glob);
+        applyConsole(window);
+    }
+    CommanderShell.prototype.measure = function () {
+        this._metrics.emWidth = this._metricElem.offsetWidth;
+        this._metrics.emHeight = this._metricElem.offsetHeight;
+        this._twoPanels.measure();
+        this._terminal.measure();
+    };
+    CommanderShell.prototype.arrange = function () {
+        this._host.style.width = this._metrics.hostWidth + 'px';
+        this._host.style.height = this._metrics.hostHeight + 'px';
+        this._twoPanels.arrange(this._metrics);
+        this._terminal.arrange(this._metrics);
+    };
+    CommanderShell.prototype._keydown = function (e) {
+        var res = this._keydownCore(e);
+        if (res) {
+            if (e.preventDefault)
+                e.preventDefault();
+        }
+        return res;
+    };
+    CommanderShell.prototype._keydownCore = function (e) {
+        if (e.keyCode === 27 && !e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+            this._twoPanels.toggleVisibility();
+            return true;
+        }
+        if (e.keyCode === 13)
+            this._terminal.clearInput();
+        if ((e.keyCode === 13 && this._twoPanels.isVisible() && !this._terminal.hasInput())
+            || (e.keyCode !== 13)) {
+            if (this._twoPanels.keydown(e))
+                return true;
+        }
+        var cursorPath = this._twoPanels.cursorPath();
+        this._terminal.focus();
+        if (this._terminal.keydown(e, cursorPath))
+            return true;
+        if (e.keyCode === 13)
+            return this._execute(cursorPath);
+        //if (e.keyCode < 32 || e.keyCode > 126) {
+        //	this._terminal.log('CommanderShell::keydown ' + e.yCode);
+        //}
+    };
+    CommanderShell.prototype._execute = function (cursorPath) {
+        var _this = this;
+        if (/\.js$/.test(cursorPath)) {
+            var text = this._drive.read(cursorPath);
+            if (typeof text !== 'undefined' && text !== null) {
+                this._terminal.log('@node ' + cursorPath);
+                var result = this._node.run(text, cursorPath);
+                this._terminal.log(result);
+                return true;
+            }
+        }
+        else if (/.html$/.test(cursorPath)) {
+            this._terminal.log('@build ' + cursorPath);
+            var htmlTemplate = this._drive.read(cursorPath);
+            var blankWindow = window.open('', '_blank' + (+new Date()));
+            var pollUntil = (+new Date()) + 1000;
+            while (+new Date() < pollUntil) {
+                try {
+                    var blankWindowDoc = blankWindow.document;
+                }
+                catch (error) { }
+            }
+            if (!blankWindowDoc) {
+                alert('Cannot open a window to host the built document');
+                return;
+            }
+            blankWindow.document.open();
+            blankWindow.document.write([
+                '<html><title>Building ' + cursorPath + '...</title>',
+                '<style>',
+                'html, body { background: black; color: greenyellow; }',
+                'h2 { font-weight: 100; width: 40%; position: fixed; font-size: 200%; }',
+                'pre { width: 50%; padding-left: 50%; opacity: 1; transition: opacity 1s; }',
+                '</style>',
+                '<h2>Building ' + cursorPath + '</h2>',
+                '<' + 's' + 'cript>',
+                'var textContentProp = "textContent" in document.createElement("pre") ? "textContent" : "innerText";',
+                'var lastLogElem;',
+                'function log(text) {',
+                '  var logElem = document.createElement("pre");',
+                '  logElem[textContentProp]=text;',
+                '  document.body.appendChild(logElem);',
+                '  logElem.scrollIntoView();',
+                '  if (lastLogElem) {',
+                '    lastLogElem.style.opacity = 0.5;',
+                '  }',
+                '  lastLogElem = logElem;',
+                '}',
+                '<' + '/' + 's' + 'cript>'].join('\n'));
+            blankWindow.document.close();
+            build.processTemplate(htmlTemplate, [], function (txt) {
+                _this._terminal.log(txt);
+                blankWindow.log(txt);
+            }, function (error, result) {
+                if (error) {
+                    _this._terminal.log(error);
+                    return;
+                }
+                try {
+                    var blob = new Blob([result], { type: 'text/html' });
+                    var url = URL.createObjectURL(blob);
+                    blankWindow.location.replace(url);
+                }
+                catch (blobError) {
+                    blankWindow.document.open();
+                    blankWindow.document.write(result);
+                    blankWindow.document.close();
+                }
+            });
+        }
+        else {
+            this._terminal.log('@type ' + cursorPath);
+            this._terminal.log(this._drive.read(cursorPath));
+        }
+    };
+    return CommanderShell;
+})();
+var build;
+(function (build) {
+    function processTemplate(template, scopes, log, callback) {
+        // <%= expr %>
+        // <% statement %>
+        // <%-- comment --%>
+        log('Generating build script...');
+        setTimeout(function () {
+            var fnText = generateBuildScript(template, scopes);
+            log('Preprocessing build script...');
+            setTimeout(function () {
+                var fn = Function('scopes', fnText);
+                log('Executing build script...');
+                var output = fn(scopes);
+                var outputIndex = 0;
+                processNextOutputChunk();
+                function processNextOutputChunk() {
+                    var startTime = +new Date();
+                    // all heavy chunks will bail out and queue the next one on setTimeout,
+                    // simple literal insertions keep going for a slice of time
+                    while (true) {
+                        if (outputIndex >= output.length) {
+                            var result = output.join('');
+                            callback(null, result);
+                            return;
+                        }
+                        var outputChunk = output[outputIndex];
+                        if (typeof outputChunk === 'function') {
+                            log('Processing ' + outputChunk + '...');
+                            setTimeout(function () {
+                                try {
+                                    var chunkResult = outputChunk();
+                                    var chunkResultText = String(chunkResult);
+                                    output[outputIndex] = chunkResultText;
+                                }
+                                catch (error) {
+                                    callback(error);
+                                    return;
+                                }
+                                log('...OK [' + chunkResultText.length + ']');
+                                outputIndex++;
+                                processNextOutputChunk();
+                                //setTimeout(processNextOutputChunk, 1);
+                            }, 1);
+                            break;
+                        }
+                        else {
+                            var literal = String(outputChunk);
+                            output[outputIndex] = literal;
+                            var literalLines = (literal.length > 100 ? literal.slice(0, 50) + '\n...\n' + literal.slice(literal.length - 5) : literal).split('\n');
+                            while (literalLines.length && !literalLines[0])
+                                literalLines.shift();
+                            while (literalLines.length && !literalLines[literalLines.length - 1])
+                                literalLines.pop();
+                            log(literalLines.length <= 2 ? literalLines.join('\n') : literalLines[0] + '\n...\n' + literalLines[literalLines.length - 1]);
+                            outputIndex++;
+                            if (+new Date() - startTime > 300) {
+                                setTimeout(processNextOutputChunk, 1);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }, 1);
+        }, 1);
+    }
+    build.processTemplate = processTemplate;
+    function generateBuildScript(template, scopes) {
+        var generated = [];
+        for (var i = 0; i < scopes.length; i++) {
+            generated.push('with(scopes[' + i + ']) {');
+        }
+        generated.push('var output =[];');
+        var index = 0;
+        while (index < template.length) {
+            var nextOpenASP = template.indexOf('<%', index);
+            if (nextOpenASP < 0) {
+                generateWrite(generated, template.slice(index));
+                break;
+            }
+            var ch = template.charAt(nextOpenASP + 2);
+            if (ch === '=') {
+                var closeASP = template.indexOf('%>', nextOpenASP);
+                if (closeASP < 0) {
+                    generateWrite(generated, template.slice(index));
+                    break;
+                }
+                generateWrite(generated, template.slice(index, nextOpenASP));
+                generateRedirect(generated, template.slice(nextOpenASP + 3, closeASP));
+                index = closeASP + 2;
+            }
+            else if (ch === '-') {
+                var closeCommentMatch = template.charAt(nextOpenASP + 3) === '-' ? '--%>' : '-%>';
+                var closeComment = template.indexOf(closeCommentMatch, nextOpenASP);
+                if (closeComment < 0) {
+                    generateWrite(generated, template.slice(index));
+                    break;
+                }
+                generateWrite(generated, template.slice(index, nextOpenASP));
+                index = closeComment + closeCommentMatch.length;
+            }
+            else {
+                var closeASP = template.indexOf('%>', nextOpenASP);
+                if (closeASP < 0) {
+                    generateWrite(generated, template.slice(index));
+                    break;
+                }
+                generateWrite(generated, template.slice(index, nextOpenASP));
+                generateStatement(generated, template.slice(nextOpenASP + 2, closeASP));
+                index = closeASP + 2;
+            }
+        }
+        for (var i = 0; i < scopes.length; i++) {
+            generated.push('}');
+        }
+        generated.push('return output;');
+        var fnText = generated.join('\n');
+        return fnText;
+    }
+    function generateWrite(generated, chunk) {
+        if (chunk)
+            generated.push('output.push(\'' + stringLiteral(chunk) + '\');');
+    }
+    function generateRedirect(generated, redirect) {
+        generated.push('output.push(' + redirect + ');');
+    }
+    function generateStatement(generated, statement) {
+        generated.push(statement);
+    }
+    function stringLiteral(text) {
+        return text.
+            replace(/\\/g, '\\\\').
+            replace(/\n/g, '\\n').
+            replace(/\r/g, '\\r').
+            replace(/\t/g, '\\t').
+            replace(/\'/g, '\\\'').
+            replace(/\"/g, '\\"');
+    }
+})(build || (build = {}));
+var panels;
+(function (panels) {
+    var panelClass = 'panels-panel-page';
+    var Panel = (function () {
+        function Panel(_host, _path, _directoryService) {
+            var _this = this;
+            this._host = _host;
+            this._path = _path;
+            this._directoryService = _directoryService;
+            this._cursorEntryIndex = -1;
+            this._entries = null;
+            this._redrawRequested = 0;
+            this._metrics = null;
+            this._pages = [];
+            this._entriesInColumn = 0;
+            this._pageHeight = 0;
+            this._pageInterval = 0;
+            this._columnsOnPage = 0;
+            this._columnWidth = 0;
+            this._scrollTop = 0;
+            this._scrollTopHeight = 0;
+            this._isActive = false;
+            this._nextRedrawScrollToCurrent = false;
+            this._scrollContent = elem('div', this._host);
+            this._scrollContent.isScrollContent = true;
+            elem.on(this._host, 'scroll', function () { return _this._onscroll(); });
+            this._queueRedraw();
+        }
+        Panel.prototype.set = function (paths) {
+            if (paths.currentPath)
+                this._path = paths.currentPath;
+            if (paths.cursorPath) {
+                this._cursorPath = paths.cursorPath;
+                this._nextRedrawScrollToCurrent = true;
+            }
+            this._queueRedraw();
+        };
+        Panel.prototype.onclick = function (e) {
+            if (!this._entries)
+                return;
+            var clickElem = (e.srcElement || e.target || e.currentTarget);
+            var entryDIV;
+            var columnDIV;
+            var pageDIV;
+            var leadPaddingDIV;
+            while (clickElem) {
+                if (clickElem.isScrollContent) {
+                    if (clickElem !== this._scrollContent)
+                        return false;
+                    break;
+                }
+                if (clickElem.isPageDIV)
+                    pageDIV = clickElem;
+                if (clickElem.isColumnDIV)
+                    columnDIV = clickElem;
+                if (clickElem.isEntryDIV)
+                    entryDIV = clickElem;
+                clickElem = clickElem.parentElement;
+            }
+            if (entryDIV) {
+                for (var i = 0; i < this._entries.length; i++) {
+                    if (this._entries[i].entryDIV === entryDIV) {
+                        if (this._cursorPath === this._entries[i].path && (this._entries[i].flags & Panel.EntryFlags.Directory)) {
+                            this._cursorPath = this._path;
+                            this._path = this._entries[i].path; // double click (or second click) opens directory
+                        }
+                        else {
+                            this._cursorPath = this._entries[i].path;
+                        }
+                        this._nextRedrawScrollToCurrent = true;
+                        this._queueRedraw();
+                        break;
+                    }
+                }
+                this._redrawNow();
+            }
+            return true;
+        };
+        Panel.prototype.currentPath = function () {
+            return this._path;
+        };
+        Panel.prototype.cursorPath = function () {
+            return this._cursorPath;
+        };
+        Panel.prototype.arrange = function (metrics) {
+            this._metrics = metrics;
+            this._redrawNow();
+        };
+        Panel.prototype.isActive = function () {
+            return this._isActive;
+        };
+        Panel.prototype.activate = function () {
+            this._isActive = true;
+            this._scrollContent.className = 'panels-panel-active';
+        };
+        Panel.prototype.deactivate = function () {
+            this._isActive = false;
+            this._scrollContent.className = 'panels-panel-inactive';
+        };
+        Panel.prototype.cursorGo = function (direction) {
+            if (!this._entries || !this._entries.length)
+                return;
+            var moveStep = 0;
+            switch (direction) {
+                case -1:
+                    moveStep = -1;
+                    break;
+                case +1:
+                    moveStep = +1;
+                    break;
+                case -10:
+                    var entryIndex = this._calcEntryIndex(this._cursorEntryIndex);
+                    if (this._columnsOnPage === 1) {
+                        moveStep = -entryIndex || -1;
+                    }
+                    else {
+                        var columnIndex = this._calcColumnIndex(this._cursorEntryIndex);
+                        if (columnIndex > 0) {
+                            moveStep = -this._entriesInColumn;
+                        }
+                        else {
+                            moveStep = this._entriesInColumn * (this._columnsOnPage - 1) - 1;
+                            // overflow cases
+                            if (this._cursorEntryIndex === 0) {
+                                moveStep = this._entriesInColumn * (this._columnsOnPage - 1);
+                            }
+                            else if (this._cursorEntryIndex + moveStep >= this._entries.length) {
+                                var endEntryIndex = this._calcEntryIndex(this._entries.length - 1);
+                                var endColumnIndex = this._calcColumnIndex(this._entries.length - 1);
+                                // if the last entry is higher vertically, stop at the previous column
+                                var targetColumnIndex = endEntryIndex >= entryIndex ? endColumnIndex : endColumnIndex - 1;
+                                if (targetColumnIndex <= columnIndex) {
+                                    moveStep = -entryIndex; // if nowhere to go right, go all the way up
+                                }
+                                else {
+                                    // there are columns on the right, so go there (and one up after)
+                                    moveStep = (targetColumnIndex - columnIndex) * this._entriesInColumn - 1;
+                                }
+                            }
+                        }
+                    }
+                    break;
+                case +10:
+                    var columnIndex = this._calcColumnIndex(this._cursorEntryIndex);
+                    if (columnIndex < this._columnsOnPage - 1) {
+                        moveStep = +this._entriesInColumn;
+                    }
+                    else {
+                        moveStep = -this._entriesInColumn * 2 + 1;
+                    }
+                    break;
+                case -100:
+                    moveStep = -this._entriesInColumn * this._columnsOnPage;
+                    break;
+                case +100:
+                    moveStep = +this._entriesInColumn * this._columnsOnPage;
+                    break;
+            }
+            if (moveStep) {
+                var newCursorEntryIndex = Math.max(0, Math.min(this._entries.length - 1, this._cursorEntryIndex + moveStep));
+                var e = this._entries[newCursorEntryIndex];
+                if (e) {
+                    this._cursorPath = this._entries[newCursorEntryIndex].path;
+                    this._nextRedrawScrollToCurrent = true;
+                    this._queueRedraw();
+                }
+            }
+        };
+        Panel.prototype.navigateCursor = function () {
+            if (this._cursorEntryIndex >= 0) {
+                var entry = this._entries[this._cursorEntryIndex];
+                if (entry) {
+                    if (entry.flags & Panel.EntryFlags.Directory) {
+                        this._cursorPath = this._path;
+                        this._path = entry.path;
+                        this._nextRedrawScrollToCurrent = true;
+                        this._queueRedraw();
+                        return true;
+                    }
+                }
+            }
+        };
+        Panel.prototype._queueRedraw = function () {
+            var _this = this;
+            if (this._redrawRequested)
+                return;
+            this._redrawRequested = setTimeout(function () { return _this._redrawNow(); }, 100);
+        };
+        Panel.prototype._redrawNow = function () {
+            var prevOffset = this._calcEntryTopOffset(Math.max(0, this._cursorEntryIndex));
+            var entries = this._directoryService(this._path);
+            this._entries = [];
+            entries.sort(function (e1, e2) {
+                var flagCompare = (e1.flags & Panel.EntryFlags.Directory) ?
+                    ((e2.flags & Panel.EntryFlags.Directory) ? 0 : -1) :
+                    ((e2.flags & Panel.EntryFlags.Directory) ? +1 : 0);
+                if (flagCompare)
+                    return flagCompare;
+                var nameCompare = e1.name > e2.name ? 1 : e1.name < e2.name ? -1 : 0;
+                return nameCompare;
+            });
+            if (this._path !== '/') {
+                var parentPath = this._path.slice(0, this._path.lastIndexOf('/')) || '/';
+                entries.unshift({
+                    name: '..',
+                    path: parentPath,
+                    flags: Panel.EntryFlags.Directory
+                });
+            }
+            if (!entries || !entries.length) {
+                this._scrollContent.innerHTML = '';
+                this._pages = [];
+                return;
+            }
+            this._cursorEntryIndex = -1;
+            for (var i = 0; i < entries.length; i++) {
+                if (entries[i].path === this._cursorPath) {
+                    this._cursorEntryIndex = i;
+                    break;
+                }
+            }
+            if (this._cursorEntryIndex < 0) {
+                this._cursorEntryIndex = 0;
+                this._cursorPath = entries.length > 0 ? entries[0].path : null;
+            }
+            this._entriesInColumn = Math.max(3, ((this._metrics.hostHeight / this._metrics.windowMetrics.emHeight) | 0) - 2);
+            this._pageHeight = this._entriesInColumn * this._metrics.windowMetrics.emHeight;
+            this._pageInterval = this._metrics.hostHeight - this._pageHeight - this._metrics.windowMetrics.emHeight;
+            var desiredColumnWidth = 17 * this._metrics.windowMetrics.emWidth;
+            this._columnsOnPage = Math.max(1, Math.round(this._metrics.hostWidth / desiredColumnWidth) | 0);
+            this._columnWidth = ((this._metrics.hostWidth / this._columnsOnPage) | 0) - 1;
+            if (!this._pages)
+                this._pages = [];
+            for (var i = 0; i < entries.length; i++) {
+                var pageIndex = this._calcPageIndex(i);
+                var page = this._pages[pageIndex];
+                if (page) {
+                    if (page.height !== this._pageHeight) {
+                        page.height = this._pageHeight;
+                        page.pageDIV.style.height = this._pageHeight + 'px';
+                    }
+                    if (page.leadInterval !== this._pageInterval) {
+                        page.leadInterval = this._pageInterval;
+                        if (page.leadPaddingDIV)
+                            page.leadPaddingDIV.style.height = this._pageInterval + 'px';
+                    }
+                }
+                else {
+                    if (pageIndex) {
+                        var leadPaddingDIV = elem('div', {
+                            className: 'panels-page-separator',
+                            height: this._pageInterval + 'px'
+                        }, this._scrollContent);
+                        leadPaddingDIV.isLeadPaddingDIV = true;
+                    }
+                    page = {
+                        leadPaddingDIV: leadPaddingDIV,
+                        leadInterval: this._pageInterval,
+                        height: this._pageHeight,
+                        pageDIV: elem('div', {
+                            className: panelClass,
+                            height: this._pageHeight + 'px'
+                        }, this._scrollContent),
+                        columns: []
+                    };
+                    page.pageDIV.isPageDIV = true;
+                    this._pages.push(page);
+                }
+                var columnIndex = this._calcColumnIndex(i);
+                var column = page.columns[columnIndex];
+                if (column) {
+                    if (columnIndex === this._columnsOnPage - 1 && page.columns.length > this._columnsOnPage) {
+                        this._removeExcessColumns(page, this._columnsOnPage);
+                    }
+                    if (column.height !== this._pageHeight) {
+                        column.height = this._pageHeight;
+                        column.columnDIV.style.height = this._pageHeight + 'px';
+                    }
+                    if (column.width !== this._columnWidth) {
+                        column.width = this._columnWidth;
+                        column.columnDIV.style.width = this._columnWidth + 'px';
+                    }
+                }
+                else {
+                    column = {
+                        height: this._pageHeight,
+                        width: this._columnWidth,
+                        columnDIV: elem('div', {
+                            className: 'panels-panel-column',
+                            height: this._pageHeight + 'px',
+                            width: this._columnWidth + 'px'
+                        }, page.pageDIV),
+                        entries: []
+                    };
+                    column.columnDIV.isColumnDIV = true;
+                    page.columns.push(column);
+                }
+                var dentry = entries[i];
+                var entryIndex = this._calcEntryIndex(i);
+                var entry = column.entries[entryIndex];
+                if (!entry) {
+                    var dirfileClassName = dentry.flags & Panel.EntryFlags.Directory ? ' panels-entry-dir' : ' panels-entry-file';
+                    var entryClassName = 'panels-entry' +
+                        dirfileClassName +
+                        (this._cursorEntryIndex === i ? ' panels-entry-current' + dirfileClassName + '-current' : '');
+                    entry = {
+                        name: dentry.name,
+                        path: dentry.path,
+                        flags: dentry.flags,
+                        selectionFlags: this._cursorEntryIndex === i ? Panel.SelectionFlags.Current : 0,
+                        entryDIV: elem('div', {
+                            className: entryClassName,
+                            text: dentry.name,
+                            height: this._metrics.windowMetrics.emHeight + 'px'
+                        }, column.columnDIV)
+                    };
+                    entry.entryDIV.isEntryDIV = true;
+                    column.entries.push(entry);
+                }
+                else {
+                    var expectedSelectionFlags = this._cursorEntryIndex === i ? Panel.SelectionFlags.Current : 0;
+                    if (entry.name !== dentry.name) {
+                        entry.name = dentry.name;
+                        setText(entry.entryDIV, dentry.name);
+                    }
+                    if (entry.path !== dentry.path) {
+                        entry.path = dentry.path;
+                    }
+                    if (entry.flags !== dentry.flags || entry.selectionFlags !== expectedSelectionFlags) {
+                        var dirfileClassName = dentry.flags & Panel.EntryFlags.Directory ? ' panels-entry-dir' : ' panels-entry-file';
+                        var entryClassName = 'panels-entry' +
+                            dirfileClassName +
+                            (this._cursorEntryIndex === i ? ' panels-entry-current' + dirfileClassName + '-current' : '');
+                        entry.entryDIV.className = entryClassName;
+                        entry.flags = dentry.flags;
+                        entry.selectionFlags = expectedSelectionFlags;
+                    }
+                    if (entryIndex === this._entriesInColumn - 1 && column.entries.length > this._entriesInColumn) {
+                        this._removeExcessEntries(column, this._entriesInColumn);
+                    }
+                }
+                this._entries.push(entry);
+            }
+            this._removeExcessPages(pageIndex + 1);
+            var p = this._pages[pageIndex];
+            this._removeExcessColumns(p, columnIndex + 1);
+            var c = p.columns[columnIndex];
+            this._removeExcessEntries(c, entryIndex + 1);
+            var newOffset = this._calcEntryTopOffset(Math.max(0, this._cursorEntryIndex));
+            if (this._nextRedrawScrollToCurrent) {
+                this._nextRedrawScrollToCurrent = false;
+                var maxScroll = newOffset - this._metrics.windowMetrics.emHeight * 2;
+                var minScroll = newOffset - this._metrics.hostHeight + this._metrics.windowMetrics.emHeight * 3;
+                var newScrollTop = this._scrollTop < minScroll ? minScroll :
+                    this._scrollTop > maxScroll ? maxScroll :
+                        -1;
+                if (newScrollTop >= 0) {
+                    //console.log('redraw: scroll to current [' + newScrollTop + ']');
+                    this._host.scrollTop = newScrollTop;
+                }
+            }
+            else {
+                var prevDistanceFromCenter = prevOffset - (this._scrollTop + this._scrollTopHeight / 2);
+                var newScrollTop = newOffset - prevDistanceFromCenter - this._metrics.hostHeight / 2;
+                //console.log({
+                //  prevDistanceFromCenter, prevOffset, this_scrollTop: this._scrollTop, this_scrollTopHeight: this._scrollTopHeight,
+                //  newOffset, this_metrics_hostHeight: this._metrics.hostHeight, newScrollTop
+                //});
+                //console.log('redraw: scroll to approximate prev. [' + newScrollTop + ']');
+                this._host.scrollTop = newScrollTop;
+            }
+            this._redrawRequested = 0;
+            // end of _redrawNow()
+        };
+        Panel.prototype._removeExcessPages = function (expectedCount) {
+            for (var i = this._pages.length - 1; i >= expectedCount; i--) {
+                var p = this._pages[i];
+                p.pageDIV.parentElement.removeChild(p.pageDIV);
+                if (p.leadPaddingDIV)
+                    p.leadPaddingDIV.parentElement.removeChild(p.leadPaddingDIV);
+            }
+            if (this._pages.length > expectedCount)
+                this._pages = this._pages.slice(0, expectedCount);
+        };
+        Panel.prototype._removeExcessColumns = function (p, expectedCount) {
+            for (var i = p.columns.length - 1; i >= expectedCount; i--) {
+                var c = p.columns[i];
+                c.columnDIV.parentElement.removeChild(c.columnDIV);
+            }
+            if (p.columns.length > expectedCount)
+                p.columns = p.columns.slice(0, expectedCount);
+        };
+        Panel.prototype._removeExcessEntries = function (c, expectedCount) {
+            for (var i = c.entries.length - 1; i >= expectedCount; i--) {
+                var e = c.entries[i];
+                e.entryDIV.parentElement.removeChild(e.entryDIV);
+            }
+            if (c.entries.length > expectedCount)
+                c.entries = c.entries.slice(0, expectedCount);
+        };
+        Panel.prototype._onscroll = function () {
+            if (this._redrawRequested)
+                return;
+            this._scrollTop = this._host.scrollTop;
+            this._scrollTopHeight = this._metrics.hostHeight;
+            //console.log('onscroll ' + this._scrollTop);
+        };
+        Panel.prototype._calcPageIndex = function (indexOfEntry) {
+            return (indexOfEntry / (this._columnsOnPage * this._entriesInColumn)) | 0;
+        };
+        Panel.prototype._calcColumnIndex = function (indexOfEntry) {
+            return ((indexOfEntry / this._entriesInColumn) | 0) % this._columnsOnPage;
+        };
+        Panel.prototype._calcEntryIndex = function (indexOfEntry) {
+            return indexOfEntry % this._entriesInColumn;
+        };
+        Panel.prototype._calcEntryTopOffset = function (indexOfEntry) {
+            if (!this._metrics || !this._metrics.windowMetrics)
+                return 0;
+            var pageIndex = this._calcPageIndex(indexOfEntry);
+            var entryIndex = this._calcEntryIndex(indexOfEntry);
+            var offset = pageIndex * this._entriesInColumn * this._metrics.windowMetrics.emHeight +
+                Math.max(0, pageIndex - 1) * this._pageInterval +
+                entryIndex * this._metrics.windowMetrics.emHeight; // distance from the top of the page
+            return offset;
+        };
+        return Panel;
+    })();
+    panels.Panel = Panel;
+    var Panel;
+    (function (Panel) {
+        (function (EntryFlags) {
+            EntryFlags[EntryFlags["Directory"] = 1] = "Directory";
+        })(Panel.EntryFlags || (Panel.EntryFlags = {}));
+        var EntryFlags = Panel.EntryFlags;
+        (function (SelectionFlags) {
+            SelectionFlags[SelectionFlags["None"] = 0] = "None";
+            SelectionFlags[SelectionFlags["Current"] = 1] = "Current";
+            SelectionFlags[SelectionFlags["Selected"] = 2] = "Selected";
+        })(Panel.SelectionFlags || (Panel.SelectionFlags = {}));
+        var SelectionFlags = Panel.SelectionFlags;
+    })(Panel = panels.Panel || (panels.Panel = {}));
+})(panels || (panels = {}));
+var panels;
+(function (panels) {
+    var panelHMargin = 10;
+    var panelVMargin = 5;
+    var TwoPanels = (function () {
+        function TwoPanels(_host, leftPath, rightPath, _drive) {
+            var _this = this;
+            this._host = _host;
+            this._drive = _drive;
+            this._scrollHost = elem('div', { className: 'panels-scroll-host' }, this._host);
+            this._scrollContent = elem('div', { className: 'panels-scroll-content' }, this._scrollHost);
+            this._leftPanelHost = elem('div', { className: 'panels-panel panels-left-panel' }, this._scrollContent);
+            this._rightPanelHost = elem('div', { className: 'panels-panel panels-right-panel' }, this._scrollContent);
+            var directoryService = panels.driveDirectoryService(this._drive);
+            this._leftPanel = new panels.Panel(this._leftPanelHost, leftPath, directoryService);
+            this._rightPanel = new panels.Panel(this._rightPanelHost, rightPath, directoryService);
+            this._leftPanel.activate();
+            /*
+            TODO: ensure focus stays with the text input at the bottom
+            elem.on(this._leftPanel, 'mousedown', e=> {
+              if (e.preventDefault)
+                e.preventDefault();
+              return false;
+            }); */
+            elem.on(this._leftPanelHost, 'click', function (e) { return _this._onclick(e); });
+            elem.on(this._rightPanelHost, 'click', function (e) { return _this._onclick(e); });
+        }
+        TwoPanels.prototype.measure = function () {
+        };
+        TwoPanels.prototype.arrange = function (metrics) {
+            var contentWidth = 0;
+            if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {
+                // flippable layout
+                contentWidth = Math.max(metrics.hostWidth / 2, metrics.hostWidth * 2 - metrics.emWidth * 3);
+            }
+            else {
+                // full layout
+                contentWidth = metrics.hostWidth;
+            }
+            var bottomGap = Math.min(metrics.hostHeight / 3, metrics.emHeight * 3);
+            this._scrollHost.style.width = metrics.hostWidth + 'px';
+            var panelsHeight = metrics.hostHeight - bottomGap;
+            this._scrollHost.style.height = panelsHeight + 'px';
+            this._scrollContent.style.width = contentWidth + 'px';
+            this._scrollContent.style.height = panelsHeight + 'px';
+            var panelWidth = (contentWidth / 2 - 0.5) | 0;
+            this._leftPanelHost.style.height = panelsHeight + 'px';
+            this._leftPanelHost.style.width = panelWidth + 'px';
+            this._rightPanelHost.style.height = panelsHeight + 'px';
+            this._rightPanelHost.style.width = panelWidth + 'px';
+            if (this._leftPanelHost.style.display !== 'none') {
+                this._leftPanel.arrange({
+                    windowMetrics: metrics,
+                    hostWidth: panelWidth - panelHMargin * 2,
+                    hostHeight: panelsHeight - panelVMargin * 2
+                });
+            }
+            if (this._rightPanelHost.style.display !== 'none') {
+                this._rightPanel.arrange({
+                    windowMetrics: metrics,
+                    hostWidth: panelWidth - panelHMargin * 2,
+                    hostHeight: panelsHeight - panelVMargin * 2
+                });
+            }
+        };
+        TwoPanels.prototype.isVisible = function () {
+            return this._scrollHost.style.display !== 'none';
+        };
+        TwoPanels.prototype.toggleVisibility = function () {
+            this._scrollHost.style.display = this.isVisible() ? 'none' : 'block';
+        };
+        TwoPanels.prototype.isLeftActive = function () {
+            return this._leftPanel.isActive();
+        };
+        TwoPanels.prototype.toggleActivePanel = function () {
+            if (!this.isVisible())
+                return;
+            var isLeftActive = this._leftPanel.isActive();
+            this._getPanel(isLeftActive).deactivate();
+            this._getPanel(!isLeftActive).activate();
+        };
+        TwoPanels.prototype.keydown = function (e) {
+            switch (e.keyCode) {
+                case 38:
+                    return this._selectionGo(-1);
+                case 40:
+                    return this._selectionGo(+1);
+                case 33:
+                    return this._selectionGo(-100);
+                case 34:
+                    return this._selectionGo(+100);
+                case 37:
+                    return this._selectionGo(-10);
+                case 39:
+                    return this._selectionGo(+10);
+                case 9:
+                    this.toggleActivePanel();
+                    return true;
+                case 86:
+                    if (e.ctrlKey || e.metaKey)
+                        return this.togglePanelPaths();
+                    break;
+                case 112:
+                    if (e.ctrlKey || e.metaKey) {
+                        return this.togglePartHidden(true);
+                    }
+                    break;
+                case 113:
+                    if (e.ctrlKey || e.metaKey) {
+                        return this.togglePartHidden(false);
+                    }
+                    break;
+                case 13:
+                    var activePa = this._getPanel(this.isLeftActive());
+                    return activePa.navigateCursor();
+                default:
+                    if (e.ctrlKey) {
+                    }
+                    break;
+            }
+            return false;
+        };
+        TwoPanels.prototype.togglePartHidden = function (leftPanel) {
+            var togglePanelHost = this._getPanelHost(leftPanel);
+            var oppositePanelHost = this._getPanelHost(!leftPanel);
+            if (!this.isVisible()) {
+                togglePanelHost.style.display = 'block';
+                oppositePanelHost.style.display = 'none';
+                if (this.isLeftActive() !== leftPanel)
+                    this.toggleActivePanel();
+                this.toggleVisibility();
+            }
+            else {
+                if (togglePanelHost.style.display !== 'none') {
+                    if (oppositePanelHost.style.display === 'none') {
+                        togglePanelHost.style.display = 'block';
+                        this.toggleVisibility();
+                    }
+                    else {
+                        togglePanelHost.style.display = 'none';
+                        if (this.isLeftActive() === leftPanel)
+                            this.toggleActivePanel();
+                    }
+                }
+                else {
+                    togglePanelHost.style.display = 'block';
+                }
+            }
+            return true;
+        };
+        TwoPanels.prototype.togglePanelPaths = function () {
+            console.log('Ctrl+U toggle is not implemented.');
+            return false;
+        };
+        TwoPanels.prototype.cursorPath = function () {
+            if (!this.isVisible())
+                return null;
+            var pan = this._getPanel(this.isLeftActive());
+            return pan.cursorPath();
+        };
+        TwoPanels.prototype._selectionGo = function (direction) {
+            var panel = this._getPanel(this.isLeftActive()).cursorGo(direction);
+            return true;
+        };
+        TwoPanels.prototype._getPanel = function (left) {
+            return left ? this._leftPanel : this._rightPanel;
+        };
+        TwoPanels.prototype._getPanelHost = function (left) {
+            return left ? this._leftPanelHost : this._rightPanelHost;
+        };
+        TwoPanels.prototype._onclick = function (e) {
+            var isLeft = this._leftPanel.onclick(e);
+            if (!isLeft && !this._rightPanel.onclick(e))
+                return;
+            if (isLeft === this.isLeftActive())
+                return;
+            this.toggleActivePanel();
+        };
+        return TwoPanels;
+    })();
+    panels.TwoPanels = TwoPanels;
+})(panels || (panels = {}));
+var panels;
+(function (panels) {
+    function driveDirectoryService(drive) {
+        return function (path) {
+            var pathPrefix = path === '/' ? path : path + '/';
+            var result = [];
+            var resByName = {};
+            var files = drive.files();
+            for (var i = 0; i < files.length; i++) {
+                var fi = files[i];
+                if (fi.length < pathPrefix.length + 1)
+                    continue;
+                if (fi.slice(0, pathPrefix.length) !== pathPrefix)
+                    continue;
+                var name;
+                var entryPath = fi;
+                var isDirectory = false;
+                var nextSlashPos = fi.indexOf('/', pathPrefix.length);
+                if (nextSlashPos < 0) {
+                    name = fi.slice(pathPrefix.length);
+                }
+                else {
+                    name = fi.slice(pathPrefix.length, nextSlashPos);
+                    entryPath = fi.slice(0, nextSlashPos);
+                    isDirectory = true;
+                }
+                if (resByName.hasOwnProperty(name))
+                    continue;
+                var entry = { path: entryPath, name: name, flags: isDirectory ? panels.Panel.EntryFlags.Directory : 0 };
+                result.push(entry);
+                resByName[name] = entry;
+            }
+            return result;
+        };
+    }
+    panels.driveDirectoryService = driveDirectoryService;
+})(panels || (panels = {}));
+setTimeout(function () { return showCommander(require('drive')); }, 10);
+function showCommander(drive) {
+    document.body.style.overflow = 'hidden';
+    document.body.parentElement.style.overflow = 'hidden';
+    var styleText = drive.read('/shell/style.css');
+    elem('style', { text: styleText }, document.body);
+    var commander = new CommanderShell(document.body, drive);
+}
+var terminal;
+(function (terminal) {
+    var NodeHost = (function () {
+        function NodeHost(_drive) {
+            var _this = this;
+            this._drive = _drive;
+            this._nodeMod = null;
+            this._nodeModCache = null;
+            this._processMod = null;
+            this.log = null;
+            this._nodeModCache = {};
+            var nocode = this._drive.read('/shell/node.ts.js');
+            this._nodeMod = loadMod({
+                eval: nocode,
+                path: '/shell/node.ts.js',
+                ui: false,
+                scope: {
+                    no_drive: this._drive,
+                    no_homepath: '/',
+                    require: function (mod) { return _this._require(mod); },
+                    console: {
+                        log: function () {
+                            var args = [];
+                            for (var _i = 0; _i < arguments.length; _i++) {
+                                args[_i - 0] = arguments[_i];
+                            }
+                            if (_this.log)
+                                _this.log(args);
+                            else if (typeof console !== 'undefined')
+                                console.log(args);
+                        }
+                    }
+                }
+            });
+            this._nodeModCache = this._nodeMod.exports;
+        }
+        NodeHost.prototype.run = function (code, path) {
+            var _this = this;
+            var isInteractive = !path;
+            if (isInteractive) {
+                var now = new Date();
+                path = now.getFullYear() +
+                    (now.getMonth() + 1 > 9 ? '' : '0') + now.getMonth() +
+                    (now.getDate() > 9 ? '' : '0') + now.getDate() + '-' +
+                    (now.getHours() > 9 ? '' : '0') + now.getHours() +
+                    (now.getMinutes() > 9 ? '' : '0') + now.getMinutes() + '-' +
+                    (now.getSeconds() > 9 ? '' : '0') + now.getSeconds() +
+                    '.' + ((now.getMilliseconds() | 0) + 1000).toString().slice(1) +
+                    '.js';
+                if (!this._processMod) {
+                    this._processMod = loadMod({
+                        eval: 'exports = { evalFn: function(c) { return eval(c); } };',
+                        ui: false,
+                        scope: {
+                            require: function (mod) { return _this._require(mod); },
+                            process: this._nodeMod.exports.process,
+                            module: this._nodeMod.exports.module,
+                            console: {
+                                log: function () {
+                                    var args = [];
+                                    for (var _i = 0; _i < arguments.length; _i++) {
+                                        args[_i - 0] = arguments[_i];
+                                    }
+                                    if (_this.log)
+                                        _this.log(args);
+                                    else if (typeof console !== 'undefined')
+                                        console.log(args);
+                                }
+                            }
+                        }
+                    });
+                }
+                var result = this._processMod.exports.evalFn(code);
+                return result;
+            }
+            else {
+                var resMod = loadMod({
+                    eval: code,
+                    path: path,
+                    ui: false,
+                    scope: {
+                        require: function (mod) { return _this._require(mod); },
+                        process: this._nodeMod.exports.process,
+                        module: this._nodeMod.exports.module,
+                        console: {
+                            log: function () {
+                                var args = [];
+                                for (var _i = 0; _i < arguments.length; _i++) {
+                                    args[_i - 0] = arguments[_i];
+                                }
+                                if (_this.log)
+                                    _this.log(args);
+                                else if (typeof console !== 'undefined')
+                                    console.log(args);
+                            }
+                        }
+                    }
+                });
+                var result = resMod.exports;
+                return result;
+            }
+        };
+        NodeHost.prototype._require = function (mod) {
+            var res = this._nodeModCache[mod];
+            if (!res) {
+                var code = this._drive.read(mod);
+                if (code) {
+                    res = this.run(code, mod);
+                }
+                else {
+                    throw new Error('Cannot load module ' + mod + ': file not found.');
+                }
+            }
+            return res;
+        };
+        return NodeHost;
+    })();
+    terminal.NodeHost = NodeHost;
+})(terminal || (terminal = {}));
+var terminal;
+(function (terminal) {
+    var Terminal = (function () {
+        function Terminal(_host, _node) {
+            var _this = this;
+            this._host = _host;
+            this._node = _node;
+            this._promptWidth = 0;
+            this._historyContentHeight = 0;
+            this._hostMetrics = null;
+            this._history = elem('div', { className: 'terminal-history' }, this._host);
+            this._historyContent = elem('pre', {
+                className: 'terminal-history-content',
+                text: 'Hello world from mini-shell\n\nVersion 0.7m\nMay 2015\nOleg Mihailik\n\nPlease be careful.'
+            }, this._history);
+            this._prompt = elem('div', { className: 'terminal-prompt', text: '>' }, this._host);
+            this._input = elem('textarea', { className: 'terminal-input', autofocus: true }, this._host);
+            setTimeout(function () { return _this._input.focus(); }, 1);
+        }
+        Terminal.prototype.log = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i - 0] = arguments[_i];
+            }
+            return this.logArray(args);
+        };
+        Terminal.prototype.logArray = function (args) {
+            var output = elem('div', this._historyContent);
+            for (var i = 0; i < args.length; i++) {
+                if (i > 0)
+                    elem('span', { text: ' ' }, output);
+                if (args[i] === null) {
+                    elem('span', { text: 'null', color: 'green' }, output);
+                }
+                else {
+                    this._logAppendObj(args[i], output, 0);
+                }
+            }
+            if (this._hostMetrics) {
+                this.measure();
+                this.arrange(this._hostMetrics);
+            }
+        };
+        Terminal.prototype.hasInput = function () {
+            return !!this._getInput();
+        };
+        Terminal.prototype._getInput = function () {
+            return (this._input.value || '').replace(/[\r\n]/g, '');
+        };
+        Terminal.prototype._logAppendObj = function (obj, output, level) {
+            switch (typeof obj) {
+                case 'number':
+                case 'boolean':
+                    elem('span', { text: obj, color: 'green' }, output);
+                    break;
+                case 'undefined':
+                    elem('span', { text: 'undefined', color: 'green', opacity: 0.5 }, output);
+                    break;
+                case 'function':
+                    var funContainer = elem('span', output);
+                    var funFunction = elem('span', { text: 'function ', color: 'silver', opacity: 0.5 }, funContainer);
+                    var funName = elem('span', { text: obj.name, color: 'cornflowerblue', fontWeight: 'bold' }, funContainer);
+                    funContainer.title = obj;
+                    break;
+                case 'string':
+                    var strContainer = elem('span', output);
+                    elem('span', { text: '"', color: 'tomato' }, strContainer);
+                    elem('span', { text: obj, color: 'tomato', opacity: 0.5 }, strContainer);
+                    elem('span', { text: '"', color: 'tomato' }, strContainer);
+                    break;
+                default:
+                    if (obj && obj.constructor && obj.construct && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
+                        elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
+                        if (obj.constructor.prototype && obj.constructor.prototype.constructor
+                            && obj.constructor.prototype.constructor.name
+                            && obj.constructor.prototype.constructor.name !== 'Object' && obj.constructor.prototype.constructor.name !== 'Array')
+                            elem('span', { text: ':' + obj.contructor.prototype.constructor.name, color: 'cornflowerblue', opacity: 0.5 }, output);
+                        elem('span', output);
+                    }
+                    if (obj && typeof obj.length === 'number' && obj.length >= 0) {
+                        elem('span', { text: '[', color: 'white' }, output);
+                        if (level > 1) {
+                            elem('span', { text: '...', color: 'silver' }, output);
+                        }
+                        else {
+                            for (var i = 0; i < obj.length; i++) {
+                                if (i > 0)
+                                    elem('span', { text: ', ', color: 'gray' }, output);
+                                if (typeof obj[i] !== 'undefined')
+                                    this._logAppendObj(obj[i], output, level + 1);
+                            }
+                        }
+                        elem('span', { text: ']', color: 'white' }, output);
+                    }
+                    else if (obj.createElement + '' === document.createElement + '' && obj.getElementById + '' === document.getElementById + '' && 'title' in obj) {
+                        elem('span', { text: '#document ' + obj.title, color: 'green' }, output);
+                    }
+                    else if (obj.setInterval + '' === window.setInterval + '' && obj.setTimeout + '' === window.setTimeout + '' && 'location' in obj) {
+                        elem('span', { text: '#window ' + obj.location, color: 'green' }, output);
+                    }
+                    else if (typeof obj.tagName === 'string' && obj.getElementsByTagName + '' === document.body.getElementsByTagName + '') {
+                        elem('span', { text: '<' + obj.tagName + '>', color: 'green' }, output);
+                    }
+                    else if (obj + '' !== '[Object]') {
+                        elem('span', { text: '{', color: 'cornflowerblue' }, output);
+                        if (level > 1) {
+                            elem('span', { text: '...', color: 'cornflowerblue', opacity: 0.5 }, output);
+                        }
+                        else {
+                            var first = true;
+                            for (var k in obj) {
+                                if (obj.hasOwnProperty && !obj.hasOwnProperty(k))
+                                    continue;
+                                if (first) {
+                                    first = false;
+                                }
+                                else {
+                                    elem('span', { text: ', ', color: 'cornflowerblue', opacity: 0.3 }, output);
+                                    first = false;
+                                }
+                                elem('span', { text: k, color: 'cornflowerblue', fontWeight: 'bold' }, output);
+                                elem('span', { text: ': ', color: 'cornflowerblue', opacity: 0.5 }, output);
+                                this._logAppendObj(obj[k], output, level + 1);
+                            }
+                        }
+                        elem('span', { text: '}', color: 'cornflowerblue' }, output);
+                    }
+                    else {
+                        elem('span', { text: obj, color: 'cornflowerblue' }, output);
+                    }
+                    break;
+            }
+        };
+        Terminal.prototype.focus = function () {
+            this._input.focus();
+        };
+        Terminal.prototype.measure = function () {
+            this._promptWidth = this._prompt.offsetWidth;
+            this._historyContentHeight = this._historyContent.offsetHeight;
+        };
+        Terminal.prototype.arrange = function (metrics) {
+            this._hostMetrics = metrics;
+            this._history.style.width = metrics.hostWidth + 'px';
+            this._history.style.bottom = metrics.emHeight + 'px';
+            if (metrics.hostHeight - metrics.emHeight > this._historyContentHeight) {
+                this._history.style.height = this._historyContentHeight + 'px';
+            }
+            else {
+                this._history.style.height = (metrics.hostHeight - metrics.emHeight) + 'px';
+                this._history.scrollTop = this._historyContentHeight - (metrics.hostHeight - metrics.emHeight);
+            }
+            this._input.style.left = this._promptWidth + 'px';
+            this._input.style.width = (metrics.hostWidth - this._promptWidth) + 'px';
+        };
+        Terminal.prototype.clearInput = function () {
+            var _this = this;
+            setTimeout(function () {
+                var cleanInput = _this._getInput();
+                if (_this._input.value !== cleanInput) {
+                    _this._input.value = cleanInput;
+                }
+            }, 10);
+        };
+        Terminal.prototype.keydown = function (e, cursorPath) {
+            if (e.keyCode === 38) {
+            }
+            else if (e.keyCode === 13) {
+                var code = this._getInput();
+                if (code) {
+                    if (code.slice(-2) === '\r\n')
+                        code = code.slice(0, code.length - 2);
+                    this._input.value = '';
+                    elem('div', {
+                        text: code,
+                        color: 'gray'
+                    }, this._historyContent);
+                    this._evalAndLogResults(code);
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+        };
+        Terminal.prototype._evalAndLogResults = function (code) {
+            var result;
+            try {
+                result = this._node.run(code, null);
+            }
+            catch (error) {
+                elem('div', {
+                    text: error && error.stack ? error.stack : error,
+                    color: 'red'
+                }, this._historyContent);
+                if (this._hostMetrics) {
+                    this.measure();
+                    this.arrange(this._hostMetrics);
+                }
+                return;
+            }
+            this.log(result);
+        };
+        return Terminal;
+    })();
+    terminal.Terminal = Terminal;
+})(terminal || (terminal = {}));
+-->
 
 <!-- /empty/
 -->
@@ -5872,1330 +7198,6 @@ OK -->
 
 
 
-<!-- /shell/start.ts.js
-var CommanderShell = (function () {
-    function CommanderShell(_host, _drive) {
-        var _this = this;
-        this._host = _host;
-        this._drive = _drive;
-        this._metrics = {
-            hostWidth: 0,
-            hostHeight: 0,
-            emWidth: 0,
-            emHeight: 0
-        };
-        this._onsizechangedTimeout = 0;
-        this._node = new terminal.NodeHost(this._drive);
-        this._node.log = function (args) { return _this._terminal.log.apply(_this._terminal, args); };
-        elem(this._host, {
-            background: 'black',
-            color: 'silver'
-        });
-        this._metricElem = elem('div', {
-            position: 'absolute',
-            opacity: 0,
-            left: '-200px', top: '-200px',
-            wdith: 'auto', height: 'auto',
-            text: 'M'
-        }, document.body);
-        this._terminal = new terminal.Terminal(this._host, this._node);
-        this._twoPanels = new panels.TwoPanels(this._host, '/', '/src', this._drive);
-        var resizeMod = require('resize');
-        resizeMod.on(function (winMetrics) {
-            _this._metrics.hostWidth = winMetrics.windowWidth;
-            _this._metrics.hostHeight = winMetrics.windowHeight;
-            _this.measure();
-            _this.arrange();
-        });
-        this._metrics.hostWidth = document.body.offsetWidth;
-        this._metrics.hostHeight = document.body.offsetHeight;
-        this.measure();
-        this.arrange();
-        elem.on(this._host, 'keydown', function (e) { return _this._keydown(e); });
-        var _glob = (function () { return this; })();
-        var applyConsole = function (glob) {
-            if (glob.console) {
-                var _oldLog = glob.console.log;
-                var term = _this._terminal;
-                console.log = function () {
-                    var args = [];
-                    for (var _i = 0; _i < arguments.length; _i++) {
-                        args[_i - 0] = arguments[_i];
-                    }
-                    _oldLog.apply(glob.console, args);
-                    term.logArray(args);
-                };
-            }
-            else {
-                var term = _this._terminal;
-                glob.console = {
-                    log: function () {
-                        var args = [];
-                        for (var _i = 0; _i < arguments.length; _i++) {
-                            args[_i - 0] = arguments[_i];
-                        }
-                        term.logArray(args);
-                    }
-                };
-            }
-        };
-        applyConsole(_glob);
-        applyConsole(window);
-    }
-    CommanderShell.prototype.measure = function () {
-        this._metrics.emWidth = this._metricElem.offsetWidth;
-        this._metrics.emHeight = this._metricElem.offsetHeight;
-        this._twoPanels.measure();
-        this._terminal.measure();
-    };
-    CommanderShell.prototype.arrange = function () {
-        this._host.style.width = this._metrics.hostWidth + 'px';
-        this._host.style.height = this._metrics.hostHeight + 'px';
-        this._twoPanels.arrange(this._metrics);
-        this._terminal.arrange(this._metrics);
-    };
-    CommanderShell.prototype._keydown = function (e) {
-        var res = this._keydownCore(e);
-        if (res) {
-            if (e.preventDefault)
-                e.preventDefault();
-        }
-        return res;
-    };
-    CommanderShell.prototype._keydownCore = function (e) {
-        if (e.keyCode === 27 && !e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-            this._twoPanels.toggleVisibility();
-            return true;
-        }
-        if (e.keyCode === 13)
-            this._terminal.clearInput();
-        if ((e.keyCode === 13 && this._twoPanels.isVisible() && !this._terminal.hasInput())
-            || (e.keyCode !== 13)) {
-            if (this._twoPanels.keydown(e))
-                return true;
-        }
-        var cursorPath = this._twoPanels.cursorPath();
-        this._terminal.focus();
-        if (this._terminal.keydown(e, cursorPath))
-            return true;
-        if (e.keyCode === 13)
-            return this._execute(cursorPath);
-        //if (e.keyCode < 32 || e.keyCode > 126) {
-        //	this._terminal.log('CommanderShell::keydown ' + e.yCode);
-        //}
-    };
-    CommanderShell.prototype._execute = function (cursorPath) {
-        var _this = this;
-        if (/\.js$/.test(cursorPath)) {
-            var text = this._drive.read(cursorPath);
-            if (typeof text !== 'undefined' && text !== null) {
-                this._terminal.log('@node ' + cursorPath);
-                var result = this._node.run(text, cursorPath);
-                this._terminal.log(result);
-                return true;
-            }
-        }
-        else if (/.html$/.test(cursorPath)) {
-            this._terminal.log('@build ' + cursorPath);
-            var htmlTemplate = this._drive.read(cursorPath);
-            var blankWindow = window.open('', '_blank' + (+new Date()));
-            var pollUntil = (+new Date()) + 1000;
-            while (+new Date() < pollUntil) {
-                try {
-                    var blankWindowDoc = blankWindow.document;
-                }
-                catch (error) { }
-            }
-            if (!blankWindowDoc) {
-                alert('Cannot open a window to host the built document');
-                return;
-            }
-            blankWindow.document.open();
-            blankWindow.document.write([
-                '<html><title>Building ' + cursorPath + '...</title>',
-                '<style>',
-                'html, body { background: black; color: greenyellow; }',
-                'h2 { font-weight: 100; width: 40%; position: fixed; font-size: 200%; }',
-                'pre { width: 50%; padding-left: 50%; opacity: 1; transition: opacity 1s; }',
-                '</style>',
-                '<h2>Building ' + cursorPath + '</h2>',
-                '<' + 's' + 'cript>',
-                'var textContentProp = "textContent" in document.createElement("pre") ? "textContent" : "innerText";',
-                'var lastLogElem;',
-                'function log(text) {',
-                '  var logElem = document.createElement("pre");',
-                '  logElem[textContentProp]=text;',
-                '  document.body.appendChild(logElem);',
-                '  logElem.scrollIntoView();',
-                '  if (lastLogElem) {',
-                '    lastLogElem.style.opacity = 0.5;',
-                '  }',
-                '  lastLogElem = logElem;',
-                '}',
-                '<' + '/' + 's' + 'cript>'].join('\n'));
-            blankWindow.document.close();
-            build.processTemplate(htmlTemplate, [], function (txt) {
-                _this._terminal.log(txt);
-                blankWindow.log(txt);
-            }, function (error, result) {
-                if (error) {
-                    _this._terminal.log(error);
-                    return;
-                }
-                try {
-                    var blob = new Blob([result], { type: 'text/html' });
-                    var url = URL.createObjectURL(blob);
-                    blankWindow.location.replace(url);
-                }
-                catch (blobError) {
-                    blankWindow.document.open();
-                    blankWindow.document.write(result);
-                    blankWindow.document.close();
-                }
-            });
-        }
-        else {
-            this._terminal.log('@type ' + cursorPath);
-            this._terminal.log(this._drive.read(cursorPath));
-        }
-    };
-    return CommanderShell;
-})();
-var build;
-(function (build) {
-    function processTemplate(template, scopes, log, callback) {
-        // <%= expr %>
-        // <% statement %>
-        // <%-- comment --%>
-        log('Generating build script...');
-        setTimeout(function () {
-            var fnText = generateBuildScript(template, scopes);
-            log('Preprocessing build script...');
-            setTimeout(function () {
-                var fn = Function('scopes', fnText);
-                log('Executing build script...');
-                var output = fn(scopes);
-                var outputIndex = 0;
-                processNextOutputChunk();
-                function processNextOutputChunk() {
-                    var startTime = +new Date();
-                    // all heavy chunks will bail out and queue the next one on setTimeout,
-                    // simple literal insertions keep going for a slice of time
-                    while (true) {
-                        if (outputIndex >= output.length) {
-                            var result = output.join('');
-                            callback(null, result);
-                            return;
-                        }
-                        var outputChunk = output[outputIndex];
-                        if (typeof outputChunk === 'function') {
-                            log('Processing ' + outputChunk + '...');
-                            setTimeout(function () {
-                                try {
-                                    var chunkResult = outputChunk();
-                                    var chunkResultText = String(chunkResult);
-                                    output[outputIndex] = chunkResultText;
-                                }
-                                catch (error) {
-                                    callback(error);
-                                    return;
-                                }
-                                log('...OK [' + chunkResultText.length + ']');
-                                outputIndex++;
-                                processNextOutputChunk();
-                                //setTimeout(processNextOutputChunk, 1);
-                            }, 1);
-                            break;
-                        }
-                        else {
-                            var literal = String(outputChunk);
-                            output[outputIndex] = literal;
-                            var literalLines = (literal.length > 100 ? literal.slice(0, 50) + '\n...\n' + literal.slice(literal.length - 5) : literal).split('\n');
-                            while (literalLines.length && !literalLines[0])
-                                literalLines.shift();
-                            while (literalLines.length && !literalLines[literalLines.length - 1])
-                                literalLines.pop();
-                            log(literalLines.length <= 2 ? literalLines.join('\n') : literalLines[0] + '\n...\n' + literalLines[literalLines.length - 1]);
-                            outputIndex++;
-                            if (+new Date() - startTime > 300) {
-                                setTimeout(processNextOutputChunk, 1);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }, 1);
-        }, 1);
-    }
-    build.processTemplate = processTemplate;
-    function generateBuildScript(template, scopes) {
-        var generated = [];
-        for (var i = 0; i < scopes.length; i++) {
-            generated.push('with(scopes[' + i + ']) {');
-        }
-        generated.push('var output =[];');
-        var index = 0;
-        while (index < template.length) {
-            var nextOpenASP = template.indexOf('<%', index);
-            if (nextOpenASP < 0) {
-                generateWrite(generated, template.slice(index));
-                break;
-            }
-            var ch = template.charAt(nextOpenASP + 2);
-            if (ch === '=') {
-                var closeASP = template.indexOf('%>', nextOpenASP);
-                if (closeASP < 0) {
-                    generateWrite(generated, template.slice(index));
-                    break;
-                }
-                generateWrite(generated, template.slice(index, nextOpenASP));
-                generateRedirect(generated, template.slice(nextOpenASP + 3, closeASP));
-                index = closeASP + 2;
-            }
-            else if (ch === '-') {
-                var closeCommentMatch = template.charAt(nextOpenASP + 3) === '-' ? '--%>' : '-%>';
-                var closeComment = template.indexOf(closeCommentMatch, nextOpenASP);
-                if (closeComment < 0) {
-                    generateWrite(generated, template.slice(index));
-                    break;
-                }
-                generateWrite(generated, template.slice(index, nextOpenASP));
-                index = closeComment + closeCommentMatch.length;
-            }
-            else {
-                var closeASP = template.indexOf('%>', nextOpenASP);
-                if (closeASP < 0) {
-                    generateWrite(generated, template.slice(index));
-                    break;
-                }
-                generateWrite(generated, template.slice(index, nextOpenASP));
-                generateStatement(generated, template.slice(nextOpenASP + 2, closeASP));
-                index = closeASP + 2;
-            }
-        }
-        for (var i = 0; i < scopes.length; i++) {
-            generated.push('}');
-        }
-        generated.push('return output;');
-        var fnText = generated.join('\n');
-        return fnText;
-    }
-    function generateWrite(generated, chunk) {
-        if (chunk)
-            generated.push('output.push(\'' + stringLiteral(chunk) + '\');');
-    }
-    function generateRedirect(generated, redirect) {
-        generated.push('output.push(' + redirect + ');');
-    }
-    function generateStatement(generated, statement) {
-        generated.push(statement);
-    }
-    function stringLiteral(text) {
-        return text.
-            replace(/\\/g, '\\\\').
-            replace(/\n/g, '\\n').
-            replace(/\r/g, '\\r').
-            replace(/\t/g, '\\t').
-            replace(/\'/g, '\\\'').
-            replace(/\"/g, '\\"');
-    }
-})(build || (build = {}));
-var panels;
-(function (panels) {
-    var panelClass = 'panels-panel-page';
-    var Panel = (function () {
-        function Panel(_host, _path, _directoryService) {
-            var _this = this;
-            this._host = _host;
-            this._path = _path;
-            this._directoryService = _directoryService;
-            this._cursorEntryIndex = -1;
-            this._entries = null;
-            this._redrawRequested = 0;
-            this._metrics = null;
-            this._pages = [];
-            this._entriesInColumn = 0;
-            this._pageHeight = 0;
-            this._pageInterval = 0;
-            this._columnsOnPage = 0;
-            this._columnWidth = 0;
-            this._scrollTop = 0;
-            this._scrollTopHeight = 0;
-            this._isActive = false;
-            this._nextRedrawScrollToCurrent = false;
-            this._scrollContent = elem('div', this._host);
-            this._scrollContent.isScrollContent = true;
-            elem.on(this._host, 'scroll', function () { return _this._onscroll(); });
-            this._queueRedraw();
-        }
-        Panel.prototype.set = function (paths) {
-            if (paths.currentPath)
-                this._path = paths.currentPath;
-            if (paths.cursorPath) {
-                this._cursorPath = paths.cursorPath;
-                this._nextRedrawScrollToCurrent = true;
-            }
-            this._queueRedraw();
-        };
-        Panel.prototype.onclick = function (e) {
-            if (!this._entries)
-                return;
-            var clickElem = (e.srcElement || e.target || e.currentTarget);
-            var entryDIV;
-            var columnDIV;
-            var pageDIV;
-            var leadPaddingDIV;
-            while (clickElem) {
-                if (clickElem.isScrollContent) {
-                    if (clickElem !== this._scrollContent)
-                        return false;
-                    break;
-                }
-                if (clickElem.isPageDIV)
-                    pageDIV = clickElem;
-                if (clickElem.isColumnDIV)
-                    columnDIV = clickElem;
-                if (clickElem.isEntryDIV)
-                    entryDIV = clickElem;
-                clickElem = clickElem.parentElement;
-            }
-            if (entryDIV) {
-                for (var i = 0; i < this._entries.length; i++) {
-                    if (this._entries[i].entryDIV === entryDIV) {
-                        if (this._cursorPath === this._entries[i].path && (this._entries[i].flags & Panel.EntryFlags.Directory)) {
-                            this._cursorPath = this._path;
-                            this._path = this._entries[i].path; // double click (or second click) opens directory
-                        }
-                        else {
-                            this._cursorPath = this._entries[i].path;
-                        }
-                        this._nextRedrawScrollToCurrent = true;
-                        this._queueRedraw();
-                        break;
-                    }
-                }
-                this._redrawNow();
-            }
-            return true;
-        };
-        Panel.prototype.currentPath = function () {
-            return this._path;
-        };
-        Panel.prototype.cursorPath = function () {
-            return this._cursorPath;
-        };
-        Panel.prototype.arrange = function (metrics) {
-            this._metrics = metrics;
-            this._redrawNow();
-        };
-        Panel.prototype.isActive = function () {
-            return this._isActive;
-        };
-        Panel.prototype.activate = function () {
-            this._isActive = true;
-            this._scrollContent.className = 'panels-panel-active';
-        };
-        Panel.prototype.deactivate = function () {
-            this._isActive = false;
-            this._scrollContent.className = 'panels-panel-inactive';
-        };
-        Panel.prototype.cursorGo = function (direction) {
-            if (!this._entries || !this._entries.length)
-                return;
-            var moveStep = 0;
-            switch (direction) {
-                case -1:
-                    moveStep = -1;
-                    break;
-                case +1:
-                    moveStep = +1;
-                    break;
-                case -10:
-                    var entryIndex = this._calcEntryIndex(this._cursorEntryIndex);
-                    if (this._columnsOnPage === 1) {
-                        moveStep = -entryIndex || -1;
-                    }
-                    else {
-                        var columnIndex = this._calcColumnIndex(this._cursorEntryIndex);
-                        if (columnIndex > 0) {
-                            moveStep = -this._entriesInColumn;
-                        }
-                        else {
-                            moveStep = this._entriesInColumn * (this._columnsOnPage - 1) - 1;
-                            // overflow cases
-                            if (this._cursorEntryIndex === 0) {
-                                moveStep = this._entriesInColumn * (this._columnsOnPage - 1);
-                            }
-                            else if (this._cursorEntryIndex + moveStep >= this._entries.length) {
-                                var endEntryIndex = this._calcEntryIndex(this._entries.length - 1);
-                                var endColumnIndex = this._calcColumnIndex(this._entries.length - 1);
-                                // if the last entry is higher vertically, stop at the previous column
-                                var targetColumnIndex = endEntryIndex >= entryIndex ? endColumnIndex : endColumnIndex - 1;
-                                if (targetColumnIndex <= columnIndex) {
-                                    moveStep = -entryIndex; // if nowhere to go right, go all the way up
-                                }
-                                else {
-                                    // there are columns on the right, so go there (and one up after)
-                                    moveStep = (targetColumnIndex - columnIndex) * this._entriesInColumn - 1;
-                                }
-                            }
-                        }
-                    }
-                    break;
-                case +10:
-                    var columnIndex = this._calcColumnIndex(this._cursorEntryIndex);
-                    if (columnIndex < this._columnsOnPage - 1) {
-                        moveStep = +this._entriesInColumn;
-                    }
-                    else {
-                        moveStep = -this._entriesInColumn * 2 + 1;
-                    }
-                    break;
-                case -100:
-                    moveStep = -this._entriesInColumn * this._columnsOnPage;
-                    break;
-                case +100:
-                    moveStep = +this._entriesInColumn * this._columnsOnPage;
-                    break;
-            }
-            if (moveStep) {
-                var newCursorEntryIndex = Math.max(0, Math.min(this._entries.length - 1, this._cursorEntryIndex + moveStep));
-                var e = this._entries[newCursorEntryIndex];
-                if (e) {
-                    this._cursorPath = this._entries[newCursorEntryIndex].path;
-                    this._nextRedrawScrollToCurrent = true;
-                    this._queueRedraw();
-                }
-            }
-        };
-        Panel.prototype.navigateCursor = function () {
-            if (this._cursorEntryIndex >= 0) {
-                var entry = this._entries[this._cursorEntryIndex];
-                if (entry) {
-                    if (entry.flags & Panel.EntryFlags.Directory) {
-                        this._cursorPath = this._path;
-                        this._path = entry.path;
-                        this._nextRedrawScrollToCurrent = true;
-                        this._queueRedraw();
-                        return true;
-                    }
-                }
-            }
-        };
-        Panel.prototype._queueRedraw = function () {
-            var _this = this;
-            if (this._redrawRequested)
-                return;
-            this._redrawRequested = setTimeout(function () { return _this._redrawNow(); }, 100);
-        };
-        Panel.prototype._redrawNow = function () {
-            var prevOffset = this._calcEntryTopOffset(Math.max(0, this._cursorEntryIndex));
-            var entries = this._directoryService(this._path);
-            this._entries = [];
-            entries.sort(function (e1, e2) {
-                var flagCompare = (e1.flags & Panel.EntryFlags.Directory) ?
-                    ((e2.flags & Panel.EntryFlags.Directory) ? 0 : -1) :
-                    ((e2.flags & Panel.EntryFlags.Directory) ? +1 : 0);
-                if (flagCompare)
-                    return flagCompare;
-                var nameCompare = e1.name > e2.name ? 1 : e1.name < e2.name ? -1 : 0;
-                return nameCompare;
-            });
-            if (this._path !== '/') {
-                var parentPath = this._path.slice(0, this._path.lastIndexOf('/')) || '/';
-                entries.unshift({
-                    name: '..',
-                    path: parentPath,
-                    flags: Panel.EntryFlags.Directory
-                });
-            }
-            if (!entries || !entries.length) {
-                this._scrollContent.innerHTML = '';
-                this._pages = [];
-                return;
-            }
-            this._cursorEntryIndex = -1;
-            for (var i = 0; i < entries.length; i++) {
-                if (entries[i].path === this._cursorPath) {
-                    this._cursorEntryIndex = i;
-                    break;
-                }
-            }
-            if (this._cursorEntryIndex < 0) {
-                this._cursorEntryIndex = 0;
-                this._cursorPath = entries.length > 0 ? entries[0].path : null;
-            }
-            this._entriesInColumn = Math.max(3, ((this._metrics.hostHeight / this._metrics.windowMetrics.emHeight) | 0) - 2);
-            this._pageHeight = this._entriesInColumn * this._metrics.windowMetrics.emHeight;
-            this._pageInterval = this._metrics.hostHeight - this._pageHeight - this._metrics.windowMetrics.emHeight;
-            var desiredColumnWidth = 17 * this._metrics.windowMetrics.emWidth;
-            this._columnsOnPage = Math.max(1, Math.round(this._metrics.hostWidth / desiredColumnWidth) | 0);
-            this._columnWidth = ((this._metrics.hostWidth / this._columnsOnPage) | 0) - 1;
-            if (!this._pages)
-                this._pages = [];
-            for (var i = 0; i < entries.length; i++) {
-                var pageIndex = this._calcPageIndex(i);
-                var page = this._pages[pageIndex];
-                if (page) {
-                    if (page.height !== this._pageHeight) {
-                        page.height = this._pageHeight;
-                        page.pageDIV.style.height = this._pageHeight + 'px';
-                    }
-                    if (page.leadInterval !== this._pageInterval) {
-                        page.leadInterval = this._pageInterval;
-                        if (page.leadPaddingDIV)
-                            page.leadPaddingDIV.style.height = this._pageInterval + 'px';
-                    }
-                }
-                else {
-                    if (pageIndex) {
-                        var leadPaddingDIV = elem('div', {
-                            className: 'panels-page-separator',
-                            height: this._pageInterval + 'px'
-                        }, this._scrollContent);
-                        leadPaddingDIV.isLeadPaddingDIV = true;
-                    }
-                    page = {
-                        leadPaddingDIV: leadPaddingDIV,
-                        leadInterval: this._pageInterval,
-                        height: this._pageHeight,
-                        pageDIV: elem('div', {
-                            className: panelClass,
-                            height: this._pageHeight + 'px'
-                        }, this._scrollContent),
-                        columns: []
-                    };
-                    page.pageDIV.isPageDIV = true;
-                    this._pages.push(page);
-                }
-                var columnIndex = this._calcColumnIndex(i);
-                var column = page.columns[columnIndex];
-                if (column) {
-                    if (columnIndex === this._columnsOnPage - 1 && page.columns.length > this._columnsOnPage) {
-                        this._removeExcessColumns(page, this._columnsOnPage);
-                    }
-                    if (column.height !== this._pageHeight) {
-                        column.height = this._pageHeight;
-                        column.columnDIV.style.height = this._pageHeight + 'px';
-                    }
-                    if (column.width !== this._columnWidth) {
-                        column.width = this._columnWidth;
-                        column.columnDIV.style.width = this._columnWidth + 'px';
-                    }
-                }
-                else {
-                    column = {
-                        height: this._pageHeight,
-                        width: this._columnWidth,
-                        columnDIV: elem('div', {
-                            className: 'panels-panel-column',
-                            height: this._pageHeight + 'px',
-                            width: this._columnWidth + 'px'
-                        }, page.pageDIV),
-                        entries: []
-                    };
-                    column.columnDIV.isColumnDIV = true;
-                    page.columns.push(column);
-                }
-                var dentry = entries[i];
-                var entryIndex = this._calcEntryIndex(i);
-                var entry = column.entries[entryIndex];
-                if (!entry) {
-                    var dirfileClassName = dentry.flags & Panel.EntryFlags.Directory ? ' panels-entry-dir' : ' panels-entry-file';
-                    var entryClassName = 'panels-entry' +
-                        dirfileClassName +
-                        (this._cursorEntryIndex === i ? ' panels-entry-current' + dirfileClassName + '-current' : '');
-                    entry = {
-                        name: dentry.name,
-                        path: dentry.path,
-                        flags: dentry.flags,
-                        selectionFlags: this._cursorEntryIndex === i ? Panel.SelectionFlags.Current : 0,
-                        entryDIV: elem('div', {
-                            className: entryClassName,
-                            text: dentry.name,
-                            height: this._metrics.windowMetrics.emHeight + 'px'
-                        }, column.columnDIV)
-                    };
-                    entry.entryDIV.isEntryDIV = true;
-                    column.entries.push(entry);
-                }
-                else {
-                    var expectedSelectionFlags = this._cursorEntryIndex === i ? Panel.SelectionFlags.Current : 0;
-                    if (entry.name !== dentry.name) {
-                        entry.name = dentry.name;
-                        setText(entry.entryDIV, dentry.name);
-                    }
-                    if (entry.path !== dentry.path) {
-                        entry.path = dentry.path;
-                    }
-                    if (entry.flags !== dentry.flags || entry.selectionFlags !== expectedSelectionFlags) {
-                        var dirfileClassName = dentry.flags & Panel.EntryFlags.Directory ? ' panels-entry-dir' : ' panels-entry-file';
-                        var entryClassName = 'panels-entry' +
-                            dirfileClassName +
-                            (this._cursorEntryIndex === i ? ' panels-entry-current' + dirfileClassName + '-current' : '');
-                        entry.entryDIV.className = entryClassName;
-                        entry.flags = dentry.flags;
-                        entry.selectionFlags = expectedSelectionFlags;
-                    }
-                    if (entryIndex === this._entriesInColumn - 1 && column.entries.length > this._entriesInColumn) {
-                        this._removeExcessEntries(column, this._entriesInColumn);
-                    }
-                }
-                this._entries.push(entry);
-            }
-            this._removeExcessPages(pageIndex + 1);
-            var p = this._pages[pageIndex];
-            this._removeExcessColumns(p, columnIndex + 1);
-            var c = p.columns[columnIndex];
-            this._removeExcessEntries(c, entryIndex + 1);
-            var newOffset = this._calcEntryTopOffset(Math.max(0, this._cursorEntryIndex));
-            if (this._nextRedrawScrollToCurrent) {
-                this._nextRedrawScrollToCurrent = false;
-                var maxScroll = newOffset - this._metrics.windowMetrics.emHeight * 2;
-                var minScroll = newOffset - this._metrics.hostHeight + this._metrics.windowMetrics.emHeight * 3;
-                var newScrollTop = this._scrollTop < minScroll ? minScroll :
-                    this._scrollTop > maxScroll ? maxScroll :
-                        -1;
-                if (newScrollTop >= 0) {
-                    //console.log('redraw: scroll to current [' + newScrollTop + ']');
-                    this._host.scrollTop = newScrollTop;
-                }
-            }
-            else {
-                var prevDistanceFromCenter = prevOffset - (this._scrollTop + this._scrollTopHeight / 2);
-                var newScrollTop = newOffset - prevDistanceFromCenter - this._metrics.hostHeight / 2;
-                //console.log({
-                //  prevDistanceFromCenter, prevOffset, this_scrollTop: this._scrollTop, this_scrollTopHeight: this._scrollTopHeight,
-                //  newOffset, this_metrics_hostHeight: this._metrics.hostHeight, newScrollTop
-                //});
-                //console.log('redraw: scroll to approximate prev. [' + newScrollTop + ']');
-                this._host.scrollTop = newScrollTop;
-            }
-            this._redrawRequested = 0;
-            // end of _redrawNow()
-        };
-        Panel.prototype._removeExcessPages = function (expectedCount) {
-            for (var i = this._pages.length - 1; i >= expectedCount; i--) {
-                var p = this._pages[i];
-                p.pageDIV.parentElement.removeChild(p.pageDIV);
-                if (p.leadPaddingDIV)
-                    p.leadPaddingDIV.parentElement.removeChild(p.leadPaddingDIV);
-            }
-            if (this._pages.length > expectedCount)
-                this._pages = this._pages.slice(0, expectedCount);
-        };
-        Panel.prototype._removeExcessColumns = function (p, expectedCount) {
-            for (var i = p.columns.length - 1; i >= expectedCount; i--) {
-                var c = p.columns[i];
-                c.columnDIV.parentElement.removeChild(c.columnDIV);
-            }
-            if (p.columns.length > expectedCount)
-                p.columns = p.columns.slice(0, expectedCount);
-        };
-        Panel.prototype._removeExcessEntries = function (c, expectedCount) {
-            for (var i = c.entries.length - 1; i >= expectedCount; i--) {
-                var e = c.entries[i];
-                e.entryDIV.parentElement.removeChild(e.entryDIV);
-            }
-            if (c.entries.length > expectedCount)
-                c.entries = c.entries.slice(0, expectedCount);
-        };
-        Panel.prototype._onscroll = function () {
-            if (this._redrawRequested)
-                return;
-            this._scrollTop = this._host.scrollTop;
-            this._scrollTopHeight = this._metrics.hostHeight;
-            //console.log('onscroll ' + this._scrollTop);
-        };
-        Panel.prototype._calcPageIndex = function (indexOfEntry) {
-            return (indexOfEntry / (this._columnsOnPage * this._entriesInColumn)) | 0;
-        };
-        Panel.prototype._calcColumnIndex = function (indexOfEntry) {
-            return ((indexOfEntry / this._entriesInColumn) | 0) % this._columnsOnPage;
-        };
-        Panel.prototype._calcEntryIndex = function (indexOfEntry) {
-            return indexOfEntry % this._entriesInColumn;
-        };
-        Panel.prototype._calcEntryTopOffset = function (indexOfEntry) {
-            if (!this._metrics || !this._metrics.windowMetrics)
-                return 0;
-            var pageIndex = this._calcPageIndex(indexOfEntry);
-            var entryIndex = this._calcEntryIndex(indexOfEntry);
-            var offset = pageIndex * this._entriesInColumn * this._metrics.windowMetrics.emHeight +
-                Math.max(0, pageIndex - 1) * this._pageInterval +
-                entryIndex * this._metrics.windowMetrics.emHeight; // distance from the top of the page
-            return offset;
-        };
-        return Panel;
-    })();
-    panels.Panel = Panel;
-    var Panel;
-    (function (Panel) {
-        (function (EntryFlags) {
-            EntryFlags[EntryFlags["Directory"] = 1] = "Directory";
-        })(Panel.EntryFlags || (Panel.EntryFlags = {}));
-        var EntryFlags = Panel.EntryFlags;
-        (function (SelectionFlags) {
-            SelectionFlags[SelectionFlags["None"] = 0] = "None";
-            SelectionFlags[SelectionFlags["Current"] = 1] = "Current";
-            SelectionFlags[SelectionFlags["Selected"] = 2] = "Selected";
-        })(Panel.SelectionFlags || (Panel.SelectionFlags = {}));
-        var SelectionFlags = Panel.SelectionFlags;
-    })(Panel = panels.Panel || (panels.Panel = {}));
-})(panels || (panels = {}));
-var panels;
-(function (panels) {
-    var panelHMargin = 10;
-    var panelVMargin = 5;
-    var TwoPanels = (function () {
-        function TwoPanels(_host, leftPath, rightPath, _drive) {
-            var _this = this;
-            this._host = _host;
-            this._drive = _drive;
-            this._scrollHost = elem('div', { className: 'panels-scroll-host' }, this._host);
-            this._scrollContent = elem('div', { className: 'panels-scroll-content' }, this._scrollHost);
-            this._leftPanelHost = elem('div', { className: 'panels-panel panels-left-panel' }, this._scrollContent);
-            this._rightPanelHost = elem('div', { className: 'panels-panel panels-right-panel' }, this._scrollContent);
-            var directoryService = panels.driveDirectoryService(this._drive);
-            this._leftPanel = new panels.Panel(this._leftPanelHost, leftPath, directoryService);
-            this._rightPanel = new panels.Panel(this._rightPanelHost, rightPath, directoryService);
-            this._leftPanel.activate();
-            /*
-            TODO: ensure focus stays with the text input at the bottom
-            elem.on(this._leftPanel, 'mousedown', e=> {
-              if (e.preventDefault)
-                e.preventDefault();
-              return false;
-            }); */
-            elem.on(this._leftPanelHost, 'click', function (e) { return _this._onclick(e); });
-            elem.on(this._rightPanelHost, 'click', function (e) { return _this._onclick(e); });
-        }
-        TwoPanels.prototype.measure = function () {
-        };
-        TwoPanels.prototype.arrange = function (metrics) {
-            var contentWidth = 0;
-            if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {
-                // flippable layout
-                contentWidth = Math.max(metrics.hostWidth / 2, metrics.hostWidth * 2 - metrics.emWidth * 3);
-            }
-            else {
-                // full layout
-                contentWidth = metrics.hostWidth;
-            }
-            var bottomGap = Math.min(metrics.hostHeight / 3, metrics.emHeight * 3);
-            this._scrollHost.style.width = metrics.hostWidth + 'px';
-            var panelsHeight = metrics.hostHeight - bottomGap;
-            this._scrollHost.style.height = panelsHeight + 'px';
-            this._scrollContent.style.width = contentWidth + 'px';
-            this._scrollContent.style.height = panelsHeight + 'px';
-            var panelWidth = (contentWidth / 2 - 0.5) | 0;
-            this._leftPanelHost.style.height = panelsHeight + 'px';
-            this._leftPanelHost.style.width = panelWidth + 'px';
-            this._rightPanelHost.style.height = panelsHeight + 'px';
-            this._rightPanelHost.style.width = panelWidth + 'px';
-            if (this._leftPanelHost.style.display !== 'none') {
-                this._leftPanel.arrange({
-                    windowMetrics: metrics,
-                    hostWidth: panelWidth - panelHMargin * 2,
-                    hostHeight: panelsHeight - panelVMargin * 2
-                });
-            }
-            if (this._rightPanelHost.style.display !== 'none') {
-                this._rightPanel.arrange({
-                    windowMetrics: metrics,
-                    hostWidth: panelWidth - panelHMargin * 2,
-                    hostHeight: panelsHeight - panelVMargin * 2
-                });
-            }
-        };
-        TwoPanels.prototype.isVisible = function () {
-            return this._scrollHost.style.display !== 'none';
-        };
-        TwoPanels.prototype.toggleVisibility = function () {
-            this._scrollHost.style.display = this.isVisible() ? 'none' : 'block';
-        };
-        TwoPanels.prototype.isLeftActive = function () {
-            return this._leftPanel.isActive();
-        };
-        TwoPanels.prototype.toggleActivePanel = function () {
-            if (!this.isVisible())
-                return;
-            var isLeftActive = this._leftPanel.isActive();
-            this._getPanel(isLeftActive).deactivate();
-            this._getPanel(!isLeftActive).activate();
-        };
-        TwoPanels.prototype.keydown = function (e) {
-            switch (e.keyCode) {
-                case 38:
-                    return this._selectionGo(-1);
-                case 40:
-                    return this._selectionGo(+1);
-                case 33:
-                    return this._selectionGo(-100);
-                case 34:
-                    return this._selectionGo(+100);
-                case 37:
-                    return this._selectionGo(-10);
-                case 39:
-                    return this._selectionGo(+10);
-                case 9:
-                    this.toggleActivePanel();
-                    return true;
-                case 86:
-                    if (e.ctrlKey || e.metaKey)
-                        return this.togglePanelPaths();
-                    break;
-                case 112:
-                    if (e.ctrlKey || e.metaKey) {
-                        return this.togglePartHidden(true);
-                    }
-                    break;
-                case 113:
-                    if (e.ctrlKey || e.metaKey) {
-                        return this.togglePartHidden(false);
-                    }
-                    break;
-                case 13:
-                    var activePa = this._getPanel(this.isLeftActive());
-                    return activePa.navigateCursor();
-                default:
-                    if (e.ctrlKey) {
-                    }
-                    break;
-            }
-            return false;
-        };
-        TwoPanels.prototype.togglePartHidden = function (leftPanel) {
-            var togglePanelHost = this._getPanelHost(leftPanel);
-            var oppositePanelHost = this._getPanelHost(!leftPanel);
-            if (!this.isVisible()) {
-                togglePanelHost.style.display = 'block';
-                oppositePanelHost.style.display = 'none';
-                if (this.isLeftActive() !== leftPanel)
-                    this.toggleActivePanel();
-                this.toggleVisibility();
-            }
-            else {
-                if (togglePanelHost.style.display !== 'none') {
-                    if (oppositePanelHost.style.display === 'none') {
-                        togglePanelHost.style.display = 'block';
-                        this.toggleVisibility();
-                    }
-                    else {
-                        togglePanelHost.style.display = 'none';
-                        if (this.isLeftActive() === leftPanel)
-                            this.toggleActivePanel();
-                    }
-                }
-                else {
-                    togglePanelHost.style.display = 'block';
-                }
-            }
-            return true;
-        };
-        TwoPanels.prototype.togglePanelPaths = function () {
-            console.log('Ctrl+U toggle is not implemented.');
-            return false;
-        };
-        TwoPanels.prototype.cursorPath = function () {
-            if (!this.isVisible())
-                return null;
-            var pan = this._getPanel(this.isLeftActive());
-            return pan.cursorPath();
-        };
-        TwoPanels.prototype._selectionGo = function (direction) {
-            var panel = this._getPanel(this.isLeftActive()).cursorGo(direction);
-            return true;
-        };
-        TwoPanels.prototype._getPanel = function (left) {
-            return left ? this._leftPanel : this._rightPanel;
-        };
-        TwoPanels.prototype._getPanelHost = function (left) {
-            return left ? this._leftPanelHost : this._rightPanelHost;
-        };
-        TwoPanels.prototype._onclick = function (e) {
-            var isLeft = this._leftPanel.onclick(e);
-            if (!isLeft && !this._rightPanel.onclick(e))
-                return;
-            if (isLeft === this.isLeftActive())
-                return;
-            this.toggleActivePanel();
-        };
-        return TwoPanels;
-    })();
-    panels.TwoPanels = TwoPanels;
-})(panels || (panels = {}));
-var panels;
-(function (panels) {
-    function driveDirectoryService(drive) {
-        return function (path) {
-            var pathPrefix = path === '/' ? path : path + '/';
-            var result = [];
-            var resByName = {};
-            var files = drive.files();
-            for (var i = 0; i < files.length; i++) {
-                var fi = files[i];
-                if (fi.length < pathPrefix.length + 1)
-                    continue;
-                if (fi.slice(0, pathPrefix.length) !== pathPrefix)
-                    continue;
-                var name;
-                var entryPath = fi;
-                var isDirectory = false;
-                var nextSlashPos = fi.indexOf('/', pathPrefix.length);
-                if (nextSlashPos < 0) {
-                    name = fi.slice(pathPrefix.length);
-                }
-                else {
-                    name = fi.slice(pathPrefix.length, nextSlashPos);
-                    entryPath = fi.slice(0, nextSlashPos);
-                    isDirectory = true;
-                }
-                if (resByName.hasOwnProperty(name))
-                    continue;
-                var entry = { path: entryPath, name: name, flags: isDirectory ? panels.Panel.EntryFlags.Directory : 0 };
-                result.push(entry);
-                resByName[name] = entry;
-            }
-            return result;
-        };
-    }
-    panels.driveDirectoryService = driveDirectoryService;
-})(panels || (panels = {}));
-setTimeout(function () { return showCommander(require('drive')); }, 10);
-function showCommander(drive) {
-    document.body.style.overflow = 'hidden';
-    document.body.parentElement.style.overflow = 'hidden';
-    var styleText = drive.read('/shell/style.css');
-    elem('style', { text: styleText }, document.body);
-    var commander = new CommanderShell(document.body, drive);
-}
-var terminal;
-(function (terminal) {
-    var NodeHost = (function () {
-        function NodeHost(_drive) {
-            var _this = this;
-            this._drive = _drive;
-            this._nodeMod = null;
-            this._nodeModCache = null;
-            this._processMod = null;
-            this.log = null;
-            this._nodeModCache = {};
-            var nocode = this._drive.read('/shell/node.ts.js');
-            this._nodeMod = loadMod({
-                eval: nocode,
-                path: '/shell/node.ts.js',
-                ui: false,
-                scope: {
-                    no_drive: this._drive,
-                    no_homepath: '/',
-                    require: function (mod) { return _this._require(mod); },
-                    console: {
-                        log: function () {
-                            var args = [];
-                            for (var _i = 0; _i < arguments.length; _i++) {
-                                args[_i - 0] = arguments[_i];
-                            }
-                            if (_this.log)
-                                _this.log(args);
-                            else if (typeof console !== 'undefined')
-                                console.log(args);
-                        }
-                    }
-                }
-            });
-            this._nodeModCache = this._nodeMod.exports;
-        }
-        NodeHost.prototype.run = function (code, path) {
-            var _this = this;
-            var isInteractive = !path;
-            if (isInteractive) {
-                var now = new Date();
-                path = now.getFullYear() +
-                    (now.getMonth() + 1 > 9 ? '' : '0') + now.getMonth() +
-                    (now.getDate() > 9 ? '' : '0') + now.getDate() + '-' +
-                    (now.getHours() > 9 ? '' : '0') + now.getHours() +
-                    (now.getMinutes() > 9 ? '' : '0') + now.getMinutes() + '-' +
-                    (now.getSeconds() > 9 ? '' : '0') + now.getSeconds() +
-                    '.' + ((now.getMilliseconds() | 0) + 1000).toString().slice(1) +
-                    '.js';
-                if (!this._processMod) {
-                    this._processMod = loadMod({
-                        eval: 'exports = { evalFn: function(c) { return eval(c); } };',
-                        ui: false,
-                        scope: {
-                            require: function (mod) { return _this._require(mod); },
-                            process: this._nodeMod.exports.process,
-                            module: this._nodeMod.exports.module,
-                            console: {
-                                log: function () {
-                                    var args = [];
-                                    for (var _i = 0; _i < arguments.length; _i++) {
-                                        args[_i - 0] = arguments[_i];
-                                    }
-                                    if (_this.log)
-                                        _this.log(args);
-                                    else if (typeof console !== 'undefined')
-                                        console.log(args);
-                                }
-                            }
-                        }
-                    });
-                }
-                var result = this._processMod.exports.evalFn(code);
-                return result;
-            }
-            else {
-                var resMod = loadMod({
-                    eval: code,
-                    path: path,
-                    ui: false,
-                    scope: {
-                        require: function (mod) { return _this._require(mod); },
-                        process: this._nodeMod.exports.process,
-                        module: this._nodeMod.exports.module,
-                        console: {
-                            log: function () {
-                                var args = [];
-                                for (var _i = 0; _i < arguments.length; _i++) {
-                                    args[_i - 0] = arguments[_i];
-                                }
-                                if (_this.log)
-                                    _this.log(args);
-                                else if (typeof console !== 'undefined')
-                                    console.log(args);
-                            }
-                        }
-                    }
-                });
-                var result = resMod.exports;
-                return result;
-            }
-        };
-        NodeHost.prototype._require = function (mod) {
-            var res = this._nodeModCache[mod];
-            if (!res) {
-                var code = this._drive.read(mod);
-                if (code) {
-                    res = this.run(code, mod);
-                }
-                else {
-                    throw new Error('Cannot load module ' + mod + ': file not found.');
-                }
-            }
-            return res;
-        };
-        return NodeHost;
-    })();
-    terminal.NodeHost = NodeHost;
-})(terminal || (terminal = {}));
-var terminal;
-(function (terminal) {
-    var Terminal = (function () {
-        function Terminal(_host, _node) {
-            var _this = this;
-            this._host = _host;
-            this._node = _node;
-            this._promptWidth = 0;
-            this._historyContentHeight = 0;
-            this._hostMetrics = null;
-            this._history = elem('div', { className: 'terminal-history' }, this._host);
-            this._historyContent = elem('pre', {
-                className: 'terminal-history-content',
-                text: 'Hello world from mini-shell\n\nVersion 0.7m\nMay 2015\nOleg Mihailik\n\nPlease be careful.'
-            }, this._history);
-            this._prompt = elem('div', { className: 'terminal-prompt', text: '>' }, this._host);
-            this._input = elem('textarea', { className: 'terminal-input', autofocus: true }, this._host);
-            setTimeout(function () { return _this._input.focus(); }, 1);
-        }
-        Terminal.prototype.log = function () {
-            var args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                args[_i - 0] = arguments[_i];
-            }
-            return this.logArray(args);
-        };
-        Terminal.prototype.logArray = function (args) {
-            var output = elem('div', this._historyContent);
-            for (var i = 0; i < args.length; i++) {
-                if (i > 0)
-                    elem('span', { text: ' ' }, output);
-                if (args[i] === null) {
-                    elem('span', { text: 'null', color: 'green' }, output);
-                }
-                else {
-                    this._logAppendObj(args[i], output, 0);
-                }
-            }
-            if (this._hostMetrics) {
-                this.measure();
-                this.arrange(this._hostMetrics);
-            }
-        };
-        Terminal.prototype.hasInput = function () {
-            return !!this._getInput();
-        };
-        Terminal.prototype._getInput = function () {
-            return (this._input.value || '').replace(/[\r\n]/g, '');
-        };
-        Terminal.prototype._logAppendObj = function (obj, output, level) {
-            switch (typeof obj) {
-                case 'number':
-                case 'boolean':
-                    elem('span', { text: obj, color: 'green' }, output);
-                    break;
-                case 'undefined':
-                    elem('span', { text: 'undefined', color: 'green', opacity: 0.5 }, output);
-                    break;
-                case 'function':
-                    var funContainer = elem('span', output);
-                    var funFunction = elem('span', { text: 'function ', color: 'silver', opacity: 0.5 }, funContainer);
-                    var funName = elem('span', { text: obj.name, color: 'cornflowerblue', fontWeight: 'bold' }, funContainer);
-                    funContainer.title = obj;
-                    break;
-                case 'string':
-                    var strContainer = elem('span', output);
-                    elem('span', { text: '"', color: 'tomato' }, strContainer);
-                    elem('span', { text: obj, color: 'tomato', opacity: 0.5 }, strContainer);
-                    elem('span', { text: '"', color: 'tomato' }, strContainer);
-                    break;
-                default:
-                    if (obj && obj.constructor && obj.construct && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
-                        elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
-                        if (obj.constructor.prototype && obj.constructor.prototype.constructor
-                            && obj.constructor.prototype.constructor.name
-                            && obj.constructor.prototype.constructor.name !== 'Object' && obj.constructor.prototype.constructor.name !== 'Array')
-                            elem('span', { text: ':' + obj.contructor.prototype.constructor.name, color: 'cornflowerblue', opacity: 0.5 }, output);
-                        elem('span', output);
-                    }
-                    if (obj && typeof obj.length === 'number' && obj.length >= 0) {
-                        elem('span', { text: '[', color: 'white' }, output);
-                        if (level > 1) {
-                            elem('span', { text: '...', color: 'silver' }, output);
-                        }
-                        else {
-                            for (var i = 0; i < obj.length; i++) {
-                                if (i > 0)
-                                    elem('span', { text: ', ', color: 'gray' }, output);
-                                if (typeof obj[i] !== 'undefined')
-                                    this._logAppendObj(obj[i], output, level + 1);
-                            }
-                        }
-                        elem('span', { text: ']', color: 'white' }, output);
-                    }
-                    else if (obj.createElement + '' === document.createElement + '' && obj.getElementById + '' === document.getElementById + '' && 'title' in obj) {
-                        elem('span', { text: '#document ' + obj.title, color: 'green' }, output);
-                    }
-                    else if (obj.setInterval + '' === window.setInterval + '' && obj.setTimeout + '' === window.setTimeout + '' && 'location' in obj) {
-                        elem('span', { text: '#window ' + obj.location, color: 'green' }, output);
-                    }
-                    else if (typeof obj.tagName === 'string' && obj.getElementsByTagName + '' === document.body.getElementsByTagName + '') {
-                        elem('span', { text: '<' + obj.tagName + '>', color: 'green' }, output);
-                    }
-                    else if (obj + '' !== '[Object]') {
-                        elem('span', { text: '{', color: 'cornflowerblue' }, output);
-                        if (level > 1) {
-                            elem('span', { text: '...', color: 'cornflowerblue', opacity: 0.5 }, output);
-                        }
-                        else {
-                            var first = true;
-                            for (var k in obj) {
-                                if (obj.hasOwnProperty && !obj.hasOwnProperty(k))
-                                    continue;
-                                if (first) {
-                                    first = false;
-                                }
-                                else {
-                                    elem('span', { text: ', ', color: 'cornflowerblue', opacity: 0.3 }, output);
-                                    first = false;
-                                }
-                                elem('span', { text: k, color: 'cornflowerblue', fontWeight: 'bold' }, output);
-                                elem('span', { text: ': ', color: 'cornflowerblue', opacity: 0.5 }, output);
-                                this._logAppendObj(obj[k], output, level + 1);
-                            }
-                        }
-                        elem('span', { text: '}', color: 'cornflowerblue' }, output);
-                    }
-                    else {
-                        elem('span', { text: obj, color: 'cornflowerblue' }, output);
-                    }
-                    break;
-            }
-        };
-        Terminal.prototype.focus = function () {
-            this._input.focus();
-        };
-        Terminal.prototype.measure = function () {
-            this._promptWidth = this._prompt.offsetWidth;
-            this._historyContentHeight = this._historyContent.offsetHeight;
-        };
-        Terminal.prototype.arrange = function (metrics) {
-            this._hostMetrics = metrics;
-            this._history.style.width = metrics.hostWidth + 'px';
-            this._history.style.bottom = metrics.emHeight + 'px';
-            if (metrics.hostHeight - metrics.emHeight > this._historyContentHeight) {
-                this._history.style.height = this._historyContentHeight + 'px';
-            }
-            else {
-                this._history.style.height = (metrics.hostHeight - metrics.emHeight) + 'px';
-                this._history.scrollTop = this._historyContentHeight - (metrics.hostHeight - metrics.emHeight);
-            }
-            this._input.style.left = this._promptWidth + 'px';
-            this._input.style.width = (metrics.hostWidth - this._promptWidth) + 'px';
-        };
-        Terminal.prototype.clearInput = function () {
-            var _this = this;
-            setTimeout(function () {
-                var cleanInput = _this._getInput();
-                if (_this._input.value !== cleanInput) {
-                    _this._input.value = cleanInput;
-                }
-            }, 10);
-        };
-        Terminal.prototype.keydown = function (e, cursorPath) {
-            if (e.keyCode === 38) {
-            }
-            else if (e.keyCode === 13) {
-                var code = this._getInput();
-                if (code) {
-                    if (code.slice(-2) === '\r\n')
-                        code = code.slice(0, code.length - 2);
-                    this._input.value = '';
-                    elem('div', {
-                        text: code,
-                        color: 'gray'
-                    }, this._historyContent);
-                    this._evalAndLogResults(code);
-                    return true;
-                }
-                else {
-                    return false;
-                }
-            }
-        };
-        Terminal.prototype._evalAndLogResults = function (code) {
-            var result;
-            try {
-                result = this._node.run(code, null);
-            }
-            catch (error) {
-                elem('div', {
-                    text: error && error.stack ? error.stack : error,
-                    color: 'red'
-                }, this._historyContent);
-                if (this._hostMetrics) {
-                    this.measure();
-                    this.arrange(this._hostMetrics);
-                }
-                return;
-            }
-            this.log(result);
-        };
-        return Terminal;
-    })();
-    terminal.Terminal = Terminal;
-})(terminal || (terminal = {}));
--->
 
 <!-- /shell/node.ts.js
 function no_getStartMatcher(start) {
@@ -8596,7 +8598,9 @@ var persistence;
                     this.node.nodeValue.slice(this._contentOffset);
                 // XML end-comment is escaped when stored in DOM,
                 // unescape it back
-                var restoredText = contentText.replace(/\-\-\*(\**)\>/g, '--*$1>');
+                var restoredText = contentText.
+                    replace(/\-\-\*(\**)\>/g, '--$1>').
+                    replace(/\<\*(\**)\!/g, '<$1!');
                 // decode
                 var decodedText = this._encoding(restoredText);
                 // update just in case it's been off
@@ -8605,7 +8609,9 @@ var persistence;
             };
             DOMFile.prototype.write = function (content) {
                 var encoded = persistence.bestEncode(content);
-                var protectedText = encoded.content.replace(/\-\-(\**)\>/g, '--*$1>');
+                var protectedText = encoded.content.
+                    replace(/\-\-(\**)\>/g, '--*$1>').
+                    replace(/\<(\**)\!/g, '<*$1!');
                 if (!this._encodedPath) {
                     // most cases path is path,
                     // but if anything is weird, it's going to be quoted
@@ -8791,8 +8797,7 @@ var persistence;
     (function (encodings) {
         function CR(text) {
             return text.
-                replace(/\r\n|\n/g, '\r').
-                replace(/\-\-\*(\**)\>/g, '--$1>');
+                replace(/\r\n|\n/g, '\r');
         }
         encodings.CR = CR;
     })(encodings = persistence.encodings || (persistence.encodings = {}));
@@ -8803,8 +8808,7 @@ var persistence;
     (function (encodings) {
         function CRLF(text) {
             return text.
-                replace(/\r|\n/g, '\r\n').
-                replace(/\-\-\*(\**)\>/g, '--$1>');
+                replace(/\r|\n/g, '\r\n');
         }
         encodings.CRLF = CRLF;
     })(encodings = persistence.encodings || (persistence.encodings = {}));
@@ -8815,8 +8819,7 @@ var persistence;
     (function (encodings) {
         function LF(text) {
             return text.
-                replace(/\r\n|\r/g, '\n').
-                replace(/\-\-\*(\**)\>/g, '--$1>');
+                replace(/\r\n|\r/g, '\n');
         }
         encodings.LF = LF;
     })(encodings = persistence.encodings || (persistence.encodings = {}));
@@ -9099,7 +9102,7 @@ declare module loadMod {
     exports: any;
   }
 }
---!>
+-->
 <!-- /src/boot/base.js
 function getText(obj) {
 
@@ -9281,7 +9284,7 @@ function createFrame(style) {
 
   if (ifrdoc.open) ifrdoc.open();
   ifrdoc.write(
-    '<!'+'doctype html'+'>'+
+    '<*!'+'doctype html'+'>'+
     '<'+'html'+'>'+
     '<'+'head'+'><'+'style'+'>'+
     'body,html{margin:0;padding:0;border:none;height:100%;border:none;}'+
@@ -9316,23 +9319,23 @@ function createFrame(style) {
   }
 
 }
---!>
+-->
 <!-- /src/boot/bootUI.js
-function bootUI(document, window, elem) {
+function bootUI(document, window, base) {
 
-  elem(document.body, {
+  base.elem(document.body, {
     background: 'rgb(3,11,61)',
     color: 'cyan',
     border: 'none',
     overflow: 'hidden'
   });
 
-  var header = elem('h2', {
+  var header = base.elem('h2', {
     text: 'Loading...',
     fontWeight: 'light'
   }, document.body);
 
-  var darkBottom = elem('div', {
+  var darkBottom = base.elem('div', {
     position: 'absolute',
     bottom: 0,
     width: '100%',
@@ -9346,7 +9349,7 @@ function bootUI(document, window, elem) {
     }
   };
 }
---!>
+-->
 <!-- /src/boot/earlyBoot.js
 function earlyBoot() {
 
@@ -9378,7 +9381,7 @@ function earlyBoot() {
 
   bootFrame.global.elem = elem;
 
-  var bootAPI = bootUI(bootFrame.document, bootFrame.global, function elemProxy(a,b,c) { return bootFrame.global.elem(a,b,c); });
+  var bootAPI = bootUI(bootFrame.document, bootFrame.global, { elem: function elemProxy(a,b,c) { return bootFrame.global.elem(a,b,c); } });
   bootFrame.api = bootAPI;
   bootFrame.startTime = earlyBootStart;
 
@@ -9448,7 +9451,7 @@ function earlyBoot() {
   }
 
 }
---!>
+-->
 <!-- /src/boot/onerror.js
 window.onerror = function onerror() {
 
@@ -9479,7 +9482,7 @@ window.onerror = function onerror() {
   alert(msg.join('\n'));
 
 }
---!>
+-->
 <!-- /src/load/loadMod.js
 function loadMod(options) {
 
@@ -9596,7 +9599,7 @@ function loadMod(options) {
   return frame;
 
 }
---!>
+-->
 <!-- /src/load/shellLoader.ts
 function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.BootModuleAPI): shellLoader.ContinueLoading {
 
@@ -9771,7 +9774,7 @@ module shellLoader {
   }
 
 }
---!>
+-->
 <!-- /src/nodeapi/base/defs.d.ts
 interface no_require {
   (id: string): any;
@@ -9822,7 +9825,7 @@ interface no_Buffer {
   writeDoubleBE(value: number, offset: number, noAssert?: boolean): void;
   fill(value: any, offset?: number, end?: number): void;
 }
---!>
+-->
 <!-- /src/nodeapi/base/getStartMatcher.ts
 function no_getStartMatcher(start: string) {
   if (!start)
@@ -9831,7 +9834,7 @@ function no_getStartMatcher(start: string) {
   return (str: string) => {
   };
 }
---!>
+-->
 <!-- /src/nodeapi/base/wrapAsync.ts
 function no_wrapAsync(fn: Function): Function {
   return function() {
@@ -9872,7 +9875,7 @@ function no_wrapAsyncNoError(fn: Function): Function {
     });
   }
 }
---!>
+-->
 <!-- /src/nodeapi/events/defs.d.ts
 interface noevents_EventEmitter {
   //static listenerCount(emitter: EventEmitter, event: string): number;
@@ -9894,7 +9897,7 @@ interface noevents_EventEmitter {
   emit(event: string, ...args: any[]): boolean;
 
 }
---!>
+-->
 <!-- /src/nodeapi/fs/_load.ts
 var _nofs_module_: nofs;
 
@@ -9927,7 +9930,7 @@ function nofs_load() {
 
   return _nofs_module_;
 }
---!>
+-->
 <!-- /src/nodeapi/fs/defs.d.ts
 interface nofs {
 
@@ -10121,7 +10124,7 @@ interface nofs_WriteStream extends nostream_Writable {
   close(): void;
 }
 
---!>
+-->
 <!-- /src/nodeapi/fs/exists.ts
 function nofs_existsSync(file: string): boolean {
   var content = no_drive.read(file);
@@ -10130,7 +10133,7 @@ function nofs_existsSync(file: string): boolean {
   else
     return true;
 }
---!>
+-->
 <!-- /src/nodeapi/fs/fdtable.ts
 var _nofs_fdbase_;
 var _nofs_fdtable_: string[];
@@ -10144,7 +10147,7 @@ function nofs_fdtable() {
 
   return _nofs_fdtable_;
 }
---!>
+-->
 <!-- /src/nodeapi/fs/open.ts
 function nofs_openSync(path: string, flags: string, mode?: number): number;
 function nofs_openSync(path: string, flags: string, mode ?: string): number;
@@ -10163,7 +10166,7 @@ function nofs_openSync(path: string, flags?: string, mode?: any): number {
   fdtable[newFD] = path;
   return newFD;
 }
---!>
+-->
 <!-- /src/nodeapi/fs/read.ts
 function nofs_readSync(fd: number, buffer: no_Buffer, offset: number, length: number, position: number): number {
 
@@ -10173,7 +10176,7 @@ function nofs_readSync(fd: number, buffer: no_Buffer, offset: number, length: nu
   throw new Error('Buffer-aware API fs.readSync is not implemented.');
 }
 
---!>
+-->
 <!-- /src/nodeapi/fs/readFile.ts
 function nofs_readFileSync(filename: string, options?: { encoding?: string; flag?: string; }) {
 
@@ -10181,7 +10184,7 @@ function nofs_readFileSync(filename: string, options?: { encoding?: string; flag
   return no_drive.read(filename);
 
 }
---!>
+-->
 <!-- /src/nodeapi/fs/rename.ts
 function nofs_renameSync(oldPath: string, newPath: string): void {
 
@@ -10229,7 +10232,7 @@ function nofs_renameSync(oldPath: string, newPath: string): void {
   }
 
 }
---!>
+-->
 <!-- /src/nodeapi/fs/stat.ts
 function nofs_statSync(path: string): nofs_Stats {
   // TODO: implement
@@ -10244,7 +10247,7 @@ function nofs_statSync(path: string): nofs_Stats {
   lstatSync(path: string): nofs_Stats;
   fstatSync(fd: number): nofs_Stats;
 */
---!>
+-->
 <!-- /src/nodeapi/fs/write.ts
 function nofs_writeSync(fd: number, buffer: no_Buffer, offset: number, length: number, position: number): number {
 
@@ -10259,14 +10262,14 @@ function nofs_writeSync(fd: number, buffer: no_Buffer, offset: number, length: n
 
   throw new Error('Buffer-aware API fs.writeSync is not implemented.');
 }
---!>
+-->
 <!-- /src/nodeapi/fs/writeFile.ts
 function nofs_writeFileSync(filename: string, content: string) {
 
   no_drive.write(filename, content);
 
 }
---!>
+-->
 <!-- /src/nodeapi/imports/base64-js/b64.js
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
@@ -10387,7 +10390,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
   exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
---!>
+-->
 <!-- /src/nodeapi/imports/buffer/index.js
 /*!
  * The buffer module from node.js, for the browser.
@@ -11804,7 +11807,7 @@ function decodeUtf8Char (str) {
   }
 }
 
---!>
+-->
 <!-- /src/nodeapi/imports/ieee754/index.js
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m,
@@ -11891,7 +11894,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
---!>
+-->
 <!-- /src/nodeapi/imports/is-array/index.js
 /**
  * isArray
@@ -11926,7 +11929,7 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
---!>
+-->
 <!-- /src/nodeapi/module/_load.ts
 var _nomodule_: no_module;
 
@@ -11944,7 +11947,7 @@ function nomodule_load() {
   return _nomodule_;
 }
 
---!>
+-->
 <!-- /src/nodeapi/module/defs.d.ts
 interface no_module {
   exports: any;
@@ -11955,7 +11958,7 @@ interface no_module {
   parent: any;
   children: any[];
 }
---!>
+-->
 <!-- /src/nodeapi/os/_load.ts
 var _noos_: no_os;
 
@@ -11999,7 +12002,7 @@ function noos_load() {
   return _noos_;
 }
 
---!>
+-->
 <!-- /src/nodeapi/os/defs.d.ts
 interface no_os {
   tmpdir(): string;
@@ -12016,7 +12019,7 @@ interface no_os {
   networkInterfaces(): any;
   EOL: string;
 }
---!>
+-->
 <!-- /src/nodeapi/path/_load.ts
 var _nopath_module_: nopath;
 
@@ -12037,7 +12040,7 @@ function nopath_load() {
 
   return _nopath_module_;
 }
---!>
+-->
 <!-- /src/nodeapi/path/basename.ts
 function nopath_basename(p: string, ext?: string): string {
 
@@ -12061,7 +12064,7 @@ function nopath_basename(p: string, ext?: string): string {
   if (ext && result.length >= ext.length && result.slice(-ext.length) === ext)
     result = result.slice(0, result.length - ext.length);
 }
---!>
+-->
 <!-- /src/nodeapi/path/defs.d.ts
 interface nopath {
 
@@ -12081,7 +12084,7 @@ interface nopath {
   format?(pP: { root: string; dir: string; base: string; ext: string; name: string; }): string;
 
 }
---!>
+-->
 <!-- /src/nodeapi/path/dirname.ts
 function nopath_dirname(p: string): string {
   var p = nopath_normalize(p);
@@ -12092,7 +12095,7 @@ function nopath_dirname(p: string): string {
   return p.slice(0, lastSlash + 1);
 }
 
---!>
+-->
 <!-- /src/nodeapi/path/extname.ts
 function nopath_extname(p: string): string {
 
@@ -12104,14 +12107,14 @@ function nopath_extname(p: string): string {
     return '';
 
 }
---!>
+-->
 <!-- /src/nodeapi/path/is.ts
 function nopath_isAbsolute(p: string): boolean {
 
   return /^\//.test(p);
 }
 
---!>
+-->
 <!-- /src/nodeapi/path/join.ts
 function nopath_join(...paths: any[]): string {
   return nopath_join_core(paths);
@@ -12144,7 +12147,7 @@ function nopath_join_core(paths: any[]): string {
 
   return parts.join('/');
 }
---!>
+-->
 <!-- /src/nodeapi/path/normalize.ts
 function nopath_normalize(p: string): string {
 
@@ -12152,7 +12155,7 @@ function nopath_normalize(p: string): string {
 
 }
 
---!>
+-->
 <!-- /src/nodeapi/path/relative.ts
 function nopath_relative(from: string, to: string): string {
 
@@ -12160,7 +12163,7 @@ function nopath_relative(from: string, to: string): string {
 
 }
 
---!>
+-->
 <!-- /src/nodeapi/path/resolve.ts
 function nopath_resolve(...pathSegments: any[]): string {
 
@@ -12171,7 +12174,7 @@ function nopath_resolve(...pathSegments: any[]): string {
 
   return res;
 }
---!>
+-->
 <!-- /src/nodeapi/process/_load.ts
 var _noprocess_: no_process;
 
@@ -12223,12 +12226,12 @@ function noprocess_load() {
 
   return _noprocess_;
 }
---!>
+-->
 <!-- /src/nodeapi/process/abort.ts
 function noprocess_abort() {
   // TODO: what does shutdown mean here?
 }
---!>
+-->
 <!-- /src/nodeapi/process/chdir_cwd.ts
 // TODO: pass it in?
 var _noprocess_cwd_: string = '/';
@@ -12254,7 +12257,7 @@ function noprocess_cwd(): string {
   return _noprocess_cwd_;
 }
 
---!>
+-->
 <!-- /src/nodeapi/process/config.ts
 var _nodeprocess_config_;
 
@@ -12301,7 +12304,7 @@ function nodeprocess_config_load() {
   }
   return _nodeprocess_config_;
 }
---!>
+-->
 <!-- /src/nodeapi/process/defs.d.ts
 interface no_process extends noevents_EventEmitter {
 
@@ -12391,7 +12394,7 @@ interface no_process extends noevents_EventEmitter {
   send?(message: any, sendHandle?: any): void;
 }
 
---!>
+-->
 <!-- /src/nodeapi/process/env.ts
 var _nodeprocess_env_: any;
 
@@ -12401,13 +12404,13 @@ function nodeprocess_env_load() {
   }
   return _nodeprocess_env_;
 }
---!>
+-->
 <!-- /src/nodeapi/process/exit.ts
 function noprocess_exit(code ?: number) {
   // TODO: what does shutdown mean here?
 }
 
---!>
+-->
 <!-- /src/nodeapi/process/getgid_setgid_getuid_setuid.ts
 function nodeprocess_getgid() {
   // taken from node running on ubuntu
@@ -12429,12 +12432,12 @@ function nodeprocess_setuid(id: any) {
   throw new Error('EPERM, Operation not permitted');
 }
 
---!>
+-->
 <!-- /src/nodeapi/process/kill.ts
 function nodeprocess_kill(pid: number, signal?: string) {
   // when we emulate processes, implement process termination
 }
---!>
+-->
 <!-- /src/nodeapi/process/memoryUsage.ts
 function noprocess_memoryUsage(): { rss: number; heapTotal: number; heapUsed: number; } {
   return {
@@ -12443,7 +12446,7 @@ function noprocess_memoryUsage(): { rss: number; heapTotal: number; heapUsed: nu
     heapUsed: 2449612 + ((Math.random() * 3000) | 0)
   };
 }
---!>
+-->
 <!-- /src/nodeapi/process/nextTick.ts
 function noprocess_nextTick(callback: Function): void {
 
@@ -12463,7 +12466,7 @@ function noprocess_nextTick(callback: Function): void {
   }
 
 }
---!>
+-->
 <!-- /src/nodeapi/process/pid.ts
 var _noprocess_pid_;
 
@@ -12473,7 +12476,7 @@ function noprocess_pid_load() {
   }
   return _noprocess_pid_;
 }
---!>
+-->
 <!-- /src/nodeapi/process/stdout.ts
 var _noprocess_stdout_: nostream_WritableStream;
 var _noprocess_stderr_: nostream_WritableStream;
@@ -12503,7 +12506,7 @@ function noprocess_stdin_load() {
   noprocess_stdout_load();
   return _noprocess_stdin_;
 }
---!>
+-->
 <!-- /src/nodeapi/process/umask.ts
 var _noprocess_umask_;
 
@@ -12520,7 +12523,7 @@ function noprocess_umask(mask?: number): number {
 
   return _noprocess_umask_;
 }
---!>
+-->
 <!-- /src/nodeapi/process/uptime.ts
 var _noprocess_uptime_start_ = +(new Date());
 
@@ -12534,7 +12537,7 @@ function noprocess_uptime() {
 
   return now - _noprocess_uptime_start_;
 }
---!>
+-->
 <!-- /src/nodeapi/process/versions.ts
 var _nodeprocess_version_: string;
 var _nodeprocess_versions_;
@@ -12567,7 +12570,7 @@ function nodeprocess_versions_load() {
   }
   return _nodeprocess_versions_;
 }
---!>
+-->
 <!-- /src/nodeapi/stream/defs.d.ts
 interface nostream_ReadableStream extends noevents_EventEmitter {
   readable: boolean;
@@ -12729,7 +12732,7 @@ interface nostream_Transform extends noevents_EventEmitter {
   end(str: string, encoding?: string, cb?: Function): void;
 
 }
---!>
+-->
 <!-- /src/nodeapi/statics.ts
 declare var require;
 declare var exports;
@@ -12737,7 +12740,7 @@ declare var exports;
 declare var no_drive: persistence.Drive;
 declare var no_homepath: string;
 
---!>
+-->
 <!-- /src/persistence/attached/indexedDB.ts
 module persistence {
 
@@ -12958,7 +12961,7 @@ module persistence {
   }
 
 }
---!>
+-->
 <!-- /src/persistence/attached/localStorage.ts
 module persistence {
 
@@ -13091,8 +13094,8 @@ module persistence {
 
   }
   
-}Â 
---!>
+}Â&nbsp;
+-->
 <!-- /src/persistence/attached/webSQL.ts
 module persistence {
 
@@ -13457,7 +13460,7 @@ module persistence {
   }
 
 }
---!>
+-->
 <!-- /src/persistence/dom/CommentHeader.ts
 module persistence.dom {
 
@@ -13528,7 +13531,7 @@ module persistence.dom {
   }
 
 }
---!>
+-->
 <!-- /src/persistence/dom/DOMDrive.ts
 module persistence.dom {
 
@@ -13628,7 +13631,7 @@ module persistence.dom {
     }
   }
 }
---!>
+-->
 <!-- /src/persistence/dom/DOMFile.ts
 module persistence.dom {
 
@@ -13697,7 +13700,9 @@ module persistence.dom {
 
       // XML end-comment is escaped when stored in DOM,
       // unescape it back
-      var restoredText = contentText.replace(/\-\-\*(\**)\>/g, '--*$1>');
+      var restoredText = contentText.
+      	replace(/\-\-\*(\**)\>/g, '--$1>').
+        replace(/\<\*(\**)\!/g, '<$1!');
 
       // decode
       var decodedText = this._encoding(restoredText);
@@ -13711,7 +13716,9 @@ module persistence.dom {
     write(content: any) {
 
       var encoded = bestEncode(content);
-      var protectedText = encoded.content.replace(/\-\-(\**)\>/g, '--*$1>');
+      var protectedText = encoded.content.
+      	replace(/\-\-(\**)\>/g, '--*$1>').
+      	replace(/\<(\**)\!/g, '<*$1!');
 
       if (!this._encodedPath) {
         // most cases path is path,
@@ -13730,7 +13737,7 @@ module persistence.dom {
   }
 
 }
---!>
+-->
 <!-- /src/persistence/dom/DOMTotals.ts
 module persistence.dom {
 
@@ -13855,7 +13862,7 @@ module persistence.dom {
 
 
 }
---!>
+-->
 <!-- /src/persistence/dom/parseDOMStorage.ts
 module persistence.dom {
 
@@ -13956,40 +13963,37 @@ module persistence.dom {
   }
 
 }
---!>
+-->
 <!-- /src/persistence/encodings/CR.ts
 module persistence.encodings {
 
   export function CR(text: string): string {
-Â  Â  return text.
-      replace(/\r\n|\n/g, '\r').
-      replace(/\-\-\*(\**)\>/g, '--$1>');
+Â&nbsp; Â&nbsp; return text.
+      replace(/\r\n|\n/g, '\r');
   }
 
 }
---!>
+-->
 <!-- /src/persistence/encodings/CRLF.ts
 module persistence.encodings {
 
   export function CRLF(text: string): string {
-Â  Â  return text.
-      replace(/\r|\n/g, '\r\n').
-      replace(/\-\-\*(\**)\>/g, '--$1>');
+Â&nbsp; Â&nbsp; return text.
+      replace(/\r|\n/g, '\r\n');
   }
 
 }
---!>
+-->
 <!-- /src/persistence/encodings/LF.ts
 module persistence.encodings {
 
   export function LF(text: string): string {
     return text.
-      replace(/\r\n|\r/g, '\n').
-      replace(/\-\-\*(\**)\>/g, '--$1>');
+      replace(/\r\n|\r/g, '\n');
   }
 
 }
---!>
+-->
 <!-- /src/persistence/encodings/base64.ts
 module persistence.encodings {
 
@@ -14000,7 +14004,7 @@ module persistence.encodings {
   }
 
 }
---!>
+-->
 <!-- /src/persistence/encodings/eval.ts
 module persistence.encodings {
 
@@ -14009,7 +14013,7 @@ module persistence.encodings {
   }
 
 }
---!>
+-->
 <!-- /src/persistence/encodings/json.ts
 module persistence.encodings {
 
@@ -14025,7 +14029,7 @@ module persistence.encodings {
   }
 
 }
---!>
+-->
 <!-- /src/persistence/Drive.ts
 module persistence {
 
@@ -14080,7 +14084,7 @@ module persistence {
 
   }
 }
---!>
+-->
 <!-- /src/persistence/bestEncode.ts
 module persistence {
 
@@ -14174,7 +14178,7 @@ module persistence {
       }
   }
 }
---!>
+-->
 <!-- /src/persistence/bootMount.ts
 module persistence {
 
@@ -14246,7 +14250,7 @@ module persistence {
 
   }
 }
---!>
+-->
 <!-- /src/persistence/mountDrive.ts
 module persistence {
 
@@ -14351,7 +14355,7 @@ module persistence {
   }
 
 }
---!>
+-->
 <!-- /src/persistence/normalizePath.ts
 module persistence {
 
@@ -14368,7 +14372,7 @@ module persistence {
   }
 
 }
---!>
+-->
 <!-- /src/shell/build/processTemplate.ts
 module build {
 
@@ -14543,7 +14547,7 @@ module build {
   }
 
 }
---!>
+-->
 <!-- /src/shell/panels/Panel.ts
 module panels {
 
@@ -15133,7 +15137,7 @@ module panels {
   }
 
 }
---!>
+-->
 <!-- /src/shell/panels/TwoPanels.ts
 module panels {
 
@@ -15196,7 +15200,7 @@ module panels {
 
       var contentWidth = 0;
 
-Â  Â  Â  if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {Â 
+Â&nbsp; Â&nbsp; Â&nbsp; if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {Â&nbsp;
         // flippable layout
         contentWidth = Math.max(metrics.hostWidth / 2, metrics.hostWidth * 2 - metrics.emWidth * 3);
       }
@@ -15374,7 +15378,7 @@ module panels {
   }
 
 }
---!>
+-->
 <!-- /src/shell/panels/driveDirectoryService.ts
 module panels {
 
@@ -15415,7 +15419,7 @@ module panels {
   }
 
 }
---!>
+-->
 <!-- /src/shell/panels/panels.css
 .panels-scroll-host {
   position: absolute;
@@ -15487,7 +15491,7 @@ module panels {
     width: 0.5em;
     height: 0.5em
 }
---!>
+-->
 <!-- /src/shell/terminal/NodeHost.ts
 module terminal {
 
@@ -15605,7 +15609,7 @@ module terminal {
     }
   }
 }
---!>
+-->
 <!-- /src/shell/terminal/Terminal.ts
 module terminal {
 
@@ -15842,7 +15846,7 @@ module terminal {
   }
 
 }
---!>
+-->
 <!-- /src/shell/terminal/terminal.css
 .terminal-history {
   position: absolute;
@@ -15873,7 +15877,7 @@ module terminal {
   resize: none;
   overflow: hidden;
 }
---!>
+-->
 <!-- /src/shell/CommanderShell.ts
 class CommanderShell {
 
@@ -16103,7 +16107,7 @@ module CommanderShell {
   }
 
 }
---!>
+-->
 <!-- /src/shell/start.ts
 declare var require;
 
@@ -16117,7 +16121,7 @@ function showCommander(drive: persistence.Drive) {
   elem('style', { text: styleText }, document.body);
   var commander = new CommanderShell(document.body, drive);
 }
---!>
+-->
 <!-- /src/typescript/lib.d.ts
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved. 
@@ -33035,7 +33039,7 @@ interface VBArrayConstructor {
 
 declare var VBArray: VBArrayConstructor;
 
---!>
+-->
 <!-- /src/typescript/tsc.js
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved. 
@@ -59343,7 +59347,7 @@ var ts;
 })(ts || (ts = {}));
 ts.executeCommandLine(ts.sys.args);
 
---!>
+-->
 <!-- /src/typings/webSQL.d.ts
 declare function openDatabase(
   name: string,
@@ -59410,15 +59414,15 @@ interface SQLResultSetRowList {
   length: number;
   item(index: number): any;
 }
---!>
+-->
 <!-- /src/dummy.ts
 class Apple {
   constructor(public color = 'red') {
   }
 }
---!>
+-->
 <!-- /src/index.html
-<!doctype html>
+<*!doctype html>
 <title>mini shell </title>
 
 <script data-legit=mi>
@@ -59440,39 +59444,42 @@ class Apple {
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<!-- total 56Mb, saved 25 Apr 2015 22:52:01.231 --*>
+<*!-- total 56Mb, saved 25 Apr 2015 22:52:01.231 --*>
 
-<!-- /empty/
+<*!-- /shell/start.ts.js
+<%=typescriptBuild('/shell/*', '/boot/base.d.ts', '/persistence/Drive.ts', '/typings/*')%>--*>
+
+<*!-- /empty/
 --*>
 
 
-<!-- /LF-file.txt
+<*!-- /LF-file.txt
 123
 456--*>
 
-<!-- /CRLF-file [CRLF]
+<*!-- /CRLF-file [CRLF]
 123
 456--*>
 
-<!-- /CR-file [CR]
+<*!-- /CR-file [CR]
 123
 456--*>
 
-<!-- /exportsome.js [CR]
+<*!-- /exportsome.js [CR]
 exports = 55--*>
 
-<!-- /exports_fs.js [CR]
+<*!-- /exports_fs.js [CR]
 exports = require('fs')--*>
 
-<!-- /exports_process.js [CR]
+<*!-- /exports_process.js [CR]
 exports = process--*>
 
-<!-- /eval-file.txt [eval]
+<*!-- /eval-file.txt [eval]
  "random char: " + String.fromCharCode(Math.random()*16000)+"\n"+
  "date: "+new Date()+"\n"+
  "location: "+location --*>
 
-<!-- /json-file.txt [json]
+<*!-- /json-file.txt [json]
 "new ok \u2222 and what\r\n or \u0001?\n\n\n"--*>
 
 <%=(function() {
@@ -59488,10 +59495,8 @@ return dump.join('\n');
 
 
 
-<!-- /shell/start.ts.js
-<%=typescriptBuild('/shell/*', '/boot/base.d.ts', '/persistence/Drive.ts', '/typings/*')%>--*>
 
-<!-- /shell/node.ts.js
+<*!-- /shell/node.ts.js
 <%=typescriptBuild('/nodeapi/*', '/boot/base.d.ts', '/persistence/Drive.ts')%>
 exports.fs = nofs_load();
 exports.process = noprocess_load();
@@ -59500,12 +59505,12 @@ exports.path = nopath_load();
 exports.os = noos_load();
 --*>
 
-<!-- /shell/persistence.ts.js
+<*!-- /shell/persistence.ts.js
 <%=typescriptBuild('/persistence/*', '/typings/*')%>
 --*>
 
 
-<!-- /shell/style.css
+<*!-- /shell/style.css
 <%=(function() {
 	var drive = portabled.build.processTemplate.mainDrive;
 	var files = drive.files();
@@ -59526,7 +59531,9 @@ exports.os = noos_load();
 	var fileDump = [];
   for (var i = 0; i < files.length; i++) {
     var content = drive.read(files[i]);
-    var decoratedContent = content.replace(/\-\-(\**)\>/g, '--*$1>');
+    var decoratedContent = content.
+			replace(/\-\-(\**)\>/g, '--*$1>').
+			replace(/\<(\**)\!/g, '<*$1!');
 	  fileDump.push('<'+'!'+'-- '+'/src'+files[i]);
     fileDump.push(decoratedContent);
     fileDump.push('--'+'!'+'>');
@@ -59536,7 +59543,7 @@ exports.os = noos_load();
 })()%>
 
 
---!>
+-->
 <!-- /src/readme.md
 #New mini portable shell development
 
@@ -59655,4 +59662,6 @@ then one of the local storage options is added upon a brief detection process.
 
 From the external caller the persistence mini-library expects a single call to *mountDrive* function,
 passing in a few inputs and a callback.
---!>
+-->
+
+</body></html>
