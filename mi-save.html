@@ -2,7 +2,10 @@
 <html style="overflow: hidden;"><head><title>mini shell </title>
 
 <script data-legit="mi">
-  window.onerror = function onerror() {
+  window.__boot_times = window.__boot_times || {};
+window.__boot_times.onerror_start = +new Date();
+
+window.onerror = function onerror() {
 
   var msg = [];
   for (var i = 0; i < arguments.length; i++) {
@@ -34,323 +37,308 @@
 //# sourceURL=boot/onerror.js
 </script>
 <script data-legit="mi">
-  earlyBoot();
-  function getText(obj) {
+  earlyBoot(window);
 
-  if (typeof obj === 'function') {
-    var result = /\/\*(\*(?!\/)|[^*])*\*\//m.exec(obj+'')[0];
-    if (result) result = result.slice(2, result.length-2);
-    return result;
-  }
-  else if (/^SCRIPT$/i.test(obj.tagName)) {
-    if ('text' in obj)
-      return obj.text;
-    else
-      return obj.innerHTML;
-  }
-  else if (/^STYLE$/i.test(obj.tagName)) {
-    if ('text' in obj)
-      return obj.text;
-    else if (obj.styleSheet)
-      return obj.styleSheet.cssText;
-    else
-      return obj.innerHTML;
-  }
-  else if ('textContent' in obj) {
-    return obj.textContent;
-  }
-  else if (/^INPUT$/i.test(obj.tagName)) {
-    return obj.value;
-  }
-  else {
-    var result = obj.innerText;
-    if (result) {
-      // IE fixes
-      result = result.replace(/\<BR\s*\>/g, '\n').replace(/\r\n/g, '\n');
+  	function base(window) {
+    return {
+        getText: getText,
+        setText: setText,
+        elem: elem,
+        on: on, off: off,
+        createFrame: createFrame,
+        apply: apply
+    };
+    function apply() {
+        window.getText = getText;
+        window.setText = setText;
+        window.elem = elem;
+        window.on = on;
+        window.off = off;
+        window.createFrame = createFrame;
     }
-    return result || '';
-  }
-}
-
-function setText(obj, text) {
-
-  if (/^SCRIPT$/i.test(obj.tagName)) {
-    if ('text' in obj)
-      obj.text = text;
-    else
-      obj.innerHTML = text;
-  }
-  else if (/^STYLE$/i.test(obj.tagName)) {
-    if ('text' in obj) {
-      obj.text = text;
-    }
-    else if ('styleSheet' in obj) {
-      if (!obj.styleSheet && !obj.type) obj.type = 'text/css';
-      obj.styleSheet.cssText = text;
-    }
-    else if ('textContent' in obj) {
-      obj.textContent = text;
-    }
-    else {
-      obj.innerHTML = text;
-    }
-  }
-  else if ('textContent' in obj) {
-    if ('type' in obj && !obj.type) obj.type = 'text/css';
-    obj.textContent = text;
-  }
-  else if (/^INPUT$/i.test(obj.tagName)) {
-    obj.value = text;
-  }
-  else {
-    obj.innerText = text;
-  }
-}
-
-elem.on = function (obj, eventName, handler) {
-  if (obj.addEventListener) {
-    obj.addEventListener(eventName, handler, false);
-  }
-  else if (obj.attachEvent) {
-    obj.attachEvent('on'+eventName, handler);
-  }
-  else {
-    obj['on'+eventName] = function (e) { return handler(e || this.event); };
-  }
-};
-
-elem.off = function (obj, eventName, handler) {
-  if (obj.removeEventListener) {
-    obj.removeEventListener(eventName, handler, false);
-  }
-  else if (obj.detachEvent) {
-    obj.detachEvent('on'+eventName, handler);
-  }
-  else {
-    if (obj['on'+eventName])
-      obj['on' + eventName] = null;
-  }
-};
-
-function elem(tag, style, parent) {
-  var e = tag.tagName ? tag : this.document.createElement(tag);
-
-  if (!parent && style && style.tagName) {
-    parent = style;
-    style = null;
-  }
-
-  if (style) {
-    if (typeof style === 'string') {
-      setText(e, style);
-    }
-    else {
-      for (var k in style) if (style.hasOwnProperty(k)) {
-        if (k === 'text') {
-          setText(e, style[k]);
+    function getText(obj) {
+        if (typeof obj === 'function') {
+            var result = /\/\*(\*(?!\/)|[^*])*\*\//m.exec(obj + '')[0];
+            if (result)
+                result = result.slice(2, result.length - 2);
+            return result;
         }
-        else if (k === 'className') {
-          e.className = style[k];
+        else if (/^SCRIPT$/i.test(obj.tagName)) {
+            if ('text' in obj)
+                return obj.text;
+            else
+                return obj.innerHTML;
         }
-        else if (!(e.style && k in e.style) && k in e) {
-          e[k] = style[k];
+        else if (/^STYLE$/i.test(obj.tagName)) {
+            if ('text' in obj)
+                return obj.text;
+            else if (obj.styleSheet)
+                return obj.styleSheet.cssText;
+            else
+                return obj.innerHTML;
+        }
+        else if ('textContent' in obj) {
+            return obj.textContent;
+        }
+        else if (/^INPUT$/i.test(obj.tagName)) {
+            return obj.value;
         }
         else {
-
-          if (style[k] && typeof style[k] === 'object' && typeof style[k].length === 'number') {
-            // array: iterate and apply values
-            var applyValues = style[k];
-						for (var i = 0; i < applyValues.length; i++) {
-              try { e.style[k] = applyValues[i]; }
-              catch (errApplyValues) { }
+            var result = obj.innerText;
+            if (result) {
+                // IE fixes
+                result = result.replace(/\<BR\s*\>/g, '\n').replace(/\r\n/g, '\n');
             }
-          }
-          else {
-            // not array
+            return result || '';
+        }
+    }
+    function setText(obj, text) {
+        if (/^SCRIPT$/i.test(obj.tagName)) {
+            if ('text' in obj)
+                obj.text = text;
+            else
+                obj.innerHTML = text;
+        }
+        else if (/^STYLE$/i.test(obj.tagName)) {
+            if ('text' in obj) {
+                obj.text = text;
+            }
+            else if ('styleSheet' in obj) {
+                if (!obj.styleSheet && !obj.type)
+                    obj.type = 'text/css';
+                obj.styleSheet.cssText = text;
+            }
+            else if ('textContent' in obj) {
+                obj.textContent = text;
+            }
+            else {
+                obj.innerHTML = text;
+            }
+        }
+        else if ('textContent' in obj) {
+            if ('type' in obj && !obj.type)
+                obj.type = 'text/css';
+            obj.textContent = text;
+        }
+        else if (/^INPUT$/i.test(obj.tagName)) {
+            obj.value = text;
+        }
+        else {
+            obj.innerText = text;
+        }
+    }
+    function on(obj, eventName, handler) {
+        if (obj.addEventListener) {
+            obj.addEventListener(eventName, handler, false);
+        }
+        else if (obj.attachEvent) {
+            obj.attachEvent('on' + eventName, handler);
+        }
+        else {
+            obj['on' + eventName] = function (e) { return handler(e || window.event); };
+        }
+    }
+    ;
+    function off(obj, eventName, handler) {
+        if (obj.removeEventListener) {
+            obj.removeEventListener(eventName, handler, false);
+        }
+        else if (obj.detachEvent) {
+            obj.detachEvent('on' + eventName, handler);
+        }
+        else {
+            if (obj['on' + eventName])
+                obj['on' + eventName] = null;
+        }
+    }
+    ;
+    function elem(tag, style, parent) {
+        var e = tag.tagName ? tag : window.document.createElement(tag);
+        if (!parent && style && style.tagName) {
+            parent = style;
+            style = null;
+        }
+        if (style) {
+            if (typeof style === 'string') {
+                setText(e, style);
+            }
+            else {
+                for (var k in style)
+                    if (style.hasOwnProperty(k)) {
+                        if (k === 'text') {
+                            setText(e, style[k]);
+                        }
+                        else if (k === 'className') {
+                            e.className = style[k];
+                        }
+                        else if (!(e.style && k in e.style) && k in e) {
+                            e[k] = style[k];
+                        }
+                        else {
+                            if (style[k] && typeof style[k] === 'object' && typeof style[k].length === 'number') {
+                                // array: iterate and apply values
+                                var applyValues = style[k];
+                                for (var i = 0; i < applyValues.length; i++) {
+                                    try {
+                                        e.style[k] = applyValues[i];
+                                    }
+                                    catch (errApplyValues) { }
+                                }
+                            }
+                            else {
+                                // not array
+                                try {
+                                    e.style[k] = style[k];
+                                }
+                                catch (err) {
+                                    try {
+                                        if (typeof console !== 'undefined' && typeof console.error === 'function')
+                                            console.error(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
+                                    }
+                                    catch (whatevs) {
+                                        alert(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
+                                    }
+                                }
+                            }
+                        }
+                    }
+            }
+        }
+        if (parent) {
             try {
-              e.style[k] = style[k];
+                parent.appendChild(e);
             }
-            catch (err) {
-              try {
-                if (typeof console !== 'undefined' && typeof console.error === 'function')
-                  console.error(e.tagName+'.style.'+k+'='+style[k]+': '+err.message);
-              }
-              catch (whatevs) {
-                alert(e.tagName+'.style.'+k+'='+style[k]+': '+err.message);
-              }
+            catch (error) {
+                throw new Error(error.message + ' adding ' + e.tagName + ' to ' + parent.tagName);
             }
-          }
         }
-      }
+        return e;
     }
-  }
-
-  if (parent) {
-    try {
-      parent.appendChild(e);
+    function createFrame(style) {
+        if (!style)
+            style = {
+                position: 'absolute',
+                left: 0, top: 0,
+                width: '100%', height: '100%',
+                border: 'none',
+                src: 'about:blank'
+            };
+        var ifr = elem('iframe', style, window.document.body);
+        var ifrwin = ifr.contentWindow || ifr.window;
+        var ifrdoc = ifrwin.document;
+        if (ifrdoc.open)
+            ifrdoc.open();
+        ifrdoc.write('<!' + 'doctype html' + '>' +
+            '<' + 'html' + '>' +
+            '<' + 'head' + '><' + 'style' + '>' +
+            'body,html{margin:0;padding:0;border:none;height:100%;border:none;}' +
+            '*,*:before,*:after{box-sizing:inherit;}' +
+            'html{box-sizing:border-box;}' +
+            '</' + 'style' + '>\n' +
+            // IE6/7/8 bug: global scope and window are not identical
+            (ifrwin.Function ? '' : '<' + 'script' + '>window.Function=Function</' + 'script' + '>') +
+            // it's important to have body before any long scripts (especialy external),
+            // so IFRAME is immediately ready
+            '<' + 'body' + '><' + 'body' + '>' +
+            '</' + 'html' + '>');
+        if (ifrdoc.close)
+            ifrdoc.close();
+        if (window.onerror) {
+            ifrwin.onerror = delegate_onerror;
+        }
+        return {
+            document: ifrdoc,
+            global: ifrwin,
+            iframe: ifr
+        };
+        function delegate_onerror() {
+            window.onerror.apply(window, arguments);
+        }
     }
-    catch (error) {
-      throw new Error(error.message+' adding '+e.tagName+' to '+parent.tagName);
-    }
-  }
-
-  return e;
 }
-
-function createFrame(style) {
-
-  if (!style)
-    style = {
-      position: 'absolute',
-      left: 0, top: 0,
-      width: '100%', height: '100%',
-      border: 'none',
-      src: 'about:blank'
+function earlyBoot(window) {
+    base(window).apply();
+    window.__boot_times.earlyBootStart = new Date().valueOf();
+    document.write('<' + 'style' + ' data-legit=mi>' +
+        '*{display:none;background:white;color:white;}' +
+        'html,body{display:block;}' +
+        '</' + 'style' + '>' +
+        (document.body ? '' : '<body>'));
+    elem(document.body, {
+        height: '100%',
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden'
+    });
+    elem(document.body.parentElement, {
+        overflow: 'hidden'
+    });
+    var allStyleElements = document.getElementsByTagName('style');
+    var addedStyle = allStyleElements[allStyleElements.length - 1];
+    var bootFrame = createFrame();
+    bootFrame.iframe.style.zIndex = 2000;
+    bootFrame.iframe.style.display = 'block';
+    base(bootFrame.global).apply();
+    var bootUI = window.bootUI;
+    var bootAPI = bootUI(bootFrame.document, bootFrame.global, { elem: bootFrame.global.elem });
+    bootFrame.api = bootAPI;
+    bootFrame.startTime = window.__boot_times.earlyBootStart;
+    var uniqueKey = deriveUniqueKey(location);
+    var shellLoaderInstance = null;
+    var shellLoadInterval = setInterval(function () {
+        if (window.shellLoader === 'undefined')
+            return;
+        if (!shellLoadInterval)
+            return; // protect against old Opera's super-async habits
+        shellLoaderInstance = shellLoaderInstance ? shellLoaderInstance.continueLoading() : window.shellLoader ? window.shellLoader(uniqueKey, document, bootFrame) : null;
+    }, 100);
+    window.onload = function () {
+        clearInterval(shellLoadInterval);
+        shellLoadInterval = 0;
+        removeSpyElements();
+        bootFrame.iframe.style.zIndex = 1000;
+        if (addedStyle.parentElement)
+            addedStyle.parentElement.removeChild(addedStyle);
+        bootFrame.iframe.style.display = '';
+        (shellLoaderInstance || window.shellLoader(uniqueKey, document, bootFrame)).finishLoading();
     };
-
-  var ifr = this.elem('iframe', style, this.document.body);
-
-  var ifrwin = ifr.contentWindow || ifr.window;
-  var ifrdoc = ifrwin.document;
-
-  if (ifrdoc.open) ifrdoc.open();
-  ifrdoc.write(
-    '<!'+'doctype html'+'>'+
-    '<'+'html'+'>'+
-    '<'+'head'+'><'+'style'+'>'+
-    'body,html{margin:0;padding:0;border:none;height:100%;border:none;}'+
-    '*,*:before,*:after{box-sizing:inherit;}'+
-    'html{box-sizing:border-box;}'+
-    '</'+'style'+'>\n'+
-
-    // IE6/7/8 bug: global scope and window are not identical
-    (ifrwin.Function?'':'<'+'script'+'>window.Function=Function</'+'script'+'>')+
-
-    // it's important to have body before any long scripts (especialy external),
-    // so IFRAME is immediately ready
-    '<'+'body'+'><'+'body'+'>'+
-
-  	'</'+'html'+'>');
-  if (ifrdoc.close) ifrdoc.close();
-
-  ifrwin.elem = elem;
-
-  if (window.onerror) {
-    ifrwin.onerror = delegate_onerror;
-  }
-
-  return {
-    document: ifrdoc,
-    global: ifrwin,
-    iframe: ifr
-  };
-
-  function delegate_onerror() {
-    window.onerror.apply(window, arguments);
-  }
-
-}
-  function earlyBoot() {
-
-  var earlyBootStart = new Date().valueOf();
-
-  document.write(
-    '<'+'style'+' data-legit=mi>'+
-    '*{display:none;background:white;color:white;}'+
-    'html,body{display:block;}'+
-    '</'+'style'+'>'+
-    (document.body ? '' : '<body>'));
-
-  elem(document.body, {
-    height: '100%',
-  	margin: 0,
-    padding: 0,
-    overflow: 'hidden'
-  });
-  elem(document.body.parentElement, {
-    overflow: 'hidden'
-  });
-
-  var allStyleElements = document.getElementsByTagName('style');
-  var addedStyle = allStyleElements[allStyleElements.length-1];
-
-  var bootFrame = createFrame();
-  bootFrame.iframe.style.zIndex = 2000;
-  bootFrame.iframe.style.display = 'block';
-
-  bootFrame.global.elem = elem;
-
-  var bootAPI = bootUI(bootFrame.document, bootFrame.global, { elem: function elemProxy(a,b,c) { return bootFrame.global.elem(a,b,c); } });
-  bootFrame.api = bootAPI;
-  bootFrame.startTime = earlyBootStart;
-
-  var uniqueKey = deriveUniqueKey(location);
-
-  var shellLoaderInstance = null;
-	var shellLoadInterval = setInterval(function() {
-    if (typeof shellLoader === 'undefined') return;
-    if (!shellLoadInterval) return; // protect against old Opera's super-async habits
-    shellLoaderInstance = shellLoaderInstance ? shellLoaderInstance.continueLoading() : shellLoader ? shellLoader(uniqueKey, document, bootFrame) : null;
-  }, 100);
-
-  window.onload = function() {
-
-    clearInterval(shellLoadInterval);
-    shellLoadInterval = 0;
-
-    removeSpyElements();
-    bootFrame.iframe.style.zIndex = 1000;
-    if (addedStyle.parentElement)
-    	addedStyle.parentElement.removeChild(addedStyle);
-    bootFrame.iframe.style.display = '';
-
-    (shellLoaderInstance || shellLoader(uniqueKey, document, bootFrame)).finishLoading();
-
-  };
-
-  function deriveUniqueKey(locationSeed) {
-    var key = (locationSeed + '').split('?')[0].split('#')[0].toLowerCase();
-
-    var posIndexTrail = key.search(/\/index\.html$/);
-    if (posIndexTrail>0) key = key.slice(0, posIndexTrail);
-
-    if (key.charAt(0) === '/')
-      key = key.slice(1);
-    if (key.slice(-1) === '/')
-      key = key.slice(0, key.length - 1);
-
-    return smallHash(key) + '-' + smallHash(key.slice(1) + 'a');
-
-    function smallHash(key) {
-      for (var h=0, i=0; i < key.length; i++) {
-        h = Math.pow(31, h + 31 / key.charCodeAt(i));
-        h -= h | 0;
-      }
-      return (h * 2000000000) | 0;
-    }
-
-  }
-
-  function removeSpyElements() {
-
-    removeElements('iframe', function(ifr) { return ifr !== bootFrame.iframe; });
-    removeElements('style', function(sty) { return sty.getAttribute('data-legit') !== 'mi'; });
-    removeElements('script', function(sty) { return sty.getAttribute('data-legit') !== 'mi'; });
-
-    function removeElements(tagName, predicateToRemove) {
-    	var list = document.getElementsByTagName(tagName);
-      for (var i = 0; i < list.length; i++) {
-        var elem = list[i] || list.item(i);
-        if (predicateToRemove(elem)) {
-          elem.parentElement.removeChild(elem);
-          i--;
+    function deriveUniqueKey(locationSeed) {
+        var key = (locationSeed + '').split('?')[0].split('#')[0].toLowerCase();
+        var posIndexTrail = key.search(/\/index\.html$/);
+        if (posIndexTrail > 0)
+            key = key.slice(0, posIndexTrail);
+        if (key.charAt(0) === '/')
+            key = key.slice(1);
+        if (key.slice(-1) === '/')
+            key = key.slice(0, key.length - 1);
+        return smallHash(key) + '-' + smallHash(key.slice(1) + 'a');
+        function smallHash(key) {
+            for (var h = 0, i = 0; i < key.length; i++) {
+                h = Math.pow(31, h + 31 / key.charCodeAt(i));
+                h -= h | 0;
+            }
+            return (h * 2000000000) | 0;
         }
-      }
     }
-  }
-
+    function removeSpyElements() {
+        removeElements('iframe', function (ifr) { return ifr !== bootFrame.iframe; });
+        removeElements('style', function (sty) { return sty.getAttribute('data-legit') !== 'mi'; });
+        removeElements('script', function (sty) { return sty.getAttribute('data-legit') !== 'mi'; });
+        function removeElements(tagName, predicateToRemove) {
+            var list = document.getElementsByTagName(tagName);
+            for (var i = 0; i < list.length; i++) {
+                var elem = list[i] || list.item(i);
+                if (predicateToRemove(elem)) {
+                    elem.parentElement.removeChild(elem);
+                    i--;
+                }
+            }
+        }
+    }
 }
-  function bootUI(document, window, base) {
+
+
+    function bootUI(document, window, base) {
 
   base.elem(document.body, {
     background: 'rgb(3,11,61)',
@@ -381,6 +369,303 @@ function createFrame(style) {
 //# sourceURL=/boot/base.js
 </script></head><body style="height: 100%; margin: 0px; padding: 0px; overflow: hidden;">
 <script data-legit="mi">
+function base(window) {
+    return {
+        getText: getText,
+        setText: setText,
+        elem: elem,
+        on: on, off: off,
+        createFrame: createFrame,
+        apply: apply
+    };
+    function apply() {
+        window.getText = getText;
+        window.setText = setText;
+        window.elem = elem;
+        window.on = on;
+        window.off = off;
+        window.createFrame = createFrame;
+    }
+    function getText(obj) {
+        if (typeof obj === 'function') {
+            var result = /\/\*(\*(?!\/)|[^*])*\*\//m.exec(obj + '')[0];
+            if (result)
+                result = result.slice(2, result.length - 2);
+            return result;
+        }
+        else if (/^SCRIPT$/i.test(obj.tagName)) {
+            if ('text' in obj)
+                return obj.text;
+            else
+                return obj.innerHTML;
+        }
+        else if (/^STYLE$/i.test(obj.tagName)) {
+            if ('text' in obj)
+                return obj.text;
+            else if (obj.styleSheet)
+                return obj.styleSheet.cssText;
+            else
+                return obj.innerHTML;
+        }
+        else if ('textContent' in obj) {
+            return obj.textContent;
+        }
+        else if (/^INPUT$/i.test(obj.tagName)) {
+            return obj.value;
+        }
+        else {
+            var result = obj.innerText;
+            if (result) {
+                // IE fixes
+                result = result.replace(/\<BR\s*\>/g, '\n').replace(/\r\n/g, '\n');
+            }
+            return result || '';
+        }
+    }
+    function setText(obj, text) {
+        if (/^SCRIPT$/i.test(obj.tagName)) {
+            if ('text' in obj)
+                obj.text = text;
+            else
+                obj.innerHTML = text;
+        }
+        else if (/^STYLE$/i.test(obj.tagName)) {
+            if ('text' in obj) {
+                obj.text = text;
+            }
+            else if ('styleSheet' in obj) {
+                if (!obj.styleSheet && !obj.type)
+                    obj.type = 'text/css';
+                obj.styleSheet.cssText = text;
+            }
+            else if ('textContent' in obj) {
+                obj.textContent = text;
+            }
+            else {
+                obj.innerHTML = text;
+            }
+        }
+        else if ('textContent' in obj) {
+            if ('type' in obj && !obj.type)
+                obj.type = 'text/css';
+            obj.textContent = text;
+        }
+        else if (/^INPUT$/i.test(obj.tagName)) {
+            obj.value = text;
+        }
+        else {
+            obj.innerText = text;
+        }
+    }
+    function on(obj, eventName, handler) {
+        if (obj.addEventListener) {
+            obj.addEventListener(eventName, handler, false);
+        }
+        else if (obj.attachEvent) {
+            obj.attachEvent('on' + eventName, handler);
+        }
+        else {
+            obj['on' + eventName] = function (e) { return handler(e || window.event); };
+        }
+    }
+    ;
+    function off(obj, eventName, handler) {
+        if (obj.removeEventListener) {
+            obj.removeEventListener(eventName, handler, false);
+        }
+        else if (obj.detachEvent) {
+            obj.detachEvent('on' + eventName, handler);
+        }
+        else {
+            if (obj['on' + eventName])
+                obj['on' + eventName] = null;
+        }
+    }
+    ;
+    function elem(tag, style, parent) {
+        var e = tag.tagName ? tag : window.document.createElement(tag);
+        if (!parent && style && style.tagName) {
+            parent = style;
+            style = null;
+        }
+        if (style) {
+            if (typeof style === 'string') {
+                setText(e, style);
+            }
+            else {
+                for (var k in style)
+                    if (style.hasOwnProperty(k)) {
+                        if (k === 'text') {
+                            setText(e, style[k]);
+                        }
+                        else if (k === 'className') {
+                            e.className = style[k];
+                        }
+                        else if (!(e.style && k in e.style) && k in e) {
+                            e[k] = style[k];
+                        }
+                        else {
+                            if (style[k] && typeof style[k] === 'object' && typeof style[k].length === 'number') {
+                                // array: iterate and apply values
+                                var applyValues = style[k];
+                                for (var i = 0; i < applyValues.length; i++) {
+                                    try {
+                                        e.style[k] = applyValues[i];
+                                    }
+                                    catch (errApplyValues) { }
+                                }
+                            }
+                            else {
+                                // not array
+                                try {
+                                    e.style[k] = style[k];
+                                }
+                                catch (err) {
+                                    try {
+                                        if (typeof console !== 'undefined' && typeof console.error === 'function')
+                                            console.error(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
+                                    }
+                                    catch (whatevs) {
+                                        alert(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
+                                    }
+                                }
+                            }
+                        }
+                    }
+            }
+        }
+        if (parent) {
+            try {
+                parent.appendChild(e);
+            }
+            catch (error) {
+                throw new Error(error.message + ' adding ' + e.tagName + ' to ' + parent.tagName);
+            }
+        }
+        return e;
+    }
+    function createFrame(style) {
+        if (!style)
+            style = {
+                position: 'absolute',
+                left: 0, top: 0,
+                width: '100%', height: '100%',
+                border: 'none',
+                src: 'about:blank'
+            };
+        var ifr = elem('iframe', style, window.document.body);
+        var ifrwin = ifr.contentWindow || ifr.window;
+        var ifrdoc = ifrwin.document;
+        if (ifrdoc.open)
+            ifrdoc.open();
+        ifrdoc.write('<!' + 'doctype html' + '>' +
+            '<' + 'html' + '>' +
+            '<' + 'head' + '><' + 'style' + '>' +
+            'body,html{margin:0;padding:0;border:none;height:100%;border:none;}' +
+            '*,*:before,*:after{box-sizing:inherit;}' +
+            'html{box-sizing:border-box;}' +
+            '</' + 'style' + '>\n' +
+            // IE6/7/8 bug: global scope and window are not identical
+            (ifrwin.Function ? '' : '<' + 'script' + '>window.Function=Function</' + 'script' + '>') +
+            // it's important to have body before any long scripts (especialy external),
+            // so IFRAME is immediately ready
+            '<' + 'body' + '><' + 'body' + '>' +
+            '</' + 'html' + '>');
+        if (ifrdoc.close)
+            ifrdoc.close();
+        if (window.onerror) {
+            ifrwin.onerror = delegate_onerror;
+        }
+        return {
+            document: ifrdoc,
+            global: ifrwin,
+            iframe: ifr
+        };
+        function delegate_onerror() {
+            window.onerror.apply(window, arguments);
+        }
+    }
+}
+function earlyBoot(window) {
+    base(window).apply();
+    window.__boot_times.earlyBootStart = new Date().valueOf();
+    document.write('<' + 'style' + ' data-legit=mi>' +
+        '*{display:none;background:white;color:white;}' +
+        'html,body{display:block;}' +
+        '</' + 'style' + '>' +
+        (document.body ? '' : '<body>'));
+    elem(document.body, {
+        height: '100%',
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden'
+    });
+    elem(document.body.parentElement, {
+        overflow: 'hidden'
+    });
+    var allStyleElements = document.getElementsByTagName('style');
+    var addedStyle = allStyleElements[allStyleElements.length - 1];
+    var bootFrame = createFrame();
+    bootFrame.iframe.style.zIndex = 2000;
+    bootFrame.iframe.style.display = 'block';
+    base(bootFrame.global).apply();
+    var bootUI = window.bootUI;
+    var bootAPI = bootUI(bootFrame.document, bootFrame.global, { elem: bootFrame.global.elem });
+    bootFrame.api = bootAPI;
+    bootFrame.startTime = window.__boot_times.earlyBootStart;
+    var uniqueKey = deriveUniqueKey(location);
+    var shellLoaderInstance = null;
+    var shellLoadInterval = setInterval(function () {
+        if (window.shellLoader === 'undefined')
+            return;
+        if (!shellLoadInterval)
+            return; // protect against old Opera's super-async habits
+        shellLoaderInstance = shellLoaderInstance ? shellLoaderInstance.continueLoading() : window.shellLoader ? window.shellLoader(uniqueKey, document, bootFrame) : null;
+    }, 100);
+    window.onload = function () {
+        clearInterval(shellLoadInterval);
+        shellLoadInterval = 0;
+        removeSpyElements();
+        bootFrame.iframe.style.zIndex = 1000;
+        if (addedStyle.parentElement)
+            addedStyle.parentElement.removeChild(addedStyle);
+        bootFrame.iframe.style.display = '';
+        (shellLoaderInstance || window.shellLoader(uniqueKey, document, bootFrame)).finishLoading();
+    };
+    function deriveUniqueKey(locationSeed) {
+        var key = (locationSeed + '').split('?')[0].split('#')[0].toLowerCase();
+        var posIndexTrail = key.search(/\/index\.html$/);
+        if (posIndexTrail > 0)
+            key = key.slice(0, posIndexTrail);
+        if (key.charAt(0) === '/')
+            key = key.slice(1);
+        if (key.slice(-1) === '/')
+            key = key.slice(0, key.length - 1);
+        return smallHash(key) + '-' + smallHash(key.slice(1) + 'a');
+        function smallHash(key) {
+            for (var h = 0, i = 0; i < key.length; i++) {
+                h = Math.pow(31, h + 31 / key.charCodeAt(i));
+                h -= h | 0;
+            }
+            return (h * 2000000000) | 0;
+        }
+    }
+    function removeSpyElements() {
+        removeElements('iframe', function (ifr) { return ifr !== bootFrame.iframe; });
+        removeElements('style', function (sty) { return sty.getAttribute('data-legit') !== 'mi'; });
+        removeElements('script', function (sty) { return sty.getAttribute('data-legit') !== 'mi'; });
+        function removeElements(tagName, predicateToRemove) {
+            var list = document.getElementsByTagName(tagName);
+            for (var i = 0; i < list.length; i++) {
+                var elem = list[i] || list.item(i);
+                if (predicateToRemove(elem)) {
+                    elem.parentElement.removeChild(elem);
+                    i--;
+                }
+            }
+        }
+    }
+}
 function shellLoader(uniqueKey, document, boot) {
     var driveMount = persistence.bootMount(uniqueKey, document);
     return continueLoading();
@@ -392,23 +677,22 @@ function shellLoader(uniqueKey, document, boot) {
         driveMount.finishLoading(function (drive) {
             var uiframe = createFrame();
             uiframe.iframe.style.opacity = '0';
-            uiframe.global.createFrame = createFrame;
+            var uiframeBase = base(uiframe.global);
+            uiframeBase.apply();
             uiframe.global.loadMod = loadMod;
             var wasResized = false;
             var resizeHandlers = [];
-            elem.on(window, 'resize', global_resize_detect);
-            elem.on(document.body, 'resize', global_resize_detect);
-            elem.on(uiframe.document.body, 'touchstart', global_resize_detect);
-            elem.on(uiframe.document.body, 'touchmove', global_resize_detect);
-            elem.on(uiframe.document.body, 'touchend', global_resize_detect);
-            elem.on(uiframe.document.body, 'pointerdown', global_resize_detect);
-            elem.on(uiframe.document.body, 'pointerup', global_resize_detect);
-            elem.on(uiframe.document.body, 'pointerout', global_resize_detect);
-            elem.on(uiframe.document.body, 'keydown', global_resize_detect);
-            elem.on(uiframe.document.body, 'keyup', global_resize_detect);
-            shell_elem.on = elem.on;
-            shell_elem.off = elem.off;
-            loadMod({
+            on(window, 'resize', global_resize_detect);
+            on(document.body, 'resize', global_resize_detect);
+            on(uiframe.document.body, 'touchstart', global_resize_detect);
+            on(uiframe.document.body, 'touchmove', global_resize_detect);
+            on(uiframe.document.body, 'touchend', global_resize_detect);
+            on(uiframe.document.body, 'pointerdown', global_resize_detect);
+            on(uiframe.document.body, 'pointerup', global_resize_detect);
+            on(uiframe.document.body, 'pointerout', global_resize_detect);
+            on(uiframe.document.body, 'keydown', global_resize_detect);
+            on(uiframe.document.body, 'keyup', global_resize_detect);
+            loadMod({ createFrame: createFrame }, {
                 path: '/shell/start.js',
                 eval: drive.read('/shell/start.ts.js'),
                 ui: false,
@@ -417,9 +701,13 @@ function shellLoader(uniqueKey, document, boot) {
                     document: uiframe.document,
                     window: uiframe.global,
                     console: window.console,
-                    elem: shell_elem,
-                    loadMod: shell_loadMod,
-                    setText: setText
+                    getText: uiframeBase.getText,
+                    setText: uiframeBase.setText,
+                    elem: uiframeBase.elem,
+                    on: uiframeBase.on,
+                    off: uiframeBase.off,
+                    createFrame: uiframeBase.createFrame,
+                    loadMod: shell_loadMod
                 }
             });
             function shell_require(moduleName) {
@@ -427,13 +715,14 @@ function shellLoader(uniqueKey, document, boot) {
                     case 'ui': return uiframe;
                     case 'drive': return drive;
                     case 'resize': return { on: onresize, off: offresize };
+                    case 'loadMod': return loadMod;
                 }
                 if ((moduleName + '').charAt(0) === '.') {
                     moduleName = '/shell/' + moduleName.slice(2);
                 }
                 var code = drive.read(moduleName);
                 if (code) {
-                    var mod = loadMod({
+                    var mod = loadMod(uiframe.global, {
                         eval: code,
                         path: persistence.normalizePath(moduleName),
                         ui: false,
@@ -442,7 +731,6 @@ function shellLoader(uniqueKey, document, boot) {
                     return mod.exports;
                 }
             }
-            function shell_elem(x, y, z) { return uiframe.global.elem(x, y, z); }
             function shell_loadMod(options) {
                 // TODO: create inner nested iframes instead
                 return uiframe.global.loadMod(options);
@@ -509,6 +797,111 @@ function shellLoader(uniqueKey, document, boot) {
             //if (typeof console !== 'undefined' && console.log)
             //  console.log(window['dbgDrive'] = drive);
         });
+    }
+    function loadMod(window, options) {
+        var style = options.style;
+        if (!options.ui) {
+            style = { display: 'none' };
+        }
+        else if (typeof style === 'string') {
+            style = { className: style, display: 'none' };
+        }
+        var frame = window.createFrame(style);
+        var frameFunction = frame.global.Function;
+        if (options.scope) {
+            var scope = typeof options.scope === 'function' ? options.scope(frame.global) : options.scope;
+            for (var k in scope)
+                if (scope.hasOwnProperty(k)) {
+                    try {
+                        frame.global[k] = scope[k];
+                    }
+                    catch (err) { }
+                }
+        }
+        if (options.eval) {
+            var exportsInScope = scope && 'exports' in scope;
+            var evalArgNames = exportsInScope ? [] : ['exports'];
+            var evalArgs = exportsInScope ? [] : [{}];
+            if (scope) {
+                for (var k in scope)
+                    if (scope.hasOwnProperty(k)) {
+                        evalArgNames.push(k);
+                        evalArgs.push(scope[k]);
+                    }
+            }
+            if (!options.ui) {
+                var allowedGlobals = {
+                    setTimeout: 1, setInterval: 1, clearTimeout: 1, clearInterval: 1,
+                    eval: 1,
+                    console: 1,
+                    undefined: 1,
+                    Object: 1, Array: 1, Date: 1, Function: 1, String: 1, Boolean: 1, Number: 1,
+                    Infinity: 1, NaN: 1, isNaN: 1, isFinite: 1, parseInt: 1, parseFloat: 1,
+                    escape: 1, unescape: 1,
+                    Int32Array: 1, Int8Array: 1, Int16Array: 1,
+                    UInt32Array: 1, UInt8Array: 1, UInt8ClampedArray: 1, UInt16Array: 1,
+                    Float32Array: 1, Float64Array: 1, ArrayBuffer: 1,
+                    Math: 1, JSON: 1, RegExp: 1,
+                    Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,
+                    toString: 1, toJSON: 1, toValue: 1,
+                    Map: 1
+                };
+                var hiddenKeys = {};
+                // normal properties
+                for (var k in frame.global) {
+                    if (scope && scope.hasOwnProperty(k))
+                        continue;
+                    if (allowedGlobals.hasOwnProperty(k))
+                        continue;
+                    evalArgNames.push(k);
+                    hiddenKeys[k] = 1;
+                }
+                // non-enumerable properties directly on global
+                if (Object.getOwnPropertyNames) {
+                    var props = Object.getOwnPropertyNames(frame.global);
+                    for (var i = 0; i < props.length; i++) {
+                        if (scope && scope.hasOwnProperty(props[i]))
+                            continue;
+                        if (allowedGlobals.hasOwnProperty(props[i]))
+                            continue;
+                        if (hiddenKeys.hasOwnProperty(props[i]))
+                            continue;
+                        evalArgNames.push(props[i]);
+                    }
+                    // non-enumerable properties on global's prototype
+                    if (frame.global.constructor
+                        && frame.global.constructor.prototype
+                        && frame.global.constructor.prototype != Object
+                        && frame.global.constructor.prototype != Object.prototype) {
+                        props = Object.getOwnPropertyNames(frame.global.constructor.prototype);
+                        for (var i = 0; i < props.length; i++) {
+                            if (scope && scope.hasOwnProperty(props[i]))
+                                continue;
+                            if (allowedGlobals.hasOwnProperty(props[i]))
+                                continue;
+                            if (hiddenKeys.hasOwnProperty(props[i]))
+                                continue;
+                            evalArgNames.push(props[i]);
+                        }
+                    }
+                }
+            }
+            var innerEval = frameFunction.apply(frame.global, ['return function(txt) { return eval(txt); }'])();
+            var wrappedText = '(function() { return function(' + evalArgNames.join(',') + '){' +
+                options.eval + '\nreturn exports; }; })()' +
+                (options.path ? ' //# sourceURL=' + options.path : '');
+            //evalArgNames.push(
+            //  options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval + '\nreturn exports;');
+            var evalFn = innerEval(wrappedText);
+            //var evalFn = frameFunction.apply(frame.global, evalArgNames);
+            var modExports = evalFn.apply(frame.global, evalArgs);
+        }
+        return {
+            document: frame.document,
+            global: frame.global,
+            iframe: frame.iframe,
+            exports: modExports
+        };
     }
 }
 var persistence;
@@ -1714,122 +2107,6 @@ var persistence;
 })(persistence || (persistence = {}));
 
 
-function loadMod(options) {
-
-  var style = options.style;
-  if (!options.ui) {
-    style = { display: 'none' };
-  }
-  else if (typeof style === 'string') {
-    style = { className: style, display: 'none' };
-  }
-
-  var frame = this.createFrame(style);
-  var frameFunction = frame.global.Function;
-
-  if (options.scope) {
-    var scope = typeof options.scope === 'function' ? (options.scope)(frame.global) : options.scope;
-    for (var k in scope) if (scope.hasOwnProperty(k)) {
-      try { frame.global[k] = scope[k]; } catch (err) { }
-    }
-  }
-
-  if (options.eval) {
-
-    var exportsInScope = scope && 'exports' in scope;
-    var evalArgNames = exportsInScope ? [] : ['exports'];
-    var evalArgs = exportsInScope ? [] : [{}];
-    if (scope) {
-      for (var k in scope) if (scope.hasOwnProperty(k)) {
-        evalArgNames.push(k);
-        evalArgs.push(scope[k]);
-      }
-    }
-
-    if (!options.ui) {
-      var allowedGlobals = {
-        setTimeout: 1, setInterval: 1, clearTimeout: 1, clearInterval: 1,
-        eval: 1,
-        console: 1,
-        undefined: 1,
-        Object: 1, Array: 1, Date: 1, Function: 1, String: 1, Boolean: 1, Number: 1,
-        Infinity: 1, NaN: 1, isNaN: 1, isFinite: 1, parseInt: 1, parseFloat: 1,
-        escape: 1, unescape: 1,
-
-        Int32Array: 1, Int8Array: 1, Int16Array: 1,
-        UInt32Array: 1, UInt8Array: 1, UInt8ClampedArray: 1, UInt16Array: 1,
-        Float32Array: 1, Float64Array: 1, ArrayBuffer: 1,
-
-        Math: 1, JSON: 1, RegExp: 1,
-        Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,
-
-        toString: 1, toJSON: 1, toValue: 1,
-
-        Map: 1
-      };
-
-      var hiddenKeys = {};
-
-      // normal properties
-      for (var k in frame.global) {
-        if (scope && scope.hasOwnProperty(k)) continue;
-        if (allowedGlobals.hasOwnProperty(k)) continue;
-        evalArgNames.push(k);
-        hiddenKeys[k] = 1;
-      }
-
-      // non-enumerable properties directly on global
-      if (Object.getOwnPropertyNames) {
-        var props = Object.getOwnPropertyNames(frame.global);
-        for (var i = 0; i < props.length; i++) {
-          if (scope && scope.hasOwnProperty(props[i])) continue;
-          if (allowedGlobals.hasOwnProperty(props[i])) continue;
-          if (hiddenKeys.hasOwnProperty(props[i])) continue;
-          evalArgNames.push(props[i]);
-        }
-
-        // non-enumerable properties on global's prototype
-        if (frame.global.constructor
-          && frame.global.constructor.prototype
-          && frame.global.constructor.prototype != Object
-          && frame.global.constructor.prototype != Object.prototype) {
-          props = Object.getOwnPropertyNames(frame.global.constructor.prototype);
-          for (var i = 0; i < props.length; i++) {
-            if (scope && scope.hasOwnProperty(props[i])) continue;
-            if (allowedGlobals.hasOwnProperty(props[i])) continue;
-            if (hiddenKeys.hasOwnProperty(props[i])) continue;
-            evalArgNames.push(props[i]);
-          }
-        }
-      }
-    }
-
-    var innerEval = frameFunction.apply(frame.global, ['return function(txt) { return eval(txt); }'])();
-
-    var wrappedText = '(function() { return function('+evalArgNames.join(',')+'){'+
-      options.eval + '\nreturn exports; }; })()'+
-      (options.path ? ' //# sourceURL=' + options.path : '');
-
-    //evalArgNames.push(
-    //  options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval + '\nreturn exports;');
-
-    var evalFn = innerEval(wrappedText);
-    //var evalFn = frameFunction.apply(frame.global, evalArgNames);
-
-    var modExports = evalFn.apply(frame.global, evalArgs);
-
-    return {
-      document: frame.document,
-      global: frame.global,
-      iframe: frame.iframe,
-      exports: modExports
-    };
-  }
-
-  return frame;
-
-}
-
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
@@ -1874,7 +2151,7 @@ var CommanderShell = (function () {
         this._metrics.hostHeight = document.body.offsetHeight;
         this.measure();
         this.arrange();
-        elem.on(this._host, 'keydown', function (e) { return _this._keydown(e); });
+        on(this._host, 'keydown', function (e) { return _this._keydown(e); });
         var _glob = (function () { return this; })();
         var applyConsole = function (glob) {
             if (glob.console) {
@@ -2188,7 +2465,7 @@ var panels;
             this._nextRedrawScrollToCurrent = false;
             this._scrollContent = elem('div', this._host);
             this._scrollContent.isScrollContent = true;
-            elem.on(this._host, 'scroll', function () { return _this._onscroll(); });
+            on(this._host, 'scroll', function () { return _this._onscroll(); });
             this._queueRedraw();
         }
         Panel.prototype.set = function (paths) {
@@ -2630,8 +2907,8 @@ var panels;
                 e.preventDefault();
               return false;
             }); */
-            elem.on(this._leftPanelHost, 'click', function (e) { return _this._onclick(e); });
-            elem.on(this._rightPanelHost, 'click', function (e) { return _this._onclick(e); });
+            on(this._leftPanelHost, 'click', function (e) { return _this._onclick(e); });
+            on(this._rightPanelHost, 'click', function (e) { return _this._onclick(e); });
         }
         TwoPanels.prototype.measure = function () {
         };
@@ -2843,9 +3120,10 @@ var terminal;
             this._nodeModCache = null;
             this._processMod = null;
             this.log = null;
+            var loadMod = require('loadMod');
             this._nodeModCache = {};
             var nocode = this._drive.read('/shell/node.ts.js');
-            this._nodeMod = loadMod({
+            this._nodeMod = loadMod({ createFrame: createFrame }, {
                 eval: nocode,
                 path: '/shell/node.ts.js',
                 ui: false,
@@ -2871,6 +3149,7 @@ var terminal;
         }
         NodeHost.prototype.run = function (code, path) {
             var _this = this;
+            var loadMod = require('loadMod');
             var isInteractive = !path;
             if (isInteractive) {
                 var now = new Date();
@@ -2883,7 +3162,7 @@ var terminal;
                     '.' + ((now.getMilliseconds() | 0) + 1000).toString().slice(1) +
                     '.js';
                 if (!this._processMod) {
-                    this._processMod = loadMod({
+                    this._processMod = loadMod({ createFrame: createFrame }, {
                         eval: 'exports = { evalFn: function(c) { return eval(c); } };',
                         ui: false,
                         scope: {
@@ -2909,7 +3188,7 @@ var terminal;
                 return result;
             }
             else {
-                var resMod = loadMod({
+                var resMod = loadMod({ createFrame: createFrame }, {
                     eval: code,
                     path: path,
                     ui: false,
@@ -9062,263 +9341,26 @@ declare function elem(tag: string, style: {}, parent?: Element): HTMLElement;
 declare function elem(tag: string, parent: Element): HTMLElement;
 declare function elem(elem: HTMLElement, style: {}, parent?: Element): HTMLElement;
 
-declare module elem {
 
-  export function on(obj: Node, eventName: string, handler: (evt: Event) => void);
-  export function on(obj: Window, eventName: string, handler: (evt: Event) => void);
-  export function on(obj: Node, eventName: string, handler: (evt: Event) => void);
-  export function off(obj: Window, eventName: string, handler: (evt: Event) => void);
+declare function on(obj: Node, eventName: string, handler: (evt: Event) => void);
+declare function on(obj: Window, eventName: string, handler: (evt: Event) => void);
+declare function on(obj: Node, eventName: string, handler: (evt: Event) => void);
+declare function off(obj: Window, eventName: string, handler: (evt: Event) => void);
 
-}
+declare function createFrame(style?: {}): createFrame.LoadedResult;
 
-declare function createFrame(style?: {}):
-  { global: Window; document: Document; iframe: HTMLIFrameElement; };
-
-declare function loadMod(
-  options: {
-
-    /** module script */
-    eval: string;
-
-    /** module path to emulate */
-    path?: string;
-
-    /** style or class name for the injected iframe (not needed for headless) */
-    style?: {} | string;
-
-    /** scope to inject, or a function to create such scope using the existing global of the injected iframe */
-    scope?: {} | ((global: any) => {});
-
-    /** whether to show the iframe (false to delete iframe immediately) */
-    ui?: boolean;
-
-  }): loadMod.LoadedResult;
-
-declare module loadMod {
+declare module createFrame {
   export interface LoadedResult {
-    global: any;
-    document: Document;
-    iframe: HTMLIFrameElement,
+    global: Window;
+    document: Document; 
+    iframe: HTMLIFrameElement;
+  }
+}
+
+interface LoadModResult extends createFrame.LoadedResult {
     exports: any;
-  }
-}
--->
-<!-- /src/boot/base.js
-function getText(obj) {
-
-  if (typeof obj === 'function') {
-    var result = /\/\*(\*(?!\/)|[^*])*\*\//m.exec(obj+'')[0];
-    if (result) result = result.slice(2, result.length-2);
-    return result;
-  }
-  else if (/^SCRIPT$/i.test(obj.tagName)) {
-    if ('text' in obj)
-      return obj.text;
-    else
-      return obj.innerHTML;
-  }
-  else if (/^STYLE$/i.test(obj.tagName)) {
-    if ('text' in obj)
-      return obj.text;
-    else if (obj.styleSheet)
-      return obj.styleSheet.cssText;
-    else
-      return obj.innerHTML;
-  }
-  else if ('textContent' in obj) {
-    return obj.textContent;
-  }
-  else if (/^INPUT$/i.test(obj.tagName)) {
-    return obj.value;
-  }
-  else {
-    var result = obj.innerText;
-    if (result) {
-      // IE fixes
-      result = result.replace(/\<BR\s*\>/g, '\n').replace(/\r\n/g, '\n');
-    }
-    return result || '';
-  }
 }
 
-function setText(obj, text) {
-
-  if (/^SCRIPT$/i.test(obj.tagName)) {
-    if ('text' in obj)
-      obj.text = text;
-    else
-      obj.innerHTML = text;
-  }
-  else if (/^STYLE$/i.test(obj.tagName)) {
-    if ('text' in obj) {
-      obj.text = text;
-    }
-    else if ('styleSheet' in obj) {
-      if (!obj.styleSheet && !obj.type) obj.type = 'text/css';
-      obj.styleSheet.cssText = text;
-    }
-    else if ('textContent' in obj) {
-      obj.textContent = text;
-    }
-    else {
-      obj.innerHTML = text;
-    }
-  }
-  else if ('textContent' in obj) {
-    if ('type' in obj && !obj.type) obj.type = 'text/css';
-    obj.textContent = text;
-  }
-  else if (/^INPUT$/i.test(obj.tagName)) {
-    obj.value = text;
-  }
-  else {
-    obj.innerText = text;
-  }
-}
-
-elem.on = function (obj, eventName, handler) {
-  if (obj.addEventListener) {
-    obj.addEventListener(eventName, handler, false);
-  }
-  else if (obj.attachEvent) {
-    obj.attachEvent('on'+eventName, handler);
-  }
-  else {
-    obj['on'+eventName] = function (e) { return handler(e || this.event); };
-  }
-};
-
-elem.off = function (obj, eventName, handler) {
-  if (obj.removeEventListener) {
-    obj.removeEventListener(eventName, handler, false);
-  }
-  else if (obj.detachEvent) {
-    obj.detachEvent('on'+eventName, handler);
-  }
-  else {
-    if (obj['on'+eventName])
-      obj['on' + eventName] = null;
-  }
-};
-
-function elem(tag, style, parent) {
-  var e = tag.tagName ? tag : this.document.createElement(tag);
-
-  if (!parent && style && style.tagName) {
-    parent = style;
-    style = null;
-  }
-
-  if (style) {
-    if (typeof style === 'string') {
-      setText(e, style);
-    }
-    else {
-      for (var k in style) if (style.hasOwnProperty(k)) {
-        if (k === 'text') {
-          setText(e, style[k]);
-        }
-        else if (k === 'className') {
-          e.className = style[k];
-        }
-        else if (!(e.style && k in e.style) && k in e) {
-          e[k] = style[k];
-        }
-        else {
-
-          if (style[k] && typeof style[k] === 'object' && typeof style[k].length === 'number') {
-            // array: iterate and apply values
-            var applyValues = style[k];
-						for (var i = 0; i < applyValues.length; i++) {
-              try { e.style[k] = applyValues[i]; }
-              catch (errApplyValues) { }
-            }
-          }
-          else {
-            // not array
-            try {
-              e.style[k] = style[k];
-            }
-            catch (err) {
-              try {
-                if (typeof console !== 'undefined' && typeof console.error === 'function')
-                  console.error(e.tagName+'.style.'+k+'='+style[k]+': '+err.message);
-              }
-              catch (whatevs) {
-                alert(e.tagName+'.style.'+k+'='+style[k]+': '+err.message);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  if (parent) {
-    try {
-      parent.appendChild(e);
-    }
-    catch (error) {
-      throw new Error(error.message+' adding '+e.tagName+' to '+parent.tagName);
-    }
-  }
-
-  return e;
-}
-
-function createFrame(style) {
-
-  if (!style)
-    style = {
-      position: 'absolute',
-      left: 0, top: 0,
-      width: '100%', height: '100%',
-      border: 'none',
-      src: 'about:blank'
-    };
-
-  var ifr = this.elem('iframe', style, this.document.body);
-
-  var ifrwin = ifr.contentWindow || ifr.window;
-  var ifrdoc = ifrwin.document;
-
-  if (ifrdoc.open) ifrdoc.open();
-  ifrdoc.write(
-    '<*!'+'doctype html'+'>'+
-    '<'+'html'+'>'+
-    '<'+'head'+'><'+'style'+'>'+
-    'body,html{margin:0;padding:0;border:none;height:100%;border:none;}'+
-    '*,*:before,*:after{box-sizing:inherit;}'+
-    'html{box-sizing:border-box;}'+
-    '</'+'style'+'>\n'+
-
-    // IE6/7/8 bug: global scope and window are not identical
-    (ifrwin.Function?'':'<'+'script'+'>window.Function=Function</'+'script'+'>')+
-
-    // it's important to have body before any long scripts (especialy external),
-    // so IFRAME is immediately ready
-    '<'+'body'+'><'+'body'+'>'+
-
-  	'</'+'html'+'>');
-  if (ifrdoc.close) ifrdoc.close();
-
-  ifrwin.elem = elem;
-
-  if (window.onerror) {
-    ifrwin.onerror = delegate_onerror;
-  }
-
-  return {
-    document: ifrdoc,
-    global: ifrwin,
-    iframe: ifr
-  };
-
-  function delegate_onerror() {
-    window.onerror.apply(window, arguments);
-  }
-
-}
 -->
 <!-- /src/boot/bootUI.js
 function bootUI(document, window, base) {
@@ -9350,109 +9392,10 @@ function bootUI(document, window, base) {
   };
 }
 -->
-<!-- /src/boot/earlyBoot.js
-function earlyBoot() {
-
-  var earlyBootStart = new Date().valueOf();
-
-  document.write(
-    '<'+'style'+' data-legit=mi>'+
-    '*{display:none;background:white;color:white;}'+
-    'html,body{display:block;}'+
-    '</'+'style'+'>'+
-    (document.body ? '' : '<body>'));
-
-  elem(document.body, {
-    height: '100%',
-  	margin: 0,
-    padding: 0,
-    overflow: 'hidden'
-  });
-  elem(document.body.parentElement, {
-    overflow: 'hidden'
-  });
-
-  var allStyleElements = document.getElementsByTagName('style');
-  var addedStyle = allStyleElements[allStyleElements.length-1];
-
-  var bootFrame = createFrame();
-  bootFrame.iframe.style.zIndex = 2000;
-  bootFrame.iframe.style.display = 'block';
-
-  bootFrame.global.elem = elem;
-
-  var bootAPI = bootUI(bootFrame.document, bootFrame.global, { elem: function elemProxy(a,b,c) { return bootFrame.global.elem(a,b,c); } });
-  bootFrame.api = bootAPI;
-  bootFrame.startTime = earlyBootStart;
-
-  var uniqueKey = deriveUniqueKey(location);
-
-  var shellLoaderInstance = null;
-	var shellLoadInterval = setInterval(function() {
-    if (typeof shellLoader === 'undefined') return;
-    if (!shellLoadInterval) return; // protect against old Opera's super-async habits
-    shellLoaderInstance = shellLoaderInstance ? shellLoaderInstance.continueLoading() : shellLoader ? shellLoader(uniqueKey, document, bootFrame) : null;
-  }, 100);
-
-  window.onload = function() {
-
-    clearInterval(shellLoadInterval);
-    shellLoadInterval = 0;
-
-    removeSpyElements();
-    bootFrame.iframe.style.zIndex = 1000;
-    if (addedStyle.parentElement)
-    	addedStyle.parentElement.removeChild(addedStyle);
-    bootFrame.iframe.style.display = '';
-
-    (shellLoaderInstance || shellLoader(uniqueKey, document, bootFrame)).finishLoading();
-
-  };
-
-  function deriveUniqueKey(locationSeed) {
-    var key = (locationSeed + '').split('?')[0].split('#')[0].toLowerCase();
-
-    var posIndexTrail = key.search(/\/index\.html$/);
-    if (posIndexTrail>0) key = key.slice(0, posIndexTrail);
-
-    if (key.charAt(0) === '/')
-      key = key.slice(1);
-    if (key.slice(-1) === '/')
-      key = key.slice(0, key.length - 1);
-
-    return smallHash(key) + '-' + smallHash(key.slice(1) + 'a');
-
-    function smallHash(key) {
-      for (var h=0, i=0; i < key.length; i++) {
-        h = Math.pow(31, h + 31 / key.charCodeAt(i));
-        h -= h | 0;
-      }
-      return (h * 2000000000) | 0;
-    }
-
-  }
-
-  function removeSpyElements() {
-
-    removeElements('iframe', function(ifr) { return ifr !== bootFrame.iframe; });
-    removeElements('style', function(sty) { return sty.getAttribute('data-legit') !== 'mi'; });
-    removeElements('script', function(sty) { return sty.getAttribute('data-legit') !== 'mi'; });
-
-    function removeElements(tagName, predicateToRemove) {
-    	var list = document.getElementsByTagName(tagName);
-      for (var i = 0; i < list.length; i++) {
-        var elem = list[i] || list.item(i);
-        if (predicateToRemove(elem)) {
-          elem.parentElement.removeChild(elem);
-          i--;
-        }
-      }
-    }
-  }
-
-}
--->
 <!-- /src/boot/onerror.js
+window.__boot_times = window.__boot_times || {};
+window.__boot_times.onerror_start = +new Date();
+
 window.onerror = function onerror() {
 
   var msg = [];
@@ -9483,123 +9426,6 @@ window.onerror = function onerror() {
 
 }
 -->
-<!-- /src/load/loadMod.js
-function loadMod(options) {
-
-  var style = options.style;
-  if (!options.ui) {
-    style = { display: 'none' };
-  }
-  else if (typeof style === 'string') {
-    style = { className: style, display: 'none' };
-  }
-
-  var frame = this.createFrame(style);
-  var frameFunction = frame.global.Function;
-
-  if (options.scope) {
-    var scope = typeof options.scope === 'function' ? (options.scope)(frame.global) : options.scope;
-    for (var k in scope) if (scope.hasOwnProperty(k)) {
-      try { frame.global[k] = scope[k]; } catch (err) { }
-    }
-  }
-
-  if (options.eval) {
-
-    var exportsInScope = scope && 'exports' in scope;
-    var evalArgNames = exportsInScope ? [] : ['exports'];
-    var evalArgs = exportsInScope ? [] : [{}];
-    if (scope) {
-      for (var k in scope) if (scope.hasOwnProperty(k)) {
-        evalArgNames.push(k);
-        evalArgs.push(scope[k]);
-      }
-    }
-
-    if (!options.ui) {
-      var allowedGlobals = {
-        setTimeout: 1, setInterval: 1, clearTimeout: 1, clearInterval: 1,
-        eval: 1,
-        console: 1,
-        undefined: 1,
-        Object: 1, Array: 1, Date: 1, Function: 1, String: 1, Boolean: 1, Number: 1,
-        Infinity: 1, NaN: 1, isNaN: 1, isFinite: 1, parseInt: 1, parseFloat: 1,
-        escape: 1, unescape: 1,
-
-        Int32Array: 1, Int8Array: 1, Int16Array: 1,
-        UInt32Array: 1, UInt8Array: 1, UInt8ClampedArray: 1, UInt16Array: 1,
-        Float32Array: 1, Float64Array: 1, ArrayBuffer: 1,
-
-        Math: 1, JSON: 1, RegExp: 1,
-        Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,
-
-        toString: 1, toJSON: 1, toValue: 1,
-
-        Map: 1
-      };
-
-      var hiddenKeys = {};
-
-      // normal properties
-      for (var k in frame.global) {
-        if (scope && scope.hasOwnProperty(k)) continue;
-        if (allowedGlobals.hasOwnProperty(k)) continue;
-        evalArgNames.push(k);
-        hiddenKeys[k] = 1;
-      }
-
-      // non-enumerable properties directly on global
-      if (Object.getOwnPropertyNames) {
-        var props = Object.getOwnPropertyNames(frame.global);
-        for (var i = 0; i < props.length; i++) {
-          if (scope && scope.hasOwnProperty(props[i])) continue;
-          if (allowedGlobals.hasOwnProperty(props[i])) continue;
-          if (hiddenKeys.hasOwnProperty(props[i])) continue;
-          evalArgNames.push(props[i]);
-        }
-
-        // non-enumerable properties on global's prototype
-        if (frame.global.constructor
-          && frame.global.constructor.prototype
-          && frame.global.constructor.prototype != Object
-          && frame.global.constructor.prototype != Object.prototype) {
-          props = Object.getOwnPropertyNames(frame.global.constructor.prototype);
-          for (var i = 0; i < props.length; i++) {
-            if (scope && scope.hasOwnProperty(props[i])) continue;
-            if (allowedGlobals.hasOwnProperty(props[i])) continue;
-            if (hiddenKeys.hasOwnProperty(props[i])) continue;
-            evalArgNames.push(props[i]);
-          }
-        }
-      }
-    }
-
-    var innerEval = frameFunction.apply(frame.global, ['return function(txt) { return eval(txt); }'])();
-
-    var wrappedText = '(function() { return function('+evalArgNames.join(',')+'){'+
-      options.eval + '\nreturn exports; }; })()'+
-      (options.path ? ' //# sourceURL=' + options.path : '');
-
-    //evalArgNames.push(
-    //  options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval + '\nreturn exports;');
-
-    var evalFn = innerEval(wrappedText);
-    //var evalFn = frameFunction.apply(frame.global, evalArgNames);
-
-    var modExports = evalFn.apply(frame.global, evalArgs);
-
-    return {
-      document: frame.document,
-      global: frame.global,
-      iframe: frame.iframe,
-      exports: modExports
-    };
-  }
-
-  return frame;
-
-}
--->
 <!-- /src/load/shellLoader.ts
 function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.BootModuleAPI): shellLoader.ContinueLoading {
 
@@ -9618,27 +9444,25 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
 
       var uiframe = createFrame();
       uiframe.iframe.style.opacity = '0';
-      (<any>uiframe.global).createFrame = createFrame;
+      var uiframeBase = base(uiframe.global);
+      uiframeBase.apply();
       (<any>uiframe.global).loadMod = loadMod;
 
       var wasResized = false;
       var resizeHandlers: any[] = [];
-      elem.on(window, 'resize', global_resize_detect);
-      elem.on(document.body, 'resize', global_resize_detect);
-      elem.on(uiframe.document.body, 'touchstart', global_resize_detect);
-      elem.on(uiframe.document.body, 'touchmove', global_resize_detect);
-      elem.on(uiframe.document.body, 'touchend', global_resize_detect);
-      elem.on(uiframe.document.body, 'pointerdown', global_resize_detect);
-      elem.on(uiframe.document.body, 'pointerup', global_resize_detect);
-      elem.on(uiframe.document.body, 'pointerout', global_resize_detect);
-      elem.on(uiframe.document.body, 'keydown', global_resize_detect);
-      elem.on(uiframe.document.body, 'keyup', global_resize_detect);
+      on(window, 'resize', global_resize_detect);
+      on(document.body, 'resize', global_resize_detect);
+      on(uiframe.document.body, 'touchstart', global_resize_detect);
+      on(uiframe.document.body, 'touchmove', global_resize_detect);
+      on(uiframe.document.body, 'touchend', global_resize_detect);
+      on(uiframe.document.body, 'pointerdown', global_resize_detect);
+      on(uiframe.document.body, 'pointerup', global_resize_detect);
+      on(uiframe.document.body, 'pointerout', global_resize_detect);
+      on(uiframe.document.body, 'keydown', global_resize_detect);
+      on(uiframe.document.body, 'keyup', global_resize_detect);
 
 
-      (<any>shell_elem).on = elem.on;
-      (<any>shell_elem).off = elem.off;
-
-      loadMod({
+      loadMod({ createFrame }, {
         path: '/shell/start.js',
         eval: drive.read('/shell/start.ts.js'),
         ui: false,
@@ -9647,9 +9471,13 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
           document: uiframe.document,
           window: uiframe.global,
           console: window.console,
-          elem: shell_elem,
-          loadMod: shell_loadMod,
-          setText: setText
+          getText: uiframeBase.getText,
+          setText: uiframeBase.setText,
+          elem: uiframeBase.elem,
+          on: uiframeBase.on,
+          off: uiframeBase.off,
+          createFrame: uiframeBase.createFrame,
+          loadMod: shell_loadMod
         }
       });
 
@@ -9658,6 +9486,7 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
           case 'ui': return uiframe;
           case 'drive': return drive;
           case 'resize': return { on: onresize, off: offresize };
+          case 'loadMod': return loadMod;
         }
 
         if ((moduleName + '').charAt(0) === '.') {
@@ -9666,17 +9495,15 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
 
         var code = drive.read(moduleName);
         if (code) {
-          var mod = loadMod({
+          var mod = loadMod(uiframe.global, {
             eval: code,
             path: persistence.normalizePath(moduleName),
             ui: false,
             scope: { require: shell_require }
           });
-    			return mod.exports;
+          return mod.exports;
         }
       }
-
-      function shell_elem(x, y, z) { return (<any>uiframe.global).elem(x, y, z); }
 
       function shell_loadMod(options) {
         // TODO: create inner nested iframes instead
@@ -9691,7 +9518,7 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
       function offresize(handler) {
         if (typeof handler !== 'function') return;
         for (var i = 0; i < resizeHandlers.length; i++) {
-          if (resizeHandlers[i]===handler) {
+          if (resizeHandlers[i] === handler) {
             resizeHandlers.splice(i, 1);
           }
         }
@@ -9701,7 +9528,7 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
         if (wasResized) return;
         wasResized = true;
 
-        if (typeof requestAnimationFrame ==='function') {
+        if (typeof requestAnimationFrame === 'function') {
           requestAnimationFrame(global_resize_delayed);
         }
         else {
@@ -9745,7 +9572,7 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
         if (passed >= fadeintTime) {
           clearInterval(animateFadeIn);
           if (boot.iframe.parentElement) // old Opera may keep firing even after clearInterval
-          	boot.iframe.parentElement.removeChild(boot.iframe);
+            boot.iframe.parentElement.removeChild(boot.iframe);
         }
       }, 10);
 
@@ -9756,13 +9583,149 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
 
   }
 
+  function loadMod(
+    window: { createFrame?: Function; },
+    options: {
+
+      /** module script */
+      eval: string;
+
+      /** module path to emulate */
+      path?: string;
+
+      /** style or class name for the injected iframe (not needed for headless) */
+      style?: {} | string;
+
+      /** scope to inject, or a function to create such scope using the existing global of the injected iframe */
+      scope?: {} | ((global: any) => {});
+
+      /** whether to show the iframe (false to delete iframe immediately) */
+      ui?: boolean;
+
+    }): LoadModResult {
+
+
+    var style = options.style;
+    if (!options.ui) {
+      style = { display: 'none' };
+    }
+    else if (typeof style === 'string') {
+      style = { className: style, display: 'none' };
+    }
+
+    var frame = (<any>window).createFrame(style);
+    var frameFunction = frame.global.Function;
+
+    if (options.scope) {
+      var scope = typeof options.scope === 'function' ? (<any>options.scope)(frame.global) : options.scope;
+      for (var k in scope) if (scope.hasOwnProperty(k)) {
+        try { frame.global[k] = scope[k]; } catch (err) { }
+      }
+    }
+
+    if (options.eval) {
+
+      var exportsInScope = scope && 'exports' in scope;
+      var evalArgNames = exportsInScope ? [] : ['exports'];
+      var evalArgs = exportsInScope ? [] : [{}];
+      if (scope) {
+        for (var k in scope) if (scope.hasOwnProperty(k)) {
+          evalArgNames.push(k);
+          evalArgs.push(scope[k]);
+        }
+      }
+
+      if (!options.ui) {
+        var allowedGlobals = {
+          setTimeout: 1, setInterval: 1, clearTimeout: 1, clearInterval: 1,
+          eval: 1,
+          console: 1,
+          undefined: 1,
+          Object: 1, Array: 1, Date: 1, Function: 1, String: 1, Boolean: 1, Number: 1,
+          Infinity: 1, NaN: 1, isNaN: 1, isFinite: 1, parseInt: 1, parseFloat: 1,
+          escape: 1, unescape: 1,
+
+          Int32Array: 1, Int8Array: 1, Int16Array: 1,
+          UInt32Array: 1, UInt8Array: 1, UInt8ClampedArray: 1, UInt16Array: 1,
+          Float32Array: 1, Float64Array: 1, ArrayBuffer: 1,
+
+          Math: 1, JSON: 1, RegExp: 1,
+          Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,
+
+          toString: 1, toJSON: 1, toValue: 1,
+
+          Map: 1
+        };
+
+        var hiddenKeys = {};
+
+        // normal properties
+        for (var k in frame.global) {
+          if (scope && scope.hasOwnProperty(k)) continue;
+          if (allowedGlobals.hasOwnProperty(k)) continue;
+          evalArgNames.push(k);
+          hiddenKeys[k] = 1;
+        }
+
+        // non-enumerable properties directly on global
+        if (Object.getOwnPropertyNames) {
+          var props = Object.getOwnPropertyNames(frame.global);
+          for (var i = 0; i < props.length; i++) {
+            if (scope && scope.hasOwnProperty(props[i])) continue;
+            if (allowedGlobals.hasOwnProperty(props[i])) continue;
+            if (hiddenKeys.hasOwnProperty(props[i])) continue;
+            evalArgNames.push(props[i]);
+          }
+
+          // non-enumerable properties on global's prototype
+          if (frame.global.constructor
+            && frame.global.constructor.prototype
+            && frame.global.constructor.prototype != Object
+            && frame.global.constructor.prototype != Object.prototype) {
+            props = Object.getOwnPropertyNames(frame.global.constructor.prototype);
+            for (var i = 0; i < props.length; i++) {
+              if (scope && scope.hasOwnProperty(props[i])) continue;
+              if (allowedGlobals.hasOwnProperty(props[i])) continue;
+              if (hiddenKeys.hasOwnProperty(props[i])) continue;
+              evalArgNames.push(props[i]);
+            }
+          }
+        }
+      }
+
+      var innerEval = frameFunction.apply(frame.global, ['return function(txt) { return eval(txt); }'])();
+
+      var wrappedText = '(function() { return function(' + evalArgNames.join(',') + '){' +
+        options.eval + '\nreturn exports; }; })()' +
+        (options.path ? ' //# sourceURL=' + options.path : '');
+
+      //evalArgNames.push(
+      //  options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval + '\nreturn exports;');
+
+      var evalFn = innerEval(wrappedText);
+      //var evalFn = frameFunction.apply(frame.global, evalArgNames);
+
+      var modExports = evalFn.apply(frame.global, evalArgs);
+
+    }
+
+    return {
+      document: frame.document,
+      global: frame.global,
+      iframe: frame.iframe,
+      exports: modExports
+    };
+
+  }
+
+
 }
 
 module shellLoader {
 
-  export interface BootModuleAPI extends loadMod.LoadedResult {
-    api: any;
-    startTime: number;
+  export interface BootModuleAPI extends createFrame.LoadedResult {
+    api?: any;
+    startTime?: number;
   }
 
   export interface ContinueLoading {
@@ -14585,7 +14548,7 @@ module panels {
       this._scrollContent = <HTMLElementWithFlags>elem('div', this._host);
       this._scrollContent.isScrollContent = true;
 
-      elem.on(this._host, 'scroll', () => this._onscroll());
+      on(this._host, 'scroll', () => this._onscroll());
 
       this._queueRedraw();
     }
@@ -15188,8 +15151,8 @@ module panels {
         return false;
       }); */
 
-      elem.on(this._leftPanelHost, 'click', (e: MouseEvent) => this._onclick(e));
-      elem.on(this._rightPanelHost, 'click', (e: MouseEvent) => this._onclick(e));
+      on(this._leftPanelHost, 'click', (e: MouseEvent) => this._onclick(e));
+      on(this._rightPanelHost, 'click', (e: MouseEvent) => this._onclick(e));
 
     }
 
@@ -15497,15 +15460,17 @@ module terminal {
 
   export class NodeHost {
 
-    private _nodeMod: loadMod.LoadedResult = null;
+    private _nodeMod: LoadModResult = null;
     private _nodeModCache: any = null;
-    private _processMod: loadMod.LoadedResult = null;
+    private _processMod: LoadModResult = null;
 
     constructor(private _drive: persistence.Drive) {
 
+      var loadMod = require('loadMod');
+
       this._nodeModCache = {};
       var nocode = this._drive.read('/shell/node.ts.js');
-      this._nodeMod = loadMod({
+      this._nodeMod = loadMod({ createFrame }, {
         eval: nocode,
         path: '/shell/node.ts.js',
         ui: false,
@@ -15532,6 +15497,8 @@ module terminal {
 
     run(code: string, path: string) {
 
+      var loadMod = require('loadMod');
+
       var isInteractive = !path;
 
       if (isInteractive) {
@@ -15546,7 +15513,7 @@ module terminal {
         '.js';
 
         if (!this._processMod) {
-          this._processMod = loadMod({
+          this._processMod = loadMod({ createFrame }, {
             eval: 'exports = { evalFn: function(c) { return eval(c); } };',
             ui: false,
             scope: {
@@ -15568,7 +15535,7 @@ module terminal {
         return result;
       }
       else {
-        var resMod = loadMod({
+        var resMod = loadMod({ createFrame }, {
           eval: code,
           path: path,
           ui: false,
@@ -15930,7 +15897,7 @@ class CommanderShell {
     this.measure();
     this.arrange();
 
-    elem.on(this._host, 'keydown', e => this._keydown(<any>e));
+    on(this._host, 'keydown', e => this._keydown(<any>e));
 
     var _glob = (function() { return this; })();
     var applyConsole = (glob) => {
@@ -59430,16 +59397,15 @@ class Apple {
 //# sourceURL=boot/onerror.js
 </script>
 <script data-legit=mi>
-  earlyBoot();
-  <%=embedFile('boot/base.js')%>
-  <%=embedFile('boot/earlyBoot.js')%>
-  <%=embedFile('boot/bootUI.js')%>
+  earlyBoot(window);
+
+  	<%=typescriptBuild('boot/*')%>
+
+    <%=embedFile('boot/bootUI.js')%>
 //# sourceURL=/boot/base.js
 </script>
 <script data-legit=mi>
 <%=typescriptBuild('/load/*', '/persistence/*', '/boot/*', '/typings/*')%>
-
-<%=embedFile('/load/loadMod.js')%>
 
 //# sourceURL=/load/shellLoader.ts.js
 </script>
@@ -59620,11 +59586,7 @@ Those indeed can be considered separately, with a degree of isolation from the r
 
 ### Base.js
 
-This set of functions is entirely driven by the needs of the booting code to deal with DOM,
-handling the weird browser differences and reducing repetitiveness.
-
-Base.js is not meant for a general consumption, and if a given function or flow branch is not needed here,
-it should be pruned.
+A very tight set of functions for DOM manipulation. It is used by both booting stage, as well as actually employed by the current shell.
 
 These are broad features of the mini-library:
 
@@ -59632,7 +59594,6 @@ These are broad features of the mini-library:
  * Creating elements and setting properties/CSS attributes in JSON-like syntax
  * Subscribing to events
  * Creating IFRAME and retrieving its key objects (inner window, inner document)
- * Loading JS code in an isolated 'module' container in an IFRAME
 
 ### BootUI
 
@@ -59662,6 +59623,352 @@ then one of the local storage options is added upon a brief detection process.
 
 From the external caller the persistence mini-library expects a single call to *mountDrive* function,
 passing in a few inputs and a callback.
+-->
+<!-- /src/boot/base.ts
+function base(window: Window) {
+
+  return {
+    getText,
+    setText,
+    elem,
+    on, off,
+    createFrame,
+    apply
+  };
+
+  function apply() {
+    (<any>window).getText = getText;
+    (<any>window).setText = setText;
+    (<any>window).elem = elem;
+    (<any>window).on = on;
+    (<any>window).off = off;
+    (<any>window).createFrame = createFrame;
+  }
+
+  function getText(obj) {
+
+    if (typeof obj === 'function') {
+      var result = /\/\*(\*(?!\/)|[^*])*\*\//m.exec(obj + '')[0];
+      if (result) result = result.slice(2, result.length - 2);
+      return result;
+    }
+    else if (/^SCRIPT$/i.test(obj.tagName)) {
+      if ('text' in obj)
+        return obj.text;
+      else
+        return obj.innerHTML;
+    }
+    else if (/^STYLE$/i.test(obj.tagName)) {
+      if ('text' in obj)
+        return obj.text;
+      else if (obj.styleSheet)
+        return obj.styleSheet.cssText;
+      else
+        return obj.innerHTML;
+    }
+    else if ('textContent' in obj) {
+      return obj.textContent;
+    }
+    else if (/^INPUT$/i.test(obj.tagName)) {
+      return obj.value;
+    }
+    else {
+      var result: string = obj.innerText;
+      if (result) {
+        // IE fixes
+        result = result.replace(/\<BR\s*\>/g, '\n').replace(/\r\n/g, '\n');
+      }
+      return result || '';
+    }
+  }
+
+  function setText(obj, text) {
+
+    if (/^SCRIPT$/i.test(obj.tagName)) {
+      if ('text' in obj)
+        obj.text = text;
+      else
+        obj.innerHTML = text;
+    }
+    else if (/^STYLE$/i.test(obj.tagName)) {
+      if ('text' in obj) {
+        obj.text = text;
+      }
+      else if ('styleSheet' in obj) {
+        if (!obj.styleSheet && !obj.type) obj.type = 'text/css';
+        obj.styleSheet.cssText = text;
+      }
+      else if ('textContent' in obj) {
+        obj.textContent = text;
+      }
+      else {
+        obj.innerHTML = text;
+      }
+    }
+    else if ('textContent' in obj) {
+      if ('type' in obj && !obj.type) obj.type = 'text/css';
+      obj.textContent = text;
+    }
+    else if (/^INPUT$/i.test(obj.tagName)) {
+      obj.value = text;
+    }
+    else {
+      obj.innerText = text;
+    }
+  }
+
+  function on(obj, eventName, handler) {
+    if (obj.addEventListener) {
+      obj.addEventListener(eventName, handler, false);
+    }
+    else if (obj.attachEvent) {
+      obj.attachEvent('on' + eventName, handler);
+    }
+    else {
+      obj['on' + eventName] = function(e) { return handler(e || window.event); };
+    }
+  };
+
+  function off(obj, eventName, handler) {
+    if (obj.removeEventListener) {
+      obj.removeEventListener(eventName, handler, false);
+    }
+    else if (obj.detachEvent) {
+      obj.detachEvent('on' + eventName, handler);
+    }
+    else {
+      if (obj['on' + eventName])
+        obj['on' + eventName] = null;
+    }
+  };
+
+  function elem(tag, style, parent) {
+    var e = tag.tagName ? tag : window.document.createElement(tag);
+
+    if (!parent && style && style.tagName) {
+      parent = style;
+      style = null;
+    }
+
+    if (style) {
+      if (typeof style === 'string') {
+        setText(e, style);
+      }
+      else {
+        for (var k in style) if (style.hasOwnProperty(k)) {
+          if (k === 'text') {
+            setText(e, style[k]);
+          }
+          else if (k === 'className') {
+            e.className = style[k];
+          }
+          else if (!(e.style && k in e.style) && k in e) {
+            e[k] = style[k];
+          }
+          else {
+
+            if (style[k] && typeof style[k] === 'object' && typeof style[k].length === 'number') {
+              // array: iterate and apply values
+              var applyValues = style[k];
+              for (var i = 0; i < applyValues.length; i++) {
+                try { e.style[k] = applyValues[i]; }
+                catch (errApplyValues) { }
+              }
+            }
+            else {
+              // not array
+              try {
+                e.style[k] = style[k];
+              }
+              catch (err) {
+                try {
+                  if (typeof console !== 'undefined' && typeof console.error === 'function')
+                    console.error(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
+                }
+                catch (whatevs) {
+                  alert(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (parent) {
+      try {
+        parent.appendChild(e);
+      }
+      catch (error) {
+        throw new Error(error.message + ' adding ' + e.tagName + ' to ' + parent.tagName);
+      }
+    }
+
+    return e;
+  }
+
+  function createFrame(style) {
+
+    if (!style)
+      style = {
+        position: 'absolute',
+        left: 0, top: 0,
+        width: '100%', height: '100%',
+        border: 'none',
+        src: 'about:blank'
+      };
+
+    var ifr = elem('iframe', style, window.document.body);
+
+    var ifrwin = ifr.contentWindow || ifr.window;
+    var ifrdoc = ifrwin.document;
+
+    if (ifrdoc.open) ifrdoc.open();
+    ifrdoc.write(
+      '<*!' + 'doctype html' + '>' +
+      '<' + 'html' + '>' +
+      '<' + 'head' + '><' + 'style' + '>' +
+      'body,html{margin:0;padding:0;border:none;height:100%;border:none;}' +
+      '*,*:before,*:after{box-sizing:inherit;}' +
+      'html{box-sizing:border-box;}' +
+      '</' + 'style' + '>\n' +
+
+      // IE6/7/8 bug: global scope and window are not identical
+      (ifrwin.Function ? '' : '<' + 'script' + '>window.Function=Function</' + 'script' + '>') +
+
+      // it's important to have body before any long scripts (especialy external),
+      // so IFRAME is immediately ready
+      '<' + 'body' + '><' + 'body' + '>' +
+
+      '</' + 'html' + '>');
+    if (ifrdoc.close) ifrdoc.close();
+
+    if (window.onerror) {
+      ifrwin.onerror = delegate_onerror;
+    }
+
+    return {
+      document: ifrdoc,
+      global: ifrwin,
+      iframe: ifr
+    };
+
+    function delegate_onerror() {
+      window.onerror.apply(window, arguments);
+    }
+
+  }
+
+}
+-->
+<!-- /src/boot/earlyBoot.ts
+function earlyBoot(window: Window) {
+
+  base(window).apply();
+
+  (<any>window).__boot_times.earlyBootStart = new Date().valueOf();
+
+  document.write(
+    '<' + 'style' + ' data-legit=mi>' +
+    '*{display:none;background:white;color:white;}' +
+    'html,body{display:block;}' +
+    '</' + 'style' + '>' +
+    (document.body ? '' : '<body>'));
+
+  elem(document.body, {
+    height: '100%',
+    margin: 0,
+    padding: 0,
+    overflow: 'hidden'
+  });
+  elem(document.body.parentElement, {
+    overflow: 'hidden'
+  });
+
+  var allStyleElements = document.getElementsByTagName('style');
+  var addedStyle = allStyleElements[allStyleElements.length - 1];
+
+  var bootFrame: any = createFrame();
+  bootFrame.iframe.style.zIndex = <any>2000;
+  bootFrame.iframe.style.display = 'block';
+
+  base(bootFrame.global).apply();
+
+  var bootUI = (<any>window).bootUI;
+
+  var bootAPI = bootUI(bootFrame.document, bootFrame.global, { elem: (<any>bootFrame.global).elem });
+  bootFrame.api = bootAPI;
+  bootFrame.startTime = (<any>window).__boot_times.earlyBootStart;
+
+  var uniqueKey = deriveUniqueKey(location);
+
+  var shellLoaderInstance = null;
+  var shellLoadInterval = setInterval(function() {
+    if ((<any>window).shellLoader === 'undefined') return;
+    if (!shellLoadInterval) return; // protect against old Opera's super-async habits
+    shellLoaderInstance = shellLoaderInstance ? shellLoaderInstance.continueLoading() : (<any>window).shellLoader ? (<any>window).shellLoader(uniqueKey, document, bootFrame) : null;
+  }, 100);
+
+  window.onload = function() {
+
+    clearInterval(shellLoadInterval);
+    shellLoadInterval = 0;
+
+    removeSpyElements();
+    bootFrame.iframe.style.zIndex = <any>1000;
+    if (addedStyle.parentElement)
+      addedStyle.parentElement.removeChild(addedStyle);
+    bootFrame.iframe.style.display = '';
+
+    (shellLoaderInstance || (<any>window).shellLoader(uniqueKey, document, bootFrame)).finishLoading();
+
+  };
+
+  function deriveUniqueKey(locationSeed) {
+    var key = (locationSeed + '').split('?')[0].split('#')[0].toLowerCase();
+
+    var posIndexTrail = key.search(/\/index\.html$/);
+    if (posIndexTrail > 0) key = key.slice(0, posIndexTrail);
+
+    if (key.charAt(0) === '/')
+      key = key.slice(1);
+    if (key.slice(-1) === '/')
+      key = key.slice(0, key.length - 1);
+
+    return smallHash(key) + '-' + smallHash(key.slice(1) + 'a');
+
+    function smallHash(key) {
+      for (var h = 0, i = 0; i < key.length; i++) {
+        h = Math.pow(31, h + 31 / key.charCodeAt(i));
+        h -= h | 0;
+      }
+      return (h * 2000000000) | 0;
+    }
+
+  }
+
+  function removeSpyElements() {
+
+    removeElements('iframe', function(ifr) { return ifr !== bootFrame.iframe; });
+    removeElements('style', function(sty) { return sty.getAttribute('data-legit') !== 'mi'; });
+    removeElements('script', function(sty) { return sty.getAttribute('data-legit') !== 'mi'; });
+
+    function removeElements(tagName, predicateToRemove) {
+      var list = document.getElementsByTagName(tagName);
+      for (var i = 0; i < list.length; i++) {
+        var elem = list[i] || list.item(i);
+        if (predicateToRemove(elem)) {
+          elem.parentElement.removeChild(elem);
+          i--;
+        }
+      }
+    }
+  }
+
+}
+-->
+<!-- /src/load/loadMod.ts
+
 -->
 
 </body></html>
