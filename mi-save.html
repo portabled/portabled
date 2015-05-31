@@ -1,7 +1,7 @@
 <!doctype html>
-<html style="overflow: hidden;"><head><title>mini shell </title>
+<title>mini shell </title>
 
-<script data-legit="mi">
+<script data-legit=mi>
   window.__boot_times = window.__boot_times || {};
 window.__boot_times.onerror_start = +new Date();
 
@@ -36,7 +36,7 @@ window.onerror = function onerror() {
 }
 //# sourceURL=boot/onerror.js
 </script>
-<script data-legit="mi">
+<script data-legit=mi>
   earlyBoot(window);
 
   	function base(window) {
@@ -235,21 +235,27 @@ window.onerror = function onerror() {
             '*,*:before,*:after{box-sizing:inherit;}' +
             'html{box-sizing:border-box;}' +
             '</' + 'style' + '>\n' +
+            '<' + 'body' + '>' +
+            '<' + 'script' + '>window.__eval_export_=eval</' + 'script' + '>' +
             // IE6/7/8 bug: global scope and window are not identical
             (ifrwin.Function ? '' : '<' + 'script' + '>window.Function=Function</' + 'script' + '>') +
             // it's important to have body before any long scripts (especialy external),
             // so IFRAME is immediately ready
-            '<' + 'body' + '><' + 'body' + '>' +
+            '<' + 'body' + '>' +
             '</' + 'html' + '>');
         if (ifrdoc.close)
             ifrdoc.close();
+        var ifrwin_eval = ifrwin.__eval_export_;
+        delete ifrwin.__eval_export_;
+        ifrdoc.body.innerHTML = '';
         if (window.onerror) {
             ifrwin.onerror = delegate_onerror;
         }
         return {
             document: ifrdoc,
             global: ifrwin,
-            iframe: ifr
+            iframe: ifr,
+            eval: ifrwin_eval
         };
         function delegate_onerror() {
             window.onerror.apply(window, arguments);
@@ -367,8 +373,8 @@ function earlyBoot(window) {
   };
 }
 //# sourceURL=/boot/base.js
-</script></head><body style="height: 100%; margin: 0px; padding: 0px; overflow: hidden;">
-<script data-legit="mi">
+</script>
+<script data-legit=mi>
 function base(window) {
     return {
         getText: getText,
@@ -565,21 +571,27 @@ function base(window) {
             '*,*:before,*:after{box-sizing:inherit;}' +
             'html{box-sizing:border-box;}' +
             '</' + 'style' + '>\n' +
+            '<' + 'body' + '>' +
+            '<' + 'script' + '>window.__eval_export_=eval</' + 'script' + '>' +
             // IE6/7/8 bug: global scope and window are not identical
             (ifrwin.Function ? '' : '<' + 'script' + '>window.Function=Function</' + 'script' + '>') +
             // it's important to have body before any long scripts (especialy external),
             // so IFRAME is immediately ready
-            '<' + 'body' + '><' + 'body' + '>' +
+            '<' + 'body' + '>' +
             '</' + 'html' + '>');
         if (ifrdoc.close)
             ifrdoc.close();
+        var ifrwin_eval = ifrwin.__eval_export_;
+        delete ifrwin.__eval_export_;
+        ifrdoc.body.innerHTML = '';
         if (window.onerror) {
             ifrwin.onerror = delegate_onerror;
         }
         return {
             document: ifrdoc,
             global: ifrwin,
-            iframe: ifr
+            iframe: ifr,
+            eval: ifrwin_eval
         };
         function delegate_onerror() {
             window.onerror.apply(window, arguments);
@@ -692,24 +704,8 @@ function shellLoader(uniqueKey, document, boot) {
             on(uiframe.document.body, 'pointerout', global_resize_detect);
             on(uiframe.document.body, 'keydown', global_resize_detect);
             on(uiframe.document.body, 'keyup', global_resize_detect);
-            loadMod({ createFrame: createFrame }, {
-                path: '/shell/start.js',
-                eval: drive.read('/shell/start.ts.js'),
-                ui: false,
-                scope: {
-                    require: shell_require,
-                    document: uiframe.document,
-                    window: uiframe.global,
-                    console: window.console,
-                    getText: uiframeBase.getText,
-                    setText: uiframeBase.setText,
-                    elem: uiframeBase.elem,
-                    on: uiframeBase.on,
-                    off: uiframeBase.off,
-                    createFrame: uiframeBase.createFrame,
-                    loadMod: shell_loadMod
-                }
-            });
+            uiframe.global.require = shell_require;
+            uiframe.eval(drive.read('/shell/start.ts.js'));
             function shell_require(moduleName) {
                 switch (moduleName) {
                     case 'ui': return uiframe;
@@ -717,23 +713,7 @@ function shellLoader(uniqueKey, document, boot) {
                     case 'resize': return { on: onresize, off: offresize };
                     case 'loadMod': return loadMod;
                 }
-                if ((moduleName + '').charAt(0) === '.') {
-                    moduleName = '/shell/' + moduleName.slice(2);
-                }
-                var code = drive.read(moduleName);
-                if (code) {
-                    var mod = loadMod(uiframe.global, {
-                        eval: code,
-                        path: persistence.normalizePath(moduleName),
-                        ui: false,
-                        scope: { require: shell_require }
-                    });
-                    return mod.exports;
-                }
-            }
-            function shell_loadMod(options) {
-                // TODO: create inner nested iframes instead
-                return uiframe.global.loadMod(options);
+                throw new Error('Module ' + moduleName + ' is not supported.');
             }
             function onresize(handler) {
                 if (typeof handler !== 'function')
@@ -900,6 +880,7 @@ function shellLoader(uniqueKey, document, boot) {
             document: frame.document,
             global: frame.global,
             iframe: frame.iframe,
+            eval: frame.eval,
             exports: modExports
         };
     }
@@ -2110,7 +2091,7 @@ var persistence;
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<!--total 2Mb, saved 25 Apr 2015 22:52:01.231 GMT+0100-->
+<!-- total 56Mb, saved 25 Apr 2015 22:52:01.231 -->
 
 <!-- /shell/start.ts.js
 var CommanderShell = (function () {
@@ -9354,6 +9335,7 @@ declare module createFrame {
     global: Window;
     document: Document; 
     iframe: HTMLIFrameElement;
+    eval(code: string): any;
   }
 }
 
@@ -9361,7 +9343,254 @@ interface LoadModResult extends createFrame.LoadedResult {
     exports: any;
 }
 
--->
+--!>
+<!-- /src/boot/base.ts
+function base(window: Window) {
+
+  return {
+    getText,
+    setText,
+    elem,
+    on, off,
+    createFrame,
+    apply
+  };
+
+  function apply() {
+    (<any>window).getText = getText;
+    (<any>window).setText = setText;
+    (<any>window).elem = elem;
+    (<any>window).on = on;
+    (<any>window).off = off;
+    (<any>window).createFrame = createFrame;
+  }
+
+  function getText(obj) {
+
+    if (typeof obj === 'function') {
+      var result = /\/\*(\*(?!\/)|[^*])*\*\//m.exec(obj + '')[0];
+      if (result) result = result.slice(2, result.length - 2);
+      return result;
+    }
+    else if (/^SCRIPT$/i.test(obj.tagName)) {
+      if ('text' in obj)
+        return obj.text;
+      else
+        return obj.innerHTML;
+    }
+    else if (/^STYLE$/i.test(obj.tagName)) {
+      if ('text' in obj)
+        return obj.text;
+      else if (obj.styleSheet)
+        return obj.styleSheet.cssText;
+      else
+        return obj.innerHTML;
+    }
+    else if ('textContent' in obj) {
+      return obj.textContent;
+    }
+    else if (/^INPUT$/i.test(obj.tagName)) {
+      return obj.value;
+    }
+    else {
+      var result: string = obj.innerText;
+      if (result) {
+        // IE fixes
+        result = result.replace(/\<BR\s*\>/g, '\n').replace(/\r\n/g, '\n');
+      }
+      return result || '';
+    }
+  }
+
+  function setText(obj, text) {
+
+    if (/^SCRIPT$/i.test(obj.tagName)) {
+      if ('text' in obj)
+        obj.text = text;
+      else
+        obj.innerHTML = text;
+    }
+    else if (/^STYLE$/i.test(obj.tagName)) {
+      if ('text' in obj) {
+        obj.text = text;
+      }
+      else if ('styleSheet' in obj) {
+        if (!obj.styleSheet && !obj.type) obj.type = 'text/css';
+        obj.styleSheet.cssText = text;
+      }
+      else if ('textContent' in obj) {
+        obj.textContent = text;
+      }
+      else {
+        obj.innerHTML = text;
+      }
+    }
+    else if ('textContent' in obj) {
+      if ('type' in obj && !obj.type) obj.type = 'text/css';
+      obj.textContent = text;
+    }
+    else if (/^INPUT$/i.test(obj.tagName)) {
+      obj.value = text;
+    }
+    else {
+      obj.innerText = text;
+    }
+  }
+
+  function on(obj, eventName, handler) {
+    if (obj.addEventListener) {
+      obj.addEventListener(eventName, handler, false);
+    }
+    else if (obj.attachEvent) {
+      obj.attachEvent('on' + eventName, handler);
+    }
+    else {
+      obj['on' + eventName] = function(e) { return handler(e || window.event); };
+    }
+  };
+
+  function off(obj, eventName, handler) {
+    if (obj.removeEventListener) {
+      obj.removeEventListener(eventName, handler, false);
+    }
+    else if (obj.detachEvent) {
+      obj.detachEvent('on' + eventName, handler);
+    }
+    else {
+      if (obj['on' + eventName])
+        obj['on' + eventName] = null;
+    }
+  };
+
+  function elem(tag, style, parent) {
+    var e = tag.tagName ? tag : window.document.createElement(tag);
+
+    if (!parent && style && style.tagName) {
+      parent = style;
+      style = null;
+    }
+
+    if (style) {
+      if (typeof style === 'string') {
+        setText(e, style);
+      }
+      else {
+        for (var k in style) if (style.hasOwnProperty(k)) {
+          if (k === 'text') {
+            setText(e, style[k]);
+          }
+          else if (k === 'className') {
+            e.className = style[k];
+          }
+          else if (!(e.style && k in e.style) && k in e) {
+            e[k] = style[k];
+          }
+          else {
+
+            if (style[k] && typeof style[k] === 'object' && typeof style[k].length === 'number') {
+              // array: iterate and apply values
+              var applyValues = style[k];
+              for (var i = 0; i < applyValues.length; i++) {
+                try { e.style[k] = applyValues[i]; }
+                catch (errApplyValues) { }
+              }
+            }
+            else {
+              // not array
+              try {
+                e.style[k] = style[k];
+              }
+              catch (err) {
+                try {
+                  if (typeof console !== 'undefined' && typeof console.error === 'function')
+                    console.error(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
+                }
+                catch (whatevs) {
+                  alert(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (parent) {
+      try {
+        parent.appendChild(e);
+      }
+      catch (error) {
+        throw new Error(error.message + ' adding ' + e.tagName + ' to ' + parent.tagName);
+      }
+    }
+
+    return e;
+  }
+
+  function createFrame(style) {
+
+    if (!style)
+      style = {
+        position: 'absolute',
+        left: 0, top: 0,
+        width: '100%', height: '100%',
+        border: 'none',
+        src: 'about:blank'
+      };
+
+    var ifr = elem('iframe', style, window.document.body);
+
+    var ifrwin = ifr.contentWindow || ifr.window;
+    var ifrdoc = ifrwin.document;
+
+    if (ifrdoc.open) ifrdoc.open();
+    ifrdoc.write(
+      '<*!' + 'doctype html' + '>' +
+      '<' + 'html' + '>' +
+      '<' + 'head' + '><' + 'style' + '>' +
+      'body,html{margin:0;padding:0;border:none;height:100%;border:none;}' +
+      '*,*:before,*:after{box-sizing:inherit;}' +
+      'html{box-sizing:border-box;}' +
+      '</' + 'style' + '>\n' +
+
+      '<' + 'body' + '>' +
+
+      '<' + 'script' + '>window.__eval_export_=eval</' + 'script' + '>' +
+
+      // IE6/7/8 bug: global scope and window are not identical
+      (ifrwin.Function ? '' : '<' + 'script' + '>window.Function=Function</' + 'script' + '>') +
+
+      // it's important to have body before any long scripts (especialy external),
+      // so IFRAME is immediately ready
+      '<' + 'body' + '>' +
+
+      '</' + 'html' + '>');
+    if (ifrdoc.close) ifrdoc.close();
+
+    var ifrwin_eval = ifrwin.__eval_export_;
+    delete ifrwin.__eval_export_;
+
+    ifrdoc.body.innerHTML = '';
+
+    if (window.onerror) {
+      ifrwin.onerror = delegate_onerror;
+    }
+
+    return {
+      document: ifrdoc,
+      global: ifrwin,
+      iframe: ifr,
+      eval: ifrwin_eval
+    };
+
+    function delegate_onerror() {
+      window.onerror.apply(window, arguments);
+    }
+
+  }
+
+}
+--!>
 <!-- /src/boot/bootUI.js
 function bootUI(document, window, base) {
 
@@ -9391,7 +9620,113 @@ function bootUI(document, window, base) {
     }
   };
 }
--->
+--!>
+<!-- /src/boot/earlyBoot.ts
+function earlyBoot(window: Window) {
+
+  base(window).apply();
+
+  (<any>window).__boot_times.earlyBootStart = new Date().valueOf();
+
+  document.write(
+    '<' + 'style' + ' data-legit=mi>' +
+    '*{display:none;background:white;color:white;}' +
+    'html,body{display:block;}' +
+    '</' + 'style' + '>' +
+    (document.body ? '' : '<body>'));
+
+  elem(document.body, {
+    height: '100%',
+    margin: 0,
+    padding: 0,
+    overflow: 'hidden'
+  });
+  elem(document.body.parentElement, {
+    overflow: 'hidden'
+  });
+
+  var allStyleElements = document.getElementsByTagName('style');
+  var addedStyle = allStyleElements[allStyleElements.length - 1];
+
+  var bootFrame: any = createFrame();
+  bootFrame.iframe.style.zIndex = <any>2000;
+  bootFrame.iframe.style.display = 'block';
+
+  base(bootFrame.global).apply();
+
+  var bootUI = (<any>window).bootUI;
+
+  var bootAPI = bootUI(bootFrame.document, bootFrame.global, { elem: (<any>bootFrame.global).elem });
+  bootFrame.api = bootAPI;
+  bootFrame.startTime = (<any>window).__boot_times.earlyBootStart;
+
+  var uniqueKey = deriveUniqueKey(location);
+
+  var shellLoaderInstance = null;
+  var shellLoadInterval = setInterval(function() {
+    if ((<any>window).shellLoader === 'undefined') return;
+    if (!shellLoadInterval) return; // protect against old Opera's super-async habits
+    shellLoaderInstance = shellLoaderInstance ? shellLoaderInstance.continueLoading() : (<any>window).shellLoader ? (<any>window).shellLoader(uniqueKey, document, bootFrame) : null;
+  }, 100);
+
+  window.onload = function() {
+
+    clearInterval(shellLoadInterval);
+    shellLoadInterval = 0;
+
+    removeSpyElements();
+    bootFrame.iframe.style.zIndex = <any>1000;
+    if (addedStyle.parentElement)
+      addedStyle.parentElement.removeChild(addedStyle);
+    bootFrame.iframe.style.display = '';
+
+    (shellLoaderInstance || (<any>window).shellLoader(uniqueKey, document, bootFrame)).finishLoading();
+
+  };
+
+  function deriveUniqueKey(locationSeed) {
+    var key = (locationSeed + '').split('?')[0].split('#')[0].toLowerCase();
+
+    var posIndexTrail = key.search(/\/index\.html$/);
+    if (posIndexTrail > 0) key = key.slice(0, posIndexTrail);
+
+    if (key.charAt(0) === '/')
+      key = key.slice(1);
+    if (key.slice(-1) === '/')
+      key = key.slice(0, key.length - 1);
+
+    return smallHash(key) + '-' + smallHash(key.slice(1) + 'a');
+
+    function smallHash(key) {
+      for (var h = 0, i = 0; i < key.length; i++) {
+        h = Math.pow(31, h + 31 / key.charCodeAt(i));
+        h -= h | 0;
+      }
+      return (h * 2000000000) | 0;
+    }
+
+  }
+
+  function removeSpyElements() {
+
+    removeElements('iframe', function(ifr) { return ifr !== bootFrame.iframe; });
+    removeElements('style', function(sty) { return sty.getAttribute('data-legit') !== 'mi'; });
+    removeElements('script', function(sty) { return sty.getAttribute('data-legit') !== 'mi'; });
+
+    function removeElements(tagName, predicateToRemove) {
+      var list = document.getElementsByTagName(tagName);
+      for (var i = 0; i < list.length; i++) {
+        var elem = list[i] || list.item(i);
+        if (predicateToRemove(elem)) {
+          elem.parentElement.removeChild(elem);
+          i--;
+        }
+      }
+    }
+  }
+
+}
+--!>
 <!-- /src/boot/onerror.js
 window.__boot_times = window.__boot_times || {};
 window.__boot_times.onerror_start = +new Date();
@@ -9425,7 +9760,7 @@ window.onerror = function onerror() {
   alert(msg.join('\n'));
 
 }
--->
+--!>
 <!-- /src/load/shellLoader.ts
 function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.BootModuleAPI): shellLoader.ContinueLoading {
 
@@ -9462,24 +9797,9 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
       on(uiframe.document.body, 'keyup', global_resize_detect);
 
 
-      loadMod({ createFrame }, {
-        path: '/shell/start.js',
-        eval: drive.read('/shell/start.ts.js'),
-        ui: false,
-        scope: {
-          require: shell_require,
-          document: uiframe.document,
-          window: uiframe.global,
-          console: window.console,
-          getText: uiframeBase.getText,
-          setText: uiframeBase.setText,
-          elem: uiframeBase.elem,
-          on: uiframeBase.on,
-          off: uiframeBase.off,
-          createFrame: uiframeBase.createFrame,
-          loadMod: shell_loadMod
-        }
-      });
+      (<any>uiframe.global).require = shell_require;
+      uiframe.eval(
+        drive.read('/shell/start.ts.js'));
 
       function shell_require(moduleName): any {
         switch (moduleName) {
@@ -9488,26 +9808,7 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
           case 'resize': return { on: onresize, off: offresize };
           case 'loadMod': return loadMod;
         }
-
-        if ((moduleName + '').charAt(0) === '.') {
-          moduleName = '/shell/' + moduleName.slice(2);
-        }
-
-        var code = drive.read(moduleName);
-        if (code) {
-          var mod = loadMod(uiframe.global, {
-            eval: code,
-            path: persistence.normalizePath(moduleName),
-            ui: false,
-            scope: { require: shell_require }
-          });
-          return mod.exports;
-        }
-      }
-
-      function shell_loadMod(options) {
-        // TODO: create inner nested iframes instead
-        return (<any>uiframe.global).loadMod(options);
+        throw new Error('Module ' + moduleName + ' is not supported.');
       }
 
       function onresize(handler) {
@@ -9713,6 +10014,7 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
       document: frame.document,
       global: frame.global,
       iframe: frame.iframe,
+      eval: frame.eval,
       exports: modExports
     };
 
@@ -9737,7 +10039,7 @@ module shellLoader {
   }
 
 }
--->
+--!>
 <!-- /src/nodeapi/base/defs.d.ts
 interface no_require {
   (id: string): any;
@@ -9788,7 +10090,7 @@ interface no_Buffer {
   writeDoubleBE(value: number, offset: number, noAssert?: boolean): void;
   fill(value: any, offset?: number, end?: number): void;
 }
--->
+--!>
 <!-- /src/nodeapi/base/getStartMatcher.ts
 function no_getStartMatcher(start: string) {
   if (!start)
@@ -9797,7 +10099,7 @@ function no_getStartMatcher(start: string) {
   return (str: string) => {
   };
 }
--->
+--!>
 <!-- /src/nodeapi/base/wrapAsync.ts
 function no_wrapAsync(fn: Function): Function {
   return function() {
@@ -9838,7 +10140,7 @@ function no_wrapAsyncNoError(fn: Function): Function {
     });
   }
 }
--->
+--!>
 <!-- /src/nodeapi/events/defs.d.ts
 interface noevents_EventEmitter {
   //static listenerCount(emitter: EventEmitter, event: string): number;
@@ -9860,7 +10162,7 @@ interface noevents_EventEmitter {
   emit(event: string, ...args: any[]): boolean;
 
 }
--->
+--!>
 <!-- /src/nodeapi/fs/_load.ts
 var _nofs_module_: nofs;
 
@@ -9893,7 +10195,7 @@ function nofs_load() {
 
   return _nofs_module_;
 }
--->
+--!>
 <!-- /src/nodeapi/fs/defs.d.ts
 interface nofs {
 
@@ -10087,7 +10389,7 @@ interface nofs_WriteStream extends nostream_Writable {
   close(): void;
 }
 
--->
+--!>
 <!-- /src/nodeapi/fs/exists.ts
 function nofs_existsSync(file: string): boolean {
   var content = no_drive.read(file);
@@ -10096,7 +10398,7 @@ function nofs_existsSync(file: string): boolean {
   else
     return true;
 }
--->
+--!>
 <!-- /src/nodeapi/fs/fdtable.ts
 var _nofs_fdbase_;
 var _nofs_fdtable_: string[];
@@ -10110,7 +10412,7 @@ function nofs_fdtable() {
 
   return _nofs_fdtable_;
 }
--->
+--!>
 <!-- /src/nodeapi/fs/open.ts
 function nofs_openSync(path: string, flags: string, mode?: number): number;
 function nofs_openSync(path: string, flags: string, mode ?: string): number;
@@ -10129,7 +10431,7 @@ function nofs_openSync(path: string, flags?: string, mode?: any): number {
   fdtable[newFD] = path;
   return newFD;
 }
--->
+--!>
 <!-- /src/nodeapi/fs/read.ts
 function nofs_readSync(fd: number, buffer: no_Buffer, offset: number, length: number, position: number): number {
 
@@ -10139,7 +10441,7 @@ function nofs_readSync(fd: number, buffer: no_Buffer, offset: number, length: nu
   throw new Error('Buffer-aware API fs.readSync is not implemented.');
 }
 
--->
+--!>
 <!-- /src/nodeapi/fs/readFile.ts
 function nofs_readFileSync(filename: string, options?: { encoding?: string; flag?: string; }) {
 
@@ -10147,7 +10449,7 @@ function nofs_readFileSync(filename: string, options?: { encoding?: string; flag
   return no_drive.read(filename);
 
 }
--->
+--!>
 <!-- /src/nodeapi/fs/rename.ts
 function nofs_renameSync(oldPath: string, newPath: string): void {
 
@@ -10195,7 +10497,7 @@ function nofs_renameSync(oldPath: string, newPath: string): void {
   }
 
 }
--->
+--!>
 <!-- /src/nodeapi/fs/stat.ts
 function nofs_statSync(path: string): nofs_Stats {
   // TODO: implement
@@ -10210,7 +10512,7 @@ function nofs_statSync(path: string): nofs_Stats {
   lstatSync(path: string): nofs_Stats;
   fstatSync(fd: number): nofs_Stats;
 */
--->
+--!>
 <!-- /src/nodeapi/fs/write.ts
 function nofs_writeSync(fd: number, buffer: no_Buffer, offset: number, length: number, position: number): number {
 
@@ -10225,14 +10527,14 @@ function nofs_writeSync(fd: number, buffer: no_Buffer, offset: number, length: n
 
   throw new Error('Buffer-aware API fs.writeSync is not implemented.');
 }
--->
+--!>
 <!-- /src/nodeapi/fs/writeFile.ts
 function nofs_writeFileSync(filename: string, content: string) {
 
   no_drive.write(filename, content);
 
 }
--->
+--!>
 <!-- /src/nodeapi/imports/base64-js/b64.js
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
@@ -10353,7 +10655,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
   exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
--->
+--!>
 <!-- /src/nodeapi/imports/buffer/index.js
 /*!
  * The buffer module from node.js, for the browser.
@@ -11770,7 +12072,7 @@ function decodeUtf8Char (str) {
   }
 }
 
--->
+--!>
 <!-- /src/nodeapi/imports/ieee754/index.js
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m,
@@ -11857,7 +12159,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
--->
+--!>
 <!-- /src/nodeapi/imports/is-array/index.js
 /**
  * isArray
@@ -11892,7 +12194,7 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
--->
+--!>
 <!-- /src/nodeapi/module/_load.ts
 var _nomodule_: no_module;
 
@@ -11910,7 +12212,7 @@ function nomodule_load() {
   return _nomodule_;
 }
 
--->
+--!>
 <!-- /src/nodeapi/module/defs.d.ts
 interface no_module {
   exports: any;
@@ -11921,7 +12223,7 @@ interface no_module {
   parent: any;
   children: any[];
 }
--->
+--!>
 <!-- /src/nodeapi/os/_load.ts
 var _noos_: no_os;
 
@@ -11965,7 +12267,7 @@ function noos_load() {
   return _noos_;
 }
 
--->
+--!>
 <!-- /src/nodeapi/os/defs.d.ts
 interface no_os {
   tmpdir(): string;
@@ -11982,7 +12284,7 @@ interface no_os {
   networkInterfaces(): any;
   EOL: string;
 }
--->
+--!>
 <!-- /src/nodeapi/path/_load.ts
 var _nopath_module_: nopath;
 
@@ -12003,7 +12305,7 @@ function nopath_load() {
 
   return _nopath_module_;
 }
--->
+--!>
 <!-- /src/nodeapi/path/basename.ts
 function nopath_basename(p: string, ext?: string): string {
 
@@ -12027,7 +12329,7 @@ function nopath_basename(p: string, ext?: string): string {
   if (ext && result.length >= ext.length && result.slice(-ext.length) === ext)
     result = result.slice(0, result.length - ext.length);
 }
--->
+--!>
 <!-- /src/nodeapi/path/defs.d.ts
 interface nopath {
 
@@ -12047,7 +12349,7 @@ interface nopath {
   format?(pP: { root: string; dir: string; base: string; ext: string; name: string; }): string;
 
 }
--->
+--!>
 <!-- /src/nodeapi/path/dirname.ts
 function nopath_dirname(p: string): string {
   var p = nopath_normalize(p);
@@ -12058,7 +12360,7 @@ function nopath_dirname(p: string): string {
   return p.slice(0, lastSlash + 1);
 }
 
--->
+--!>
 <!-- /src/nodeapi/path/extname.ts
 function nopath_extname(p: string): string {
 
@@ -12070,14 +12372,14 @@ function nopath_extname(p: string): string {
     return '';
 
 }
--->
+--!>
 <!-- /src/nodeapi/path/is.ts
 function nopath_isAbsolute(p: string): boolean {
 
   return /^\//.test(p);
 }
 
--->
+--!>
 <!-- /src/nodeapi/path/join.ts
 function nopath_join(...paths: any[]): string {
   return nopath_join_core(paths);
@@ -12110,7 +12412,7 @@ function nopath_join_core(paths: any[]): string {
 
   return parts.join('/');
 }
--->
+--!>
 <!-- /src/nodeapi/path/normalize.ts
 function nopath_normalize(p: string): string {
 
@@ -12118,7 +12420,7 @@ function nopath_normalize(p: string): string {
 
 }
 
--->
+--!>
 <!-- /src/nodeapi/path/relative.ts
 function nopath_relative(from: string, to: string): string {
 
@@ -12126,7 +12428,7 @@ function nopath_relative(from: string, to: string): string {
 
 }
 
--->
+--!>
 <!-- /src/nodeapi/path/resolve.ts
 function nopath_resolve(...pathSegments: any[]): string {
 
@@ -12137,7 +12439,7 @@ function nopath_resolve(...pathSegments: any[]): string {
 
   return res;
 }
--->
+--!>
 <!-- /src/nodeapi/process/_load.ts
 var _noprocess_: no_process;
 
@@ -12189,12 +12491,12 @@ function noprocess_load() {
 
   return _noprocess_;
 }
--->
+--!>
 <!-- /src/nodeapi/process/abort.ts
 function noprocess_abort() {
   // TODO: what does shutdown mean here?
 }
--->
+--!>
 <!-- /src/nodeapi/process/chdir_cwd.ts
 // TODO: pass it in?
 var _noprocess_cwd_: string = '/';
@@ -12220,7 +12522,7 @@ function noprocess_cwd(): string {
   return _noprocess_cwd_;
 }
 
--->
+--!>
 <!-- /src/nodeapi/process/config.ts
 var _nodeprocess_config_;
 
@@ -12267,7 +12569,7 @@ function nodeprocess_config_load() {
   }
   return _nodeprocess_config_;
 }
--->
+--!>
 <!-- /src/nodeapi/process/defs.d.ts
 interface no_process extends noevents_EventEmitter {
 
@@ -12357,7 +12659,7 @@ interface no_process extends noevents_EventEmitter {
   send?(message: any, sendHandle?: any): void;
 }
 
--->
+--!>
 <!-- /src/nodeapi/process/env.ts
 var _nodeprocess_env_: any;
 
@@ -12367,13 +12669,13 @@ function nodeprocess_env_load() {
   }
   return _nodeprocess_env_;
 }
--->
+--!>
 <!-- /src/nodeapi/process/exit.ts
 function noprocess_exit(code ?: number) {
   // TODO: what does shutdown mean here?
 }
 
--->
+--!>
 <!-- /src/nodeapi/process/getgid_setgid_getuid_setuid.ts
 function nodeprocess_getgid() {
   // taken from node running on ubuntu
@@ -12395,12 +12697,12 @@ function nodeprocess_setuid(id: any) {
   throw new Error('EPERM, Operation not permitted');
 }
 
--->
+--!>
 <!-- /src/nodeapi/process/kill.ts
 function nodeprocess_kill(pid: number, signal?: string) {
   // when we emulate processes, implement process termination
 }
--->
+--!>
 <!-- /src/nodeapi/process/memoryUsage.ts
 function noprocess_memoryUsage(): { rss: number; heapTotal: number; heapUsed: number; } {
   return {
@@ -12409,7 +12711,7 @@ function noprocess_memoryUsage(): { rss: number; heapTotal: number; heapUsed: nu
     heapUsed: 2449612 + ((Math.random() * 3000) | 0)
   };
 }
--->
+--!>
 <!-- /src/nodeapi/process/nextTick.ts
 function noprocess_nextTick(callback: Function): void {
 
@@ -12429,7 +12731,7 @@ function noprocess_nextTick(callback: Function): void {
   }
 
 }
--->
+--!>
 <!-- /src/nodeapi/process/pid.ts
 var _noprocess_pid_;
 
@@ -12439,7 +12741,7 @@ function noprocess_pid_load() {
   }
   return _noprocess_pid_;
 }
--->
+--!>
 <!-- /src/nodeapi/process/stdout.ts
 var _noprocess_stdout_: nostream_WritableStream;
 var _noprocess_stderr_: nostream_WritableStream;
@@ -12469,7 +12771,7 @@ function noprocess_stdin_load() {
   noprocess_stdout_load();
   return _noprocess_stdin_;
 }
--->
+--!>
 <!-- /src/nodeapi/process/umask.ts
 var _noprocess_umask_;
 
@@ -12486,7 +12788,7 @@ function noprocess_umask(mask?: number): number {
 
   return _noprocess_umask_;
 }
--->
+--!>
 <!-- /src/nodeapi/process/uptime.ts
 var _noprocess_uptime_start_ = +(new Date());
 
@@ -12500,7 +12802,7 @@ function noprocess_uptime() {
 
   return now - _noprocess_uptime_start_;
 }
--->
+--!>
 <!-- /src/nodeapi/process/versions.ts
 var _nodeprocess_version_: string;
 var _nodeprocess_versions_;
@@ -12533,7 +12835,7 @@ function nodeprocess_versions_load() {
   }
   return _nodeprocess_versions_;
 }
--->
+--!>
 <!-- /src/nodeapi/stream/defs.d.ts
 interface nostream_ReadableStream extends noevents_EventEmitter {
   readable: boolean;
@@ -12695,7 +12997,7 @@ interface nostream_Transform extends noevents_EventEmitter {
   end(str: string, encoding?: string, cb?: Function): void;
 
 }
--->
+--!>
 <!-- /src/nodeapi/statics.ts
 declare var require;
 declare var exports;
@@ -12703,7 +13005,7 @@ declare var exports;
 declare var no_drive: persistence.Drive;
 declare var no_homepath: string;
 
--->
+--!>
 <!-- /src/persistence/attached/indexedDB.ts
 module persistence {
 
@@ -12924,7 +13226,7 @@ module persistence {
   }
 
 }
--->
+--!>
 <!-- /src/persistence/attached/localStorage.ts
 module persistence {
 
@@ -13057,8 +13359,8 @@ module persistence {
 
   }
   
-}Â&nbsp;
--->
+}Â 
+--!>
 <!-- /src/persistence/attached/webSQL.ts
 module persistence {
 
@@ -13423,7 +13725,7 @@ module persistence {
   }
 
 }
--->
+--!>
 <!-- /src/persistence/dom/CommentHeader.ts
 module persistence.dom {
 
@@ -13494,7 +13796,7 @@ module persistence.dom {
   }
 
 }
--->
+--!>
 <!-- /src/persistence/dom/DOMDrive.ts
 module persistence.dom {
 
@@ -13594,7 +13896,7 @@ module persistence.dom {
     }
   }
 }
--->
+--!>
 <!-- /src/persistence/dom/DOMFile.ts
 module persistence.dom {
 
@@ -13700,7 +14002,7 @@ module persistence.dom {
   }
 
 }
--->
+--!>
 <!-- /src/persistence/dom/DOMTotals.ts
 module persistence.dom {
 
@@ -13825,7 +14127,7 @@ module persistence.dom {
 
 
 }
--->
+--!>
 <!-- /src/persistence/dom/parseDOMStorage.ts
 module persistence.dom {
 
@@ -13926,27 +14228,27 @@ module persistence.dom {
   }
 
 }
--->
+--!>
 <!-- /src/persistence/encodings/CR.ts
 module persistence.encodings {
 
   export function CR(text: string): string {
-Â&nbsp; Â&nbsp; return text.
+Â  Â  return text.
       replace(/\r\n|\n/g, '\r');
   }
 
 }
--->
+--!>
 <!-- /src/persistence/encodings/CRLF.ts
 module persistence.encodings {
 
   export function CRLF(text: string): string {
-Â&nbsp; Â&nbsp; return text.
+Â  Â  return text.
       replace(/\r|\n/g, '\r\n');
   }
 
 }
--->
+--!>
 <!-- /src/persistence/encodings/LF.ts
 module persistence.encodings {
 
@@ -13956,7 +14258,7 @@ module persistence.encodings {
   }
 
 }
--->
+--!>
 <!-- /src/persistence/encodings/base64.ts
 module persistence.encodings {
 
@@ -13967,7 +14269,7 @@ module persistence.encodings {
   }
 
 }
--->
+--!>
 <!-- /src/persistence/encodings/eval.ts
 module persistence.encodings {
 
@@ -13976,7 +14278,7 @@ module persistence.encodings {
   }
 
 }
--->
+--!>
 <!-- /src/persistence/encodings/json.ts
 module persistence.encodings {
 
@@ -13992,7 +14294,7 @@ module persistence.encodings {
   }
 
 }
--->
+--!>
 <!-- /src/persistence/Drive.ts
 module persistence {
 
@@ -14047,7 +14349,7 @@ module persistence {
 
   }
 }
--->
+--!>
 <!-- /src/persistence/bestEncode.ts
 module persistence {
 
@@ -14141,7 +14443,7 @@ module persistence {
       }
   }
 }
--->
+--!>
 <!-- /src/persistence/bootMount.ts
 module persistence {
 
@@ -14213,7 +14515,7 @@ module persistence {
 
   }
 }
--->
+--!>
 <!-- /src/persistence/mountDrive.ts
 module persistence {
 
@@ -14318,7 +14620,7 @@ module persistence {
   }
 
 }
--->
+--!>
 <!-- /src/persistence/normalizePath.ts
 module persistence {
 
@@ -14335,7 +14637,7 @@ module persistence {
   }
 
 }
--->
+--!>
 <!-- /src/shell/build/processTemplate.ts
 module build {
 
@@ -14510,7 +14812,7 @@ module build {
   }
 
 }
--->
+--!>
 <!-- /src/shell/panels/Panel.ts
 module panels {
 
@@ -15100,7 +15402,7 @@ module panels {
   }
 
 }
--->
+--!>
 <!-- /src/shell/panels/TwoPanels.ts
 module panels {
 
@@ -15163,7 +15465,7 @@ module panels {
 
       var contentWidth = 0;
 
-Â&nbsp; Â&nbsp; Â&nbsp; if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {Â&nbsp;
+Â  Â  Â  if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {Â 
         // flippable layout
         contentWidth = Math.max(metrics.hostWidth / 2, metrics.hostWidth * 2 - metrics.emWidth * 3);
       }
@@ -15341,7 +15643,7 @@ module panels {
   }
 
 }
--->
+--!>
 <!-- /src/shell/panels/driveDirectoryService.ts
 module panels {
 
@@ -15382,7 +15684,7 @@ module panels {
   }
 
 }
--->
+--!>
 <!-- /src/shell/panels/panels.css
 .panels-scroll-host {
   position: absolute;
@@ -15454,7 +15756,7 @@ module panels {
     width: 0.5em;
     height: 0.5em
 }
--->
+--!>
 <!-- /src/shell/terminal/NodeHost.ts
 module terminal {
 
@@ -15576,7 +15878,7 @@ module terminal {
     }
   }
 }
--->
+--!>
 <!-- /src/shell/terminal/Terminal.ts
 module terminal {
 
@@ -15813,7 +16115,7 @@ module terminal {
   }
 
 }
--->
+--!>
 <!-- /src/shell/terminal/terminal.css
 .terminal-history {
   position: absolute;
@@ -15844,7 +16146,7 @@ module terminal {
   resize: none;
   overflow: hidden;
 }
--->
+--!>
 <!-- /src/shell/CommanderShell.ts
 class CommanderShell {
 
@@ -16074,7 +16376,7 @@ module CommanderShell {
   }
 
 }
--->
+--!>
 <!-- /src/shell/start.ts
 declare var require;
 
@@ -16088,7 +16390,7 @@ function showCommander(drive: persistence.Drive) {
   elem('style', { text: styleText }, document.body);
   var commander = new CommanderShell(document.body, drive);
 }
--->
+--!>
 <!-- /src/typescript/lib.d.ts
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved. 
@@ -33006,7 +33308,7 @@ interface VBArrayConstructor {
 
 declare var VBArray: VBArrayConstructor;
 
--->
+--!>
 <!-- /src/typescript/tsc.js
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved. 
@@ -59314,7 +59616,7 @@ var ts;
 })(ts || (ts = {}));
 ts.executeCommandLine(ts.sys.args);
 
--->
+--!>
 <!-- /src/typings/webSQL.d.ts
 declare function openDatabase(
   name: string,
@@ -59381,13 +59683,13 @@ interface SQLResultSetRowList {
   length: number;
   item(index: number): any;
 }
--->
+--!>
 <!-- /src/dummy.ts
 class Apple {
   constructor(public color = 'red') {
   }
 }
--->
+--!>
 <!-- /src/index.html
 <*!doctype html>
 <title>mini shell </title>
@@ -59509,7 +59811,7 @@ exports.os = noos_load();
 })()%>
 
 
--->
+--!>
 <!-- /src/readme.md
 #New mini portable shell development
 
@@ -59623,352 +59925,4 @@ then one of the local storage options is added upon a brief detection process.
 
 From the external caller the persistence mini-library expects a single call to *mountDrive* function,
 passing in a few inputs and a callback.
--->
-<!-- /src/boot/base.ts
-function base(window: Window) {
-
-  return {
-    getText,
-    setText,
-    elem,
-    on, off,
-    createFrame,
-    apply
-  };
-
-  function apply() {
-    (<any>window).getText = getText;
-    (<any>window).setText = setText;
-    (<any>window).elem = elem;
-    (<any>window).on = on;
-    (<any>window).off = off;
-    (<any>window).createFrame = createFrame;
-  }
-
-  function getText(obj) {
-
-    if (typeof obj === 'function') {
-      var result = /\/\*(\*(?!\/)|[^*])*\*\//m.exec(obj + '')[0];
-      if (result) result = result.slice(2, result.length - 2);
-      return result;
-    }
-    else if (/^SCRIPT$/i.test(obj.tagName)) {
-      if ('text' in obj)
-        return obj.text;
-      else
-        return obj.innerHTML;
-    }
-    else if (/^STYLE$/i.test(obj.tagName)) {
-      if ('text' in obj)
-        return obj.text;
-      else if (obj.styleSheet)
-        return obj.styleSheet.cssText;
-      else
-        return obj.innerHTML;
-    }
-    else if ('textContent' in obj) {
-      return obj.textContent;
-    }
-    else if (/^INPUT$/i.test(obj.tagName)) {
-      return obj.value;
-    }
-    else {
-      var result: string = obj.innerText;
-      if (result) {
-        // IE fixes
-        result = result.replace(/\<BR\s*\>/g, '\n').replace(/\r\n/g, '\n');
-      }
-      return result || '';
-    }
-  }
-
-  function setText(obj, text) {
-
-    if (/^SCRIPT$/i.test(obj.tagName)) {
-      if ('text' in obj)
-        obj.text = text;
-      else
-        obj.innerHTML = text;
-    }
-    else if (/^STYLE$/i.test(obj.tagName)) {
-      if ('text' in obj) {
-        obj.text = text;
-      }
-      else if ('styleSheet' in obj) {
-        if (!obj.styleSheet && !obj.type) obj.type = 'text/css';
-        obj.styleSheet.cssText = text;
-      }
-      else if ('textContent' in obj) {
-        obj.textContent = text;
-      }
-      else {
-        obj.innerHTML = text;
-      }
-    }
-    else if ('textContent' in obj) {
-      if ('type' in obj && !obj.type) obj.type = 'text/css';
-      obj.textContent = text;
-    }
-    else if (/^INPUT$/i.test(obj.tagName)) {
-      obj.value = text;
-    }
-    else {
-      obj.innerText = text;
-    }
-  }
-
-  function on(obj, eventName, handler) {
-    if (obj.addEventListener) {
-      obj.addEventListener(eventName, handler, false);
-    }
-    else if (obj.attachEvent) {
-      obj.attachEvent('on' + eventName, handler);
-    }
-    else {
-      obj['on' + eventName] = function(e) { return handler(e || window.event); };
-    }
-  };
-
-  function off(obj, eventName, handler) {
-    if (obj.removeEventListener) {
-      obj.removeEventListener(eventName, handler, false);
-    }
-    else if (obj.detachEvent) {
-      obj.detachEvent('on' + eventName, handler);
-    }
-    else {
-      if (obj['on' + eventName])
-        obj['on' + eventName] = null;
-    }
-  };
-
-  function elem(tag, style, parent) {
-    var e = tag.tagName ? tag : window.document.createElement(tag);
-
-    if (!parent && style && style.tagName) {
-      parent = style;
-      style = null;
-    }
-
-    if (style) {
-      if (typeof style === 'string') {
-        setText(e, style);
-      }
-      else {
-        for (var k in style) if (style.hasOwnProperty(k)) {
-          if (k === 'text') {
-            setText(e, style[k]);
-          }
-          else if (k === 'className') {
-            e.className = style[k];
-          }
-          else if (!(e.style && k in e.style) && k in e) {
-            e[k] = style[k];
-          }
-          else {
-
-            if (style[k] && typeof style[k] === 'object' && typeof style[k].length === 'number') {
-              // array: iterate and apply values
-              var applyValues = style[k];
-              for (var i = 0; i < applyValues.length; i++) {
-                try { e.style[k] = applyValues[i]; }
-                catch (errApplyValues) { }
-              }
-            }
-            else {
-              // not array
-              try {
-                e.style[k] = style[k];
-              }
-              catch (err) {
-                try {
-                  if (typeof console !== 'undefined' && typeof console.error === 'function')
-                    console.error(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
-                }
-                catch (whatevs) {
-                  alert(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if (parent) {
-      try {
-        parent.appendChild(e);
-      }
-      catch (error) {
-        throw new Error(error.message + ' adding ' + e.tagName + ' to ' + parent.tagName);
-      }
-    }
-
-    return e;
-  }
-
-  function createFrame(style) {
-
-    if (!style)
-      style = {
-        position: 'absolute',
-        left: 0, top: 0,
-        width: '100%', height: '100%',
-        border: 'none',
-        src: 'about:blank'
-      };
-
-    var ifr = elem('iframe', style, window.document.body);
-
-    var ifrwin = ifr.contentWindow || ifr.window;
-    var ifrdoc = ifrwin.document;
-
-    if (ifrdoc.open) ifrdoc.open();
-    ifrdoc.write(
-      '<*!' + 'doctype html' + '>' +
-      '<' + 'html' + '>' +
-      '<' + 'head' + '><' + 'style' + '>' +
-      'body,html{margin:0;padding:0;border:none;height:100%;border:none;}' +
-      '*,*:before,*:after{box-sizing:inherit;}' +
-      'html{box-sizing:border-box;}' +
-      '</' + 'style' + '>\n' +
-
-      // IE6/7/8 bug: global scope and window are not identical
-      (ifrwin.Function ? '' : '<' + 'script' + '>window.Function=Function</' + 'script' + '>') +
-
-      // it's important to have body before any long scripts (especialy external),
-      // so IFRAME is immediately ready
-      '<' + 'body' + '><' + 'body' + '>' +
-
-      '</' + 'html' + '>');
-    if (ifrdoc.close) ifrdoc.close();
-
-    if (window.onerror) {
-      ifrwin.onerror = delegate_onerror;
-    }
-
-    return {
-      document: ifrdoc,
-      global: ifrwin,
-      iframe: ifr
-    };
-
-    function delegate_onerror() {
-      window.onerror.apply(window, arguments);
-    }
-
-  }
-
-}
--->
-<!-- /src/boot/earlyBoot.ts
-function earlyBoot(window: Window) {
-
-  base(window).apply();
-
-  (<any>window).__boot_times.earlyBootStart = new Date().valueOf();
-
-  document.write(
-    '<' + 'style' + ' data-legit=mi>' +
-    '*{display:none;background:white;color:white;}' +
-    'html,body{display:block;}' +
-    '</' + 'style' + '>' +
-    (document.body ? '' : '<body>'));
-
-  elem(document.body, {
-    height: '100%',
-    margin: 0,
-    padding: 0,
-    overflow: 'hidden'
-  });
-  elem(document.body.parentElement, {
-    overflow: 'hidden'
-  });
-
-  var allStyleElements = document.getElementsByTagName('style');
-  var addedStyle = allStyleElements[allStyleElements.length - 1];
-
-  var bootFrame: any = createFrame();
-  bootFrame.iframe.style.zIndex = <any>2000;
-  bootFrame.iframe.style.display = 'block';
-
-  base(bootFrame.global).apply();
-
-  var bootUI = (<any>window).bootUI;
-
-  var bootAPI = bootUI(bootFrame.document, bootFrame.global, { elem: (<any>bootFrame.global).elem });
-  bootFrame.api = bootAPI;
-  bootFrame.startTime = (<any>window).__boot_times.earlyBootStart;
-
-  var uniqueKey = deriveUniqueKey(location);
-
-  var shellLoaderInstance = null;
-  var shellLoadInterval = setInterval(function() {
-    if ((<any>window).shellLoader === 'undefined') return;
-    if (!shellLoadInterval) return; // protect against old Opera's super-async habits
-    shellLoaderInstance = shellLoaderInstance ? shellLoaderInstance.continueLoading() : (<any>window).shellLoader ? (<any>window).shellLoader(uniqueKey, document, bootFrame) : null;
-  }, 100);
-
-  window.onload = function() {
-
-    clearInterval(shellLoadInterval);
-    shellLoadInterval = 0;
-
-    removeSpyElements();
-    bootFrame.iframe.style.zIndex = <any>1000;
-    if (addedStyle.parentElement)
-      addedStyle.parentElement.removeChild(addedStyle);
-    bootFrame.iframe.style.display = '';
-
-    (shellLoaderInstance || (<any>window).shellLoader(uniqueKey, document, bootFrame)).finishLoading();
-
-  };
-
-  function deriveUniqueKey(locationSeed) {
-    var key = (locationSeed + '').split('?')[0].split('#')[0].toLowerCase();
-
-    var posIndexTrail = key.search(/\/index\.html$/);
-    if (posIndexTrail > 0) key = key.slice(0, posIndexTrail);
-
-    if (key.charAt(0) === '/')
-      key = key.slice(1);
-    if (key.slice(-1) === '/')
-      key = key.slice(0, key.length - 1);
-
-    return smallHash(key) + '-' + smallHash(key.slice(1) + 'a');
-
-    function smallHash(key) {
-      for (var h = 0, i = 0; i < key.length; i++) {
-        h = Math.pow(31, h + 31 / key.charCodeAt(i));
-        h -= h | 0;
-      }
-      return (h * 2000000000) | 0;
-    }
-
-  }
-
-  function removeSpyElements() {
-
-    removeElements('iframe', function(ifr) { return ifr !== bootFrame.iframe; });
-    removeElements('style', function(sty) { return sty.getAttribute('data-legit') !== 'mi'; });
-    removeElements('script', function(sty) { return sty.getAttribute('data-legit') !== 'mi'; });
-
-    function removeElements(tagName, predicateToRemove) {
-      var list = document.getElementsByTagName(tagName);
-      for (var i = 0; i < list.length; i++) {
-        var elem = list[i] || list.item(i);
-        if (predicateToRemove(elem)) {
-          elem.parentElement.removeChild(elem);
-          i--;
-        }
-      }
-    }
-  }
-
-}
--->
-<!-- /src/load/loadMod.ts
-
--->
-
-</body></html>
+--!>
