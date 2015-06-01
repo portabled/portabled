@@ -264,7 +264,7 @@ window.onerror = function onerror() {
 }
 function earlyBoot(window) {
     base(window).apply();
-    window.__boot_times.earlyBootStart = new Date().valueOf();
+    window.__boot_times.earlyBootStart = (+new Date());
     document.write('<' + 'style' + ' data-legit=mi>' +
         '*{display:none;background:white;color:white;}' +
         'html,body{display:block;}' +
@@ -288,7 +288,8 @@ function earlyBoot(window) {
     var bootUI = window.bootUI;
     var bootAPI = bootUI(bootFrame.document, bootFrame.global, { elem: bootFrame.global.elem });
     bootFrame.api = bootAPI;
-    bootFrame.startTime = window.__boot_times.earlyBootStart;
+    bootFrame.earlyStartTime = window.__boot_times.onerror_start;
+    bootFrame.bootStartTime = window.__boot_times.earlyBootStart;
     var uniqueKey = deriveUniqueKey(location);
     var shellLoaderInstance = null;
     var shellLoadInterval = setInterval(function () {
@@ -297,7 +298,7 @@ function earlyBoot(window) {
         if (!shellLoadInterval)
             return; // protect against old Opera's super-async habits
         shellLoaderInstance = shellLoaderInstance ? shellLoaderInstance.continueLoading() : window.shellLoader ? window.shellLoader(uniqueKey, document, bootFrame) : null;
-    }, 100);
+    }, 1);
     window.onload = function () {
         clearInterval(shellLoadInterval);
         shellLoadInterval = 0;
@@ -367,7 +368,12 @@ function earlyBoot(window) {
   }, document.body);
 
   return {
-    title: function(t) { setText(header,t); },
+    title: function(t) {
+      setText(header,t);
+      if (typeof console !== 'undefined' && typeof console.log === 'function')
+        console.log(t);
+
+    },
     loaded: function() {
       setText(header, 'Loaded.');
     }
@@ -376,322 +382,51 @@ function earlyBoot(window) {
 //# sourceURL=/boot/base.js
 </script></head><body style="height: 100%; margin: 0px; padding: 0px; overflow: hidden;">
 <script data-legit="mi">
-function base(window) {
-    return {
-        getText: getText,
-        setText: setText,
-        elem: elem,
-        on: on, off: off,
-        createFrame: createFrame,
-        apply: apply
-    };
-    function apply() {
-        window.getText = getText;
-        window.setText = setText;
-        window.elem = elem;
-        window.on = on;
-        window.off = off;
-        window.createFrame = createFrame;
-    }
-    function getText(obj) {
-        if (typeof obj === 'function') {
-            var result = /\/\*(\*(?!\/)|[^*])*\*\//m.exec(obj + '')[0];
-            if (result)
-                result = result.slice(2, result.length - 2);
-            return result;
-        }
-        else if (/^SCRIPT$/i.test(obj.tagName)) {
-            if ('text' in obj)
-                return obj.text;
-            else
-                return obj.innerHTML;
-        }
-        else if (/^STYLE$/i.test(obj.tagName)) {
-            if ('text' in obj)
-                return obj.text;
-            else if (obj.styleSheet)
-                return obj.styleSheet.cssText;
-            else
-                return obj.innerHTML;
-        }
-        else if ('textContent' in obj) {
-            return obj.textContent;
-        }
-        else if (/^INPUT$/i.test(obj.tagName)) {
-            return obj.value;
-        }
-        else {
-            var result = obj.innerText;
-            if (result) {
-                // IE fixes
-                result = result.replace(/\<BR\s*\>/g, '\n').replace(/\r\n/g, '\n');
-            }
-            return result || '';
-        }
-    }
-    function setText(obj, text) {
-        if (/^SCRIPT$/i.test(obj.tagName)) {
-            if ('text' in obj)
-                obj.text = text;
-            else
-                obj.innerHTML = text;
-        }
-        else if (/^STYLE$/i.test(obj.tagName)) {
-            if ('text' in obj) {
-                obj.text = text;
-            }
-            else if ('styleSheet' in obj) {
-                if (!obj.styleSheet && !obj.type)
-                    obj.type = 'text/css';
-                obj.styleSheet.cssText = text;
-            }
-            else if ('textContent' in obj) {
-                obj.textContent = text;
-            }
-            else {
-                obj.innerHTML = text;
-            }
-        }
-        else if ('textContent' in obj) {
-            if ('type' in obj && !obj.type)
-                obj.type = 'text/css';
-            obj.textContent = text;
-        }
-        else if (/^INPUT$/i.test(obj.tagName)) {
-            obj.value = text;
-        }
-        else {
-            obj.innerText = text;
-        }
-    }
-    function on(obj, eventName, handler) {
-        if (obj.addEventListener) {
-            obj.addEventListener(eventName, handler, false);
-        }
-        else if (obj.attachEvent) {
-            obj.attachEvent('on' + eventName, handler);
-        }
-        else {
-            obj['on' + eventName] = function (e) { return handler(e || window.event); };
-        }
-    }
-    ;
-    function off(obj, eventName, handler) {
-        if (obj.removeEventListener) {
-            obj.removeEventListener(eventName, handler, false);
-        }
-        else if (obj.detachEvent) {
-            obj.detachEvent('on' + eventName, handler);
-        }
-        else {
-            if (obj['on' + eventName])
-                obj['on' + eventName] = null;
-        }
-    }
-    ;
-    function elem(tag, style, parent) {
-        var e = tag.tagName ? tag : window.document.createElement(tag);
-        if (!parent && style && style.tagName) {
-            parent = style;
-            style = null;
-        }
-        if (style) {
-            if (typeof style === 'string') {
-                setText(e, style);
-            }
-            else {
-                for (var k in style)
-                    if (style.hasOwnProperty(k)) {
-                        if (k === 'text') {
-                            setText(e, style[k]);
-                        }
-                        else if (k === 'className') {
-                            e.className = style[k];
-                        }
-                        else if (!(e.style && k in e.style) && k in e) {
-                            e[k] = style[k];
-                        }
-                        else {
-                            if (style[k] && typeof style[k] === 'object' && typeof style[k].length === 'number') {
-                                // array: iterate and apply values
-                                var applyValues = style[k];
-                                for (var i = 0; i < applyValues.length; i++) {
-                                    try {
-                                        e.style[k] = applyValues[i];
-                                    }
-                                    catch (errApplyValues) { }
-                                }
-                            }
-                            else {
-                                // not array
-                                try {
-                                    e.style[k] = style[k];
-                                }
-                                catch (err) {
-                                    try {
-                                        if (typeof console !== 'undefined' && typeof console.error === 'function')
-                                            console.error(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
-                                    }
-                                    catch (whatevs) {
-                                        alert(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
-                                    }
-                                }
-                            }
-                        }
-                    }
-            }
-        }
-        if (parent) {
-            try {
-                parent.appendChild(e);
-            }
-            catch (error) {
-                throw new Error(error.message + ' adding ' + e.tagName + ' to ' + parent.tagName);
-            }
-        }
-        return e;
-    }
-    function createFrame(style) {
-        if (!style)
-            style = {
-                position: 'absolute',
-                left: 0, top: 0,
-                width: '100%', height: '100%',
-                border: 'none',
-                src: 'about:blank'
-            };
-        var ifr = elem('iframe', style, window.document.body);
-        var ifrwin = ifr.contentWindow || ifr.window;
-        var ifrdoc = ifrwin.document;
-        if (ifrdoc.open)
-            ifrdoc.open();
-        ifrdoc.write('<!' + 'doctype html' + '>' +
-            '<' + 'html' + '>' +
-            '<' + 'head' + '><' + 'style' + '>' +
-            'body,html{margin:0;padding:0;border:none;height:100%;border:none;}' +
-            '*,*:before,*:after{box-sizing:inherit;}' +
-            'html{box-sizing:border-box;}' +
-            '</' + 'style' + '>\n' +
-            '<' + 'body' + '>' +
-            '<' + 'script' + '>window.__eval_export_=eval</' + 'script' + '>' +
-            // IE6/7/8 bug: global scope and window are not identical
-            (ifrwin.Function ? '' : '<' + 'script' + '>window.Function=Function</' + 'script' + '>') +
-            // it's important to have body before any long scripts (especialy external),
-            // so IFRAME is immediately ready
-            '<' + 'body' + '>' +
-            '</' + 'html' + '>');
-        if (ifrdoc.close)
-            ifrdoc.close();
-        var ifrwin_eval = ifrwin.__eval_export_;
-        delete ifrwin.__eval_export_;
-        ifrdoc.body.innerHTML = '';
-        if (window.onerror) {
-            ifrwin.onerror = delegate_onerror;
-        }
-        return {
-            document: ifrdoc,
-            global: ifrwin,
-            iframe: ifr,
-            eval: ifrwin_eval
-        };
-        function delegate_onerror() {
-            window.onerror.apply(window, arguments);
-        }
-    }
-}
-function earlyBoot(window) {
-    base(window).apply();
-    window.__boot_times.earlyBootStart = new Date().valueOf();
-    document.write('<' + 'style' + ' data-legit=mi>' +
-        '*{display:none;background:white;color:white;}' +
-        'html,body{display:block;}' +
-        '</' + 'style' + '>' +
-        (document.body ? '' : '<body>'));
-    elem(document.body, {
-        height: '100%',
-        margin: 0,
-        padding: 0,
-        overflow: 'hidden'
-    });
-    elem(document.body.parentElement, {
-        overflow: 'hidden'
-    });
-    var allStyleElements = document.getElementsByTagName('style');
-    var addedStyle = allStyleElements[allStyleElements.length - 1];
-    var bootFrame = createFrame();
-    bootFrame.iframe.style.zIndex = 2000;
-    bootFrame.iframe.style.display = 'block';
-    base(bootFrame.global).apply();
-    var bootUI = window.bootUI;
-    var bootAPI = bootUI(bootFrame.document, bootFrame.global, { elem: bootFrame.global.elem });
-    bootFrame.api = bootAPI;
-    bootFrame.startTime = window.__boot_times.earlyBootStart;
-    var uniqueKey = deriveUniqueKey(location);
-    var shellLoaderInstance = null;
-    var shellLoadInterval = setInterval(function () {
-        if (window.shellLoader === 'undefined')
-            return;
-        if (!shellLoadInterval)
-            return; // protect against old Opera's super-async habits
-        shellLoaderInstance = shellLoaderInstance ? shellLoaderInstance.continueLoading() : window.shellLoader ? window.shellLoader(uniqueKey, document, bootFrame) : null;
-    }, 100);
-    window.onload = function () {
-        clearInterval(shellLoadInterval);
-        shellLoadInterval = 0;
-        removeSpyElements();
-        bootFrame.iframe.style.zIndex = 1000;
-        if (addedStyle.parentElement)
-            addedStyle.parentElement.removeChild(addedStyle);
-        bootFrame.iframe.style.display = '';
-        (shellLoaderInstance || window.shellLoader(uniqueKey, document, bootFrame)).finishLoading();
-    };
-    function deriveUniqueKey(locationSeed) {
-        var key = (locationSeed + '').split('?')[0].split('#')[0].toLowerCase();
-        var posIndexTrail = key.search(/\/index\.html$/);
-        if (posIndexTrail > 0)
-            key = key.slice(0, posIndexTrail);
-        if (key.charAt(0) === '/')
-            key = key.slice(1);
-        if (key.slice(-1) === '/')
-            key = key.slice(0, key.length - 1);
-        return smallHash(key) + '-' + smallHash(key.slice(1) + 'a');
-        function smallHash(key) {
-            for (var h = 0, i = 0; i < key.length; i++) {
-                h = Math.pow(31, h + 31 / key.charCodeAt(i));
-                h -= h | 0;
-            }
-            return (h * 2000000000) | 0;
-        }
-    }
-    function removeSpyElements() {
-        removeElements('iframe', function (ifr) { return ifr !== bootFrame.iframe; });
-        removeElements('style', function (sty) { return sty.getAttribute('data-legit') !== 'mi'; });
-        removeElements('script', function (sty) { return sty.getAttribute('data-legit') !== 'mi'; });
-        function removeElements(tagName, predicateToRemove) {
-            var list = document.getElementsByTagName(tagName);
-            for (var i = 0; i < list.length; i++) {
-                var elem = list[i] || list.item(i);
-                if (predicateToRemove(elem)) {
-                    elem.parentElement.removeChild(elem);
-                    i--;
-                }
-            }
-        }
-    }
-}
 function shellLoader(uniqueKey, document, boot) {
     var driveMount = persistence.bootMount(uniqueKey, document);
     return continueLoading();
     function continueLoading() {
         driveMount = driveMount.continueLoading();
-        boot.api.title('Loading: ' + driveMount.loadedFileCount + ' (' + driveMount.totalSize + ' total)...');
+        boot.api.title('Loading files: ' + progressText('dom'));
         return { continueLoading: continueLoading, finishLoading: finishLoading };
     }
+    var timings;
+    var prevStage;
+    var prevStageStart;
+    var prevTimeText;
+    function progressText(stage) {
+        var fileText = driveMount.loadedFileCount + ' (' + driveMount.totalSize + ' total)';
+        var now = +new Date();
+        if (!prevStage) {
+            timings = [
+                { stage: 'boot ui', time: boot.bootStartTime - boot.earlyStartTime }
+            ];
+            prevTimeText = ' boot UI ' + (boot.bootStartTime - boot.earlyStartTime) + 'ms init ' + (now - boot.bootStartTime) + 'ms';
+            prevStageStart = boot.bootStartTime;
+            prevStage = stage;
+            return fileText + prevTimeText;
+        }
+        else if (prevStage !== stage) {
+            timings.push({
+                stage: prevStage,
+                time: now - prevStageStart
+            });
+            prevTimeText += ' ' + prevStage + ' ' + (now - prevStageStart) + 'ms';
+            prevStageStart = now;
+            prevStage = stage;
+            return fileText + prevTimeText;
+        }
+        else {
+            return fileText + prevTimeText + ' ' + prevStage + ' ' + (now - prevStageStart) + 'ms';
+        }
+    }
     function finishLoading() {
+        boot.api.title('Loading modifications: ' + progressText('local'));
         driveMount.finishLoading(function (drive) {
+            boot.api.title('Loading application: ' + progressText('ui-init'));
             var uiframe = createFrame();
             uiframe.iframe.style.opacity = '0';
-            var uiframeBase = base(uiframe.global);
+            var uiframeBase = window.base(uiframe.global);
             uiframeBase.apply();
             uiframe.global.loadMod = loadMod;
             var wasResized = false;
@@ -707,6 +442,7 @@ function shellLoader(uniqueKey, document, boot) {
             on(uiframe.document.body, 'keydown', global_resize_detect);
             on(uiframe.document.body, 'keyup', global_resize_detect);
             uiframe.global.require = shell_require;
+            boot.api.title('Completed: ' + progressText('ui'));
             uiframe.eval(drive.read('/shell/start.ts.js'));
             function shell_require(moduleName) {
                 switch (moduleName) {
@@ -714,6 +450,7 @@ function shellLoader(uniqueKey, document, boot) {
                     case 'drive': return drive;
                     case 'resize': return { on: onresize, off: offresize };
                     case 'loadMod': return loadMod;
+                    case 'timings': return timings;
                 }
                 throw new Error('Module ' + moduleName + ' is not supported.');
             }
@@ -764,7 +501,7 @@ function shellLoader(uniqueKey, document, boot) {
                 return metrics;
             }
             var start = new Date().valueOf();
-            var fadeintTime = Math.min(500, (new Date().valueOf() - boot.startTime) * 0.9);
+            var fadeintTime = Math.min(500, ((+new Date()) - boot.bootStartTime) * 0.9);
             var animateFadeIn = setInterval(function () {
                 var passed = new Date().valueOf() - start;
                 var opacity = Math.min(passed, fadeintTime) / fadeintTime;
@@ -2170,6 +1907,8 @@ var CommanderShell = (function () {
         };
         applyConsole(_glob);
         applyConsole(window);
+        var timings = require('timings');
+        this._terminal.log(timings);
     }
     CommanderShell.prototype.measure = function () {
         this._metrics.emWidth = this._metricElem.offsetWidth;
@@ -9629,7 +9368,12 @@ function bootUI(document, window, base) {
   }, document.body);
 
   return {
-    title: function(t) { setText(header,t); },
+    title: function(t) {
+      setText(header,t);
+      if (typeof console !== 'undefined' && typeof console.log === 'function')
+        console.log(t);
+
+    },
     loaded: function() {
       setText(header, 'Loaded.');
     }
@@ -9641,7 +9385,7 @@ function earlyBoot(window: Window) {
 
   base(window).apply();
 
-  (<any>window).__boot_times.earlyBootStart = new Date().valueOf();
+  (<any>window).__boot_times.earlyBootStart = (+new Date());
 
   document.write(
     '<' + 'style' + ' data-legit=mi>' +
@@ -9673,7 +9417,8 @@ function earlyBoot(window: Window) {
 
   var bootAPI = bootUI(bootFrame.document, bootFrame.global, { elem: (<any>bootFrame.global).elem });
   bootFrame.api = bootAPI;
-  bootFrame.startTime = (<any>window).__boot_times.earlyBootStart;
+  bootFrame.earlyStartTime = (<any>window).__boot_times.onerror_start;
+  bootFrame.bootStartTime = (<any>window).__boot_times.earlyBootStart;
 
   var uniqueKey = deriveUniqueKey(location);
 
@@ -9682,7 +9427,7 @@ function earlyBoot(window: Window) {
     if ((<any>window).shellLoader === 'undefined') return;
     if (!shellLoadInterval) return; // protect against old Opera's super-async habits
     shellLoaderInstance = shellLoaderInstance ? shellLoaderInstance.continueLoading() : (<any>window).shellLoader ? (<any>window).shellLoader(uniqueKey, document, bootFrame) : null;
-  }, 100);
+  }, 1);
 
   window.onload = function() {
 
@@ -9785,17 +9530,56 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
 
   function continueLoading(): shellLoader.ContinueLoading {
     driveMount = driveMount.continueLoading();
-    boot.api.title('Loading: ' + driveMount.loadedFileCount + ' (' + driveMount.totalSize + ' total)...');
+
+    boot.api.title('Loading files: ' + progressText('dom'));
     return { continueLoading, finishLoading };
+  }
+
+  var timings;
+  var prevStage;
+  var prevStageStart;
+  var prevTimeText;
+  function progressText(stage) {
+
+    var fileText = driveMount.loadedFileCount + ' (' + driveMount.totalSize + ' total)';
+
+    var now = +new Date();
+
+    if (!prevStage) {
+      timings = [
+        {stage: 'boot ui', time: boot.bootStartTime - boot.earlyStartTime}
+      ];
+      prevTimeText = ' boot UI ' + (boot.bootStartTime - boot.earlyStartTime) + 'ms init ' + (now - boot.bootStartTime) + 'ms';
+      prevStageStart = boot.bootStartTime;
+      prevStage = stage;
+      return fileText + prevTimeText;
+    }
+    else if (prevStage !== stage) {
+      timings.push({
+        stage: prevStage,
+        time: now-prevStageStart
+      });
+      prevTimeText += ' ' + prevStage + ' ' + (now - prevStageStart) + 'ms';
+      prevStageStart = now;
+      prevStage = stage;
+      return fileText + prevTimeText;
+    }
+    else {
+      return fileText + prevTimeText + ' ' + prevStage + ' ' + (now - prevStageStart) + 'ms';
+    }
+
   }
 
   function finishLoading() {
 
+    boot.api.title('Loading modifications: ' + progressText('local'));
     driveMount.finishLoading(drive => {
+
+      boot.api.title('Loading application: ' + progressText('ui-init'));
 
       var uiframe = createFrame();
       uiframe.iframe.style.opacity = '0';
-      var uiframeBase = base(uiframe.global);
+      var uiframeBase = (<any>window).base(uiframe.global);
       uiframeBase.apply();
       (<any>uiframe.global).loadMod = loadMod;
 
@@ -9814,8 +9598,10 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
 
 
       (<any>uiframe.global).require = shell_require;
+      boot.api.title('Completed: ' + progressText('ui'));
       uiframe.eval(
         drive.read('/shell/start.ts.js'));
+
 
       function shell_require(moduleName): any {
         switch (moduleName) {
@@ -9823,6 +9609,7 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
           case 'drive': return drive;
           case 'resize': return { on: onresize, off: offresize };
           case 'loadMod': return loadMod;
+          case 'timings': return timings;
         }
         throw new Error('Module ' + moduleName + ' is not supported.');
       }
@@ -9879,7 +9666,7 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
       }
 
       var start = new Date().valueOf();
-      var fadeintTime = Math.min(500, (new Date().valueOf() - boot.startTime) * 0.9);
+      var fadeintTime = Math.min(500, ((+new Date()) - boot.bootStartTime) * 0.9);
       var animateFadeIn = setInterval(function() {
         var passed = new Date().valueOf() - start;
         var opacity = Math.min(passed, fadeintTime) / fadeintTime;
@@ -10043,7 +9830,8 @@ module shellLoader {
 
   export interface BootModuleAPI extends createFrame.LoadedResult {
     api?: any;
-    startTime?: number;
+    earlyStartTime?: number;
+    bootStartTime?: number;
   }
 
   export interface ContinueLoading {
@@ -16251,6 +16039,9 @@ class CommanderShell {
 
     applyConsole(_glob);
     applyConsole(window);
+
+    var timings = require('timings');
+    this._terminal.log(timings);
   }
 
   measure() {
@@ -59735,7 +59526,7 @@ class Apple {
 //# sourceURL=/boot/base.js
 </script>
 <script data-legit=mi>
-<%=typescriptBuild('/load/*', '/persistence/*', '/boot/*', '/typings/*')%>
+<%=typescriptBuild('/load/*', '/persistence/*', '/boot/base.d.ts', '/typings/*')%>
 
 //# sourceURL=/load/shellLoader.ts.js
 </script>
