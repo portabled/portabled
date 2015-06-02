@@ -428,7 +428,6 @@ function shellLoader(uniqueKey, document, boot) {
             uiframe.iframe.style.opacity = '0';
             var uiframeBase = window.base(uiframe.global);
             uiframeBase.apply();
-            uiframe.global.loadMod = loadMod;
             var wasResized = false;
             var resizeHandlers = [];
             on(window, 'resize', global_resize_detect);
@@ -449,7 +448,6 @@ function shellLoader(uniqueKey, document, boot) {
                     case 'ui': return uiframe;
                     case 'drive': return drive;
                     case 'resize': return { on: onresize, off: offresize };
-                    case 'loadMod': return loadMod;
                     case 'timings': return timings;
                 }
                 throw new Error('Module ' + moduleName + ' is not supported.');
@@ -516,112 +514,6 @@ function shellLoader(uniqueKey, document, boot) {
             //if (typeof console !== 'undefined' && console.log)
             //  console.log(window['dbgDrive'] = drive);
         });
-    }
-    function loadMod(window, options) {
-        var style = options.style;
-        if (!options.ui) {
-            style = { display: 'none' };
-        }
-        else if (typeof style === 'string') {
-            style = { className: style, display: 'none' };
-        }
-        var frame = window.createFrame(style);
-        var frameFunction = frame.global.Function;
-        if (options.scope) {
-            var scope = typeof options.scope === 'function' ? options.scope(frame.global) : options.scope;
-            for (var k in scope)
-                if (scope.hasOwnProperty(k)) {
-                    try {
-                        frame.global[k] = scope[k];
-                    }
-                    catch (err) { }
-                }
-        }
-        if (options.eval) {
-            var exportsInScope = scope && 'exports' in scope;
-            var evalArgNames = exportsInScope ? [] : ['exports'];
-            var evalArgs = exportsInScope ? [] : [{}];
-            if (scope) {
-                for (var k in scope)
-                    if (scope.hasOwnProperty(k)) {
-                        evalArgNames.push(k);
-                        evalArgs.push(scope[k]);
-                    }
-            }
-            if (!options.ui) {
-                var allowedGlobals = {
-                    setTimeout: 1, setInterval: 1, clearTimeout: 1, clearInterval: 1,
-                    eval: 1,
-                    console: 1,
-                    undefined: 1,
-                    Object: 1, Array: 1, Date: 1, Function: 1, String: 1, Boolean: 1, Number: 1,
-                    Infinity: 1, NaN: 1, isNaN: 1, isFinite: 1, parseInt: 1, parseFloat: 1,
-                    escape: 1, unescape: 1,
-                    Int32Array: 1, Int8Array: 1, Int16Array: 1,
-                    UInt32Array: 1, UInt8Array: 1, UInt8ClampedArray: 1, UInt16Array: 1,
-                    Float32Array: 1, Float64Array: 1, ArrayBuffer: 1,
-                    Math: 1, JSON: 1, RegExp: 1,
-                    Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,
-                    toString: 1, toJSON: 1, toValue: 1,
-                    Map: 1
-                };
-                var hiddenKeys = {};
-                // normal properties
-                for (var k in frame.global) {
-                    if (scope && scope.hasOwnProperty(k))
-                        continue;
-                    if (allowedGlobals.hasOwnProperty(k))
-                        continue;
-                    evalArgNames.push(k);
-                    hiddenKeys[k] = 1;
-                }
-                // non-enumerable properties directly on global
-                if (Object.getOwnPropertyNames) {
-                    var props = Object.getOwnPropertyNames(frame.global);
-                    for (var i = 0; i < props.length; i++) {
-                        if (scope && scope.hasOwnProperty(props[i]))
-                            continue;
-                        if (allowedGlobals.hasOwnProperty(props[i]))
-                            continue;
-                        if (hiddenKeys.hasOwnProperty(props[i]))
-                            continue;
-                        evalArgNames.push(props[i]);
-                    }
-                    // non-enumerable properties on global's prototype
-                    if (frame.global.constructor
-                        && frame.global.constructor.prototype
-                        && frame.global.constructor.prototype != Object
-                        && frame.global.constructor.prototype != Object.prototype) {
-                        props = Object.getOwnPropertyNames(frame.global.constructor.prototype);
-                        for (var i = 0; i < props.length; i++) {
-                            if (scope && scope.hasOwnProperty(props[i]))
-                                continue;
-                            if (allowedGlobals.hasOwnProperty(props[i]))
-                                continue;
-                            if (hiddenKeys.hasOwnProperty(props[i]))
-                                continue;
-                            evalArgNames.push(props[i]);
-                        }
-                    }
-                }
-            }
-            var innerEval = frameFunction.apply(frame.global, ['return function(txt) { return eval(txt); }'])();
-            var wrappedText = '(function() { return function(' + evalArgNames.join(',') + '){' +
-                options.eval + '\nreturn exports; }; })()' +
-                (options.path ? ' //# sourceURL=' + options.path : '');
-            //evalArgNames.push(
-            //  options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval + '\nreturn exports;');
-            var evalFn = innerEval(wrappedText);
-            //var evalFn = frameFunction.apply(frame.global, evalArgNames);
-            var modExports = evalFn.apply(frame.global, evalArgs);
-        }
-        return {
-            document: frame.document,
-            global: frame.global,
-            iframe: frame.iframe,
-            eval: frame.eval,
-            exports: modExports
-        };
     }
 }
 var persistence;
@@ -2172,6 +2064,112 @@ var build;
             replace(/\"/g, '\\"');
     }
 })(build || (build = {}));
+function loadMod(window, options) {
+    var style = options.style;
+    if (!options.ui) {
+        style = { display: 'none' };
+    }
+    else if (typeof style === 'string') {
+        style = { className: style, display: 'none' };
+    }
+    var frame = window.createFrame(style);
+    var frameFunction = frame.global.Function;
+    if (options.scope) {
+        var scope = typeof options.scope === 'function' ? options.scope(frame.global) : options.scope;
+        for (var k in scope)
+            if (scope.hasOwnProperty(k)) {
+                try {
+                    frame.global[k] = scope[k];
+                }
+                catch (err) { }
+            }
+    }
+    if (options.eval) {
+        var exportsInScope = scope && 'exports' in scope;
+        var evalArgNames = exportsInScope ? [] : ['exports'];
+        var evalArgs = exportsInScope ? [] : [{}];
+        if (scope) {
+            for (var k in scope)
+                if (scope.hasOwnProperty(k)) {
+                    evalArgNames.push(k);
+                    evalArgs.push(scope[k]);
+                }
+        }
+        if (!options.ui) {
+            var allowedGlobals = {
+                setTimeout: 1, setInterval: 1, clearTimeout: 1, clearInterval: 1,
+                eval: 1,
+                console: 1,
+                undefined: 1,
+                Object: 1, Array: 1, Date: 1, Function: 1, String: 1, Boolean: 1, Number: 1,
+                Infinity: 1, NaN: 1, isNaN: 1, isFinite: 1, parseInt: 1, parseFloat: 1,
+                escape: 1, unescape: 1,
+                Int32Array: 1, Int8Array: 1, Int16Array: 1,
+                UInt32Array: 1, UInt8Array: 1, UInt8ClampedArray: 1, UInt16Array: 1,
+                Float32Array: 1, Float64Array: 1, ArrayBuffer: 1,
+                Math: 1, JSON: 1, RegExp: 1,
+                Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,
+                toString: 1, toJSON: 1, toValue: 1,
+                Map: 1
+            };
+            var hiddenKeys = {};
+            // normal properties
+            for (var k in frame.global) {
+                if (scope && scope.hasOwnProperty(k))
+                    continue;
+                if (allowedGlobals.hasOwnProperty(k))
+                    continue;
+                evalArgNames.push(k);
+                hiddenKeys[k] = 1;
+            }
+            // non-enumerable properties directly on global
+            if (Object.getOwnPropertyNames) {
+                var props = Object.getOwnPropertyNames(frame.global);
+                for (var i = 0; i < props.length; i++) {
+                    if (scope && scope.hasOwnProperty(props[i]))
+                        continue;
+                    if (allowedGlobals.hasOwnProperty(props[i]))
+                        continue;
+                    if (hiddenKeys.hasOwnProperty(props[i]))
+                        continue;
+                    evalArgNames.push(props[i]);
+                }
+                // non-enumerable properties on global's prototype
+                if (frame.global.constructor
+                    && frame.global.constructor.prototype
+                    && frame.global.constructor.prototype != Object
+                    && frame.global.constructor.prototype != Object.prototype) {
+                    props = Object.getOwnPropertyNames(frame.global.constructor.prototype);
+                    for (var i = 0; i < props.length; i++) {
+                        if (scope && scope.hasOwnProperty(props[i]))
+                            continue;
+                        if (allowedGlobals.hasOwnProperty(props[i]))
+                            continue;
+                        if (hiddenKeys.hasOwnProperty(props[i]))
+                            continue;
+                        evalArgNames.push(props[i]);
+                    }
+                }
+            }
+        }
+        var innerEval = frameFunction.apply(frame.global, ['return function(txt) { return eval(txt); }'])();
+        var wrappedText = '(function() { return function(' + evalArgNames.join(',') + '){' +
+            options.eval + '\nreturn exports; }; })()' +
+            (options.path ? ' //# sourceURL=' + options.path : '');
+        //evalArgNames.push(
+        //  options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval + '\nreturn exports;');
+        var evalFn = innerEval(wrappedText);
+        //var evalFn = frameFunction.apply(frame.global, evalArgNames);
+        var modExports = evalFn.apply(frame.global, evalArgs);
+    }
+    return {
+        document: frame.document,
+        global: frame.global,
+        iframe: frame.iframe,
+        eval: frame.eval,
+        exports: modExports
+    };
+}
 var panels;
 (function (panels) {
     var panelClass = 'panels-panel-page';
@@ -2852,7 +2850,6 @@ var terminal;
             this._nodeModCache = null;
             this._processMod = null;
             this.log = null;
-            var loadMod = require('loadMod');
             this._nodeModCache = {};
             var nocode = this._drive.read('/shell/node.ts.js');
             this._nodeMod = loadMod({ createFrame: createFrame }, {
@@ -9068,416 +9065,6 @@ var persistence;
 }
 -->
 
-<!-- /src/index.html
-<*!doctype html>
-<title>mini shell </title>
-
-<script data-legit=mi>
-  <%=embedFile('boot/onerror.js')%>
-//# sourceURL=boot/onerror.js
-</script>
-<script data-legit=mi>
-  earlyBoot(window);
-
-  	<%=typescriptBuild('boot/*')%>
-
-    <%=embedFile('boot/bootUI.js')%>
-//# sourceURL=/boot/base.js
-</script>
-<script data-legit=mi>
-<%=typescriptBuild('/load/*', '/persistence/*', '/boot/base.d.ts', '/typings/*')%>
-
-//# sourceURL=/load/shellLoader.ts.js
-</script>
-
-<*!-- total 56Mb, saved 25 Apr 2015 22:52:01.231 --*>
-
-<*!-- /shell/start.ts.js
-<%=typescriptBuild('/shell/*', '/boot/base.d.ts', '/persistence/Drive.ts', '/typings/*')%>--*>
-
-<*!-- /empty/
---*>
-
-
-<*!-- /LF-file.txt
-123
-456--*>
-
-<*!-- /CRLF-file [CRLF]
-123
-456--*>
-
-<*!-- /CR-file [CR]
-123
-456--*>
-
-<*!-- /exportsome.js [CR]
-exports = 55--*>
-
-<*!-- /exports_fs.js [CR]
-exports = require('fs')--*>
-
-<*!-- /exports_process.js [CR]
-exports = process--*>
-
-<*!-- /eval-file.txt [eval]
- "random char: " + String.fromCharCode(Math.random()*16000)+"\n"+
- "date: "+new Date()+"\n"+
- "location: "+location --*>
-
-<*!-- /json-file.txt [json]
-"new ok \u2222 and what\r\n or \u0001?\n\n\n"--*>
-
-<%=(function() {
-var dump = [];
-for (var i = 0; i < 2000; i++) {
-	dump.push('<'+'!'+'-- /large-directory/'+(500+i)+'.txt');
-  dump.push('OK --'+'>');
-}
-return dump.join('\n');
-   })()%>
-
-
-
-
-
-
-<*!-- /shell/node.ts.js
-<%=typescriptBuild('/nodeapi/*', '/boot/base.d.ts', '/persistence/Drive.ts')%>
-exports.fs = nofs_load();
-exports.process = noprocess_load();
-exports.module = nomodule_load();
-exports.path = nopath_load();
-exports.os = noos_load();
---*>
-
-<*!-- /shell/persistence.ts.js
-<%=typescriptBuild('/persistence/*', '/typings/*')%>
---*>
-
-
-<*!-- /shell/style.css
-<%=(function() {
-	var drive = portabled.build.processTemplate.mainDrive;
-	var files = drive.files();
-	var styleText = [];
-  for (var i = 0; i < files.length; i++) {
-    if (/^\/shell\/[\s\S]*\.css$/.test(files[i]))
-      styleText.push(drive.read(files[i]));
-  }
-	return styleText.join('\n');
-
-})()%>
---*>
-
-<%=(function() {
-
-	var drive = portabled.build.processTemplate.mainDrive;
-	var files = drive.files();
-	var fileDump = [];
-  for (var i = 0; i < files.length; i++) {
-    var content = drive.read(files[i]);
-    var decoratedContent = content.
-			replace(/\-\-(\**)\>/g, '--*$1>').
-			replace(/\<(\**)\!/g, '<*$1!');
-	  fileDump.push('<'+'!'+'-- '+'/src'+files[i]);
-    fileDump.push(decoratedContent);
-    fileDump.push('--'+'!'+'>');
-  }
-	return fileDump.join('\n');
-
-})()%>
-
-
--->
-<!-- /src/persistence/Drive.ts
-module persistence {
-
-  export interface Drive {
-
-    timestamp: number;
-
-    files(): string[];
-
-    read(file: string): string;
-
-    write(file: string, content: string);
-
-  }
-
-  export module Drive {
-
-    export interface Shadow {
-
-      timestamp: number;
-
-      write(file: string, content: string): void;
-
-    }
-
-    export interface Optional {
-
-      name: string;
-
-      detect(uniqueKey: string, callback: (detached: Detached) => void): void;
-
-    }
-
-    export interface Detached {
-
-      timestamp: number;
-      totalSize?: number;
-
-      applyTo(mainDrive: Drive, callback: Detached.CallbackWithShadow): void;
-
-      purge(callback: Detached.CallbackWithShadow): void;
-
-    }
-
-    export module Detached {
-      export interface CallbackWithShadow {
-
-        (loaded: Shadow): void;
-        progress?: (current: number, total: number) => void;
-      }
-    }
-
-  }
-}
--->
-<!-- /src/persistence/mountDrive.ts
-module persistence {
-
-  export function mountDrive(
-    loadDOMDrive: (callback: (dom: Drive) => void)=> void,
-    uniqueKey: string,
-    optionalModules: Drive.Optional[],
-    callback: mountDrive.Callback): void {
-
-    var driveIndex = 0;
-
-    loadNextOptional();
-
-    function loadNextOptional() {
-
-      while (driveIndex < optionalModules.length &&
-        (!optionalModules[driveIndex] || typeof optionalModules[driveIndex].detect !== 'function')) {
-        driveIndex++;
-      }
-
-      if (driveIndex >= optionalModules.length) {
-        loadDOMDrive(dom => callback(new MountedDrive(dom, null)));
-        return;
-      }
-
-      var op = optionalModules[driveIndex];
-      op.detect(
-        uniqueKey,
-        detached => {
-          if (!detached) {
-            driveIndex++;
-            loadNextOptional();
-            return;
-          }
-
-          loadDOMDrive(dom => {
-            if (detached.timestamp > dom.timestamp) {
-              var callbackWithShadow: Drive.Detached.CallbackWithShadow = loadedDrive => {
-                dom.timestamp = detached.timestamp;
-                callback(new MountedDrive(dom, loadedDrive));
-              };
-              if (callback.progress)
-                callbackWithShadow.progress = callback.progress;
-              loadDOMDrive(dom => detached.applyTo(dom, callbackWithShadow));
-            }
-            else {
-              var callbackWithShadow: Drive.Detached.CallbackWithShadow = loadedDrive => {
-                callback(new MountedDrive(dom, loadedDrive));
-              };
-              if (callback.progress)
-                callbackWithShadow.progress = callback.progress;
-              detached.purge(callbackWithShadow);
-            }
-          });
-
-        });
-    }
-
-  }
-
-  export module mountDrive {
-
-    export interface Callback {
-
-      (drive: Drive): void;
-
-      progress?: (current: number, total: number) => void;
-
-    }
-
-  }
-
-  class MountedDrive implements Drive {
-
-    updateTime = true;
-    timestamp: number = 0;
-
-    constructor (private _dom: Drive, private _shadow: Drive.Shadow) {
-      this.timestamp = this._dom.timestamp;
-    }
-
-    files(): string[] {
-      return this._dom.files();
-    }
-
-    read(file: string): string {
-      return this._dom.read(file);
-    }
-
-    write(file: string, content: string) {
-      if (this.updateTime) {
-        this.timestamp = +new Date();
-      }
-
-      this._dom.timestamp = this.timestamp;
-      this._dom.write(file, content);
-      if (this._shadow) {
-        this._shadow.timestamp = this.timestamp;
-        this._shadow.write(file, content);
-      }
-    }
-  }
-
-}
--->
-<!-- /src/readme.md
-#New mini portable shell development
-
-Used these open-source libraries:
-
- * [feross/buffer] (https://github.com/feross/buffer) - MIT
- * [beatgammit/base64-js] (https://github.com/beatgammit/base64-js) - MIT
- * [feross/ieee754] (https://github.com/feross/ieee754) - MIT
- * [retrofox/is-array] (https://github.com/retrofox/is-array) - MIT
-
-## Boot process
-
-The boot process begins with first bytes of the page received, during the loading of the content,
-then would continue for a little after the page is loaded.
-
-The main post-content-load is completing the data fetch from the local storage. It may well finish earlier,
-but may take some time.
-
-During the boot process, and at the end of it the code is supposed to show sensible UI
-and implement neat handover animations (unless the whole boot finishes very fast).
-
-### Early boot
-
-The mission of this stage is to create the temporary boot UI (very quickly!) and hand over to the shell loader.
-The boot UI is something like a splash screen, boot animation, washed-out live-like image or whatever.
-
- * Error handler is installed at the first opportunity
- * Base.js library with primitives for basic DOM manipulation is loaded
- * BootUI iframe is created
- * BootUI function is invoked to draw the boot animation
-
-### Shell loader
-
-Shell loader's task is to initialise the persistence (virtual filesystem backed by DOM and local storage).
-
-During that persistence loading the shell loader passes progress events to the boot UI. Upon completion
-it starts the actual shell and finally animates from boot UI to the shell.
-
- * Persistence loading is started
- * Persistence keeps polling the DOM state, fishing for pieces of 'virtual filesystem'
- * Progress is supposed to be reported to the BootUI
- * Persistence also need to load the locally-stored state, reconciling it with the DOM (by timestamps)
- * Eventualy persistence report completion
- * Shell iframe is created with opacity=0
- * Shell start code is loaded (normally from the filesystem) and kicked off
- * Animating BootUI.opacity -> 0; Shell.opacity->1
-
- ### Shell
-
-When shell begins to load, the persistence is fully functional, so it's up to the shell what to do with it.
-
-The interactive node-like shell emulates node.js to a great extent: by laying node.js API on top of the persistence and various browser features.
-
-At the moment the shell also has file-manager-like panels, so virtual filesystem can be navigated
-and necessary tasks (copying/editing/moving of files or directories) performed interactively.
-
-Other shells may host more specialised apps. These are planned examples:
-
- * PC.js virtual machine hosting early PC images (DOS, early Windows, OS/2 and such)
- * Markdown viewer/editor
- * SVG editor
- * Slide editor
- * Spreadsheet editor
-
-## Involved libaries and sub-modules
-
-First of all, the sequence above explicitly mentiones three mini-libraries:
-
- * Base.js
- * BootUI
- * Persistence
-
-Those indeed can be considered separately, with a degree of isolation from the rest of the boot process.
-
-### Base.js
-
-A very tight set of functions for DOM manipulation. It is used by both booting stage, as well as actually employed by the current shell.
-
-These are broad features of the mini-library:
-
- * Setting/getting text of a DOM element (older IE handling, special workarounds for some elements)
- * Creating elements and setting properties/CSS attributes in JSON-like syntax
- * Subscribing to events
- * Creating IFRAME and retrieving its key objects (inner window, inner document)
-
-### BootUI
-
-The boot-time UI is largely free in what it renders. It is hosted in a separate IFRAME
-with limited communication to the rest of the code.
-
-It is expected that various shells provide each their fine-tuned boot UI 'library'.
-
-A good option would be to render the state of the application as the user left,
-with a tasteful overlay reflecting the boot progress.
-
-### Persistence
-
-The task of emulating an embedded virtual filesystem of files/directories is implemented in the persistence mini-library.
-
-The persistence API is described in terms of a Drive object (with read/write methods) and its construction stages.
-
-Several sources of storage are implemented towards the same API:
-
- * DOM
- * IndexedDB
- * WebSQL
- * LocalStorage
-
-DOM storage is expected to exist at a very minimum (we are running in the context of a page already!),
-then one of the local storage options is added upon a brief detection process.
-
-From the external caller the persistence mini-library expects a single call to *mountDrive* function,
-passing in a few inputs and a callback.
--->
-<!-- /src/shell/start.ts
-declare var require;
-
-setTimeout(() => showCommander(require('drive')), 10);
-
-function showCommander(drive: persistence.Drive) {
-  document.body.style.overflow = 'hidden';
-  document.body.parentElement.style.overflow = 'hidden';
-
-  var styleText = drive.read('/shell/style.css');
-  elem('style', { text: styleText }, document.body);
-  var commander = new CommanderShell(document.body, drive);
-}
--->
 <!-- /src/boot/base.d.ts
 declare function getText(element: Element): string;
 declare function getText(fn: Function): string;
@@ -9505,11 +9092,6 @@ declare module createFrame {
     eval(code: string): any;
   }
 }
-
-interface LoadModResult extends createFrame.LoadedResult {
-    exports: any;
-}
-
 -->
 <!-- /src/boot/base.ts
 function base(window: Window) {
@@ -9935,12 +9517,6 @@ window.onerror = function onerror() {
 
 }
 -->
-<!-- /src/dummy.ts
-class Apple {
-  constructor(public color = 'red') {
-  }
-}
--->
 <!-- /src/load/shellLoader.ts
 function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.BootModuleAPI): shellLoader.ContinueLoading {
 
@@ -10001,7 +9577,6 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
       uiframe.iframe.style.opacity = '0';
       var uiframeBase = (<any>window).base(uiframe.global);
       uiframeBase.apply();
-      (<any>uiframe.global).loadMod = loadMod;
 
       var wasResized = false;
       var resizeHandlers: any[] = [];
@@ -10028,7 +9603,6 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
           case 'ui': return uiframe;
           case 'drive': return drive;
           case 'resize': return { on: onresize, off: offresize };
-          case 'loadMod': return loadMod;
           case 'timings': return timings;
         }
         throw new Error('Module ' + moduleName + ' is not supported.');
@@ -10106,143 +9680,6 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
     });
 
   }
-
-  function loadMod(
-    window: { createFrame?: Function; },
-    options: {
-
-      /** module script */
-      eval: string;
-
-      /** module path to emulate */
-      path?: string;
-
-      /** style or class name for the injected iframe (not needed for headless) */
-      style?: {} | string;
-
-      /** scope to inject, or a function to create such scope using the existing global of the injected iframe */
-      scope?: {} | ((global: any) => {});
-
-      /** whether to show the iframe (false to delete iframe immediately) */
-      ui?: boolean;
-
-    }): LoadModResult {
-
-
-    var style = options.style;
-    if (!options.ui) {
-      style = { display: 'none' };
-    }
-    else if (typeof style === 'string') {
-      style = { className: style, display: 'none' };
-    }
-
-    var frame = (<any>window).createFrame(style);
-    var frameFunction = frame.global.Function;
-
-    if (options.scope) {
-      var scope = typeof options.scope === 'function' ? (<any>options.scope)(frame.global) : options.scope;
-      for (var k in scope) if (scope.hasOwnProperty(k)) {
-        try { frame.global[k] = scope[k]; } catch (err) { }
-      }
-    }
-
-    if (options.eval) {
-
-      var exportsInScope = scope && 'exports' in scope;
-      var evalArgNames = exportsInScope ? [] : ['exports'];
-      var evalArgs = exportsInScope ? [] : [{}];
-      if (scope) {
-        for (var k in scope) if (scope.hasOwnProperty(k)) {
-          evalArgNames.push(k);
-          evalArgs.push(scope[k]);
-        }
-      }
-
-      if (!options.ui) {
-        var allowedGlobals = {
-          setTimeout: 1, setInterval: 1, clearTimeout: 1, clearInterval: 1,
-          eval: 1,
-          console: 1,
-          undefined: 1,
-          Object: 1, Array: 1, Date: 1, Function: 1, String: 1, Boolean: 1, Number: 1,
-          Infinity: 1, NaN: 1, isNaN: 1, isFinite: 1, parseInt: 1, parseFloat: 1,
-          escape: 1, unescape: 1,
-
-          Int32Array: 1, Int8Array: 1, Int16Array: 1,
-          UInt32Array: 1, UInt8Array: 1, UInt8ClampedArray: 1, UInt16Array: 1,
-          Float32Array: 1, Float64Array: 1, ArrayBuffer: 1,
-
-          Math: 1, JSON: 1, RegExp: 1,
-          Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,
-
-          toString: 1, toJSON: 1, toValue: 1,
-
-          Map: 1
-        };
-
-        var hiddenKeys = {};
-
-        // normal properties
-        for (var k in frame.global) {
-          if (scope && scope.hasOwnProperty(k)) continue;
-          if (allowedGlobals.hasOwnProperty(k)) continue;
-          evalArgNames.push(k);
-          hiddenKeys[k] = 1;
-        }
-
-        // non-enumerable properties directly on global
-        if (Object.getOwnPropertyNames) {
-          var props = Object.getOwnPropertyNames(frame.global);
-          for (var i = 0; i < props.length; i++) {
-            if (scope && scope.hasOwnProperty(props[i])) continue;
-            if (allowedGlobals.hasOwnProperty(props[i])) continue;
-            if (hiddenKeys.hasOwnProperty(props[i])) continue;
-            evalArgNames.push(props[i]);
-          }
-
-          // non-enumerable properties on global's prototype
-          if (frame.global.constructor
-            && frame.global.constructor.prototype
-            && frame.global.constructor.prototype != Object
-            && frame.global.constructor.prototype != Object.prototype) {
-            props = Object.getOwnPropertyNames(frame.global.constructor.prototype);
-            for (var i = 0; i < props.length; i++) {
-              if (scope && scope.hasOwnProperty(props[i])) continue;
-              if (allowedGlobals.hasOwnProperty(props[i])) continue;
-              if (hiddenKeys.hasOwnProperty(props[i])) continue;
-              evalArgNames.push(props[i]);
-            }
-          }
-        }
-      }
-
-      var innerEval = frameFunction.apply(frame.global, ['return function(txt) { return eval(txt); }'])();
-
-      var wrappedText = '(function() { return function(' + evalArgNames.join(',') + '){' +
-        options.eval + '\nreturn exports; }; })()' +
-        (options.path ? ' //# sourceURL=' + options.path : '');
-
-      //evalArgNames.push(
-      //  options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval + '\nreturn exports;');
-
-      var evalFn = innerEval(wrappedText);
-      //var evalFn = frameFunction.apply(frame.global, evalArgNames);
-
-      var modExports = evalFn.apply(frame.global, evalArgs);
-
-    }
-
-    return {
-      document: frame.document,
-      global: frame.global,
-      iframe: frame.iframe,
-      eval: frame.eval,
-      exports: modExports
-    };
-
-  }
-
 
 }
 
@@ -13060,14 +12497,6 @@ function nodeprocess_versions_load() {
   return _nodeprocess_versions_;
 }
 -->
-<!-- /src/nodeapi/statics.ts
-declare var require;
-declare var exports;
-
-declare var no_drive: persistence.Drive;
-declare var no_homepath: string;
-
--->
 <!-- /src/nodeapi/stream/defs.d.ts
 interface nostream_ReadableStream extends noevents_EventEmitter {
   readable: boolean;
@@ -13229,6 +12658,14 @@ interface nostream_Transform extends noevents_EventEmitter {
   end(str: string, encoding?: string, cb?: Function): void;
 
 }
+-->
+<!-- /src/nodeapi/statics.ts
+declare var require;
+declare var exports;
+
+declare var no_drive: persistence.Drive;
+declare var no_homepath: string;
+
 -->
 <!-- /src/persistence/attached/indexedDB.ts
 module persistence {
@@ -13950,184 +13387,6 @@ module persistence {
 
 }
 -->
-<!-- /src/persistence/bestEncode.ts
-module persistence {
-
-  export function bestEncode(content: any, escapePath?: boolean): { content: string; encoding: string; } {
-
-    if (content.length>1024*16) {
-      // TODO: consider packing tightly and using eval encoding to unpack
-    }
-
-    if (typeof content!=='string')
-      return { content: encodeArrayOrSimilarAsJSON(content), encoding: 'json' };
-
-    var needsEscaping: boolean;
-    if (escapePath) {
-      // zero-char, newlines, leading/trailing spaces, quote and apostrophe
-      needsEscaping = /\u0000|\r|\n|^\s|\s$|\"|\'/.test(content);
-    }
-    else {
-      needsEscaping = /\u0000|\r/.test(content);
-    }
-
-    if (needsEscaping) {
-      // ZERO character is officially unsafe in HTML,
-      // CR is contentious in IE (which converts any CR or LF into CRLF)
-
-      return { content: encodeUnusualStringAsJSON(content), encoding: 'json' };
-    }
-    else {
-      return { content: content, encoding: 'LF' };
-    }
-  }
-
-  function encodeUnusualStringAsJSON(content: string): string {
-    if (typeof JSON !== 'undefined' && typeof JSON.stringify === 'function') {
-      var simpleJSON = JSON.stringify(content);
-      var sanitizedJSON = simpleJSON.
-        replace(/\u0000/g, '\\u0000').
-        replace(/\r/g, '\\r').
-        replace(/\n/g, '\\n');
-      return sanitizedJSON;
-    }
-    else {
-      var result = content.replace(
-        /\"\u0000|\u0001|\u0002|\u0003|\u0004|\u0005|\u0006|\u0007|\u0008|\u0009|\u00010|\u00011|\u00012|\u00013|\u00014|\u00015|\u0016|\u0017|\u0018|\u0019|\u0020|\u0021|\u0022|\u0023|\u0024|\u0025|\u0026|\u0027|\u0028|\u0029|\u0030|\u0031/g,
-        (chr) =>
-          chr === '\t' ? '\\t' :
-            chr === '\r' ? '\\r' :
-              chr === '\n' ? '\\n' :
-                chr === '\"' ? '\\"' :
-                  chr < '\u0010' ? '\\u000' + chr.charCodeAt(0).toString(16) :
-                    '\\u00' + chr.charCodeAt(0).toString(16));
-      return result;
-    }
-  }
-
-  function encodeArrayOrSimilarAsJSON(content: any): string {
-      var type = content instanceof Array ? null : content.constructor.name || content.type;
-      if (typeof JSON !== 'undefined' && typeof JSON.stringify === 'function') {
-        if (type) {
-          var wrapped = { type, content };
-          var wrappedJSON = JSON.stringify(wrapped);
-          return wrappedJSON;
-        }
-        else {
-          var contentJSON = JSON.stringify(content);
-          return contentJSON;
-        }
-      }
-      else {
-        var jsonArr: string[] = [];
-        if (type) {
-          jsonArr.push('{"type": "');
-          jsonArr.push(content.type || content.prototype.constructor.name);
-          jsonArr.push('", "content": [');
-        }
-        else {
-          jsonArr.push('[');
-        }
-
-        for (var i = 0; i < content.length; i++) {
-          if (i) jsonArr.push(',');
-          jsonArr.push(content[i]);
-        }
-
-        if (type)
-          jsonArr.push(']}');
-        else
-          jsonArr.push(']');
-
-        return jsonArr.join('');
-      }
-  }
-}
--->
-<!-- /src/persistence/bootMount.ts
-module persistence {
-
-  // TODO: pass in progress callback
-  export function bootMount(uniqueKey: string, document: Document): bootMount.ContinueLoading {
-
-    var continueParse: persistence.dom.parseDOMStorage.ContinueParsing;
-
-    var ondomdriveloaded;
-    var domDriveLoaded: Drive;
-    var storedFinishCallback;
-
-    mountDrive(
-      callback => {
-        if (domDriveLoaded)
-          callback(domDriveLoaded);
-        else
-          ondomdriveloaded = callback;
-      },
-      uniqueKey,
-      [attached.indexedDB, attached.webSQL, attached.localStorage],
-      mountedDrive => {
-
-        storedFinishCallback(mountedDrive);
-
-      });
-
-    return continueLoading();
-
-    function continueLoading(): bootMount.ContinueLoading {
-
-      continueDOMLoading();
-
-      // TODO: record progress
-
-      return {
-        continueLoading,
-        finishLoading,
-
-        loadedFileCount: continueParse.loadedFileCount,
-        loadedSize: continueParse.loadedSize,
-        totalSize: continueParse.totalSize
-
-      };
-    }
-
-    function finishLoading(finishCallback: (monutedDrive: Drive) => void) {
-
-      storedFinishCallback = finishCallback;
-
-      continueDOMLoading();
-
-      domDriveLoaded = continueParse.finishParsing();
-
-      if (ondomdriveloaded) {
-        ondomdriveloaded(domDriveLoaded);
-      }
-
-    }
-
-
-    function continueDOMLoading() {
-      continueParse = continueParse ? continueParse.continueParsing() : dom.parseDOMStorage(document);
-    }
-
-  }
-
-  module bootMount {
-
-    export interface ContinueLoading {
-
-      continueLoading(): ContinueLoading;
-
-      finishLoading(finishCallback: (mountedDrive: Drive) => void);
-
-      loadedFileCount: number;
-      loadedSize: number;
-      totalSize: number;
-
-    }
-
-  }
-}
--->
 <!-- /src/persistence/dom/CommentHeader.ts
 module persistence.dom {
 
@@ -14697,6 +13956,344 @@ module persistence.encodings {
 
 }
 -->
+<!-- /src/persistence/Drive.ts
+module persistence {
+
+  export interface Drive {
+
+    timestamp: number;
+
+    files(): string[];
+
+    read(file: string): string;
+
+    write(file: string, content: string);
+
+  }
+
+  export module Drive {
+
+    export interface Shadow {
+
+      timestamp: number;
+
+      write(file: string, content: string): void;
+
+    }
+
+    export interface Optional {
+
+      name: string;
+
+      detect(uniqueKey: string, callback: (detached: Detached) => void): void;
+
+    }
+
+    export interface Detached {
+
+      timestamp: number;
+      totalSize?: number;
+
+      applyTo(mainDrive: Drive, callback: Detached.CallbackWithShadow): void;
+
+      purge(callback: Detached.CallbackWithShadow): void;
+
+    }
+
+    export module Detached {
+      export interface CallbackWithShadow {
+
+        (loaded: Shadow): void;
+        progress?: (current: number, total: number) => void;
+      }
+    }
+
+  }
+}
+-->
+<!-- /src/persistence/bestEncode.ts
+module persistence {
+
+  export function bestEncode(content: any, escapePath?: boolean): { content: string; encoding: string; } {
+
+    if (content.length>1024*16) {
+      // TODO: consider packing tightly and using eval encoding to unpack
+    }
+
+    if (typeof content!=='string')
+      return { content: encodeArrayOrSimilarAsJSON(content), encoding: 'json' };
+
+    var needsEscaping: boolean;
+    if (escapePath) {
+      // zero-char, newlines, leading/trailing spaces, quote and apostrophe
+      needsEscaping = /\u0000|\r|\n|^\s|\s$|\"|\'/.test(content);
+    }
+    else {
+      needsEscaping = /\u0000|\r/.test(content);
+    }
+
+    if (needsEscaping) {
+      // ZERO character is officially unsafe in HTML,
+      // CR is contentious in IE (which converts any CR or LF into CRLF)
+
+      return { content: encodeUnusualStringAsJSON(content), encoding: 'json' };
+    }
+    else {
+      return { content: content, encoding: 'LF' };
+    }
+  }
+
+  function encodeUnusualStringAsJSON(content: string): string {
+    if (typeof JSON !== 'undefined' && typeof JSON.stringify === 'function') {
+      var simpleJSON = JSON.stringify(content);
+      var sanitizedJSON = simpleJSON.
+        replace(/\u0000/g, '\\u0000').
+        replace(/\r/g, '\\r').
+        replace(/\n/g, '\\n');
+      return sanitizedJSON;
+    }
+    else {
+      var result = content.replace(
+        /\"\u0000|\u0001|\u0002|\u0003|\u0004|\u0005|\u0006|\u0007|\u0008|\u0009|\u00010|\u00011|\u00012|\u00013|\u00014|\u00015|\u0016|\u0017|\u0018|\u0019|\u0020|\u0021|\u0022|\u0023|\u0024|\u0025|\u0026|\u0027|\u0028|\u0029|\u0030|\u0031/g,
+        (chr) =>
+          chr === '\t' ? '\\t' :
+            chr === '\r' ? '\\r' :
+              chr === '\n' ? '\\n' :
+                chr === '\"' ? '\\"' :
+                  chr < '\u0010' ? '\\u000' + chr.charCodeAt(0).toString(16) :
+                    '\\u00' + chr.charCodeAt(0).toString(16));
+      return result;
+    }
+  }
+
+  function encodeArrayOrSimilarAsJSON(content: any): string {
+      var type = content instanceof Array ? null : content.constructor.name || content.type;
+      if (typeof JSON !== 'undefined' && typeof JSON.stringify === 'function') {
+        if (type) {
+          var wrapped = { type, content };
+          var wrappedJSON = JSON.stringify(wrapped);
+          return wrappedJSON;
+        }
+        else {
+          var contentJSON = JSON.stringify(content);
+          return contentJSON;
+        }
+      }
+      else {
+        var jsonArr: string[] = [];
+        if (type) {
+          jsonArr.push('{"type": "');
+          jsonArr.push(content.type || content.prototype.constructor.name);
+          jsonArr.push('", "content": [');
+        }
+        else {
+          jsonArr.push('[');
+        }
+
+        for (var i = 0; i < content.length; i++) {
+          if (i) jsonArr.push(',');
+          jsonArr.push(content[i]);
+        }
+
+        if (type)
+          jsonArr.push(']}');
+        else
+          jsonArr.push(']');
+
+        return jsonArr.join('');
+      }
+  }
+}
+-->
+<!-- /src/persistence/bootMount.ts
+module persistence {
+
+  // TODO: pass in progress callback
+  export function bootMount(uniqueKey: string, document: Document): bootMount.ContinueLoading {
+
+    var continueParse: persistence.dom.parseDOMStorage.ContinueParsing;
+
+    var ondomdriveloaded;
+    var domDriveLoaded: Drive;
+    var storedFinishCallback;
+
+    mountDrive(
+      callback => {
+        if (domDriveLoaded)
+          callback(domDriveLoaded);
+        else
+          ondomdriveloaded = callback;
+      },
+      uniqueKey,
+      [attached.indexedDB, attached.webSQL, attached.localStorage],
+      mountedDrive => {
+
+        storedFinishCallback(mountedDrive);
+
+      });
+
+    return continueLoading();
+
+    function continueLoading(): bootMount.ContinueLoading {
+
+      continueDOMLoading();
+
+      // TODO: record progress
+
+      return {
+        continueLoading,
+        finishLoading,
+
+        loadedFileCount: continueParse.loadedFileCount,
+        loadedSize: continueParse.loadedSize,
+        totalSize: continueParse.totalSize
+
+      };
+    }
+
+    function finishLoading(finishCallback: (monutedDrive: Drive) => void) {
+
+      storedFinishCallback = finishCallback;
+
+      continueDOMLoading();
+
+      domDriveLoaded = continueParse.finishParsing();
+
+      if (ondomdriveloaded) {
+        ondomdriveloaded(domDriveLoaded);
+      }
+
+    }
+
+
+    function continueDOMLoading() {
+      continueParse = continueParse ? continueParse.continueParsing() : dom.parseDOMStorage(document);
+    }
+
+  }
+
+  module bootMount {
+
+    export interface ContinueLoading {
+
+      continueLoading(): ContinueLoading;
+
+      finishLoading(finishCallback: (mountedDrive: Drive) => void);
+
+      loadedFileCount: number;
+      loadedSize: number;
+      totalSize: number;
+
+    }
+
+  }
+}
+-->
+<!-- /src/persistence/mountDrive.ts
+module persistence {
+
+  export function mountDrive(
+    loadDOMDrive: (callback: (dom: Drive) => void)=> void,
+    uniqueKey: string,
+    optionalModules: Drive.Optional[],
+    callback: mountDrive.Callback): void {
+
+    var driveIndex = 0;
+
+    loadNextOptional();
+
+    function loadNextOptional() {
+
+      while (driveIndex < optionalModules.length &&
+        (!optionalModules[driveIndex] || typeof optionalModules[driveIndex].detect !== 'function')) {
+        driveIndex++;
+      }
+
+      if (driveIndex >= optionalModules.length) {
+        loadDOMDrive(dom => callback(new MountedDrive(dom, null)));
+        return;
+      }
+
+      var op = optionalModules[driveIndex];
+      op.detect(
+        uniqueKey,
+        detached => {
+          if (!detached) {
+            driveIndex++;
+            loadNextOptional();
+            return;
+          }
+
+          loadDOMDrive(dom => {
+            if (detached.timestamp > dom.timestamp) {
+              var callbackWithShadow: Drive.Detached.CallbackWithShadow = loadedDrive => {
+                dom.timestamp = detached.timestamp;
+                callback(new MountedDrive(dom, loadedDrive));
+              };
+              if (callback.progress)
+                callbackWithShadow.progress = callback.progress;
+              loadDOMDrive(dom => detached.applyTo(dom, callbackWithShadow));
+            }
+            else {
+              var callbackWithShadow: Drive.Detached.CallbackWithShadow = loadedDrive => {
+                callback(new MountedDrive(dom, loadedDrive));
+              };
+              if (callback.progress)
+                callbackWithShadow.progress = callback.progress;
+              detached.purge(callbackWithShadow);
+            }
+          });
+
+        });
+    }
+
+  }
+
+  export module mountDrive {
+
+    export interface Callback {
+
+      (drive: Drive): void;
+
+      progress?: (current: number, total: number) => void;
+
+    }
+
+  }
+
+  class MountedDrive implements Drive {
+
+    updateTime = true;
+    timestamp: number = 0;
+
+    constructor (private _dom: Drive, private _shadow: Drive.Shadow) {
+      this.timestamp = this._dom.timestamp;
+    }
+
+    files(): string[] {
+      return this._dom.files();
+    }
+
+    read(file: string): string {
+      return this._dom.read(file);
+    }
+
+    write(file: string, content: string) {
+      if (this.updateTime) {
+        this.timestamp = +new Date();
+      }
+
+      this._dom.timestamp = this.timestamp;
+      this._dom.write(file, content);
+      if (this._shadow) {
+        this._shadow.timestamp = this.timestamp;
+        this._shadow.write(file, content);
+      }
+    }
+  }
+
+}
+-->
 <!-- /src/persistence/normalizePath.ts
 module persistence {
 
@@ -14710,243 +14307,6 @@ module persistence {
     path = path.replace(/\/\/*/g, '/'); // replacing duplicate slashes with single
 
     return path;
-  }
-
-}
--->
-<!-- /src/shell/CommanderShell.ts
-class CommanderShell {
-
-  private _metricElem: HTMLDivElement;
-  private _twoPanels: panels.TwoPanels;
-  private _terminal: terminal.Terminal;
-
-  private _metrics: CommanderShell.Metrics = {
-    hostWidth: 0,
-    hostHeight: 0,
-    emWidth: 0,
-    emHeight: 0
-  };
-
-  private _onsizechangedTimeout: number = 0;
-  private _node: terminal.NodeHost;
-
-  constructor(private _host: HTMLElement, private _drive: persistence.Drive) {
-
-    this._node = new terminal.NodeHost(this._drive);
-    this._node.log = args => this._terminal.log.apply(this._terminal, args);
-
-    elem(this._host, {
-      background: 'black',
-      color: 'silver'
-    });
-
-    this._metricElem = <any>elem('div', {
-      position: 'absolute',
-      opacity: 0,
-      left: '-200px', top: '-200px',
-      wdith: 'auto', height: 'auto',
-      text: 'M'
-    }, document.body);
-
-    this._terminal = new terminal.Terminal(this._host, this._node);
-    this._twoPanels = new panels.TwoPanels(this._host, '/', '/src', this._drive);
-
-    var resizeMod = require('resize');
-    resizeMod.on(winMetrics => {
-      this._metrics.hostWidth = winMetrics.windowWidth;
-      this._metrics.hostHeight = winMetrics.windowHeight;
-      this.measure();
-      this.arrange();
-    });
-
-    this._metrics.hostWidth = document.body.offsetWidth;
-    this._metrics.hostHeight = document.body.offsetHeight;
-
-    this.measure();
-    this.arrange();
-
-    on(this._host, 'keydown', e => this._keydown(<any>e));
-
-    var _glob = (function() { return this; })();
-    var applyConsole = (glob) => {
-      if (glob.console) {
-        var _oldLog = glob.console.log;
-        var term = this._terminal;
-        console.log = function(...args: any[]) {
-          _oldLog.apply(glob.console, args);
-          term.logArray(args);
-        };
-      }
-      else {
-        var term = this._terminal;
-        glob.console = {
-          log: function(...args: any[]) {
-            term.logArray(args);
-          }
-        };
-      }
-    };
-
-    applyConsole(_glob);
-    applyConsole(window);
-
-    var timings: any[] = require('timings');
-    var timingsShort: any = {};
-    for (var i = 0; i < timings.length;i++) {
-      timingsShort[timings[i].stage] = timings[i].time;
-    }
-    this._terminal.log('timings: ', timingsShort);
-  }
-
-  measure() {
-    this._metrics.emWidth = this._metricElem.offsetWidth;
-    this._metrics.emHeight = this._metricElem.offsetHeight;
-    this._twoPanels.measure();
-    this._terminal.measure();
-  }
-
-	arrange() {
-    this._host.style.width = this._metrics.hostWidth + 'px';
-    this._host.style.height = this._metrics.hostHeight + 'px';
-    this._twoPanels.arrange(this._metrics);
-    this._terminal.arrange(this._metrics);
-  }
-
-  private _keydown(e: KeyboardEvent) {
-    var res = this._keydownCore(e);
-    if (res) {
-      if (e.preventDefault)
-        e.preventDefault();
-    }
-    return res;
-  }
-
-  private _keydownCore(e: KeyboardEvent) {
-    if (e.keyCode === 27 && !e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-      this._twoPanels.toggleVisibility();
-      return true;
-    }
-
-    if (e.keyCode === 13)
-      this._terminal.clearInput();
-
-    if ((e.keyCode === 13 && this._twoPanels.isVisible() && !this._terminal.hasInput())
-      || (e.keyCode !== 13)) {
-      if (this._twoPanels.keydown(e)) return true;
-    }
-
-    var cursorPath = this._twoPanels.cursorPath();
-
-    this._terminal.focus();
-    if (this._terminal.keydown(e, cursorPath)) return true;
-
-    if (e.keyCode === 13)
-      return this._execute(cursorPath);
-
-    //if (e.keyCode < 32 || e.keyCode > 126) {
-    //	this._terminal.log('CommanderShell::keydown ' + e.yCode);
-      //}
-  }
-
-	private _execute(cursorPath: string) {
-
-    if (/\.js$/.test(cursorPath)) {
-      var text = this._drive.read(cursorPath);
-      if (typeof text !== 'undefined' && text !== null) {
-        this._terminal.log('@node ' + cursorPath);
-        var result = this._node.run(text, cursorPath);
-        this._terminal.log(result);
-        return true;
-      }
-    }
-    else if (/.html$/.test(cursorPath)) {
-      this._terminal.log('@build ' + cursorPath);
-
-      var htmlTemplate = this._drive.read(cursorPath);
-
-      var blankWindow = window.open('', '_blank' + (+new Date()));
-
-      var pollUntil = (+new Date()) + 1000;
-
-      while (+new Date() < pollUntil) {
-        try {
-          var blankWindowDoc = blankWindow.document;
-        }
-        catch (error) { }
-      }
-
-      if (!blankWindowDoc) {
-        alert('Cannot open a window to host the built document');
-        return;
-      }
-
-      blankWindow.document.open();
-      blankWindow.document.write([
-        '<html><title>Building ' + cursorPath + '...</title>',
-        '<style>',
-        'html, body { background: black; color: greenyellow; }',
-        'h2 { font-weight: 100; width: 40%; position: fixed; font-size: 200%; }',
-        'pre { width: 50%; padding-left: 50%; opacity: 1; transition: opacity 1s; }',
-        '</style>',
-        '<h2>Building ' + cursorPath + '</h2>',
-        '<' + 's' + 'cript>',
-        'var textContentProp = "textContent" in document.createElement("pre") ? "textContent" : "innerText";',
-        'var lastLogElem;',
-        'function log(text) {',
-        '  var logElem = document.createElement("pre");',
-        '  logElem[textContentProp]=text;',
-        '  document.body.appendChild(logElem);',
-        '  logElem.scrollIntoView();',
-        '  if (lastLogElem) {',
-        '    lastLogElem.style.opacity = 0.5;',
-        '  }',
-        '  lastLogElem = logElem;',
-        '}',
-        '<' + '/' + 's' + 'cript>'].join('\n'));
-      blankWindow.document.close();
-
-      build.processTemplate(
-        htmlTemplate,
-        [],
-        txt => {
-          this._terminal.log(txt);
-          (<any>blankWindow).log(txt);
-        },
-        (error, result) => {
-          if (error) {
-            this._terminal.log(error);
-            return;
-          }
-
-          try {
-            var blob = new Blob([result], { type: 'text/html' });
-            var url = URL.createObjectURL(blob);
-            blankWindow.location.replace(url);
-          }
-          catch (blobError) {
-            blankWindow.document.open();
-            blankWindow.document.write(result);
-            blankWindow.document.close();
-          }
-
-        });
-    }
-    else {
-      this._terminal.log('@type ' + cursorPath);
-      this._terminal.log(this._drive.read(cursorPath));
-    }
-  }
-
-}
-
-module CommanderShell {
-
-  export interface Metrics {
-    hostWidth: number;
-    hostHeight: number;
-    emWidth: number;
-    emHeight: number;
   }
 
 }
@@ -16075,13 +15435,11 @@ module terminal {
 
   export class NodeHost {
 
-    private _nodeMod: LoadModResult = null;
+    private _nodeMod: loadMod.LoadModResult = null;
     private _nodeModCache: any = null;
-    private _processMod: LoadModResult = null;
+    private _processMod: loadMod.LoadModResult = null;
 
     constructor(private _drive: persistence.Drive) {
-
-      var loadMod = require('loadMod');
 
       this._nodeModCache = {};
       var nocode = this._drive.read('/shell/node.ts.js');
@@ -16458,6 +15816,402 @@ module terminal {
   outline: none;
   resize: none;
   overflow: hidden;
+}
+-->
+<!-- /src/shell/CommanderShell.ts
+class CommanderShell {
+
+  private _metricElem: HTMLDivElement;
+  private _twoPanels: panels.TwoPanels;
+  private _terminal: terminal.Terminal;
+
+  private _metrics: CommanderShell.Metrics = {
+    hostWidth: 0,
+    hostHeight: 0,
+    emWidth: 0,
+    emHeight: 0
+  };
+
+  private _onsizechangedTimeout: number = 0;
+  private _node: terminal.NodeHost;
+
+  constructor(private _host: HTMLElement, private _drive: persistence.Drive) {
+
+    this._node = new terminal.NodeHost(this._drive);
+    this._node.log = args => this._terminal.log.apply(this._terminal, args);
+
+    elem(this._host, {
+      background: 'black',
+      color: 'silver'
+    });
+
+    this._metricElem = <any>elem('div', {
+      position: 'absolute',
+      opacity: 0,
+      left: '-200px', top: '-200px',
+      wdith: 'auto', height: 'auto',
+      text: 'M'
+    }, document.body);
+
+    this._terminal = new terminal.Terminal(this._host, this._node);
+    this._twoPanels = new panels.TwoPanels(this._host, '/', '/src', this._drive);
+
+    var resizeMod = require('resize');
+    resizeMod.on(winMetrics => {
+      this._metrics.hostWidth = winMetrics.windowWidth;
+      this._metrics.hostHeight = winMetrics.windowHeight;
+      this.measure();
+      this.arrange();
+    });
+
+    this._metrics.hostWidth = document.body.offsetWidth;
+    this._metrics.hostHeight = document.body.offsetHeight;
+
+    this.measure();
+    this.arrange();
+
+    on(this._host, 'keydown', e => this._keydown(<any>e));
+
+    var _glob = (function() { return this; })();
+    var applyConsole = (glob) => {
+      if (glob.console) {
+        var _oldLog = glob.console.log;
+        var term = this._terminal;
+        console.log = function(...args: any[]) {
+          _oldLog.apply(glob.console, args);
+          term.logArray(args);
+        };
+      }
+      else {
+        var term = this._terminal;
+        glob.console = {
+          log: function(...args: any[]) {
+            term.logArray(args);
+          }
+        };
+      }
+    };
+
+    applyConsole(_glob);
+    applyConsole(window);
+
+    var timings: any[] = require('timings');
+    var timingsShort: any = {};
+    for (var i = 0; i < timings.length;i++) {
+      timingsShort[timings[i].stage] = timings[i].time;
+    }
+    this._terminal.log('timings: ', timingsShort);
+  }
+
+  measure() {
+    this._metrics.emWidth = this._metricElem.offsetWidth;
+    this._metrics.emHeight = this._metricElem.offsetHeight;
+    this._twoPanels.measure();
+    this._terminal.measure();
+  }
+
+	arrange() {
+    this._host.style.width = this._metrics.hostWidth + 'px';
+    this._host.style.height = this._metrics.hostHeight + 'px';
+    this._twoPanels.arrange(this._metrics);
+    this._terminal.arrange(this._metrics);
+  }
+
+  private _keydown(e: KeyboardEvent) {
+    var res = this._keydownCore(e);
+    if (res) {
+      if (e.preventDefault)
+        e.preventDefault();
+    }
+    return res;
+  }
+
+  private _keydownCore(e: KeyboardEvent) {
+    if (e.keyCode === 27 && !e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      this._twoPanels.toggleVisibility();
+      return true;
+    }
+
+    if (e.keyCode === 13)
+      this._terminal.clearInput();
+
+    if ((e.keyCode === 13 && this._twoPanels.isVisible() && !this._terminal.hasInput())
+      || (e.keyCode !== 13)) {
+      if (this._twoPanels.keydown(e)) return true;
+    }
+
+    var cursorPath = this._twoPanels.cursorPath();
+
+    this._terminal.focus();
+    if (this._terminal.keydown(e, cursorPath)) return true;
+
+    if (e.keyCode === 13)
+      return this._execute(cursorPath);
+
+    //if (e.keyCode < 32 || e.keyCode > 126) {
+    //	this._terminal.log('CommanderShell::keydown ' + e.yCode);
+      //}
+  }
+
+	private _execute(cursorPath: string) {
+
+    if (/\.js$/.test(cursorPath)) {
+      var text = this._drive.read(cursorPath);
+      if (typeof text !== 'undefined' && text !== null) {
+        this._terminal.log('@node ' + cursorPath);
+        var result = this._node.run(text, cursorPath);
+        this._terminal.log(result);
+        return true;
+      }
+    }
+    else if (/.html$/.test(cursorPath)) {
+      this._terminal.log('@build ' + cursorPath);
+
+      var htmlTemplate = this._drive.read(cursorPath);
+
+      var blankWindow = window.open('', '_blank' + (+new Date()));
+
+      var pollUntil = (+new Date()) + 1000;
+
+      while (+new Date() < pollUntil) {
+        try {
+          var blankWindowDoc = blankWindow.document;
+        }
+        catch (error) { }
+      }
+
+      if (!blankWindowDoc) {
+        alert('Cannot open a window to host the built document');
+        return;
+      }
+
+      blankWindow.document.open();
+      blankWindow.document.write([
+        '<html><title>Building ' + cursorPath + '...</title>',
+        '<style>',
+        'html, body { background: black; color: greenyellow; }',
+        'h2 { font-weight: 100; width: 40%; position: fixed; font-size: 200%; }',
+        'pre { width: 50%; padding-left: 50%; opacity: 1; transition: opacity 1s; }',
+        '</style>',
+        '<h2>Building ' + cursorPath + '</h2>',
+        '<' + 's' + 'cript>',
+        'var textContentProp = "textContent" in document.createElement("pre") ? "textContent" : "innerText";',
+        'var lastLogElem;',
+        'function log(text) {',
+        '  var logElem = document.createElement("pre");',
+        '  logElem[textContentProp]=text;',
+        '  document.body.appendChild(logElem);',
+        '  logElem.scrollIntoView();',
+        '  if (lastLogElem) {',
+        '    lastLogElem.style.opacity = 0.5;',
+        '  }',
+        '  lastLogElem = logElem;',
+        '}',
+        '<' + '/' + 's' + 'cript>'].join('\n'));
+      blankWindow.document.close();
+
+      build.processTemplate(
+        htmlTemplate,
+        [],
+        txt => {
+          this._terminal.log(txt);
+          (<any>blankWindow).log(txt);
+        },
+        (error, result) => {
+          if (error) {
+            this._terminal.log(error);
+            return;
+          }
+
+          try {
+            var blob = new Blob([result], { type: 'text/html' });
+            var url = URL.createObjectURL(blob);
+            blankWindow.location.replace(url);
+          }
+          catch (blobError) {
+            blankWindow.document.open();
+            blankWindow.document.write(result);
+            blankWindow.document.close();
+          }
+
+        });
+    }
+    else {
+      this._terminal.log('@type ' + cursorPath);
+      this._terminal.log(this._drive.read(cursorPath));
+    }
+  }
+
+}
+
+module CommanderShell {
+
+  export interface Metrics {
+    hostWidth: number;
+    hostHeight: number;
+    emWidth: number;
+    emHeight: number;
+  }
+
+}
+-->
+<!-- /src/shell/loadMod.ts
+function loadMod(
+  window: { createFrame?: Function; },
+  options: {
+
+    /** module script */
+    eval: string;
+
+    /** module path to emulate */
+    path?: string;
+
+    /** style or class name for the injected iframe (not needed for headless) */
+    style?: {} | string;
+
+    /** scope to inject, or a function to create such scope using the existing global of the injected iframe */
+    scope?: {} | ((global: any) => {});
+
+    /** whether to show the iframe (false to delete iframe immediately) */
+    ui?: boolean;
+
+  }): loadMod.LoadModResult {
+
+
+  var style = options.style;
+  if (!options.ui) {
+    style = { display: 'none' };
+  }
+  else if (typeof style === 'string') {
+    style = { className: style, display: 'none' };
+  }
+
+  var frame = (<any>window).createFrame(style);
+  var frameFunction = frame.global.Function;
+
+  if (options.scope) {
+    var scope = typeof options.scope === 'function' ? (<any>options.scope)(frame.global) : options.scope;
+    for (var k in scope) if (scope.hasOwnProperty(k)) {
+      try { frame.global[k] = scope[k]; } catch (err) { }
+    }
+  }
+
+  if (options.eval) {
+
+    var exportsInScope = scope && 'exports' in scope;
+    var evalArgNames = exportsInScope ? [] : ['exports'];
+    var evalArgs = exportsInScope ? [] : [{}];
+    if (scope) {
+      for (var k in scope) if (scope.hasOwnProperty(k)) {
+        evalArgNames.push(k);
+        evalArgs.push(scope[k]);
+      }
+    }
+
+    if (!options.ui) {
+      var allowedGlobals = {
+        setTimeout: 1, setInterval: 1, clearTimeout: 1, clearInterval: 1,
+        eval: 1,
+        console: 1,
+        undefined: 1,
+        Object: 1, Array: 1, Date: 1, Function: 1, String: 1, Boolean: 1, Number: 1,
+        Infinity: 1, NaN: 1, isNaN: 1, isFinite: 1, parseInt: 1, parseFloat: 1,
+        escape: 1, unescape: 1,
+
+        Int32Array: 1, Int8Array: 1, Int16Array: 1,
+        UInt32Array: 1, UInt8Array: 1, UInt8ClampedArray: 1, UInt16Array: 1,
+        Float32Array: 1, Float64Array: 1, ArrayBuffer: 1,
+
+        Math: 1, JSON: 1, RegExp: 1,
+        Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,
+
+        toString: 1, toJSON: 1, toValue: 1,
+
+        Map: 1
+      };
+
+      var hiddenKeys = {};
+
+      // normal properties
+      for (var k in frame.global) {
+        if (scope && scope.hasOwnProperty(k)) continue;
+        if (allowedGlobals.hasOwnProperty(k)) continue;
+        evalArgNames.push(k);
+        hiddenKeys[k] = 1;
+      }
+
+      // non-enumerable properties directly on global
+      if (Object.getOwnPropertyNames) {
+        var props = Object.getOwnPropertyNames(frame.global);
+        for (var i = 0; i < props.length; i++) {
+          if (scope && scope.hasOwnProperty(props[i])) continue;
+          if (allowedGlobals.hasOwnProperty(props[i])) continue;
+          if (hiddenKeys.hasOwnProperty(props[i])) continue;
+          evalArgNames.push(props[i]);
+        }
+
+        // non-enumerable properties on global's prototype
+        if (frame.global.constructor
+          && frame.global.constructor.prototype
+          && frame.global.constructor.prototype != Object
+          && frame.global.constructor.prototype != Object.prototype) {
+          props = Object.getOwnPropertyNames(frame.global.constructor.prototype);
+          for (var i = 0; i < props.length; i++) {
+            if (scope && scope.hasOwnProperty(props[i])) continue;
+            if (allowedGlobals.hasOwnProperty(props[i])) continue;
+            if (hiddenKeys.hasOwnProperty(props[i])) continue;
+            evalArgNames.push(props[i]);
+          }
+        }
+      }
+    }
+
+    var innerEval = frameFunction.apply(frame.global, ['return function(txt) { return eval(txt); }'])();
+
+    var wrappedText = '(function() { return function(' + evalArgNames.join(',') + '){' +
+      options.eval + '\nreturn exports; }; })()' +
+      (options.path ? ' //# sourceURL=' + options.path : '');
+
+    //evalArgNames.push(
+    //  options.path ? options.eval + '\nreturn exports; //# sourceURL=' + options.path : options.eval + '\nreturn exports;');
+
+    var evalFn = innerEval(wrappedText);
+    //var evalFn = frameFunction.apply(frame.global, evalArgNames);
+
+    var modExports = evalFn.apply(frame.global, evalArgs);
+
+  }
+
+  return {
+    document: frame.document,
+    global: frame.global,
+    iframe: frame.iframe,
+    eval: frame.eval,
+    exports: modExports
+  };
+
+}
+
+module loadMod {
+
+  export interface LoadModResult extends createFrame.LoadedResult {
+    exports: any;
+  }
+
+}
+-->
+<!-- /src/shell/start.ts
+declare var require;
+
+setTimeout(() => showCommander(require('drive')), 10);
+
+function showCommander(drive: persistence.Drive) {
+  document.body.style.overflow = 'hidden';
+  document.body.parentElement.style.overflow = 'hidden';
+
+  var styleText = drive.read('/shell/style.css');
+  elem('style', { text: styleText }, document.body);
+  var commander = new CommanderShell(document.body, drive);
 }
 -->
 <!-- /src/typescript/lib.d.ts
@@ -59752,6 +59506,248 @@ interface SQLResultSetRowList {
   length: number;
   item(index: number): any;
 }
+-->
+<!-- /src/dummy.ts
+class Apple {
+  constructor(public color = 'red') {
+  }
+}
+-->
+<!-- /src/index.html
+<*!doctype html>
+<title>mini shell </title>
+
+<script data-legit=mi>
+  <%=embedFile('boot/onerror.js')%>
+//# sourceURL=boot/onerror.js
+</script>
+<script data-legit=mi>
+  earlyBoot(window);
+
+  	<%=typescriptBuild('boot/*')%>
+
+    <%=embedFile('boot/bootUI.js')%>
+//# sourceURL=/boot/base.js
+</script>
+<script data-legit=mi>
+<%=typescriptBuild('/load/*', '/persistence/*', '/boot/base.d.ts', '/typings/*')%>
+
+//# sourceURL=/load/shellLoader.ts.js
+</script>
+
+<*!-- total 56Mb, saved 25 Apr 2015 22:52:01.231 --*>
+
+<*!-- /shell/start.ts.js
+<%=typescriptBuild('/shell/*', '/boot/base.d.ts', '/persistence/Drive.ts', '/typings/*')%>--*>
+
+<*!-- /empty/
+--*>
+
+
+<*!-- /LF-file.txt
+123
+456--*>
+
+<*!-- /CRLF-file [CRLF]
+123
+456--*>
+
+<*!-- /CR-file [CR]
+123
+456--*>
+
+<*!-- /exportsome.js [CR]
+exports = 55--*>
+
+<*!-- /exports_fs.js [CR]
+exports = require('fs')--*>
+
+<*!-- /exports_process.js [CR]
+exports = process--*>
+
+<*!-- /eval-file.txt [eval]
+ "random char: " + String.fromCharCode(Math.random()*16000)+"\n"+
+ "date: "+new Date()+"\n"+
+ "location: "+location --*>
+
+<*!-- /json-file.txt [json]
+"new ok \u2222 and what\r\n or \u0001?\n\n\n"--*>
+
+<%=(function() {
+var dump = [];
+for (var i = 0; i < 2000; i++) {
+	dump.push('<'+'!'+'-- /large-directory/'+(500+i)+'.txt');
+  dump.push('OK --'+'>');
+}
+return dump.join('\n');
+   })()%>
+
+
+
+
+
+
+<*!-- /shell/node.ts.js
+<%=typescriptBuild('/nodeapi/*', '/boot/base.d.ts', '/persistence/Drive.ts')%>
+exports.fs = nofs_load();
+exports.process = noprocess_load();
+exports.module = nomodule_load();
+exports.path = nopath_load();
+exports.os = noos_load();
+--*>
+
+<*!-- /shell/persistence.ts.js
+<%=typescriptBuild('/persistence/*', '/typings/*')%>
+--*>
+
+
+<*!-- /shell/style.css
+<%=(function() {
+	var drive = portabled.build.processTemplate.mainDrive;
+	var files = drive.files();
+	var styleText = [];
+  for (var i = 0; i < files.length; i++) {
+    if (/^\/shell\/[\s\S]*\.css$/.test(files[i]))
+      styleText.push(drive.read(files[i]));
+  }
+	return styleText.join('\n');
+
+})()%>
+--*>
+
+<%=(function() {
+
+	var drive = portabled.build.processTemplate.mainDrive;
+	var files = drive.files();
+	var fileDump = [];
+  for (var i = 0; i < files.length; i++) {
+    var content = drive.read(files[i]);
+    var decoratedContent = content.
+			replace(/\-\-(\**)\>/g, '--*$1>').
+			replace(/\<(\**)\!/g, '<*$1!');
+	  fileDump.push('<'+'!'+'-- '+'/src'+files[i]);
+    fileDump.push(decoratedContent);
+    fileDump.push('--'+'!'+'>');
+  }
+	return fileDump.join('\n');
+
+})()%>
+
+
+-->
+<!-- /src/readme.md
+#New mini portable shell development
+
+Used these open-source libraries:
+
+ * [feross/buffer] (https://github.com/feross/buffer) - MIT
+ * [beatgammit/base64-js] (https://github.com/beatgammit/base64-js) - MIT
+ * [feross/ieee754] (https://github.com/feross/ieee754) - MIT
+ * [retrofox/is-array] (https://github.com/retrofox/is-array) - MIT
+
+## Boot process
+
+The boot process begins with first bytes of the page received, during the loading of the content,
+then would continue for a little after the page is loaded.
+
+The main post-content-load is completing the data fetch from the local storage. It may well finish earlier,
+but may take some time.
+
+During the boot process, and at the end of it the code is supposed to show sensible UI
+and implement neat handover animations (unless the whole boot finishes very fast).
+
+### Early boot
+
+The mission of this stage is to create the temporary boot UI (very quickly!) and hand over to the shell loader.
+The boot UI is something like a splash screen, boot animation, washed-out live-like image or whatever.
+
+ * Error handler is installed at the first opportunity
+ * Base.js library with primitives for basic DOM manipulation is loaded
+ * BootUI iframe is created
+ * BootUI function is invoked to draw the boot animation
+
+### Shell loader
+
+Shell loader's task is to initialise the persistence (virtual filesystem backed by DOM and local storage).
+
+During that persistence loading the shell loader passes progress events to the boot UI. Upon completion
+it starts the actual shell and finally animates from boot UI to the shell.
+
+ * Persistence loading is started
+ * Persistence keeps polling the DOM state, fishing for pieces of 'virtual filesystem'
+ * Progress is supposed to be reported to the BootUI
+ * Persistence also need to load the locally-stored state, reconciling it with the DOM (by timestamps)
+ * Eventualy persistence report completion
+ * Shell iframe is created with opacity=0
+ * Shell start code is loaded (normally from the filesystem) and kicked off
+ * Animating BootUI.opacity -> 0; Shell.opacity->1
+
+ ### Shell
+
+When shell begins to load, the persistence is fully functional, so it's up to the shell what to do with it.
+
+The interactive node-like shell emulates node.js to a great extent: by laying node.js API on top of the persistence and various browser features.
+
+At the moment the shell also has file-manager-like panels, so virtual filesystem can be navigated
+and necessary tasks (copying/editing/moving of files or directories) performed interactively.
+
+Other shells may host more specialised apps. These are planned examples:
+
+ * PC.js virtual machine hosting early PC images (DOS, early Windows, OS/2 and such)
+ * Markdown viewer/editor
+ * SVG editor
+ * Slide editor
+ * Spreadsheet editor
+
+## Involved libaries and sub-modules
+
+First of all, the sequence above explicitly mentiones three mini-libraries:
+
+ * Base.js
+ * BootUI
+ * Persistence
+
+Those indeed can be considered separately, with a degree of isolation from the rest of the boot process.
+
+### Base.js
+
+A very tight set of functions for DOM manipulation. It is used by both booting stage, as well as actually employed by the current shell.
+
+These are broad features of the mini-library:
+
+ * Setting/getting text of a DOM element (older IE handling, special workarounds for some elements)
+ * Creating elements and setting properties/CSS attributes in JSON-like syntax
+ * Subscribing to events
+ * Creating IFRAME and retrieving its key objects (inner window, inner document)
+
+### BootUI
+
+The boot-time UI is largely free in what it renders. It is hosted in a separate IFRAME
+with limited communication to the rest of the code.
+
+It is expected that various shells provide each their fine-tuned boot UI 'library'.
+
+A good option would be to render the state of the application as the user left,
+with a tasteful overlay reflecting the boot progress.
+
+### Persistence
+
+The task of emulating an embedded virtual filesystem of files/directories is implemented in the persistence mini-library.
+
+The persistence API is described in terms of a Drive object (with read/write methods) and its construction stages.
+
+Several sources of storage are implemented towards the same API:
+
+ * DOM
+ * IndexedDB
+ * WebSQL
+ * LocalStorage
+
+DOM storage is expected to exist at a very minimum (we are running in the context of a page already!),
+then one of the local storage options is added upon a brief detection process.
+
+From the external caller the persistence mini-library expects a single call to *mountDrive* function,
+passing in a few inputs and a callback.
 -->
 
 <iframe style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; border: none; opacity: 1;"></iframe></body></html>
