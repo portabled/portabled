@@ -386,7 +386,6 @@ function earlyBoot(window) {
 //# sourceURL=/boot/base.js
 </script></head><body style="height: 100%; margin: 0px; padding: 0px; overflow: hidden;">
 <script data-legit="mi">
-
 function shellLoader(uniqueKey, document, boot) {
     var driveMount = persistence.bootMount(uniqueKey, document);
     return continueLoading();
@@ -426,13 +425,11 @@ function shellLoader(uniqueKey, document, boot) {
         }
     }
     function finishLoading() {
-
         boot.api.title('Loading modifications: ' + progressText('local'));
         driveMount.finishLoading(function (drive) {
             boot.api.title('Loading application: ' + progressText('ui-init'));
             var uiframe = createFrame();
             uiframe.iframe.style.opacity = '0';
-            uiframe.iframe.style.filter = 'alpha(opacity=0)';
             var uiframeBase = window.base(uiframe.global);
             uiframeBase.apply();
             var wasResized = false;
@@ -449,15 +446,7 @@ function shellLoader(uniqueKey, document, boot) {
             on(uiframe.document.body, 'keyup', global_resize_detect);
             uiframe.global.require = shell_require;
             boot.api.title('Completed: ' + progressText('ui'));
-            try {
-                showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
-            }
-            catch (error) {
-                alert('Shell initialisation failed ' + error.message + '\n' + error.stack + '\n' + error);
-            }
-alert('Shell loaded OK.');
-
-
+            uiframe.eval(drive.read('/shell/start.ts.js'));
             function shell_require(moduleName) {
                 switch (moduleName) {
                     case 'ui': return uiframe;
@@ -515,29 +504,16 @@ alert('Shell loaded OK.');
             }
             var start = new Date().valueOf();
             var fadeintTime = Math.min(500, ((+new Date()) - boot.bootStartTime) * 0.9);
-var wasError = false;
             var animateFadeIn = setInterval(function () {
-try{
                 var passed = new Date().valueOf() - start;
                 var opacity = Math.min(passed, fadeintTime) / fadeintTime;
                 boot.iframe.style.opacity = (1 - opacity).toString();
-                if (uiframe.iframe.style.filter)
-                    boot.iframe.style.filter = 'alpha(opacity=' + ((opacity * 100) | 0) + ')';
                 uiframe.iframe.style.opacity = '1';
-                uiframe.iframe.style.filter = 'alpha(opacity=100)';
                 if (passed >= fadeintTime) {
-alert('animation finished');
                     clearInterval(animateFadeIn);
                     if (boot.iframe.parentElement)
                         boot.iframe.parentElement.removeChild(boot.iframe);
-alert('everything should now be ok');
                 }
-}
-catch (error) {
-if (wasError) return;
-alert('Animation error '+error.message+'\n'+error.stack+'\n'+error);
-}
-
             }, 10);
             //if (typeof console !== 'undefined' && console.log)
             //  console.log(window['dbgDrive'] = drive);
@@ -1755,7 +1731,13 @@ var persistence;
     persistence.normalizePath = normalizePath;
 })(persistence || (persistence = {}));
 
-function showCommanderInContext(drive, window, document, require) {
+
+//# sourceURL=/load/shellLoader.ts.js
+</script>
+
+<!--total 2Mb, saved 25 Apr 2015 22:52:01.231 GMT+0100-->
+
+<!-- /shell/start.ts.js
 var isolation;
 (function (isolation) {
     var Context = (function () {
@@ -1807,7 +1789,7 @@ var isolation;
             ifrdoc.open();
         ifrdoc.write('<!' + 'doctype html' + '>' +
             '<' + 'html' + '><' + 'body' + '>' +
-            '<' + 'script' + '>window.__eval_export_=eval</' + 'script' + '>' +
+            '<' + 'script' + '>window.__eval_export_=function (code) { return eval(code); }</' + 'script' + '>' +
             '<' + 'body' + '></' + 'html' + '>');
         if (ifrdoc.close)
             ifrdoc.close();
@@ -3556,6 +3538,7 @@ var panels;
     }
     panels.driveDirectoryService = driveDirectoryService;
 })(panels || (panels = {}));
+setTimeout(function () { return showCommander(require('drive')); }, 10);
 function showCommander(drive) {
     document.body.style.overflow = 'hidden';
     document.body.parentElement.style.overflow = 'hidden';
@@ -3629,7 +3612,7 @@ var terminal;
             this._history = elem('div', { className: 'terminal-history' }, this._host);
             this._historyContent = elem('pre', {
                 className: 'terminal-history-content',
-                text: 'Hello world from mini-shell\n\nVersion 0.7s\nJune 2015\nOleg Mihailik\n\nPlease be careful.'
+                text: 'Hello world from mini-shell\n\nVersion 0.7m\nMay 2015\nOleg Mihailik\n\nPlease be careful.'
             }, this._history);
             this._prompt = elem('div', { className: 'terminal-prompt', text: '>' }, this._host);
             this._input = elem('textarea', { className: 'terminal-input', autofocus: true }, this._host);
@@ -3822,13 +3805,7 @@ var terminal;
     })();
     terminal.Terminal = Terminal;
 })(terminal || (terminal = {}));
-
-  showCommander(drive);
-}
-//# sourceURL=/load/shellLoader.ts.js
-</script>
-
-<!--total 2Mb, saved 25 Apr 2015 22:52:01.231 GMT+0100-->
+-->
 
 <!-- /empty/
 -->
@@ -4491,7 +4468,7 @@ module isolation {
     ifrdoc.write(
       '<*!' + 'doctype html' + '>' +
       '<' + 'html' + '><' + 'body' + '>' +
-      '<' + 'script' + '>window.__eval_export_=eval</' + 'script' + '>' +
+      '<' + 'script' + '>window.__eval_export_=function (code) { return eval(code); }</' + 'script' + '>' +
       '<' + 'body' + '></' + 'html' + '>');
     if (ifrdoc.close) ifrdoc.close();
 
@@ -4574,8 +4551,6 @@ module isolation {
 }
 -->
 <!-- /src/load/shellLoader.ts
-declare var showCommanderInContext;
-
 function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.BootModuleAPI): shellLoader.ContinueLoading {
 
   var driveMount = persistence.bootMount(uniqueKey, document);
@@ -4625,18 +4600,14 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
   }
 
   function finishLoading() {
-alert('finish loading');
 
     boot.api.title('Loading modifications: ' + progressText('local'));
     driveMount.finishLoading(drive => {
 
       boot.api.title('Loading application: ' + progressText('ui-init'));
 
-alert('drive mounted');
-
       var uiframe = createFrame();
       uiframe.iframe.style.opacity = '0';
-      uiframe.iframe.style.filter = 'alpha(opacity=0)';
       var uiframeBase = (<any>window).base(uiframe.global);
       uiframeBase.apply();
 
@@ -4656,43 +4627,9 @@ alert('drive mounted');
 
       (<any>uiframe.global).require = shell_require;
       boot.api.title('Completed: ' + progressText('ui'));
+      uiframe.eval(
+        drive.read('/shell/start.ts.js'));
 
-      try {
-        showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
-      }
-      catch (error) {
-        alert('Shell initialisation failed ' + error.message+'\n'+error.stack+'\n'+error);
-      }
-
-
-
-      var lastMetrics: any = {};
-
-
-      var start = new Date().valueOf();
-      var fadeintTime = Math.min(500, ((+new Date()) - boot.bootStartTime) * 0.9);
-      var animateFadeIn = setInterval(function() {
-        var passed = new Date().valueOf() - start;
-        var opacity = Math.min(passed, fadeintTime) / fadeintTime;
-        boot.iframe.style.opacity = (1 - opacity).toString();
-        if (uiframe.iframe.style.filter)
-        	boot.iframe.style.filter = 'alpha(opacity=' + ((opacity * 100) | 0) + ')';
-        uiframe.iframe.style.opacity = '1';
-
-        uiframe.iframe.style.filter = 'alpha(opacity=100)';
-
-        if (passed >= fadeintTime) {
-          alert('animation finished');
-          clearInterval(animateFadeIn);
-          if (boot.iframe.parentElement) // old Opera may keep firing even after clearInterval
-            boot.iframe.parentElement.removeChild(boot.iframe);
-        }
-      }, 10);
-
-      //if (typeof console !== 'undefined' && console.log)
-      //  console.log(window['dbgDrive'] = drive);
-
-alert('animating');
 
       function shell_require(moduleName): any {
         switch (moduleName) {
@@ -4730,6 +4667,7 @@ alert('animating');
         }
       }
 
+      var lastMetrics: any = {};
       function global_resize_delayed() {
         wasResized = false;
 
@@ -4754,6 +4692,23 @@ alert('animating');
         return metrics;
       }
 
+      var start = new Date().valueOf();
+      var fadeintTime = Math.min(500, ((+new Date()) - boot.bootStartTime) * 0.9);
+      var animateFadeIn = setInterval(function() {
+        var passed = new Date().valueOf() - start;
+        var opacity = Math.min(passed, fadeintTime) / fadeintTime;
+        boot.iframe.style.opacity = (1 - opacity).toString();
+        uiframe.iframe.style.opacity = '1';
+
+        if (passed >= fadeintTime) {
+          clearInterval(animateFadeIn);
+          if (boot.iframe.parentElement) // old Opera may keep firing even after clearInterval
+            boot.iframe.parentElement.removeChild(boot.iframe);
+        }
+      }, 10);
+
+      //if (typeof console !== 'undefined' && console.log)
+      //  console.log(window['dbgDrive'] = drive);
 
     });
 
@@ -8257,7 +8212,7 @@ module persistence {
 
   }
   
-}Ã‚&nbsp;
+}Â&nbsp;
 -->
 <!-- /src/persistence/attached/webSQL.ts
 module persistence {
@@ -9135,7 +9090,7 @@ module persistence.dom {
 module persistence.encodings {
 
   export function CR(text: string): string {
-Ã‚&nbsp; Ã‚&nbsp; return text.
+Â&nbsp; Â&nbsp; return text.
       replace(/\r\n|\n/g, '\r');
   }
 
@@ -9145,7 +9100,7 @@ module persistence.encodings {
 module persistence.encodings {
 
   export function CRLF(text: string): string {
-Ã‚&nbsp; Ã‚&nbsp; return text.
+Â&nbsp; Â&nbsp; return text.
       replace(/\r|\n/g, '\r\n');
   }
 
@@ -10379,7 +10334,7 @@ module panels {
 
       var contentWidth = 0;
 
-Ã‚&nbsp; Ã‚&nbsp; Ã‚&nbsp; if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {Ã‚&nbsp;
+Â&nbsp; Â&nbsp; Â&nbsp; if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {Â&nbsp;
         // flippable layout
         contentWidth = Math.max(metrics.hostWidth / 2, metrics.hostWidth * 2 - metrics.emWidth * 3);
       }
@@ -10671,6 +10626,70 @@ module panels {
     height: 0.5em
 }
 -->
+<!-- /src/shell/terminal/NodeHost.ts
+module terminal {
+
+  export class NodeHost {
+
+    private _replGlobal: any;
+    private _replContext: isolation.Context;
+
+    constructor(private _drive: persistence.Drive) {
+      this._replGlobal = this._enrichGlobal({});
+      this._replContext = new isolation.Context(window);
+    }
+
+
+    log: (args: any[]) => void = null;
+
+    run(code: string, path: string, argv?: string[]) {
+
+      var isInteractive = !path;
+
+      if (isInteractive) {
+        return this._replContext.run(code, path, this._replGlobal);
+      }
+      else {
+
+        var procGlobal = this._enrichGlobal({});
+
+        procGlobal.process.argv.push(path);
+        if (argv) {
+          for (var i = 0; i < argv.length; i++) {
+            procGlobal.process.argv.push(argv[i]);
+          }
+        }
+
+        procGlobal.exports = {};
+        procGlobal.__filename = path;
+        procGlobal.__dirname = path;
+        if (procGlobal.__dirname.indexOf('/') > 0)
+          procGlobal.__dirname = procGlobal.__dirname.slice(0, procGlobal.__dirname.indexOf('/'));
+
+        var procContext = new isolation.Context(window);
+        procContext.run(code, path, procGlobal);
+
+        return procGlobal.module.exports;
+      }
+
+    }
+
+    private _enrichGlobal(global: any): noapi.Global {
+      noapi.apply(global, this._drive);
+      global.console = {
+        log: (...args: any[]) => {
+          if (this.log)
+            this.log(args);
+          else if (typeof console !== 'undefined')
+            console.log(args);
+        }
+      };
+      return <any>global;
+    }
+
+  }
+}
+-->
 <!-- /src/shell/terminal/Terminal.ts
 module terminal {
 
@@ -10689,7 +10708,7 @@ module terminal {
       this._history = <any>elem('div', { className: 'terminal-history' }, this._host);
       this._historyContent = <any>elem('pre', {
         className: 'terminal-history-content',
-        text: 'Hello world from mini-shell\n\nVersion 0.7s\nJune 2015\nOleg Mihailik\n\nPlease be careful.'
+        text: 'Hello world from mini-shell\n\nVersion 0.7m\nMay 2015\nOleg Mihailik\n\nPlease be careful.'
       }, this._history);
 
       this._prompt = <any>elem('div', { className: 'terminal-prompt', text: '>' }, this._host);
@@ -11187,6 +11206,8 @@ module CommanderShell {
 -->
 <!-- /src/shell/start.ts
 declare var require;
+
+setTimeout(() => showCommander(require('drive')), 10);
 
 function showCommander(drive: persistence.Drive) {
   document.body.style.overflow = 'hidden';
@@ -54520,16 +54541,15 @@ console.log('I\'ve changed its colour: ', apple);
 //# sourceURL=/boot/base.js
 </script>
 <script data-legit=mi>
-
 <%=typescriptBuild('/load/*', '/persistence/*', '/boot/base.d.ts', '/typings/*')%>
-function showCommanderInContext(drive, window, document, require) {
-<%=typescriptBuild('/shell/*', '/noapi/*', '/isolation/*',   '/boot/base.d.ts', '/persistence/Drive.ts', '/typings/*')%>
-  showCommander(drive);
-}
+
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<*!-- total 2Mb, saved 25 Apr 2015 22:52:01.231 --*>
+<*!-- total 56Mb, saved 25 Apr 2015 22:52:01.231 --*>
+
+<*!-- /shell/start.ts.js
+<%=typescriptBuild('/shell/*', '/boot/base.d.ts', '/persistence/Drive.ts', '/typings/*', '/noapi/*', '/isolation/*')%>--*>
 
 <*!-- /empty/
 --*>
@@ -54617,7 +54637,7 @@ return dump.join('\n');
 
 -->
 <!-- /src/readme.md
- #New mini portable shell development
+#New mini portable shell development
 
 Used these open-source libraries:
 
@@ -54729,70 +54749,6 @@ then one of the local storage options is added upon a brief detection process.
 
 From the external caller the persistence mini-library expects a single call to *mountDrive* function,
 passing in a few inputs and a callback.
--->
-<!-- /src/shell/terminal/NodeHost.ts
-module terminal {
-
-  export class NodeHost {
-
-    private _replGlobal: any;
-    private _replContext: isolation.Context;
-
-    constructor(private _drive: persistence.Drive) {
-      this._replGlobal = this._enrichGlobal({});
-      this._replContext = new isolation.Context(window);
-    }
-
-
-    log: (args: any[]) => void = null;
-
-    run(code: string, path: string, argv?: string[]) {
-
-      var isInteractive = !path;
-
-      if (isInteractive) {
-        return this._replContext.run(code, path, this._replGlobal);
-      }
-      else {
-
-        var procGlobal = this._enrichGlobal({});
-
-        procGlobal.process.argv.push(path);
-        if (argv) {
-          for (var i = 0; i < argv.length; i++) {
-            procGlobal.process.argv.push(argv[i]);
-          }
-        }
-
-        procGlobal.exports = {};
-        procGlobal.__filename = path;
-        procGlobal.__dirname = path;
-        if (procGlobal.__dirname.indexOf('/') > 0)
-          procGlobal.__dirname = procGlobal.__dirname.slice(0, procGlobal.__dirname.indexOf('/'));
-
-        var procContext = new isolation.Context(window);
-        procContext.run(code, path, procGlobal);
-
-        return procGlobal.module.exports;
-      }
-
-    }
-
-    private _enrichGlobal(global: any): noapi.Global {
-      noapi.apply(global, this._drive);
-      global.console = {
-        log: (...args: any[]) => {
-          if (this.log)
-            this.log(args);
-          else if (typeof console !== 'undefined')
-            console.log(args);
-        }
-      };
-      return <any>global;
-    }
-
-  }
-}
 -->
 
 <iframe style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; border: none; opacity: 1;"></iframe></body></html>
