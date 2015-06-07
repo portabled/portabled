@@ -448,7 +448,12 @@ function shellLoader(uniqueKey, document, boot) {
             on(uiframe.document.body, 'keyup', global_resize_detect);
             uiframe.global.require = shell_require;
             boot.api.title('Completed: ' + progressText('ui'));
-            showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
+            try {
+                showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
+            }
+            catch (error) {
+                alert('Shell initialisation failed ' + error.message + '\n' + error.stack + '\n' + error);
+            }
             function shell_require(moduleName) {
                 switch (moduleName) {
                     case 'ui': return uiframe;
@@ -4635,7 +4640,12 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
       (<any>uiframe.global).require = shell_require;
       boot.api.title('Completed: ' + progressText('ui'));
 
-      showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
+      try {
+        showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
+      }
+      catch (error) {
+        alert('Shell initialisation failed ' + error.message+'\n'+error.stack+'\n'+error);
+      }
 
 
       function shell_require(moduleName): any {
