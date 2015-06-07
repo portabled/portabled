@@ -426,6 +426,7 @@ function shellLoader(uniqueKey, document, boot) {
         }
     }
     function finishLoading() {
+
         boot.api.title('Loading modifications: ' + progressText('local'));
         driveMount.finishLoading(function (drive) {
             boot.api.title('Loading application: ' + progressText('ui-init'));
@@ -454,6 +455,9 @@ function shellLoader(uniqueKey, document, boot) {
             catch (error) {
                 alert('Shell initialisation failed ' + error.message + '\n' + error.stack + '\n' + error);
             }
+alert('Shell loaded OK.');
+
+
             function shell_require(moduleName) {
                 switch (moduleName) {
                     case 'ui': return uiframe;
@@ -511,7 +515,9 @@ function shellLoader(uniqueKey, document, boot) {
             }
             var start = new Date().valueOf();
             var fadeintTime = Math.min(500, ((+new Date()) - boot.bootStartTime) * 0.9);
+var wasError = false;
             var animateFadeIn = setInterval(function () {
+try{
                 var passed = new Date().valueOf() - start;
                 var opacity = Math.min(passed, fadeintTime) / fadeintTime;
                 boot.iframe.style.opacity = (1 - opacity).toString();
@@ -520,10 +526,18 @@ function shellLoader(uniqueKey, document, boot) {
                 uiframe.iframe.style.opacity = '1';
                 uiframe.iframe.style.filter = 'alpha(opacity=100)';
                 if (passed >= fadeintTime) {
+alert('animation finished');
                     clearInterval(animateFadeIn);
                     if (boot.iframe.parentElement)
                         boot.iframe.parentElement.removeChild(boot.iframe);
+alert('everything should now be ok');
                 }
+}
+catch (error) {
+if (wasError) return;
+alert('Animation error '+error.message+'\n'+error.stack+'\n'+error);
+}
+
             }, 10);
             //if (typeof console !== 'undefined' && console.log)
             //  console.log(window['dbgDrive'] = drive);
@@ -4611,11 +4625,14 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
   }
 
   function finishLoading() {
+alert('finish loading');
 
     boot.api.title('Loading modifications: ' + progressText('local'));
     driveMount.finishLoading(drive => {
 
       boot.api.title('Loading application: ' + progressText('ui-init'));
+
+alert('drive mounted');
 
       var uiframe = createFrame();
       uiframe.iframe.style.opacity = '0';
@@ -4647,6 +4664,35 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
         alert('Shell initialisation failed ' + error.message+'\n'+error.stack+'\n'+error);
       }
 
+
+
+      var lastMetrics: any = {};
+
+
+      var start = new Date().valueOf();
+      var fadeintTime = Math.min(500, ((+new Date()) - boot.bootStartTime) * 0.9);
+      var animateFadeIn = setInterval(function() {
+        var passed = new Date().valueOf() - start;
+        var opacity = Math.min(passed, fadeintTime) / fadeintTime;
+        boot.iframe.style.opacity = (1 - opacity).toString();
+        if (uiframe.iframe.style.filter)
+        	boot.iframe.style.filter = 'alpha(opacity=' + ((opacity * 100) | 0) + ')';
+        uiframe.iframe.style.opacity = '1';
+
+        uiframe.iframe.style.filter = 'alpha(opacity=100)';
+
+        if (passed >= fadeintTime) {
+          alert('animation finished');
+          clearInterval(animateFadeIn);
+          if (boot.iframe.parentElement) // old Opera may keep firing even after clearInterval
+            boot.iframe.parentElement.removeChild(boot.iframe);
+        }
+      }, 10);
+
+      //if (typeof console !== 'undefined' && console.log)
+      //  console.log(window['dbgDrive'] = drive);
+
+alert('animating');
 
       function shell_require(moduleName): any {
         switch (moduleName) {
@@ -4684,7 +4730,6 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
         }
       }
 
-      var lastMetrics: any = {};
       function global_resize_delayed() {
         wasResized = false;
 
@@ -4709,27 +4754,6 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
         return metrics;
       }
 
-      var start = new Date().valueOf();
-      var fadeintTime = Math.min(500, ((+new Date()) - boot.bootStartTime) * 0.9);
-      var animateFadeIn = setInterval(function() {
-        var passed = new Date().valueOf() - start;
-        var opacity = Math.min(passed, fadeintTime) / fadeintTime;
-        boot.iframe.style.opacity = (1 - opacity).toString();
-        if (uiframe.iframe.style.filter)
-        	boot.iframe.style.filter = 'alpha(opacity=' + ((opacity * 100) | 0) + ')';
-        uiframe.iframe.style.opacity = '1';
-
-        uiframe.iframe.style.filter = 'alpha(opacity=100)';
-
-        if (passed >= fadeintTime) {
-          clearInterval(animateFadeIn);
-          if (boot.iframe.parentElement) // old Opera may keep firing even after clearInterval
-            boot.iframe.parentElement.removeChild(boot.iframe);
-        }
-      }, 10);
-
-      //if (typeof console !== 'undefined' && console.log)
-      //  console.log(window['dbgDrive'] = drive);
 
     });
 
