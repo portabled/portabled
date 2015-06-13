@@ -2612,11 +2612,11 @@ var CommanderShell = (function () {
                 var term = _this._terminal;
                 console.log = function () {
                     var args = [];
-                    for (var _i = 0; _i < arguments.length; _i++) {
-                        args[_i - 0] = arguments[_i];
+                    for (var i = 0; i < arguments.length; i++) {
+                        args.push(arguments[i]);
                     }
-                    _oldLog.apply(glob.console, args);
                     term.log(args);
+                    _oldLog.apply(glob.console, arguments);
                 };
             }
             else {
@@ -2624,8 +2624,8 @@ var CommanderShell = (function () {
                 glob.console = {
                     log: function () {
                         var args = [];
-                        for (var _i = 0; _i < arguments.length; _i++) {
-                            args[_i - 0] = arguments[_i];
+                        for (var i = 0; i < arguments.length; i++) {
+                            args.push(arguments[i]);
                         }
                         term.log(args);
                     }
@@ -3948,7 +3948,7 @@ var terminal;
                 }
                 return;
             }
-            this.log(result);
+            this.log([result]);
         };
         return Terminal;
     })();
@@ -3995,6 +3995,10 @@ var terminal;
                 elem('span', { text: '"', color: 'tomato' }, strContainer);
                 break;
             default:
+                if (obj === null) {
+                    elem('span', { text: 'null', color: 'green', opacity: 0.5 }, output);
+                    break;
+                }
                 if (obj && obj.constructor && obj.construct && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
                     elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
                     if (obj.constructor.prototype && obj.constructor.prototype.constructor
@@ -11082,7 +11086,7 @@ module terminal {
         return;
       }
 
-      this.log(result);
+      this.log([result]);
     }
 
 
@@ -11137,6 +11141,11 @@ module terminal {
         break;
 
       default:
+        if (obj === null) {
+          elem('span', { text: 'null', color: 'green', opacity: 0.5 }, output);
+          break;
+        }
+
         if (obj && obj.constructor && obj.construct && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
           elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
           if (obj.constructor.prototype && obj.constructor.prototype.constructor
@@ -11317,17 +11326,25 @@ class CommanderShell {
     var _glob = (function() { return this; })();
     var applyConsole = (glob) => {
       if (glob.console) {
-        var _oldLog = glob.console.log;
+        var _oldLog: Function = glob.console.log;
         var term = this._terminal;
-        console.log = function(...args: any[]) {
-          _oldLog.apply(glob.console, args);
+        console.log = function() {
+          var args = [];
+          for (var i = 0; i < arguments.length; i++) {
+            args.push(arguments[i]);
+          }
           term.log(args);
+          _oldLog.apply(glob.console, arguments);
         };
       }
       else {
         var term = this._terminal;
         glob.console = {
-          log: function(...args: any[]) {
+          log: function() {
+            var args = [];
+            for (var i = 0; i < arguments.length; i++) {
+              args.push(arguments[i]);
+            }
             term.log(args);
           }
         };
