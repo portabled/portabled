@@ -2616,7 +2616,8 @@ var CommanderShell = (function () {
                         args.push(arguments[i]);
                     }
                     term.log(args);
-                    _oldLog.apply(glob.console, arguments);
+                    if (typeof _oldLog === 'function')
+                        _oldLog.apply(glob.console, args);
                 };
             }
             else {
@@ -11336,7 +11337,8 @@ class CommanderShell {
             args.push(arguments[i]);
           }
           term.log(args);
-          _oldLog.apply(glob.console, arguments);
+          if (typeof _oldLog === 'function')
+	          _oldLog.apply(glob.console, args);
         };
       }
       else {
