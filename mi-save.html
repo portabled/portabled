@@ -2560,7 +2560,7 @@ var CommanderShell = (function () {
         this._editor = null;
         this._fnKeys = [];
         this._node = new NodeHost(this._drive);
-        this._node.log = function (args) { return _this._terminal.log.apply(_this._terminal, args); };
+        this._node.log = function (args) { return _this._terminal.log(args); };
         elem(this._host, {
             background: 'black',
             color: 'silver'
@@ -11269,7 +11269,7 @@ class CommanderShell {
   constructor(private _host: HTMLElement, private _drive: persistence.Drive) {
 
     this._node = new NodeHost(this._drive);
-    this._node.log = args => this._terminal.log.apply(this._terminal, args);
+    this._node.log = args => this._terminal.log(args);
 
     elem(this._host, {
       background: 'black',
