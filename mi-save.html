@@ -236,7 +236,7 @@ window.onerror = function onerror() {
             'html{box-sizing:border-box;}' +
             '</' + 'style' + '>\n' +
             '<' + 'body' + '>' +
-            '<' + 'script' + '>window.__eval_export_=eval</' + 'script' + '>' +
+            '<' + 'script' + '>window.__eval_export_=function(code) { return eval(code); }</' + 'script' + '>' +
             // IE6/7/8 bug: global scope and window are not identical
             (ifrwin.Function ? '' : '<' + 'script' + '>window.Function=Function</' + 'script' + '>') +
             // it's important to have body before any long scripts (especialy external),
@@ -259,7 +259,7 @@ window.onerror = function onerror() {
             document: ifrdoc,
             global: ifrwin,
             iframe: ifr,
-            eval: ifrwin_eval
+            evalFN: ifrwin_eval
         };
         function delegate_onerror() {
             window.onerror.apply(window, arguments);
@@ -1757,7 +1757,7 @@ var isolation;
             defineObscureScope(this._obscureScope, this._frame.global);
             defineObscureScope(this._obscureScope, this._frame.window);
             this._obscureScope.global = void 0;
-            var setGlobal = this._frame.eval('(function() { return function(global) { this.global = global; }; })()');
+            var setGlobal = this._frame.evalFN('(function() { return function(global) { this.global = global; }; })()');
             setGlobal(this._obscureScope);
         }
         Context.prototype.run = function (code, path, scope) {
@@ -1766,7 +1766,7 @@ var isolation;
             var decoratedCode = 'with(global){with(global){   ' +
                 code +
                 ' }}  //# sourceURL=' + path;
-            var result = this._frame.eval(decoratedCode);
+            var result = this._frame.evalFN(decoratedCode);
             this._obscureScope.global = null;
             return result;
         };
@@ -1798,7 +1798,7 @@ var isolation;
             ifrdoc.open();
         ifrdoc.write('<!' + 'doctype html' + '>' +
             '<' + 'html' + '><' + 'body' + '>' +
-            '<' + 'script' + '>window.__eval_export_=eval</' + 'script' + '>' +
+            '<' + 'script' + '>window.__eval_export_=function(code) { return eval(code); }</' + 'script' + '>' +
             '<' + 'body' + '></' + 'html' + '>');
         if (ifrdoc.close)
             ifrdoc.close();
@@ -1814,7 +1814,7 @@ var isolation;
             window: ifrwin,
             global: ifrwin_eval('this'),
             iframe: ifr,
-            eval: ifrwin_eval
+            evalFN: ifrwin_eval
         };
     }
     function defineObscureScope(scope, pollutedGlobal) {
@@ -3990,7 +3990,7 @@ var terminal;
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<!--total 2Mb, saved 13 Jun 2015 22:32:38.671 GMT+0100-->
+<!--total 2Mb, saved 25 Apr 2015 22:52:01.231 GMT+0100-->
 
 <!-- /empty/
 -->
@@ -4000,7 +4000,7 @@ var terminal;
 123
 456-->
 
-<!-- /CRLF-file
+<!-- /CRLF-file [CRLF]
 123
 456-->
 
@@ -4375,7 +4375,7 @@ function base(window: Window) {
 
       '<' + 'body' + '>' +
 
-      '<' + 'script' + '>window.__eval_export_=eval</' + 'script' + '>' +
+      '<' + 'script' + '>window.__eval_export_=function(code) { return eval(code); }</' + 'script' + '>' +
 
       // IE6/7/8 bug: global scope and window are not identical
       (ifrwin.Function ? '' : '<' + 'script' + '>window.Function=Function</' + 'script' + '>') +
@@ -4405,7 +4405,7 @@ function base(window: Window) {
       document: ifrdoc,
       global: ifrwin,
       iframe: ifr,
-      eval: ifrwin_eval
+      evalFN: ifrwin_eval
     };
 
     function delegate_onerror() {
@@ -4610,7 +4610,7 @@ module isolation {
       defineObscureScope(this._obscureScope, this._frame.global);
       defineObscureScope(this._obscureScope, this._frame.window);
       this._obscureScope.global = void 0;
-      var setGlobal = this._frame.eval('(function() { return function(global) { this.global = global; }; })()');
+      var setGlobal = this._frame.evalFN('(function() { return function(global) { this.global = global; }; })()');
       setGlobal(this._obscureScope);
     }
 
@@ -4621,7 +4621,7 @@ module isolation {
         'with(global){with(global){   ' +
         code +
         ' }}  //# sourceURL=' + path;
-      var result = this._frame.eval(decoratedCode);
+      var result = this._frame.evalFN(decoratedCode);
       this._obscureScope.global = null;
       return result;
     }
@@ -4657,7 +4657,7 @@ module isolation {
     ifrdoc.write(
       '<*!' + 'doctype html' + '>' +
       '<' + 'html' + '><' + 'body' + '>' +
-      '<' + 'script' + '>window.__eval_export_=eval</' + 'script' + '>' +
+      '<' + 'script' + '>window.__eval_export_=function(code) { return eval(code); }</' + 'script' + '>' +
       '<' + 'body' + '></' + 'html' + '>');
     if (ifrdoc.close) ifrdoc.close();
 
@@ -4676,7 +4676,7 @@ module isolation {
       window: ifrwin,
       global: ifrwin_eval('this'),
       iframe: ifr,
-      eval: ifrwin_eval
+      evalFN: ifrwin_eval
     };
   }
 
