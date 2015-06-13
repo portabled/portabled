@@ -359,8 +359,13 @@ function earlyBoot(window) {
   });
 
   var header = base.elem('h2', {
-    text: 'Loading...',
+    text: 'Mini portabled shell',
     fontWeight: 'light'
+  }, document.body);
+
+  var smallTitle = base.elem('div', {
+    text: 'Loading...',
+    opacity: 0.8
   }, document.body);
 
   var darkBottom = base.elem('div', {
@@ -373,19 +378,19 @@ function earlyBoot(window) {
 
   return {
     title: function(t) {
-      setText(header,t);
+      setText(smallTitle,t);
       if (typeof console !== 'undefined' && typeof console.log === 'function')
         console.log(t);
-
     },
     loaded: function() {
-      setText(header, 'Loaded.');
+      setText(smallTitle, 'Loaded.');
     }
   };
 }
 //# sourceURL=/boot/base.js
 </script></head><body style="height: 100%; margin: 0px; padding: 0px; overflow: hidden;">
 <script data-legit="mi">
+
 function shellLoader(uniqueKey, document, boot) {
     var driveMount = persistence.bootMount(uniqueKey, document);
     return continueLoading();
@@ -430,6 +435,7 @@ function shellLoader(uniqueKey, document, boot) {
             boot.api.title('Loading application: ' + progressText('ui-init'));
             var uiframe = createFrame();
             uiframe.iframe.style.opacity = '0';
+            uiframe.iframe.style.filter = 'alpha(opacity=0)';
             var uiframeBase = window.base(uiframe.global);
             uiframeBase.apply();
             var wasResized = false;
@@ -445,8 +451,14 @@ function shellLoader(uniqueKey, document, boot) {
             on(uiframe.document.body, 'keydown', global_resize_detect);
             on(uiframe.document.body, 'keyup', global_resize_detect);
             uiframe.global.require = shell_require;
+            boot.api.title('Loaded: ' + progressText('ui'));
+            try {
+                showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
+            }
+            catch (error) {
+                alert('Shell initialisation failed ' + error.message + '\n' + error.stack + '\n' + error);
+            }
             boot.api.title('Completed: ' + progressText('ui'));
-            uiframe.eval(drive.read('/shell/start.ts.js'));
             function shell_require(moduleName) {
                 switch (moduleName) {
                     case 'ui': return uiframe;
@@ -508,7 +520,10 @@ function shellLoader(uniqueKey, document, boot) {
                 var passed = new Date().valueOf() - start;
                 var opacity = Math.min(passed, fadeintTime) / fadeintTime;
                 boot.iframe.style.opacity = (1 - opacity).toString();
+                if (uiframe.iframe.style.filter)
+                    boot.iframe.style.filter = 'alpha(opacity=' + ((opacity * 100) | 0) + ')';
                 uiframe.iframe.style.opacity = '1';
+                uiframe.iframe.style.filter = 'alpha(opacity=100)';
                 if (passed >= fadeintTime) {
                     clearInterval(animateFadeIn);
                     if (boot.iframe.parentElement)
@@ -1731,13 +1746,7 @@ var persistence;
     persistence.normalizePath = normalizePath;
 })(persistence || (persistence = {}));
 
-
-//# sourceURL=/load/shellLoader.ts.js
-</script>
-
-<!--total 2Mb, saved 25 Apr 2015 22:52:01.231 GMT+0100-->
-
-<!-- /shell/start.ts.js
+function showCommanderInContext(drive, window, document, require) {
 var isolation;
 (function (isolation) {
     var Context = (function () {
@@ -1789,7 +1798,7 @@ var isolation;
             ifrdoc.open();
         ifrdoc.write('<!' + 'doctype html' + '>' +
             '<' + 'html' + '><' + 'body' + '>' +
-            '<' + 'script' + '>window.__eval_export_=function (code) { return eval(code); }</' + 'script' + '>' +
+            '<' + 'script' + '>window.__eval_export_=eval</' + 'script' + '>' +
             '<' + 'body' + '></' + 'html' + '>');
         if (ifrdoc.close)
             ifrdoc.close();
@@ -2546,7 +2555,9 @@ var CommanderShell = (function () {
             emHeight: 0
         };
         this._onsizechangedTimeout = 0;
-        this._node = new terminal.NodeHost(this._drive);
+        this._editor = null;
+        this._fnKeys = [];
+        this._node = new NodeHost(this._drive);
         this._node.log = function (args) { return _this._terminal.log.apply(_this._terminal, args); };
         elem(this._host, {
             background: 'black',
@@ -2561,6 +2572,20 @@ var CommanderShell = (function () {
         }, document.body);
         this._terminal = new terminal.Terminal(this._host, this._node);
         this._twoPanels = new panels.TwoPanels(this._host, '/', '/src', this._drive);
+        var fnKeyActions = [null, 'Help', '<None>', 'View', 'Edit', 'Copy', 'Move', 'MkDir', 'Delete', 'Options', 'Save'];
+        for (var i = 1; i <= 10; i++) {
+            var fnKeyText = elem('div', {
+                position: 'absolute', bottom: '0'
+            }, this._host);
+            var keyName = (i === 1 ? 'F1' : '' + i);
+            elem('span', { background: 'black', color: 'gray', text: keyName + ' ' }, fnKeyText);
+            elem('span', { background: 'gray', color: 'black', text: fnKeyActions[i] }, fnKeyText);
+            this._fnKeys.push(fnKeyText);
+        }
+        on(this._fnKeys[4 - 1], 'click', function () {
+            var cursorPath = _this._twoPanels.cursorPath();
+            _this._openEditor(cursorPath);
+        });
         var resizeMod = require('resize');
         resizeMod.on(function (winMetrics) {
             _this._metrics.hostWidth = winMetrics.windowWidth;
@@ -2584,7 +2609,7 @@ var CommanderShell = (function () {
                         args[_i - 0] = arguments[_i];
                     }
                     _oldLog.apply(glob.console, args);
-                    term.logArray(args);
+                    term.log(args);
                 };
             }
             else {
@@ -2595,31 +2620,32 @@ var CommanderShell = (function () {
                         for (var _i = 0; _i < arguments.length; _i++) {
                             args[_i - 0] = arguments[_i];
                         }
-                        term.logArray(args);
+                        term.log(args);
                     }
                 };
             }
         };
         applyConsole(_glob);
         applyConsole(window);
-        var timings = require('timings');
-        var timingsShort = {};
-        for (var i = 0; i < timings.length; i++) {
-            timingsShort[timings[i].stage] = timings[i].time;
-        }
-        this._terminal.log('timings: ', timingsShort);
     }
     CommanderShell.prototype.measure = function () {
         this._metrics.emWidth = this._metricElem.offsetWidth;
         this._metrics.emHeight = this._metricElem.offsetHeight;
         this._twoPanels.measure();
         this._terminal.measure();
+        //this._editor.measure();
     };
     CommanderShell.prototype.arrange = function () {
         this._host.style.width = this._metrics.hostWidth + 'px';
         this._host.style.height = this._metrics.hostHeight + 'px';
         this._twoPanels.arrange(this._metrics);
         this._terminal.arrange(this._metrics);
+        //this._editor.arrange();
+        var keySize = ((this._metrics.hostWidth / 10) | 0);
+        for (var i = 0; i < this._fnKeys.length; i++) {
+            this._fnKeys[i].style.left = (i * keySize) + 'px';
+            this._fnKeys[i].style.width = keySize + 'px';
+        }
     };
     CommanderShell.prototype._keydown = function (e) {
         var res = this._keydownCore(e);
@@ -2629,7 +2655,21 @@ var CommanderShell = (function () {
         }
         return res;
     };
+    CommanderShell.prototype._closeEditor = function () {
+        // TODO: confirm saving
+        var newText = this._editor.getText();
+        var cursorPath = this._twoPanels.cursorPath();
+        this._drive.write(cursorPath, newText);
+        this._editor.close();
+        this._editor = null;
+    };
     CommanderShell.prototype._keydownCore = function (e) {
+        if (this._editor) {
+            if (e.keyCode === 27) {
+                this._closeEditor();
+            }
+            return;
+        }
         if (e.keyCode === 27 && !e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
             this._twoPanels.toggleVisibility();
             return true;
@@ -2650,92 +2690,197 @@ var CommanderShell = (function () {
         //if (e.keyCode < 32 || e.keyCode > 126) {
         //	this._terminal.log('CommanderShell::keydown ' + e.yCode);
         //}
+        if (e.keyCode === 115) {
+            this._openEditor(cursorPath);
+            return true;
+        }
+        if (e.keyCode === 116) {
+            this._terminal.log(['F5 - copy (not implemented)']);
+            return true;
+        }
+        if (e.keyCode === 117) {
+            this._terminal.log(['F6 - move (not implemented)']);
+            return true;
+        }
+        if (e.ctrlKey || e.altKey || e.metaKey) {
+            this._terminal.log(['CommanderShell::keydown ', e.keyCode]);
+        }
+    };
+    CommanderShell.prototype._openEditor = function (cursorPath) {
+        var _this = this;
+        if (cursorPath) {
+            var text = this._drive.read(cursorPath);
+            if (typeof text === 'string') {
+                this._terminal.log(['@edit ', cursorPath]);
+                this._editor = new editor.Editor(this._host, cursorPath, text);
+                setTimeout(function () {
+                    if (_this._editor)
+                        _this._editor.focus();
+                }, 1);
+            }
+            else {
+                this._terminal.log(['text at ', cursorPath, ' is ', text]);
+            }
+        }
+        else {
+            this._terminal.log(['cursorPath = ', cursorPath]);
+        }
     };
     CommanderShell.prototype._execute = function (cursorPath) {
         var _this = this;
         if (/\.js$/.test(cursorPath)) {
             var text = this._drive.read(cursorPath);
             if (typeof text !== 'undefined' && text !== null) {
-                this._terminal.log('@node ' + cursorPath);
-                var result = this._node.run(text, cursorPath);
-                this._terminal.log(result);
+                this._terminal.log(['@node ' + cursorPath]);
+                var ani = this._twoPanels.temporarilyHidePanels();
+                setTimeout(function () {
+                    try {
+                        var result = _this._node.run(text, cursorPath);
+                    }
+                    catch (error) {
+                        result = error;
+                    }
+                    _this._terminal.log(result);
+                    ani();
+                }, 1);
                 return true;
             }
         }
         else if (/\.ts$/.test(cursorPath)) {
             var text = this._drive.read('/src/typescript/tsc.js');
             if (typeof text !== 'undefined' && text !== null) {
-                this._terminal.log('@tsc ' + cursorPath);
-                var result = this._node.run(text, '/src/typescript/tsc.js', [cursorPath]);
-                this._terminal.log(result);
+                this._terminal.log(['@tsc ' + cursorPath]);
+                var ani = this._twoPanels.temporarilyHidePanels();
+                setTimeout(function () {
+                    var result = _this._node.run(text, '/src/typescript/tsc.js', [cursorPath]);
+                    _this._terminal.log(result);
+                    ani();
+                }, 1);
                 return true;
             }
         }
         else if (/.html$/.test(cursorPath)) {
-            this._terminal.log('@build ' + cursorPath);
-            var htmlTemplate = this._drive.read(cursorPath);
-            var blankWindow = window.open('', '_blank' + (+new Date()));
-            var pollUntil = (+new Date()) + 1000;
-            while (+new Date() < pollUntil) {
-                try {
-                    var blankWindowDoc = blankWindow.document;
+            this._terminal.log(['@build ' + cursorPath]);
+            var ani = this._twoPanels.temporarilyHidePanels();
+            setTimeout(function () {
+                var htmlTemplate = _this._drive.read(cursorPath);
+                var blankWindow = window.open('', '_blank' + (+new Date()));
+                var pollUntil = (+new Date()) + 1000;
+                while (+new Date() < pollUntil) {
+                    try {
+                        var blankWindowDoc = blankWindow.document;
+                    }
+                    catch (error) { }
                 }
-                catch (error) { }
-            }
-            if (!blankWindowDoc) {
-                alert('Cannot open a window to host the built document');
-                return;
-            }
-            blankWindow.document.open();
-            blankWindow.document.write([
-                '<html><title>Building ' + cursorPath + '...</title>',
-                '<style>',
-                'html, body { background: black; color: greenyellow; }',
-                'h2 { font-weight: 100; width: 40%; position: fixed; font-size: 200%; }',
-                'pre { width: 50%; padding-left: 50%; opacity: 1; transition: opacity 1s; }',
-                '</style>',
-                '<h2>Building ' + cursorPath + '</h2>',
-                '<' + 's' + 'cript>',
-                'var textContentProp = "textContent" in document.createElement("pre") ? "textContent" : "innerText";',
-                'var lastLogElem;',
-                'function log(text) {',
-                '  var logElem = document.createElement("pre");',
-                '  logElem[textContentProp]=text;',
-                '  document.body.appendChild(logElem);',
-                '  logElem.scrollIntoView();',
-                '  if (lastLogElem) {',
-                '    lastLogElem.style.opacity = 0.5;',
-                '  }',
-                '  lastLogElem = logElem;',
-                '}',
-                '<' + '/' + 's' + 'cript>'].join('\n'));
-            blankWindow.document.close();
-            build.processTemplate(htmlTemplate, [], function (txt) {
-                _this._terminal.log(txt);
-                blankWindow.log(txt);
-            }, function (error, result) {
-                if (error) {
-                    _this._terminal.log(error);
+                if (!blankWindowDoc) {
+                    alert('Cannot open a window to host the built document');
+                    ani();
                     return;
                 }
-                try {
-                    var blob = new Blob([result], { type: 'text/html' });
-                    var url = URL.createObjectURL(blob);
-                    blankWindow.location.replace(url);
-                }
-                catch (blobError) {
-                    blankWindow.document.open();
-                    blankWindow.document.write(result);
-                    blankWindow.document.close();
-                }
-            });
+                blankWindow.document.open();
+                blankWindow.document.write([
+                    '<html><title>Building ' + cursorPath + '...</title>',
+                    '<style>',
+                    'html, body { background: black; color: greenyellow; }',
+                    'h2 { font-weight: 100; width: 40%; position: fixed; font-size: 200%; }',
+                    'pre { width: 50%; padding-left: 50%; opacity: 1; transition: opacity 1s; }',
+                    '</style>',
+                    '<h2>Building ' + cursorPath + '</h2>',
+                    '<' + 's' + 'cript>',
+                    'var textContentProp = "textContent" in document.createElement("pre") ? "textContent" : "innerText";',
+                    'var lastLogElem;',
+                    'function log(text) {',
+                    '  var logElem = document.createElement("pre");',
+                    '  logElem[textContentProp]=text;',
+                    '  document.body.appendChild(logElem);',
+                    '  logElem.scrollIntoView();',
+                    '  if (lastLogElem) {',
+                    '    lastLogElem.style.opacity = 0.5;',
+                    '  }',
+                    '  lastLogElem = logElem;',
+                    '}',
+                    '<' + '/' + 's' + 'cript>'].join('\n'));
+                blankWindow.document.close();
+                build.processTemplate(htmlTemplate, [], function (txt) {
+                    _this._terminal.log([txt]);
+                    blankWindow.log(txt);
+                }, function (error, result) {
+                    if (error) {
+                        _this._terminal.log([error]);
+                        ani();
+                        return;
+                    }
+                    try {
+                        var blob = new Blob([result], { type: 'text/html' });
+                        var url = URL.createObjectURL(blob);
+                        blankWindow.location.replace(url);
+                    }
+                    catch (blobError) {
+                        blankWindow.document.open();
+                        blankWindow.document.write(result);
+                        blankWindow.document.close();
+                    }
+                    ani();
+                });
+            }, 1);
         }
         else {
-            this._terminal.log('@type ' + cursorPath);
-            this._terminal.log(this._drive.read(cursorPath));
+            var ani = this._twoPanels.temporarilyHidePanels();
+            this._terminal.log(['@type ' + cursorPath]);
+            this._terminal.log([this._drive.read(cursorPath)]);
+            ani();
         }
     };
     return CommanderShell;
+})();
+var NodeHost = (function () {
+    function NodeHost(_drive) {
+        this._drive = _drive;
+        this.log = null;
+        this._replGlobal = this._enrichGlobal({});
+        this._replContext = new isolation.Context(window);
+    }
+    NodeHost.prototype.run = function (code, path, argv) {
+        var isInteractive = !path;
+        if (isInteractive) {
+            return this._replContext.run(code, path, this._replGlobal);
+        }
+        else {
+            var procGlobal = this._enrichGlobal({});
+            procGlobal.process.argv.push(path);
+            if (argv) {
+                for (var i = 0; i < argv.length; i++) {
+                    procGlobal.process.argv.push(argv[i]);
+                }
+            }
+            procGlobal.exports = {};
+            procGlobal.__filename = path;
+            procGlobal.__dirname = path;
+            if (procGlobal.__dirname.indexOf('/') > 0)
+                procGlobal.__dirname = procGlobal.__dirname.slice(0, procGlobal.__dirname.indexOf('/'));
+            var procContext = new isolation.Context(window);
+            procContext.run(code, path, procGlobal);
+            return procGlobal.module.exports;
+        }
+    };
+    NodeHost.prototype._enrichGlobal = function (global) {
+        var _this = this;
+        noapi.apply(global, this._drive);
+        global.console = {
+            log: function () {
+                var args = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    args[_i - 0] = arguments[_i];
+                }
+                if (_this.log)
+                    _this.log(args);
+                else if (typeof console !== 'undefined')
+                    console.log(args);
+            }
+        };
+        return global;
+    };
+    return NodeHost;
 })();
 var build;
 (function (build) {
@@ -2876,6 +3021,46 @@ var build;
             replace(/\"/g, '\\"');
     }
 })(build || (build = {}));
+var editor;
+(function (editor) {
+    var Editor = (function () {
+        function Editor(_host, _file, text) {
+            this._host = _host;
+            this._file = _file;
+            this._textarea = elem('textarea', {
+                background: 'navy',
+                color: 'silver',
+                top: '0', left: '0',
+                width: '100%', height: '100%', position: 'absolute',
+                borderTop: 'solid 1em black'
+            }, this._host);
+            this._title = elem('div', {
+                position: 'absolute',
+                top: '0', left: '0',
+                width: '100%', height: '1em',
+                background: 'silver', color: 'navy',
+                text: this._file
+            }, this._host);
+            if (typeof text === 'string')
+                this._textarea.value = text;
+        }
+        Editor.prototype.focus = function () {
+            this._textarea.focus();
+        };
+        Editor.prototype.setText = function (text) {
+            this._textarea.value = text;
+        };
+        Editor.prototype.getText = function () {
+            return this._textarea.value;
+        };
+        Editor.prototype.close = function () {
+            this._host.removeChild(this._textarea);
+            this._host.removeChild(this._title);
+        };
+        return Editor;
+    })();
+    editor.Editor = Editor;
+})(editor || (editor = {}));
 var panels;
 (function (panels) {
     var panelClass = 'panels-panel-page';
@@ -3400,6 +3585,46 @@ var panels;
             this._getPanel(isLeftActive).deactivate();
             this._getPanel(!isLeftActive).activate();
         };
+        TwoPanels.prototype.temporarilyHidePanels = function () {
+            var _this = this;
+            var start = +new Date();
+            var fadeTime = 500;
+            var opacity = 0.5;
+            this._scrollHost.style.opacity = opacity;
+            this._scrollHost.style.filter = 'alpha(opacity=' + (opacity * 100) + ')';
+            var ani = setInterval(function () {
+                var passed = (Date.now ? Date.now() : +new Date()) - start;
+                if (passed > fadeTime) {
+                    clearInterval(ani);
+                    _this._scrollHost.style.opacity = '0';
+                    _this._scrollHost.style.filter = 'alpha(opacity=0)';
+                    return;
+                }
+                opacity = (1 - (passed / fadeTime)) / 2;
+                _this._scrollHost.style.opacity = opacity;
+                _this._scrollHost.style.filter = 'alpha(opacity=' + (opacity * 100) + ')';
+            }, 1);
+            var stop = function () {
+                clearInterval(ani);
+                var passed = (Date.now ? Date.now() : +new Date()) - start;
+                opacity = 1 - (passed / fadeTime);
+                start = +new Date();
+                fadeTime = 300 * (1 - opacity);
+                ani = setInterval(function () {
+                    var passed = (Date.now ? Date.now() : +new Date()) - start;
+                    if (passed > fadeTime) {
+                        clearInterval(ani);
+                        _this._scrollHost.style.opacity = null;
+                        _this._scrollHost.style.filter = null;
+                        return;
+                    }
+                    opacity = passed / fadeTime;
+                    _this._scrollHost.style.opacity = opacity;
+                    _this._scrollHost.style.filter = 'alpha(opacity=' + (opacity * 100) + ')';
+                }, 1);
+            };
+            return stop;
+        };
         TwoPanels.prototype.keydown = function (e) {
             switch (e.keyCode) {
                 case 38:
@@ -3538,7 +3763,6 @@ var panels;
     }
     panels.driveDirectoryService = driveDirectoryService;
 })(panels || (panels = {}));
-setTimeout(function () { return showCommander(require('drive')); }, 10);
 function showCommander(drive) {
     document.body.style.overflow = 'hidden';
     document.body.parentElement.style.overflow = 'hidden';
@@ -3546,59 +3770,6 @@ function showCommander(drive) {
     elem('style', { text: styleText }, document.body);
     var commander = new CommanderShell(document.body, drive);
 }
-var terminal;
-(function (terminal) {
-    var NodeHost = (function () {
-        function NodeHost(_drive) {
-            this._drive = _drive;
-            this.log = null;
-            this._replGlobal = this._enrichGlobal({});
-            this._replContext = new isolation.Context(window);
-        }
-        NodeHost.prototype.run = function (code, path, argv) {
-            var isInteractive = !path;
-            if (isInteractive) {
-                return this._replContext.run(code, path, this._replGlobal);
-            }
-            else {
-                var procGlobal = this._enrichGlobal({});
-                procGlobal.process.argv.push(path);
-                if (argv) {
-                    for (var i = 0; i < argv.length; i++) {
-                        procGlobal.process.argv.push(argv[i]);
-                    }
-                }
-                procGlobal.exports = {};
-                procGlobal.__filename = path;
-                procGlobal.__dirname = path;
-                if (procGlobal.__dirname.indexOf('/') > 0)
-                    procGlobal.__dirname = procGlobal.__dirname.slice(0, procGlobal.__dirname.indexOf('/'));
-                var procContext = new isolation.Context(window);
-                procContext.run(code, path, procGlobal);
-                return procGlobal.module.exports;
-            }
-        };
-        NodeHost.prototype._enrichGlobal = function (global) {
-            var _this = this;
-            noapi.apply(global, this._drive);
-            global.console = {
-                log: function () {
-                    var args = [];
-                    for (var _i = 0; _i < arguments.length; _i++) {
-                        args[_i - 0] = arguments[_i];
-                    }
-                    if (_this.log)
-                        _this.log(args);
-                    else if (typeof console !== 'undefined')
-                        console.log(args);
-                }
-            };
-            return global;
-        };
-        return NodeHost;
-    })();
-    terminal.NodeHost = NodeHost;
-})(terminal || (terminal = {}));
 var terminal;
 (function (terminal) {
     var Terminal = (function () {
@@ -3612,31 +3783,14 @@ var terminal;
             this._history = elem('div', { className: 'terminal-history' }, this._host);
             this._historyContent = elem('pre', {
                 className: 'terminal-history-content',
-                text: 'Hello world from mini-shell\n\nVersion 0.7m\nMay 2015\nOleg Mihailik\n\nPlease be careful.'
+                text: 'Hello world from mini-shell\n\nVersion 0.7s\nJune 2015\nOleg Mihailik\n\nPlease be careful.'
             }, this._history);
             this._prompt = elem('div', { className: 'terminal-prompt', text: '>' }, this._host);
             this._input = elem('textarea', { className: 'terminal-input', autofocus: true }, this._host);
             setTimeout(function () { return _this._input.focus(); }, 1);
         }
-        Terminal.prototype.log = function () {
-            var args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                args[_i - 0] = arguments[_i];
-            }
-            return this.logArray(args);
-        };
-        Terminal.prototype.logArray = function (args) {
-            var output = elem('div', this._historyContent);
-            for (var i = 0; i < args.length; i++) {
-                if (i > 0)
-                    elem('span', { text: ' ' }, output);
-                if (args[i] === null) {
-                    elem('span', { text: 'null', color: 'green' }, output);
-                }
-                else {
-                    this._logAppendObj(args[i], output, 0);
-                }
-            }
+        Terminal.prototype.log = function (args) {
+            terminal.log(args, this._historyContent);
             if (this._hostMetrics) {
                 this.measure();
                 this.arrange(this._hostMetrics);
@@ -3648,92 +3802,12 @@ var terminal;
         Terminal.prototype._getInput = function () {
             return (this._input.value || '').replace(/[\r\n]/g, '');
         };
-        Terminal.prototype._logAppendObj = function (obj, output, level) {
-            switch (typeof obj) {
-                case 'number':
-                case 'boolean':
-                    elem('span', { text: obj, color: 'green' }, output);
-                    break;
-                case 'undefined':
-                    elem('span', { text: 'undefined', color: 'green', opacity: 0.5 }, output);
-                    break;
-                case 'function':
-                    var funContainer = elem('span', output);
-                    var funFunction = elem('span', { text: 'function ', color: 'silver', opacity: 0.5 }, funContainer);
-                    var funName = elem('span', { text: obj.name, color: 'cornflowerblue', fontWeight: 'bold' }, funContainer);
-                    funContainer.title = obj;
-                    break;
-                case 'string':
-                    var strContainer = elem('span', output);
-                    elem('span', { text: '"', color: 'tomato' }, strContainer);
-                    elem('span', { text: obj, color: 'tomato', opacity: 0.5 }, strContainer);
-                    elem('span', { text: '"', color: 'tomato' }, strContainer);
-                    break;
-                default:
-                    if (obj && obj.constructor && obj.construct && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
-                        elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
-                        if (obj.constructor.prototype && obj.constructor.prototype.constructor
-                            && obj.constructor.prototype.constructor.name
-                            && obj.constructor.prototype.constructor.name !== 'Object' && obj.constructor.prototype.constructor.name !== 'Array')
-                            elem('span', { text: ':' + obj.contructor.prototype.constructor.name, color: 'cornflowerblue', opacity: 0.5 }, output);
-                        elem('span', output);
-                    }
-                    if (obj && typeof obj.length === 'number' && obj.length >= 0) {
-                        elem('span', { text: '[', color: 'white' }, output);
-                        if (level > 1) {
-                            elem('span', { text: '...', color: 'silver' }, output);
-                        }
-                        else {
-                            for (var i = 0; i < obj.length; i++) {
-                                if (i > 0)
-                                    elem('span', { text: ', ', color: 'gray' }, output);
-                                if (typeof obj[i] !== 'undefined')
-                                    this._logAppendObj(obj[i], output, level + 1);
-                            }
-                        }
-                        elem('span', { text: ']', color: 'white' }, output);
-                    }
-                    else if (obj.createElement + '' === document.createElement + '' && obj.getElementById + '' === document.getElementById + '' && 'title' in obj) {
-                        elem('span', { text: '#document ' + obj.title, color: 'green' }, output);
-                    }
-                    else if (obj.setInterval + '' === window.setInterval + '' && obj.setTimeout + '' === window.setTimeout + '' && 'location' in obj) {
-                        elem('span', { text: '#window ' + obj.location, color: 'green' }, output);
-                    }
-                    else if (typeof obj.tagName === 'string' && obj.getElementsByTagName + '' === document.body.getElementsByTagName + '') {
-                        elem('span', { text: '<' + obj.tagName + '>', color: 'green' }, output);
-                    }
-                    else if (obj + '' !== '[Object]') {
-                        elem('span', { text: '{', color: 'cornflowerblue' }, output);
-                        if (level > 1) {
-                            elem('span', { text: '...', color: 'cornflowerblue', opacity: 0.5 }, output);
-                        }
-                        else {
-                            var first = true;
-                            for (var k in obj) {
-                                if (obj.hasOwnProperty && !obj.hasOwnProperty(k))
-                                    continue;
-                                if (first) {
-                                    first = false;
-                                }
-                                else {
-                                    elem('span', { text: ', ', color: 'cornflowerblue', opacity: 0.3 }, output);
-                                    first = false;
-                                }
-                                elem('span', { text: k, color: 'cornflowerblue', fontWeight: 'bold' }, output);
-                                elem('span', { text: ': ', color: 'cornflowerblue', opacity: 0.5 }, output);
-                                this._logAppendObj(obj[k], output, level + 1);
-                            }
-                        }
-                        elem('span', { text: '}', color: 'cornflowerblue' }, output);
-                    }
-                    else {
-                        elem('span', { text: obj, color: 'cornflowerblue' }, output);
-                    }
-                    break;
-            }
-        };
         Terminal.prototype.focus = function () {
             this._input.focus();
+        };
+        Terminal.prototype.temporarilyHidePrompt = function (replacementText) {
+            // TODO: hide prompt, display replacement text instead
+            return function () { };
         };
         Terminal.prototype.measure = function () {
             this._promptWidth = this._prompt.offsetWidth;
@@ -3742,13 +3816,13 @@ var terminal;
         Terminal.prototype.arrange = function (metrics) {
             this._hostMetrics = metrics;
             this._history.style.width = metrics.hostWidth + 'px';
-            this._history.style.bottom = metrics.emHeight + 'px';
-            if (metrics.hostHeight - metrics.emHeight > this._historyContentHeight) {
+            this._history.style.bottom = (metrics.emHeight * 2) + 'px';
+            if (metrics.hostHeight - metrics.emHeight * 2 > this._historyContentHeight) {
                 this._history.style.height = this._historyContentHeight + 'px';
             }
             else {
-                this._history.style.height = (metrics.hostHeight - metrics.emHeight) + 'px';
-                this._history.scrollTop = this._historyContentHeight - (metrics.hostHeight - metrics.emHeight);
+                this._history.style.height = (metrics.hostHeight - metrics.emHeight * 2) + 'px';
+                this._history.scrollTop = this._historyContentHeight - (metrics.hostHeight - metrics.emHeight * 2);
             }
             this._input.style.left = this._promptWidth + 'px';
             this._input.style.width = (metrics.hostWidth - this._promptWidth) + 'px';
@@ -3805,7 +3879,118 @@ var terminal;
     })();
     terminal.Terminal = Terminal;
 })(terminal || (terminal = {}));
--->
+var terminal;
+(function (terminal) {
+    function log(args, historyContent) {
+        var output = elem('div', historyContent);
+        for (var i = 0; i < args.length; i++) {
+            if (i > 0)
+                elem('span', { text: ' ' }, output);
+            if (args[i] === null) {
+                elem('span', { text: 'null', color: 'green' }, output);
+            }
+            else {
+                terminal.logAppendObj(args[i], output, 0);
+            }
+        }
+    }
+    terminal.log = log;
+})(terminal || (terminal = {}));
+var terminal;
+(function (terminal) {
+    function logAppendObj(obj, output, level) {
+        switch (typeof obj) {
+            case 'number':
+            case 'boolean':
+                elem('span', { text: obj, color: 'green' }, output);
+                break;
+            case 'undefined':
+                elem('span', { text: 'undefined', color: 'green', opacity: 0.5 }, output);
+                break;
+            case 'function':
+                var funContainer = elem('span', output);
+                var funFunction = elem('span', { text: 'function ', color: 'silver', opacity: 0.5 }, funContainer);
+                var funName = elem('span', { text: obj.name, color: 'cornflowerblue', fontWeight: 'bold' }, funContainer);
+                funContainer.title = obj;
+                break;
+            case 'string':
+                var strContainer = elem('span', output);
+                elem('span', { text: '"', color: 'tomato' }, strContainer);
+                elem('span', { text: obj, color: 'tomato', opacity: 0.5 }, strContainer);
+                elem('span', { text: '"', color: 'tomato' }, strContainer);
+                break;
+            default:
+                if (obj && obj.constructor && obj.construct && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
+                    elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
+                    if (obj.constructor.prototype && obj.constructor.prototype.constructor
+                        && obj.constructor.prototype.constructor.name
+                        && obj.constructor.prototype.constructor.name !== 'Object' && obj.constructor.prototype.constructor.name !== 'Array')
+                        elem('span', { text: ':' + obj.contructor.prototype.constructor.name, color: 'cornflowerblue', opacity: 0.5 }, output);
+                    elem('span', output);
+                }
+                if (obj && typeof obj.length === 'number' && obj.length >= 0) {
+                    elem('span', { text: '[', color: 'white' }, output);
+                    if (level > 1) {
+                        elem('span', { text: '...', color: 'silver' }, output);
+                    }
+                    else {
+                        for (var i = 0; i < obj.length; i++) {
+                            if (i > 0)
+                                elem('span', { text: ', ', color: 'gray' }, output);
+                            if (typeof obj[i] !== 'undefined')
+                                logAppendObj(obj[i], output, level + 1);
+                        }
+                    }
+                    elem('span', { text: ']', color: 'white' }, output);
+                }
+                else if (obj.createElement + '' === document.createElement + '' && obj.getElementById + '' === document.getElementById + '' && 'title' in obj) {
+                    elem('span', { text: '#document ' + obj.title, color: 'green' }, output);
+                }
+                else if (obj.setInterval + '' === window.setInterval + '' && obj.setTimeout + '' === window.setTimeout + '' && 'location' in obj) {
+                    elem('span', { text: '#window ' + obj.location, color: 'green' }, output);
+                }
+                else if (typeof obj.tagName === 'string' && obj.getElementsByTagName + '' === document.body.getElementsByTagName + '') {
+                    elem('span', { text: '<' + obj.tagName + '>', color: 'green' }, output);
+                }
+                else if (obj + '' !== '[Object]') {
+                    elem('span', { text: '{', color: 'cornflowerblue' }, output);
+                    if (level > 1) {
+                        elem('span', { text: '...', color: 'cornflowerblue', opacity: 0.5 }, output);
+                    }
+                    else {
+                        var first = true;
+                        for (var k in obj) {
+                            if (obj.hasOwnProperty && !obj.hasOwnProperty(k))
+                                continue;
+                            if (first) {
+                                first = false;
+                            }
+                            else {
+                                elem('span', { text: ', ', color: 'cornflowerblue', opacity: 0.3 }, output);
+                                first = false;
+                            }
+                            elem('span', { text: k, color: 'cornflowerblue', fontWeight: 'bold' }, output);
+                            elem('span', { text: ': ', color: 'cornflowerblue', opacity: 0.5 }, output);
+                            logAppendObj(obj[k], output, level + 1);
+                        }
+                    }
+                    elem('span', { text: '}', color: 'cornflowerblue' }, output);
+                }
+                else {
+                    elem('span', { text: obj, color: 'cornflowerblue' }, output);
+                }
+                break;
+        }
+    }
+    terminal.logAppendObj = logAppendObj;
+})(terminal || (terminal = {}));
+
+  showCommander(drive);
+}
+//# sourceURL=/load/shellLoader.ts.js
+</script>
+
+<!--total 2Mb, saved 13 Jun 2015 22:32:38.671 GMT+0100-->
 
 <!-- /empty/
 -->
@@ -3815,7 +4000,7 @@ var terminal;
 123
 456-->
 
-<!-- /CRLF-file [CRLF]
+<!-- /CRLF-file
 123
 456-->
 
@@ -3933,13 +4118,13 @@ undefined
 
 .terminal-prompt {
   position: absolute;
-  left: 0; bottom: 0;
+  left: 0; bottom: 1em;
   height: 1em;
 }
 
 .terminal-input {
   position: absolute;
-  left: 0; bottom: 0;
+  left: 0; bottom: 1em;
   width: 0; height: 1em;
   font: inherit;
   border: none;
@@ -4242,8 +4427,13 @@ function bootUI(document, window, base) {
   });
 
   var header = base.elem('h2', {
-    text: 'Loading...',
+    text: 'Mini portabled shell',
     fontWeight: 'light'
+  }, document.body);
+
+  var smallTitle = base.elem('div', {
+    text: 'Loading...',
+    opacity: 0.8
   }, document.body);
 
   var darkBottom = base.elem('div', {
@@ -4256,13 +4446,12 @@ function bootUI(document, window, base) {
 
   return {
     title: function(t) {
-      setText(header,t);
+      setText(smallTitle,t);
       if (typeof console !== 'undefined' && typeof console.log === 'function')
         console.log(t);
-
     },
     loaded: function() {
-      setText(header, 'Loaded.');
+      setText(smallTitle, 'Loaded.');
     }
   };
 }
@@ -4468,7 +4657,7 @@ module isolation {
     ifrdoc.write(
       '<*!' + 'doctype html' + '>' +
       '<' + 'html' + '><' + 'body' + '>' +
-      '<' + 'script' + '>window.__eval_export_=function (code) { return eval(code); }</' + 'script' + '>' +
+      '<' + 'script' + '>window.__eval_export_=eval</' + 'script' + '>' +
       '<' + 'body' + '></' + 'html' + '>');
     if (ifrdoc.close) ifrdoc.close();
 
@@ -4551,6 +4740,8 @@ module isolation {
 }
 -->
 <!-- /src/load/shellLoader.ts
+declare var showCommanderInContext;
+
 function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.BootModuleAPI): shellLoader.ContinueLoading {
 
   var driveMount = persistence.bootMount(uniqueKey, document);
@@ -4608,6 +4799,7 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
 
       var uiframe = createFrame();
       uiframe.iframe.style.opacity = '0';
+      uiframe.iframe.style.filter = 'alpha(opacity=0)';
       var uiframeBase = (<any>window).base(uiframe.global);
       uiframeBase.apply();
 
@@ -4626,10 +4818,16 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
 
 
       (<any>uiframe.global).require = shell_require;
-      boot.api.title('Completed: ' + progressText('ui'));
-      uiframe.eval(
-        drive.read('/shell/start.ts.js'));
+      boot.api.title('Loaded: ' + progressText('ui'));
 
+      try {
+        showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
+      }
+      catch (error) {
+        alert('Shell initialisation failed ' + error.message+'\n'+error.stack+'\n'+error);
+      }
+
+      boot.api.title('Completed: ' + progressText('ui'));
 
       function shell_require(moduleName): any {
         switch (moduleName) {
@@ -4698,7 +4896,11 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
         var passed = new Date().valueOf() - start;
         var opacity = Math.min(passed, fadeintTime) / fadeintTime;
         boot.iframe.style.opacity = (1 - opacity).toString();
+        if (uiframe.iframe.style.filter)
+        	boot.iframe.style.filter = 'alpha(opacity=' + ((opacity * 100) | 0) + ')';
         uiframe.iframe.style.opacity = '1';
+
+        uiframe.iframe.style.filter = 'alpha(opacity=100)';
 
         if (passed >= fadeintTime) {
           clearInterval(animateFadeIn);
@@ -8212,7 +8414,7 @@ module persistence {
 
   }
   
-}Â&nbsp;
+}Â 
 -->
 <!-- /src/persistence/attached/webSQL.ts
 module persistence {
@@ -9090,7 +9292,7 @@ module persistence.dom {
 module persistence.encodings {
 
   export function CR(text: string): string {
-Â&nbsp; Â&nbsp; return text.
+Â  Â  return text.
       replace(/\r\n|\n/g, '\r');
   }
 
@@ -9100,7 +9302,7 @@ module persistence.encodings {
 module persistence.encodings {
 
   export function CRLF(text: string): string {
-Â&nbsp; Â&nbsp; return text.
+Â  Â  return text.
       replace(/\r|\n/g, '\r\n');
   }
 
@@ -10334,7 +10536,7 @@ module panels {
 
       var contentWidth = 0;
 
-Â&nbsp; Â&nbsp; Â&nbsp; if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {Â&nbsp;
+Â  Â  Â  if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {Â 
         // flippable layout
         contentWidth = Math.max(metrics.hostWidth / 2, metrics.hostWidth * 2 - metrics.emWidth * 3);
       }
@@ -10395,6 +10597,52 @@ module panels {
       var isLeftActive = this._leftPanel.isActive();
       this._getPanel(isLeftActive).deactivate();
       this._getPanel(!isLeftActive).activate();
+    }
+
+  	temporarilyHidePanels(): () => void {
+
+      var start = +new Date();
+      var fadeTime = 500;
+      var opacity = 0.5;
+      this._scrollHost.style.opacity = <any>opacity;
+      this._scrollHost.style.filter = 'alpha(opacity=' + (opacity * 100) + ')';
+      var ani = setInterval(() => {
+        var passed = (Date.now ? Date.now() : +new Date()) - start;
+        if (passed > fadeTime) {
+          clearInterval(ani);
+          this._scrollHost.style.opacity = '0';
+          this._scrollHost.style.filter = 'alpha(opacity=0)';
+          return;
+        }
+
+        opacity = (1 - (passed / fadeTime))/2;
+        this._scrollHost.style.opacity = <any>opacity;
+        this._scrollHost.style.filter = 'alpha(opacity=' + (opacity*100) + ')';
+      }, 1);
+      var stop = () => {
+        clearInterval(ani);
+
+        var passed = (Date.now ? Date.now() : +new Date()) - start;
+        opacity = 1 - (passed / fadeTime);
+
+        start = +new Date();
+        fadeTime = 300 * (1-opacity);
+        ani = setInterval(() => {
+          var passed = (Date.now ? Date.now() : +new Date()) - start;
+          if (passed > fadeTime) {
+            clearInterval(ani);
+            this._scrollHost.style.opacity = null;
+            this._scrollHost.style.filter = null;
+            return;
+          }
+
+          opacity = passed / fadeTime;
+          this._scrollHost.style.opacity = <any>opacity;
+          this._scrollHost.style.filter = 'alpha(opacity=' + (opacity * 100) + ')';
+
+        }, 1);
+      };
+      return stop;
     }
 
     keydown(e: KeyboardEvent): boolean {
@@ -10626,70 +10874,6 @@ module panels {
     height: 0.5em
 }
 -->
-<!-- /src/shell/terminal/NodeHost.ts
-module terminal {
-
-  export class NodeHost {
-
-    private _replGlobal: any;
-    private _replContext: isolation.Context;
-
-    constructor(private _drive: persistence.Drive) {
-      this._replGlobal = this._enrichGlobal({});
-      this._replContext = new isolation.Context(window);
-    }
-
-
-    log: (args: any[]) => void = null;
-
-    run(code: string, path: string, argv?: string[]) {
-
-      var isInteractive = !path;
-
-      if (isInteractive) {
-        return this._replContext.run(code, path, this._replGlobal);
-      }
-      else {
-
-        var procGlobal = this._enrichGlobal({});
-
-        procGlobal.process.argv.push(path);
-        if (argv) {
-          for (var i = 0; i < argv.length; i++) {
-            procGlobal.process.argv.push(argv[i]);
-          }
-        }
-
-        procGlobal.exports = {};
-        procGlobal.__filename = path;
-        procGlobal.__dirname = path;
-        if (procGlobal.__dirname.indexOf('/') > 0)
-          procGlobal.__dirname = procGlobal.__dirname.slice(0, procGlobal.__dirname.indexOf('/'));
-
-        var procContext = new isolation.Context(window);
-        procContext.run(code, path, procGlobal);
-
-        return procGlobal.module.exports;
-      }
-
-    }
-
-    private _enrichGlobal(global: any): noapi.Global {
-      noapi.apply(global, this._drive);
-      global.console = {
-        log: (...args: any[]) => {
-          if (this.log)
-            this.log(args);
-          else if (typeof console !== 'undefined')
-            console.log(args);
-        }
-      };
-      return <any>global;
-    }
-
-  }
-}
--->
 <!-- /src/shell/terminal/Terminal.ts
 module terminal {
 
@@ -10708,7 +10892,7 @@ module terminal {
       this._history = <any>elem('div', { className: 'terminal-history' }, this._host);
       this._historyContent = <any>elem('pre', {
         className: 'terminal-history-content',
-        text: 'Hello world from mini-shell\n\nVersion 0.7m\nMay 2015\nOleg Mihailik\n\nPlease be careful.'
+        text: 'Hello world from mini-shell\n\nVersion 0.7s\nJune 2015\nOleg Mihailik\n\nPlease be careful.'
       }, this._history);
 
       this._prompt = <any>elem('div', { className: 'terminal-prompt', text: '>' }, this._host);
@@ -10719,22 +10903,8 @@ module terminal {
 
     }
 
-    log(...args: any[]) {
-      return this.logArray(args);
-    }
-
-    logArray(args: any[]) {
-      var output = elem('div', this._historyContent);
-      for (var i = 0; i < args.length; i++) {
-        if (i > 0)
-          elem('span', { text: ' ' }, output);
-        if (args[i] === null) {
-          elem('span', { text: 'null', color: 'green' }, output);
-        }
-        else {
-          this._logAppendObj(args[i], <any>output, 0);
-        }
-      }
+    log(args: any[]) {
+      log(args, this._historyContent);
 
       if (this._hostMetrics) {
         this.measure();
@@ -10750,98 +10920,14 @@ module terminal {
       return (this._input.value || '').replace(/[\r\n]/g, '');
     }
 
-    private _logAppendObj(obj: any, output: HTMLDivElement, level: number) {
-      switch (typeof obj) {
-        case 'number':
-        case 'boolean':
-          elem('span', { text: obj, color: 'green' }, output);
-          break;
-
-        case 'undefined':
-          elem('span', { text: 'undefined', color: 'green', opacity: 0.5 }, output);
-          break;
-
-        case 'function':
-          var funContainer = elem('span', output);
-          var funFunction = elem('span', { text: 'function ', color: 'silver', opacity: 0.5 }, funContainer);
-          var funName = elem('span', { text: obj.name, color: 'cornflowerblue', fontWeight: 'bold' }, funContainer);
-          funContainer.title = obj;
-          break;
-
-        case 'string':
-          var strContainer = elem('span', output);
-          elem('span', { text: '"', color: 'tomato' }, strContainer);
-          elem('span', { text: obj, color: 'tomato', opacity: 0.5 }, strContainer);
-          elem('span', { text: '"', color: 'tomato' }, strContainer);
-          break;
-
-        default:
-          if (obj && obj.constructor && obj.construct && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
-            elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
-            if (obj.constructor.prototype && obj.constructor.prototype.constructor
-              && obj.constructor.prototype.constructor.name
-              && obj.constructor.prototype.constructor.name !== 'Object' && obj.constructor.prototype.constructor.name !== 'Array')
-              elem('span', { text: ':' + obj.contructor.prototype.constructor.name, color: 'cornflowerblue', opacity: 0.5 }, output);
-            elem('span', output);
-          }
-
-          if (obj && typeof obj.length === 'number' && obj.length >= 0) {
-            elem('span', { text: '[', color: 'white' }, output);
-            if (level > 1) {
-              elem('span', { text: '...', color: 'silver' }, output);
-              // TODO: handle click
-            }
-            else {
-              for (var i = 0; i < obj.length; i++) {
-                if (i > 0) elem('span', { text: ', ', color: 'gray' }, output);
-                if (typeof obj[i] !== 'undefined')
-                  this._logAppendObj(obj[i], output, level + 1);
-              }
-            }
-            elem('span', { text: ']', color: 'white' }, output);
-          }
-          else if (obj.createElement + '' === document.createElement + '' && obj.getElementById + '' === document.getElementById + '' && 'title' in obj) {
-            elem('span', { text: '#document ' + obj.title, color: 'green' }, output);
-          }
-          else if (obj.setInterval + '' === window.setInterval + '' && obj.setTimeout + '' === window.setTimeout + '' && 'location' in obj) {
-            elem('span', { text: '#window ' + obj.location, color: 'green' }, output);
-          }
-          else if (typeof obj.tagName === 'string' && obj.getElementsByTagName + '' === document.body.getElementsByTagName + '') {
-            elem('span', { text: '<' + obj.tagName + '>', color: 'green' }, output);
-          }
-          else if (obj + '' !== '[Object]') {
-            elem('span', { text: '{', color: 'cornflowerblue' }, output);
-            if (level > 1) {
-              elem('span', { text: '...', color: 'cornflowerblue', opacity: 0.5 }, output);
-              // TODO: handle click
-            }
-            else {
-              var first = true;
-              for (var k in obj) {
-                if (obj.hasOwnProperty && !obj.hasOwnProperty(k)) continue;
-                if (first) {
-                  first = false;
-                }
-                else {
-                  elem('span', { text: ', ', color: 'cornflowerblue', opacity: 0.3 }, output);
-                  first = false;
-                }
-                elem('span', { text: k, color: 'cornflowerblue', fontWeight: 'bold' }, output);
-                elem('span', { text: ': ', color: 'cornflowerblue', opacity: 0.5 }, output);
-                this._logAppendObj(obj[k], output, level + 1);
-              }
-            }
-            elem('span', { text: '}', color: 'cornflowerblue' }, output);
-          }
-          else {
-            elem('span', { text: obj, color: 'cornflowerblue' }, output);
-          }
-          break;
-      }
-    }
 
     focus() {
       this._input.focus();
+    }
+
+  	temporarilyHidePrompt(replacementText: string): () => void {
+      // TODO: hide prompt, display replacement text instead
+      return () => { };
     }
 
     measure() {
@@ -10855,13 +10941,13 @@ module terminal {
 
       this._history.style.width = metrics.hostWidth + 'px';
 
-      this._history.style.bottom = metrics.emHeight + 'px';
-      if (metrics.hostHeight - metrics.emHeight > this._historyContentHeight) {
+      this._history.style.bottom = (metrics.emHeight * 2) + 'px';
+      if (metrics.hostHeight - metrics.emHeight * 2 > this._historyContentHeight) {
         this._history.style.height = this._historyContentHeight + 'px';
       }
       else {
-        this._history.style.height = (metrics.hostHeight - metrics.emHeight) + 'px';
-        this._history.scrollTop = this._historyContentHeight - (metrics.hostHeight - metrics.emHeight);
+        this._history.style.height = (metrics.hostHeight - metrics.emHeight * 2) + 'px';
+        this._history.scrollTop = this._historyContentHeight - (metrics.hostHeight - metrics.emHeight * 2);
       }
       this._input.style.left = this._promptWidth + 'px';
       this._input.style.width = (metrics.hostWidth - this._promptWidth) + 'px';
@@ -10927,6 +11013,119 @@ module terminal {
 
 }
 -->
+<!-- /src/shell/terminal/log.ts
+module terminal {
+
+  export function log(args: any[], historyContent: HTMLElement) {
+    var output = elem('div', historyContent);
+    for (var i = 0; i < args.length; i++) {
+      if (i > 0)
+        elem('span', { text: ' ' }, output);
+      if (args[i] === null) {
+        elem('span', { text: 'null', color: 'green' }, output);
+      }
+      else {
+        logAppendObj(args[i], <any>output, 0);
+      }
+    }
+  }
+}
+-->
+<!-- /src/shell/terminal/logAppendObj.ts
+module terminal {
+
+  export function logAppendObj(obj: any, output: HTMLDivElement, level: number) {
+    switch (typeof obj) {
+      case 'number':
+      case 'boolean':
+        elem('span', { text: obj, color: 'green' }, output);
+        break;
+
+      case 'undefined':
+        elem('span', { text: 'undefined', color: 'green', opacity: 0.5 }, output);
+        break;
+
+      case 'function':
+        var funContainer = elem('span', output);
+        var funFunction = elem('span', { text: 'function ', color: 'silver', opacity: 0.5 }, funContainer);
+        var funName = elem('span', { text: obj.name, color: 'cornflowerblue', fontWeight: 'bold' }, funContainer);
+        funContainer.title = obj;
+        break;
+
+      case 'string':
+        var strContainer = elem('span', output);
+        elem('span', { text: '"', color: 'tomato' }, strContainer);
+        elem('span', { text: obj, color: 'tomato', opacity: 0.5 }, strContainer);
+        elem('span', { text: '"', color: 'tomato' }, strContainer);
+        break;
+
+      default:
+        if (obj && obj.constructor && obj.construct && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
+          elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
+          if (obj.constructor.prototype && obj.constructor.prototype.constructor
+            && obj.constructor.prototype.constructor.name
+            && obj.constructor.prototype.constructor.name !== 'Object' && obj.constructor.prototype.constructor.name !== 'Array')
+            elem('span', { text: ':' + obj.contructor.prototype.constructor.name, color: 'cornflowerblue', opacity: 0.5 }, output);
+          elem('span', output);
+        }
+
+        if (obj && typeof obj.length === 'number' && obj.length >= 0) {
+          elem('span', { text: '[', color: 'white' }, output);
+          if (level > 1) {
+            elem('span', { text: '...', color: 'silver' }, output);
+            // TODO: handle click
+          }
+          else {
+            for (var i = 0; i < obj.length; i++) {
+              if (i > 0) elem('span', { text: ', ', color: 'gray' }, output);
+              if (typeof obj[i] !== 'undefined')
+                logAppendObj(obj[i], output, level + 1);
+            }
+          }
+          elem('span', { text: ']', color: 'white' }, output);
+        }
+        else if (obj.createElement + '' === document.createElement + '' && obj.getElementById + '' === document.getElementById + '' && 'title' in obj) {
+          elem('span', { text: '#document ' + obj.title, color: 'green' }, output);
+        }
+        else if (obj.setInterval + '' === window.setInterval + '' && obj.setTimeout + '' === window.setTimeout + '' && 'location' in obj) {
+          elem('span', { text: '#window ' + obj.location, color: 'green' }, output);
+        }
+        else if (typeof obj.tagName === 'string' && obj.getElementsByTagName + '' === document.body.getElementsByTagName + '') {
+          elem('span', { text: '<' + obj.tagName + '>', color: 'green' }, output);
+        }
+        else if (obj + '' !== '[Object]') {
+          elem('span', { text: '{', color: 'cornflowerblue' }, output);
+          if (level > 1) {
+            elem('span', { text: '...', color: 'cornflowerblue', opacity: 0.5 }, output);
+            // TODO: handle click
+          }
+          else {
+            var first = true;
+            for (var k in obj) {
+              if (obj.hasOwnProperty && !obj.hasOwnProperty(k)) continue;
+              if (first) {
+                first = false;
+              }
+              else {
+                elem('span', { text: ', ', color: 'cornflowerblue', opacity: 0.3 }, output);
+                first = false;
+              }
+              elem('span', { text: k, color: 'cornflowerblue', fontWeight: 'bold' }, output);
+              elem('span', { text: ': ', color: 'cornflowerblue', opacity: 0.5 }, output);
+              logAppendObj(obj[k], output, level + 1);
+            }
+          }
+          elem('span', { text: '}', color: 'cornflowerblue' }, output);
+        }
+        else {
+          elem('span', { text: obj, color: 'cornflowerblue' }, output);
+        }
+        break;
+    }
+  }
+
+}
+-->
 <!-- /src/shell/terminal/terminal.css
 .terminal-history {
   position: absolute;
@@ -10941,13 +11140,13 @@ module terminal {
 
 .terminal-prompt {
   position: absolute;
-  left: 0; bottom: 0;
+  left: 0; bottom: 1em;
   height: 1em;
 }
 
 .terminal-input {
   position: absolute;
-  left: 0; bottom: 0;
+  left: 0; bottom: 1em;
   width: 0; height: 1em;
   font: inherit;
   border: none;
@@ -10973,11 +11172,15 @@ class CommanderShell {
   };
 
   private _onsizechangedTimeout: number = 0;
-  private _node: terminal.NodeHost;
+  private _node: NodeHost;
+
+  private _editor: editor.Editor = null;
+
+  private _fnKeys: HTMLElement[] = [];
 
   constructor(private _host: HTMLElement, private _drive: persistence.Drive) {
 
-    this._node = new terminal.NodeHost(this._drive);
+    this._node = new NodeHost(this._drive);
     this._node.log = args => this._terminal.log.apply(this._terminal, args);
 
     elem(this._host, {
@@ -10995,6 +11198,22 @@ class CommanderShell {
 
     this._terminal = new terminal.Terminal(this._host, this._node);
     this._twoPanels = new panels.TwoPanels(this._host, '/', '/src', this._drive);
+
+    var fnKeyActions = [null, 'Help', '<None>', 'View', 'Edit', 'Copy', 'Move', 'MkDir', 'Delete', 'Options', 'Save'];
+    for (var i = 1; i <= 10; i++) {
+      var fnKeyText = elem('div', {
+        position: 'absolute', bottom: '0'
+      }, this._host);
+      var keyName = (i === 1 ? 'F1' : '' + i);
+      elem('span', { background: 'black', color: 'gray', text: keyName+' ' }, fnKeyText);
+      elem('span', { background: 'gray', color: 'black', text: fnKeyActions[i] }, fnKeyText);
+      this._fnKeys.push(fnKeyText);
+    }
+
+    on(this._fnKeys[4 - 1], 'click', () => {
+      var cursorPath = this._twoPanels.cursorPath();
+      this._openEditor(cursorPath);
+    });
 
     var resizeMod = require('resize');
     resizeMod.on(winMetrics => {
@@ -11019,14 +11238,14 @@ class CommanderShell {
         var term = this._terminal;
         console.log = function(...args: any[]) {
           _oldLog.apply(glob.console, args);
-          term.logArray(args);
+          term.log(args);
         };
       }
       else {
         var term = this._terminal;
         glob.console = {
           log: function(...args: any[]) {
-            term.logArray(args);
+            term.log(args);
           }
         };
       }
@@ -11034,13 +11253,6 @@ class CommanderShell {
 
     applyConsole(_glob);
     applyConsole(window);
-
-    var timings: any[] = require('timings');
-    var timingsShort: any = {};
-    for (var i = 0; i < timings.length;i++) {
-      timingsShort[timings[i].stage] = timings[i].time;
-    }
-    this._terminal.log('timings: ', timingsShort);
   }
 
   measure() {
@@ -11048,6 +11260,7 @@ class CommanderShell {
     this._metrics.emHeight = this._metricElem.offsetHeight;
     this._twoPanels.measure();
     this._terminal.measure();
+    //this._editor.measure();
   }
 
 	arrange() {
@@ -11055,6 +11268,13 @@ class CommanderShell {
     this._host.style.height = this._metrics.hostHeight + 'px';
     this._twoPanels.arrange(this._metrics);
     this._terminal.arrange(this._metrics);
+    //this._editor.arrange();
+
+    var keySize = ((this._metrics.hostWidth / 10)|0);
+    for (var i = 0; i < this._fnKeys.length; i++) {
+      this._fnKeys[i].style.left = (i * keySize) + 'px';
+      this._fnKeys[i].style.width = keySize + 'px';
+    }
   }
 
   private _keydown(e: KeyboardEvent) {
@@ -11066,7 +11286,23 @@ class CommanderShell {
     return res;
   }
 
+  private _closeEditor() {
+    // TODO: confirm saving
+    var newText = this._editor.getText();
+    var cursorPath = this._twoPanels.cursorPath();
+    this._drive.write(cursorPath, newText);
+    this._editor.close();
+    this._editor = null;
+  }
+
   private _keydownCore(e: KeyboardEvent) {
+    if (this._editor) {
+      if (e.keyCode === 27) {
+        this._closeEditor();
+      }
+      return;
+    }
+
     if (e.keyCode === 27 && !e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       this._twoPanels.toggleVisibility();
       return true;
@@ -11091,6 +11327,44 @@ class CommanderShell {
     //if (e.keyCode < 32 || e.keyCode > 126) {
     //	this._terminal.log('CommanderShell::keydown ' + e.yCode);
       //}
+
+    if (e.keyCode === 115) { // F4
+      this._openEditor(cursorPath);
+      return true;
+    }
+
+    if (e.keyCode === 116) { // F5
+      this._terminal.log(['F5 - copy (not implemented)']);
+      return true;
+    }
+
+    if (e.keyCode === 117) { // F6
+      this._terminal.log(['F6 - move (not implemented)']);
+      return true;
+    }
+
+    if (e.ctrlKey || e.altKey || e.metaKey) {
+      this._terminal.log(['CommanderShell::keydown ', e.keyCode]);
+    }
+  }
+
+  private _openEditor(cursorPath: string) {
+    if (cursorPath) {
+      var text = this._drive.read(cursorPath);
+      if (typeof text === 'string') {
+        this._terminal.log(['@edit ', cursorPath]);
+        this._editor = new editor.Editor(this._host, cursorPath, text);
+        setTimeout(() => {
+          if (this._editor) this._editor.focus();
+        }, 1);
+      }
+      else {
+        this._terminal.log(['text at ', cursorPath, ' is ', text]);
+      }
+    }
+    else {
+      this._terminal.log(['cursorPath = ', cursorPath]);
+    }
   }
 
 	private _execute(cursorPath: string) {
@@ -11098,96 +11372,121 @@ class CommanderShell {
     if (/\.js$/.test(cursorPath)) {
       var text = this._drive.read(cursorPath);
       if (typeof text !== 'undefined' && text !== null) {
-        this._terminal.log('@node ' + cursorPath);
-        var result = this._node.run(text, cursorPath);
-        this._terminal.log(result);
+        this._terminal.log(['@node ' + cursorPath]);
+        var ani = this._twoPanels.temporarilyHidePanels();
+
+        setTimeout(() => {
+          try {
+            var result = this._node.run(text, cursorPath);
+          }
+          catch (error) {
+            result = error;
+          }
+          this._terminal.log(result);
+          ani();
+        },
+        1);
+
         return true;
       }
     }
     else if (/\.ts$/.test(cursorPath)) {
       var text = this._drive.read('/src/typescript/tsc.js');
       if (typeof text !== 'undefined' && text !== null) {
-        this._terminal.log('@tsc ' + cursorPath);
-        var result = this._node.run(text, '/src/typescript/tsc.js', [cursorPath]);
-        this._terminal.log(result);
+        this._terminal.log(['@tsc ' + cursorPath]);
+        var ani = this._twoPanels.temporarilyHidePanels();
+        setTimeout(() => {
+          var result = this._node.run(text, '/src/typescript/tsc.js', [cursorPath]);
+          this._terminal.log(result);
+          ani();
+        }, 1);
         return true;
       }
     }
     else if (/.html$/.test(cursorPath)) {
-      this._terminal.log('@build ' + cursorPath);
+      this._terminal.log(['@build ' + cursorPath]);
+      var ani = this._twoPanels.temporarilyHidePanels();
+      setTimeout(() => {
 
-      var htmlTemplate = this._drive.read(cursorPath);
+        var htmlTemplate = this._drive.read(cursorPath);
 
-      var blankWindow = window.open('', '_blank' + (+new Date()));
+        var blankWindow = window.open('', '_blank' + (+new Date()));
 
-      var pollUntil = (+new Date()) + 1000;
+        var pollUntil = (+new Date()) + 1000;
 
-      while (+new Date() < pollUntil) {
-        try {
-          var blankWindowDoc = blankWindow.document;
-        }
-        catch (error) { }
-      }
-
-      if (!blankWindowDoc) {
-        alert('Cannot open a window to host the built document');
-        return;
-      }
-
-      blankWindow.document.open();
-      blankWindow.document.write([
-        '<html><title>Building ' + cursorPath + '...</title>',
-        '<style>',
-        'html, body { background: black; color: greenyellow; }',
-        'h2 { font-weight: 100; width: 40%; position: fixed; font-size: 200%; }',
-        'pre { width: 50%; padding-left: 50%; opacity: 1; transition: opacity 1s; }',
-        '</style>',
-        '<h2>Building ' + cursorPath + '</h2>',
-        '<' + 's' + 'cript>',
-        'var textContentProp = "textContent" in document.createElement("pre") ? "textContent" : "innerText";',
-        'var lastLogElem;',
-        'function log(text) {',
-        '  var logElem = document.createElement("pre");',
-        '  logElem[textContentProp]=text;',
-        '  document.body.appendChild(logElem);',
-        '  logElem.scrollIntoView();',
-        '  if (lastLogElem) {',
-        '    lastLogElem.style.opacity = 0.5;',
-        '  }',
-        '  lastLogElem = logElem;',
-        '}',
-        '<' + '/' + 's' + 'cript>'].join('\n'));
-      blankWindow.document.close();
-
-      build.processTemplate(
-        htmlTemplate,
-        [],
-        txt => {
-          this._terminal.log(txt);
-          (<any>blankWindow).log(txt);
-        },
-        (error, result) => {
-          if (error) {
-            this._terminal.log(error);
-            return;
-          }
-
+        while (+new Date() < pollUntil) {
           try {
-            var blob = new Blob([result], { type: 'text/html' });
-            var url = URL.createObjectURL(blob);
-            blankWindow.location.replace(url);
+            var blankWindowDoc = blankWindow.document;
           }
-          catch (blobError) {
-            blankWindow.document.open();
-            blankWindow.document.write(result);
-            blankWindow.document.close();
-          }
+          catch (error) { }
+        }
 
-        });
+        if (!blankWindowDoc) {
+          alert('Cannot open a window to host the built document');
+          ani();
+          return;
+        }
+
+        blankWindow.document.open();
+        blankWindow.document.write([
+          '<html><title>Building ' + cursorPath + '...</title>',
+          '<style>',
+          'html, body { background: black; color: greenyellow; }',
+          'h2 { font-weight: 100; width: 40%; position: fixed; font-size: 200%; }',
+          'pre { width: 50%; padding-left: 50%; opacity: 1; transition: opacity 1s; }',
+          '</style>',
+          '<h2>Building ' + cursorPath + '</h2>',
+          '<' + 's' + 'cript>',
+          'var textContentProp = "textContent" in document.createElement("pre") ? "textContent" : "innerText";',
+          'var lastLogElem;',
+          'function log(text) {',
+          '  var logElem = document.createElement("pre");',
+          '  logElem[textContentProp]=text;',
+          '  document.body.appendChild(logElem);',
+          '  logElem.scrollIntoView();',
+          '  if (lastLogElem) {',
+          '    lastLogElem.style.opacity = 0.5;',
+          '  }',
+          '  lastLogElem = logElem;',
+          '}',
+          '<' + '/' + 's' + 'cript>'].join('\n'));
+        blankWindow.document.close();
+
+        build.processTemplate(
+          htmlTemplate,
+          [],
+          txt => {
+            this._terminal.log([txt]);
+            (<any>blankWindow).log(txt);
+          },
+          (error, result) => {
+            if (error) {
+              this._terminal.log([error]);
+              ani();
+              return;
+            }
+
+            try {
+              var blob = new Blob([result], { type: 'text/html' });
+              var url = URL.createObjectURL(blob);
+              blankWindow.location.replace(url);
+            }
+            catch (blobError) {
+              blankWindow.document.open();
+              blankWindow.document.write(result);
+              blankWindow.document.close();
+            }
+
+            ani();
+
+          });
+      }, 1);
     }
     else {
-      this._terminal.log('@type ' + cursorPath);
-      this._terminal.log(this._drive.read(cursorPath));
+      var ani = this._twoPanels.temporarilyHidePanels();
+      this._terminal.log(['@type ' + cursorPath]);
+      this._terminal.log([this._drive.read(cursorPath)]);
+      ani();
     }
   }
 
@@ -11204,10 +11503,69 @@ module CommanderShell {
 
 }
 -->
+<!-- /src/shell/NodeHost.ts
+class NodeHost {
+
+  private _replGlobal: any;
+  private _replContext: isolation.Context;
+
+  constructor(private _drive: persistence.Drive) {
+    this._replGlobal = this._enrichGlobal({});
+    this._replContext = new isolation.Context(window);
+  }
+
+
+  log: (args: any[]) => void = null;
+
+  run(code: string, path: string, argv?: string[]) {
+
+    var isInteractive = !path;
+
+    if (isInteractive) {
+      return this._replContext.run(code, path, this._replGlobal);
+    }
+    else {
+
+      var procGlobal = this._enrichGlobal({});
+
+      procGlobal.process.argv.push(path);
+      if (argv) {
+        for (var i = 0; i < argv.length; i++) {
+          procGlobal.process.argv.push(argv[i]);
+        }
+      }
+
+      procGlobal.exports = {};
+      procGlobal.__filename = path;
+      procGlobal.__dirname = path;
+      if (procGlobal.__dirname.indexOf('/') > 0)
+        procGlobal.__dirname = procGlobal.__dirname.slice(0, procGlobal.__dirname.indexOf('/'));
+
+      var procContext = new isolation.Context(window);
+      procContext.run(code, path, procGlobal);
+
+      return procGlobal.module.exports;
+    }
+
+  }
+
+  private _enrichGlobal(global: any): noapi.Global {
+    noapi.apply(global, this._drive);
+    global.console = {
+      log: (...args: any[]) => {
+        if (this.log)
+          this.log(args);
+        else if (typeof console !== 'undefined')
+          console.log(args);
+      }
+    };
+    return <any>global;
+  }
+
+}
+-->
 <!-- /src/shell/start.ts
 declare var require;
-
-setTimeout(() => showCommander(require('drive')), 10);
 
 function showCommander(drive: persistence.Drive) {
   document.body.style.overflow = 'hidden';
@@ -54541,15 +54899,16 @@ console.log('I\'ve changed its colour: ', apple);
 //# sourceURL=/boot/base.js
 </script>
 <script data-legit=mi>
-<%=typescriptBuild('/load/*', '/persistence/*', '/boot/base.d.ts', '/typings/*')%>
 
+<%=typescriptBuild('load/*', 'persistence/*', 'boot/base.d.ts', 'typings/*')%>
+function showCommanderInContext(drive, window, document, require) {
+<%=typescriptBuild('shell/*', 'noapi/*', 'isolation/*',   'boot/base.d.ts', 'persistence/Drive.ts', 'typings/*')%>
+  showCommander(drive);
+}
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<*!-- total 56Mb, saved 25 Apr 2015 22:52:01.231 --*>
-
-<*!-- /shell/start.ts.js
-<%=typescriptBuild('/shell/*', '/boot/base.d.ts', '/persistence/Drive.ts', '/typings/*', '/noapi/*', '/isolation/*')%>--*>
+<*!-- total 2Mb, saved 25 Apr 2015 22:52:01.231 --*>
 
 <*!-- /empty/
 --*>
@@ -54637,7 +54996,7 @@ return dump.join('\n');
 
 -->
 <!-- /src/readme.md
-#New mini portable shell development
+ #New mini portable shell development
 
 Used these open-source libraries:
 
@@ -54749,6 +55108,53 @@ then one of the local storage options is added upon a brief detection process.
 
 From the external caller the persistence mini-library expects a single call to *mountDrive* function,
 passing in a few inputs and a callback.
+-->
+<!-- /src/shell/editor/Editor.ts
+module editor {
+
+  export class Editor {
+
+    private _textarea: HTMLTextAreaElement;
+    private _title: HTMLDivElement;
+
+    constructor(private _host: HTMLElement, private _file: string, text?: string) {
+      this._textarea = <any>elem('textarea', {
+        background: 'navy',
+        color: 'silver',
+        top: '0', left: '0',
+        width: '100%', height: '100%', position: 'absolute',
+        borderTop: 'solid 1em black'
+      }, this._host);
+      this._title = <any>elem('div', {
+        position: 'absolute',
+        top: '0', left: '0',
+        width: '100%', height: '1em',
+        background: 'silver', color: 'navy',
+        text: this._file
+      }, this._host);
+      if (typeof text === 'string')
+        this._textarea.value = text;
+    }
+
+  focus() {
+    this._textarea.focus();
+  }
+
+    setText(text: string) {
+      this._textarea.value = text;
+    }
+
+    getText(): string {
+      return this._textarea.value;
+    }
+
+    close() {
+      this._host.removeChild(this._textarea);
+      this._host.removeChild(this._title);
+    }
+  }
+
+}
 -->
 
 <iframe style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; border: none; opacity: 1;"></iframe></body></html>
