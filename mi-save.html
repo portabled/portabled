@@ -2815,7 +2815,7 @@ var CommanderShell = (function () {
                     catch (error) {
                         result = error;
                     }
-                    _this._terminal.log(result);
+                    _this._terminal.log([result]);
                     ani();
                 }, 1);
                 return true;
@@ -2928,7 +2928,7 @@ var NodeHost = (function () {
                     procGlobal.process.argv.push(argv[i]);
                 }
             }
-            procGlobal.exports = {};
+            procGlobal.exports = procGlobal.module.exports;
             procGlobal.__filename = path;
             procGlobal.__dirname = path;
             if (procGlobal.__dirname.indexOf('/') > 0)
@@ -2939,16 +2939,16 @@ var NodeHost = (function () {
         }
     };
     NodeHost.prototype._enrichGlobal = function (global) {
-        var _this = this;
         noapi.apply(global, this._drive);
+        var that = this;
         global.console = {
             log: function () {
                 var args = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    args[_i - 0] = arguments[_i];
+                for (var i = 0; i < arguments.length; i++) {
+                    args.push(arguments[i]);
                 }
-                if (_this.log)
-                    _this.log(args);
+                if (that.log)
+                    that.log(args);
                 else if (typeof console !== 'undefined')
                     console.log(args);
             }
@@ -3999,7 +3999,7 @@ var terminal;
                     elem('span', { text: 'null', color: 'green', opacity: 0.5 }, output);
                     break;
                 }
-                if (obj && obj.constructor && obj.construct && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
+                if (obj.constructor && obj.construct && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
                     elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
                     if (obj.constructor.prototype && obj.constructor.prototype.constructor
                         && obj.constructor.prototype.constructor.name
@@ -4007,7 +4007,7 @@ var terminal;
                         elem('span', { text: ':' + obj.contructor.prototype.constructor.name, color: 'cornflowerblue', opacity: 0.5 }, output);
                     elem('span', output);
                 }
-                if (obj && typeof obj.length === 'number' && obj.length >= 0) {
+                if (typeof obj.length === 'number' && obj.length >= 0) {
                     elem('span', { text: '[', color: 'white' }, output);
                     if (level > 1) {
                         elem('span', { text: '...', color: 'silver' }, output);
@@ -4088,13 +4088,13 @@ var terminal;
 456-->
 
 <!-- /exportsome.js [CR]
-exports = 55-->
+module.exports = 55-->
 
 <!-- /exports_fs.js [CR]
-exports = require('fs')-->
+module.exports = require('fs')-->
 
 <!-- /exports_process.js [CR]
-exports = process-->
+module.exports = process-->
 
 <!-- /eval-file.txt [eval]
  "random char: " + String.fromCharCode(Math.random()*16000)+"\n"+
@@ -4186,9 +4186,10 @@ undefined
 }
 .terminal-history {
   position: absolute;
-  left: 0; bottom: 0;
+  left: 0; bottom: 1em;
   width: 100%; height: 0;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .terminal-history-content {
@@ -11146,7 +11147,7 @@ module terminal {
           break;
         }
 
-        if (obj && obj.constructor && obj.construct && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
+        if (obj.constructor && obj.construct && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
           elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
           if (obj.constructor.prototype && obj.constructor.prototype.constructor
             && obj.constructor.prototype.constructor.name
@@ -11155,7 +11156,7 @@ module terminal {
           elem('span', output);
         }
 
-        if (obj && typeof obj.length === 'number' && obj.length >= 0) {
+        if (typeof obj.length === 'number' && obj.length >= 0) {
           elem('span', { text: '[', color: 'white' }, output);
           if (level > 1) {
             elem('span', { text: '...', color: 'silver' }, output);
@@ -11215,9 +11216,10 @@ module terminal {
 <!-- /src/shell/terminal/terminal.css
 .terminal-history {
   position: absolute;
-  left: 0; bottom: 0;
+  left: 0; bottom: 1em;
   width: 100%; height: 0;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .terminal-history-content {
@@ -11564,7 +11566,7 @@ class CommanderShell {
           catch (error) {
             result = error;
           }
-          this._terminal.log(result);
+          this._terminal.log([result]);
           ani();
         },
         1);
@@ -11717,7 +11719,7 @@ class NodeHost {
         }
       }
 
-      procGlobal.exports = {};
+      procGlobal.exports = procGlobal.module.exports;
       procGlobal.__filename = path;
       procGlobal.__dirname = path;
       if (procGlobal.__dirname.indexOf('/') > 0)
@@ -11733,10 +11735,15 @@ class NodeHost {
 
   private _enrichGlobal(global: any): noapi.Global {
     noapi.apply(global, this._drive);
+    var that = this;
     global.console = {
-      log: (...args: any[]) => {
-        if (this.log)
-          this.log(args);
+      log: function() {
+        var args = [];
+        for (var i = 0; i < arguments.length; i++) {
+          args.push(arguments[i]);
+        }
+        if (that.log)
+          that.log(args);
         else if (typeof console !== 'undefined')
           console.log(args);
       }
@@ -55109,13 +55116,13 @@ function showCommanderInContext(drive, window, document, require) {
 456--*>
 
 <*!-- /exportsome.js [CR]
-exports = 55--*>
+module.exports = 55--*>
 
 <*!-- /exports_fs.js [CR]
-exports = require('fs')--*>
+module.exports = require('fs')--*>
 
 <*!-- /exports_process.js [CR]
-exports = process--*>
+module.exports = process--*>
 
 <*!-- /eval-file.txt [eval]
  "random char: " + String.fromCharCode(Math.random()*16000)+"\n"+
