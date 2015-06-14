@@ -214,16 +214,14 @@ window.onerror = function onerror() {
         }
         return e;
     }
-    function createFrame(style) {
-        if (!style)
-            style = {
-                position: 'absolute',
-                left: 0, top: 0,
-                width: '100%', height: '100%',
-                border: 'none',
-                src: 'about:blank'
-            };
-        var ifr = elem('iframe', style, window.document.body);
+    function createFrame() {
+        var ifr = elem('iframe', {
+            position: 'absolute',
+            left: 0, top: 0,
+            width: '100%', height: '100%',
+            border: 'none',
+            src: 'about:blank'
+        }, window.document.body);
         var ifrwin = ifr.contentWindow || ifr.window;
         var ifrdoc = ifrwin.document;
         if (ifrdoc.open)
@@ -237,8 +235,6 @@ window.onerror = function onerror() {
             '</' + 'style' + '>\n' +
             '<' + 'body' + '>' +
             '<' + 'script' + '>window.__eval_export_=function(code) { return eval(code); }</' + 'script' + '>' +
-            // IE6/7/8 bug: global scope and window are not identical
-            (ifrwin.Function ? '' : '<' + 'script' + '>window.Function=Function</' + 'script' + '>') +
             // it's important to have body before any long scripts (especialy external),
             // so IFRAME is immediately ready
             '<' + 'body' + '>' +
@@ -355,12 +351,15 @@ function earlyBoot(window) {
     background: 'rgb(3,11,61)',
     color: 'cyan',
     border: 'none',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    fontFamily: 'Segoe UI, Toronto, Helvetica, Roboto, Droid Sans, Sans Serif'
   });
 
   var header = base.elem('h2', {
     text: 'Mini portabled shell',
-    fontWeight: 'light'
+    color: 'white',
+    fontWeight: '100',
+    fontSize: '400%'
   }, document.body);
 
   var smallTitle = base.elem('div', {
@@ -1759,15 +1758,14 @@ var isolation;
             defineObscureScope(this._obscureScope, this._frame.global);
             defineObscureScope(this._obscureScope, this._frame.window);
             this._obscureScope.global = void 0;
-            var setGlobal = this._frame.evalFN('(function() { return function(global) { this.global = global; }; })()');
+            var setGlobal = this._frame.evalFN('(function() { return function(global) { window.global = global; }; })()');
             setGlobal(this._obscureScope);
         }
         Context.prototype.run = function (code, path, scope) {
             path = path || typeof path === 'string' ? path : createTimebasedPath();
             this._obscureScope.global = scope || {};
-            var decoratedCode = 'with(global){with(global){   ' +
-                code +
-                ' }}  //# sourceURL=' + path;
+            var decoratedCode = 'with(window.global){with(global){   ' + code +
+                '\n }}  //# sourceURL=' + path;
             var result = this._frame.evalFN(decoratedCode);
             this._obscureScope.global = null;
             return result;
@@ -2816,8 +2814,8 @@ var CommanderShell = (function () {
                     catch (error) {
                         result = error;
                     }
-                    _this._terminal.log([result]);
                     ani();
+                    _this._terminal.log([result]);
                 }, 1);
                 return true;
             }
@@ -2828,8 +2826,12 @@ var CommanderShell = (function () {
                 this._terminal.log(['@tsc ' + cursorPath]);
                 var ani = this._twoPanels.temporarilyHidePanels();
                 setTimeout(function () {
-                    var result = _this._node.run(text, '/src/typescript/tsc.js', [cursorPath]);
-                    _this._terminal.log(result);
+                    try {
+                        var result = _this._node.run(text, '/src/typescript/tsc.js', [cursorPath]);
+                    }
+                    catch (error) {
+                        _this._terminal.log(error);
+                    }
                     ani();
                 }, 1);
                 return true;
@@ -2877,27 +2879,33 @@ var CommanderShell = (function () {
                     '}',
                     '<' + '/' + 's' + 'cript>'].join('\n'));
                 blankWindow.document.close();
-                build.processTemplate(htmlTemplate, [], function (txt) {
-                    _this._terminal.log([txt]);
-                    blankWindow.log(txt);
-                }, function (error, result) {
-                    if (error) {
-                        _this._terminal.log([error]);
+                try {
+                    build.processTemplate(htmlTemplate, [], function (txt) {
+                        _this._terminal.log([txt]);
+                        blankWindow.log(txt);
+                    }, function (error, result) {
+                        if (error) {
+                            _this._terminal.log([error]);
+                            ani();
+                            return;
+                        }
+                        try {
+                            var blob = new Blob([result], { type: 'text/html' });
+                            var url = URL.createObjectURL(blob);
+                            blankWindow.location.replace(url);
+                        }
+                        catch (blobError) {
+                            blankWindow.document.open();
+                            blankWindow.document.write(result);
+                            blankWindow.document.close();
+                        }
                         ani();
-                        return;
-                    }
-                    try {
-                        var blob = new Blob([result], { type: 'text/html' });
-                        var url = URL.createObjectURL(blob);
-                        blankWindow.location.replace(url);
-                    }
-                    catch (blobError) {
-                        blankWindow.document.open();
-                        blankWindow.document.write(result);
-                        blankWindow.document.close();
-                    }
+                    });
+                }
+                catch (errorProcessTemplate) {
                     ani();
-                });
+                    _this._terminal.log([errorProcessTemplate]);
+                }
             }, 1);
         }
         else {
@@ -2969,10 +2977,17 @@ var build;
             var fnText = generateBuildScript(template, scopes);
             log('Preprocessing build script...');
             setTimeout(function () {
-                var fn = Function('scopes', fnText);
-                log('Executing build script...');
-                var output = fn(scopes);
-                var outputIndex = 0;
+                try {
+                    var fn = Function('scopes', fnText);
+                    log('Executing build script...');
+                    var output = fn(scopes);
+                    var outputIndex = 0;
+                }
+                catch (error) {
+                    log('Build failure ' + error);
+                    callback(error);
+                    return;
+                }
                 processNextOutputChunk();
                 function processNextOutputChunk() {
                     var startTime = +new Date();
@@ -3683,7 +3698,7 @@ var panels;
             var stop = function () {
                 clearInterval(ani);
                 var passed = (Date.now ? Date.now() : +new Date()) - start;
-                opacity = 1 - (passed / fadeTime);
+                opacity = Math.max(0, 1 - (passed / fadeTime));
                 start = +new Date();
                 fadeTime = 300 * (1 - opacity);
                 ani = setInterval(function () {
@@ -4234,14 +4249,14 @@ declare function on(obj: Window, eventName: string, handler: (evt: Event) => voi
 declare function on(obj: Node, eventName: string, handler: (evt: Event) => void);
 declare function off(obj: Window, eventName: string, handler: (evt: Event) => void);
 
-declare function createFrame(style?: {}): createFrame.LoadedResult;
+declare function createFrame(): createFrame.LoadedResult;
 
 declare module createFrame {
   export interface LoadedResult {
     global: Window;
     document: Document; 
     iframe: HTMLIFrameElement;
-    eval(code: string): any;
+    evalFN(code: string): any;
   }
 }
 -->
@@ -4428,18 +4443,18 @@ function base(window: Window) {
     return e;
   }
 
-  function createFrame(style) {
+  function createFrame() {
 
-    if (!style)
-      style = {
+    var ifr = elem(
+      'iframe',
+      {
         position: 'absolute',
         left: 0, top: 0,
         width: '100%', height: '100%',
         border: 'none',
         src: 'about:blank'
-      };
-
-    var ifr = elem('iframe', style, window.document.body);
+      },
+      window.document.body);
 
     var ifrwin = ifr.contentWindow || ifr.window;
     var ifrdoc = ifrwin.document;
@@ -4457,9 +4472,6 @@ function base(window: Window) {
       '<' + 'body' + '>' +
 
       '<' + 'script' + '>window.__eval_export_=function(code) { return eval(code); }</' + 'script' + '>' +
-
-      // IE6/7/8 bug: global scope and window are not identical
-      (ifrwin.Function ? '' : '<' + 'script' + '>window.Function=Function</' + 'script' + '>') +
 
       // it's important to have body before any long scripts (especialy external),
       // so IFRAME is immediately ready
@@ -4504,12 +4516,15 @@ function bootUI(document, window, base) {
     background: 'rgb(3,11,61)',
     color: 'cyan',
     border: 'none',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    fontFamily: 'Segoe UI, Toronto, Helvetica, Roboto, Droid Sans, Sans Serif'
   });
 
   var header = base.elem('h2', {
     text: 'Mini portabled shell',
-    fontWeight: 'light'
+    color: 'white',
+    fontWeight: '100',
+    fontSize: '400%'
   }, document.body);
 
   var smallTitle = base.elem('div', {
@@ -4691,7 +4706,7 @@ module isolation {
       defineObscureScope(this._obscureScope, this._frame.global);
       defineObscureScope(this._obscureScope, this._frame.window);
       this._obscureScope.global = void 0;
-      var setGlobal = this._frame.evalFN('(function() { return function(global) { this.global = global; }; })()');
+      var setGlobal = this._frame.evalFN('(function() { return function(global) { window.global = global; }; })()');
       setGlobal(this._obscureScope);
     }
 
@@ -4699,9 +4714,8 @@ module isolation {
       path = path || typeof path === 'string' ? path : createTimebasedPath();
       this._obscureScope.global = scope || {};
       var decoratedCode =
-        'with(global){with(global){   ' +
-        code +
-        ' }}  //# sourceURL=' + path;
+        'with(window.global){with(global){   ' + code +
+        '\n }}  //# sourceURL=' + path;
       var result = this._frame.evalFN(decoratedCode);
       this._obscureScope.global = null;
       return result;
@@ -9809,12 +9823,19 @@ module build {
 
       log('Preprocessing build script...');
       setTimeout(() => {
-        var fn = Function('scopes', fnText);
+        try {
+          var fn = Function('scopes', fnText);
 
-        log('Executing build script...');
+          log('Executing build script...');
 
-        var output: any[] = fn(scopes);
-        var outputIndex = 0;
+          var output: any[] = fn(scopes);
+          var outputIndex = 0;
+        }
+        catch (error) {
+          log('Build failure ' + error);
+          callback(error);
+          return;
+        }
 
         processNextOutputChunk();
 
@@ -9963,6 +9984,53 @@ module build {
       replace(/\t/g, '\\t').
       replace(/\'/g, '\\\'').
       replace(/\"/g, '\\"');
+  }
+
+}
+-->
+<!-- /src/shell/editor/Editor.ts
+module editor {
+
+  export class Editor {
+
+    private _textarea: HTMLTextAreaElement;
+    private _title: HTMLDivElement;
+
+    constructor(private _host: HTMLElement, private _file: string, text?: string) {
+      this._textarea = <any>elem('textarea', {
+        background: 'navy',
+        color: 'silver',
+        top: '0', left: '0',
+        width: '100%', height: '100%', position: 'absolute',
+        borderTop: 'solid 1em black'
+      }, this._host);
+      this._title = <any>elem('div', {
+        position: 'absolute',
+        top: '0', left: '0',
+        width: '100%', height: '1em',
+        background: 'silver', color: 'navy',
+        text: this._file
+      }, this._host);
+      if (typeof text === 'string')
+        this._textarea.value = text;
+    }
+
+  focus() {
+    this._textarea.focus();
+  }
+
+    setText(text: string) {
+      this._textarea.value = text;
+    }
+
+    getText(): string {
+      return this._textarea.value;
+    }
+
+    close() {
+      this._host.removeChild(this._textarea);
+      this._host.removeChild(this._title);
+    }
   }
 
 }
@@ -10702,11 +10770,12 @@ module panels {
         this._scrollHost.style.opacity = <any>opacity;
         this._scrollHost.style.filter = 'alpha(opacity=' + (opacity*100) + ')';
       }, 1);
+
       var stop = () => {
         clearInterval(ani);
 
         var passed = (Date.now ? Date.now() : +new Date()) - start;
-        opacity = 1 - (passed / fadeTime);
+        opacity = Math.max(0, 1 - (passed / fadeTime));
 
         start = +new Date();
         fadeTime = 300 * (1-opacity);
@@ -11568,8 +11637,8 @@ class CommanderShell {
           catch (error) {
             result = error;
           }
-          this._terminal.log([result]);
           ani();
+          this._terminal.log([result]);
         },
         1);
 
@@ -11582,8 +11651,12 @@ class CommanderShell {
         this._terminal.log(['@tsc ' + cursorPath]);
         var ani = this._twoPanels.temporarilyHidePanels();
         setTimeout(() => {
-          var result = this._node.run(text, '/src/typescript/tsc.js', [cursorPath]);
-          this._terminal.log(result);
+          try {
+            var result = this._node.run(text, '/src/typescript/tsc.js', [cursorPath]);
+          }
+          catch (error) {
+            this._terminal.log(error);
+          }
           ani();
         }, 1);
         return true;
@@ -11638,34 +11711,40 @@ class CommanderShell {
           '<' + '/' + 's' + 'cript>'].join('\n'));
         blankWindow.document.close();
 
-        build.processTemplate(
-          htmlTemplate,
-          [],
-          txt => {
-            this._terminal.log([txt]);
-            (<any>blankWindow).log(txt);
-          },
-          (error, result) => {
-            if (error) {
-              this._terminal.log([error]);
+        try {
+          build.processTemplate(
+            htmlTemplate,
+            [],
+            txt => {
+              this._terminal.log([txt]);
+              (<any>blankWindow).log(txt);
+            },
+            (error, result) => {
+              if (error) {
+                this._terminal.log([error]);
+                ani();
+                return;
+              }
+
+              try {
+                var blob = new Blob([result], { type: 'text/html' });
+                var url = URL.createObjectURL(blob);
+                blankWindow.location.replace(url);
+              }
+              catch (blobError) {
+                blankWindow.document.open();
+                blankWindow.document.write(result);
+                blankWindow.document.close();
+              }
+
               ani();
-              return;
-            }
 
-            try {
-              var blob = new Blob([result], { type: 'text/html' });
-              var url = URL.createObjectURL(blob);
-              blankWindow.location.replace(url);
-            }
-            catch (blobError) {
-              blankWindow.document.open();
-              blankWindow.document.write(result);
-              blankWindow.document.close();
-            }
-
-            ani();
-
-          });
+            });
+        }
+        catch (errorProcessTemplate) {
+          ani();
+          this._terminal.log([errorProcessTemplate]);
+        }
       }, 1);
     }
     else {
@@ -55299,53 +55378,6 @@ then one of the local storage options is added upon a brief detection process.
 
 From the external caller the persistence mini-library expects a single call to *mountDrive* function,
 passing in a few inputs and a callback.
--->
-<!-- /src/shell/editor/Editor.ts
-module editor {
-
-  export class Editor {
-
-    private _textarea: HTMLTextAreaElement;
-    private _title: HTMLDivElement;
-
-    constructor(private _host: HTMLElement, private _file: string, text?: string) {
-      this._textarea = <any>elem('textarea', {
-        background: 'navy',
-        color: 'silver',
-        top: '0', left: '0',
-        width: '100%', height: '100%', position: 'absolute',
-        borderTop: 'solid 1em black'
-      }, this._host);
-      this._title = <any>elem('div', {
-        position: 'absolute',
-        top: '0', left: '0',
-        width: '100%', height: '1em',
-        background: 'silver', color: 'navy',
-        text: this._file
-      }, this._host);
-      if (typeof text === 'string')
-        this._textarea.value = text;
-    }
-
-  focus() {
-    this._textarea.focus();
-  }
-
-    setText(text: string) {
-      this._textarea.value = text;
-    }
-
-    getText(): string {
-      return this._textarea.value;
-    }
-
-    close() {
-      this._host.removeChild(this._textarea);
-      this._host.removeChild(this._title);
-    }
-  }
-
-}
 -->
 
 <iframe style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; border: none; opacity: 1;"></iframe></body></html>
