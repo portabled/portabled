@@ -352,7 +352,8 @@ function earlyBoot(window) {
     color: 'cyan',
     border: 'none',
     overflow: 'hidden',
-    fontFamily: 'Segoe UI, Toronto, Helvetica, Roboto, Droid Sans, Sans Serif'
+    fontFamily: 'Segoe UI, Toronto, Helvetica, Roboto, Droid Sans, Sans Serif',
+    padding: '2em'
   });
 
   var header = base.elem('h2', {
@@ -367,6 +368,13 @@ function earlyBoot(window) {
     opacity: 0.8
   }, document.body);
 
+  var bootBar = base.elem('div', {
+    marginTop: '2em',
+    background: 'gold',
+    height: '2px',
+    width: '3%'
+  }, document.body);
+
   var darkBottom = base.elem('div', {
     position: 'absolute',
     bottom: 0,
@@ -376,10 +384,13 @@ function earlyBoot(window) {
   }, document.body);
 
   return {
-    title: function(t) {
+    title: function(t, ratio) {
       setText(smallTitle,t);
       if (typeof console !== 'undefined' && typeof console.log === 'function')
         console.log(t);
+      if (ratio) {
+        bootBar.style.width = (ratio*100) + '%';
+      }
     },
     loaded: function() {
       setText(smallTitle, 'Loaded.');
@@ -395,7 +406,7 @@ function shellLoader(uniqueKey, document, boot) {
     return continueLoading();
     function continueLoading() {
         driveMount = driveMount.continueLoading();
-        boot.api.title('Loading files: ' + progressText('dom'));
+        boot.api.title('Loading files: ' + progressText('dom'), 0.05 + 0.8 * driveMount.loadedSize / driveMount.totalSize);
         return { continueLoading: continueLoading, finishLoading: finishLoading };
     }
     var timings;
@@ -429,9 +440,9 @@ function shellLoader(uniqueKey, document, boot) {
         }
     }
     function finishLoading() {
-        boot.api.title('Loading modifications: ' + progressText('local'));
+        boot.api.title('Loading modifications: ' + progressText('local'), 0.85);
         driveMount.finishLoading(function (drive) {
-            boot.api.title('Loading application: ' + progressText('ui-init'));
+            boot.api.title('Loading application: ' + progressText('ui-init'), 0.9);
             var uiframe = createFrame();
             uiframe.iframe.style.opacity = '0';
             uiframe.iframe.style.filter = 'alpha(opacity=0)';
@@ -450,14 +461,14 @@ function shellLoader(uniqueKey, document, boot) {
             on(uiframe.document.body, 'keydown', global_resize_detect);
             on(uiframe.document.body, 'keyup', global_resize_detect);
             uiframe.global.require = shell_require;
-            boot.api.title('Loaded: ' + progressText('ui'));
+            boot.api.title('Loaded: ' + progressText('ui'), 0.95);
             try {
                 showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
             }
             catch (error) {
                 alert('Shell initialisation failed ' + error.message + '\n' + error.stack + '\n' + error);
             }
-            boot.api.title('Completed: ' + progressText('ui'));
+            boot.api.title('Completed: ' + progressText('ui'), 0.99);
             function shell_require(moduleName) {
                 switch (moduleName) {
                     case 'window': return window;
@@ -4085,7 +4096,7 @@ var terminal;
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<!--total 2144Kb, saved 14 Jun 2015 15:46:58.444 GMT+0100-->
+<!--total 2144Kb, saved 14 Jun 2015 15:56:58.443 GMT+0100-->
 
 <!-- /empty/
 -->
@@ -4517,7 +4528,8 @@ function bootUI(document, window, base) {
     color: 'cyan',
     border: 'none',
     overflow: 'hidden',
-    fontFamily: 'Segoe UI, Toronto, Helvetica, Roboto, Droid Sans, Sans Serif'
+    fontFamily: 'Segoe UI, Toronto, Helvetica, Roboto, Droid Sans, Sans Serif',
+    padding: '2em'
   });
 
   var header = base.elem('h2', {
@@ -4532,6 +4544,13 @@ function bootUI(document, window, base) {
     opacity: 0.8
   }, document.body);
 
+  var bootBar = base.elem('div', {
+    marginTop: '2em',
+    background: 'gold',
+    height: '2px',
+    width: '3%'
+  }, document.body);
+
   var darkBottom = base.elem('div', {
     position: 'absolute',
     bottom: 0,
@@ -4541,10 +4560,13 @@ function bootUI(document, window, base) {
   }, document.body);
 
   return {
-    title: function(t) {
+    title: function(t, ratio) {
       setText(smallTitle,t);
       if (typeof console !== 'undefined' && typeof console.log === 'function')
         console.log(t);
+      if (ratio) {
+        bootBar.style.width = (ratio*100) + '%';
+      }
     },
     loaded: function() {
       setText(smallTitle, 'Loaded.');
@@ -4846,7 +4868,7 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
   function continueLoading(): shellLoader.ContinueLoading {
     driveMount = driveMount.continueLoading();
 
-    boot.api.title('Loading files: ' + progressText('dom'));
+    boot.api.title('Loading files: ' + progressText('dom'), 0.05 + 0.8* driveMount.loadedSize/driveMount.totalSize);
     return { continueLoading, finishLoading };
   }
 
@@ -4887,10 +4909,10 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
 
   function finishLoading() {
 
-    boot.api.title('Loading modifications: ' + progressText('local'));
+    boot.api.title('Loading modifications: ' + progressText('local'), 0.85);
     driveMount.finishLoading(drive => {
 
-      boot.api.title('Loading application: ' + progressText('ui-init'));
+      boot.api.title('Loading application: ' + progressText('ui-init'), 0.9);
 
       var uiframe = createFrame();
       uiframe.iframe.style.opacity = '0';
@@ -4913,7 +4935,7 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
 
 
       (<any>uiframe.global).require = shell_require;
-      boot.api.title('Loaded: ' + progressText('ui'));
+      boot.api.title('Loaded: ' + progressText('ui'), 0.95);
 
       try {
         showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
@@ -4922,7 +4944,7 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
         alert('Shell initialisation failed ' + error.message+'\n'+error.stack+'\n'+error);
       }
 
-      boot.api.title('Completed: ' + progressText('ui'));
+      boot.api.title('Completed: ' + progressText('ui'), 0.99);
 
       function shell_require(moduleName): any {
         switch (moduleName) {
