@@ -1504,8 +1504,8 @@ var persistence;
             DOMTotals.prototype.updateNode = function () {
                 // TODO: update the node content
                 // total 4Kb, saved 25 Apr 2015 22:52:01.231
-                var newTotals = 'total ' + (this.totalSize < 1024 * 2 ? this.totalSize + '' :
-                    this.totalSize < 1024 * 1024 * 2 ? ((this.totalSize / 1024) | 0) + 'Kb' :
+                var newTotals = 'total ' + (this.totalSize < 1024 * 9 ? this.totalSize + '' :
+                    this.totalSize < 1024 * 1024 * 9 ? ((this.totalSize / 1024) | 0) + 'Kb' :
                         ((this.totalSize / (1024 * 1024)) | 0) + 'Mb') + ', ' +
                     'saved ';
                 var saveDate = new Date(this.timestamp);
@@ -4085,7 +4085,7 @@ var terminal;
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<!--total 2Mb, saved 25 Apr 2015 22:52:01.231 GMT+0100-->
+<!--total 2144Kb, saved 14 Jun 2015 15:46:58.444 GMT+0100-->
 
 <!-- /empty/
 -->
@@ -9251,8 +9251,8 @@ module persistence.dom {
       // total 4Kb, saved 25 Apr 2015 22:52:01.231
       var newTotals =
         'total ' + (
-          this.totalSize < 1024 * 2 ? this.totalSize + '' :
-            this.totalSize < 1024 * 1024 * 2 ? ((this.totalSize / 1024) | 0) + 'Kb' :
+          this.totalSize < 1024 * 9 ? this.totalSize + '' :
+            this.totalSize < 1024 * 1024 * 9 ? ((this.totalSize / 1024) | 0) + 'Kb' :
               ((this.totalSize / (1024 * 1024)) | 0) + 'Mb') + ', ' +
         'saved ';
 
@@ -55178,7 +55178,34 @@ function showCommanderInContext(drive, window, document, require) {
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<*!-- total 2Mb, saved 25 Apr 2015 22:52:01.231 --*>
+<*!-- total 2Mb, saved <%=(function() {
+
+var monthsPrettyCase = ('Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec').split('|');
+
+var saveDate = new Date();
+var dtText =
+  saveDate.getDate() + ' ' +
+  monthsPrettyCase[saveDate.getMonth()] + ' ' +
+  saveDate.getFullYear() + ' ' +
+  num2(saveDate.getHours()) + ':' +
+  num2(saveDate.getMinutes()) + ':' +
+  num2(saveDate.getSeconds()) + '.' +
+  (+saveDate).toString().slice(-3);
+
+var saveDateLocalStr = saveDate.toString();
+var gmtMatch = (/(GMT\s*[\-\+]\d+(\:\d+)?)/i).exec(saveDateLocalStr);
+if (gmtMatch)
+	dtText += ' ' + gmtMatch[1];
+
+return dtText;
+
+function num2(n) {
+	return n <= 9 ? '0' + n : '' + n;
+}
+
+
+})()
+%> --*>
 
 <*!-- /empty/
 --*>
