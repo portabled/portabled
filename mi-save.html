@@ -352,21 +352,59 @@ function earlyBoot(window) {
     color: 'cyan',
     border: 'none',
     overflow: 'hidden',
-    fontFamily: 'Segoe UI, Toronto, Helvetica, Roboto, Droid Sans, Sans Serif',
-    padding: '2em'
+    fontFamily: 'Segoe UI, Toronto, Helvetica, Roboto, Droid Sans, Sans Serif'
   });
+
+  base.elem('div', {
+    innerHTML:
+    	'<table style="width:100%;" width=100%><tr><td style="width:50%;" width=50% valign=top>'+
+    	'<div style="color: white">'+
+    	'<div style="background: cyan; width: 30%;">######</div>'+
+    	'##### <br>'+
+    	'### <br>'+
+    	'#####' +
+    	'</div>'+
+    	'******* <br>'+
+    	'****** <br>'+
+    	'********* *** <br>'+
+    	'************** <br>'+
+    	'************* <br>'+
+    	'*******' +
+    	'</td><td style="width:50%;" width=50% valign=top>'+
+    	'<div style="color: white">'+
+    	'.. <br>'+
+    	'###### <br>'+
+    	'##### <br>'+
+    	'### <br>'+
+    	'#####' +
+    	'</div>'+
+    	'******* <br>'+
+    	'****** <br>'+
+    	'********* *** <br>'+
+    	'************** <br>'+
+    	'************* <br>'+
+    	'*******' +
+    	'</td></tr></table>'
+  }, document.body);
+
+
+  var progressContainer = base.elem('div', {
+    position: 'absolute',
+    left: 0, top: 0,
+    padding: '4em'
+  }, document.body);
 
   var header = base.elem('h2', {
     text: 'Mini portabled shell',
     color: 'white',
     fontWeight: '100',
     fontSize: '400%'
-  }, document.body);
+  }, progressContainer);
 
   var smallTitle = base.elem('div', {
     text: 'Loading...',
     opacity: 0.8
-  }, document.body);
+  }, progressContainer);
 
   var bootBar = base.elem('div', {
     marginTop: '2em',
@@ -374,8 +412,8 @@ function earlyBoot(window) {
     height: '2px',
     width: '3%',
     fontSize: '10%',
-    text: '+'
-  }, document.body);
+    innerHTML: '&nbsp;'
+  }, progressContainer);
 
   var darkBottom = base.elem('div', {
     position: 'absolute',
@@ -2601,6 +2639,22 @@ var CommanderShell = (function () {
             var cursorPath = _this._twoPanels.cursorPath();
             _this._openEditor(cursorPath);
         });
+        on(this._fnKeys[5 - 1], 'click', function () {
+            _this._copyCommand();
+            return true;
+        });
+        on(this._fnKeys[6 - 1], 'click', function () {
+            _this._moveCommand();
+            return true;
+        });
+        on(this._fnKeys[7 - 1], 'click', function () {
+            _this._mkdirCommand();
+            return true;
+        });
+        on(this._fnKeys[8 - 1], 'click', function () {
+            _this._removeCommand();
+            return true;
+        });
         on(this._fnKeys[10 - 1], 'click', function () {
             _this._exportAllHTML();
         });
@@ -2703,15 +2757,29 @@ var CommanderShell = (function () {
         //	this._terminal.log('CommanderShell::keydown ' + e.yCode);
         //}
         if (e.keyCode === 115) {
-            this._openEditor(cursorPath);
+            var editorPath = cursorPath;
+            if (e.shiftKey) {
+                editorPath = prompt('Edit file:', editorPath);
+                if (!editorPath)
+                    return;
+            }
+            this._openEditor(editorPath);
             return true;
         }
         if (e.keyCode === 116) {
-            this._terminal.log(['F5 - copy (not implemented)']);
+            this._copyCommand();
             return true;
         }
         if (e.keyCode === 117) {
-            this._terminal.log(['F6 - move (not implemented)']);
+            this._moveCommand();
+            return true;
+        }
+        if (e.keyCode === 118) {
+            this._mkdirCommand();
+            return true;
+        }
+        if (e.keyCode === 119) {
+            this._removeCommand();
             return true;
         }
         if (e.keyCode === 111) {
@@ -2721,6 +2789,106 @@ var CommanderShell = (function () {
         if (e.ctrlKey || e.altKey || e.metaKey) {
             this._terminal.log(['CommanderShell::keydown ', e.keyCode]);
         }
+    };
+    CommanderShell.prototype._getFilesFor = function (path) {
+        var fileResult = [];
+        var allFiles = this._drive.files();
+        for (var i = 0; i < allFiles.length; i++) {
+            var f = allFiles[i];
+            if (f.slice(0, path.length) !== path)
+                continue;
+            if (f === path || f.slice(path.length, path.length + 1) === '/')
+                fileResult.push(f);
+        }
+        return fileResult;
+    };
+    CommanderShell.prototype._copyCommand = function () {
+        var cursorPath = this._twoPanels.cursorPath();
+        var currentOppositePath = this._twoPanels.currentOppositePath();
+        if (!cursorPath || !currentOppositePath || cursorPath === '/')
+            return;
+        var filesToCopy = this._getFilesFor(cursorPath);
+        var targetDir = prompt('Copy ' + filesToCopy.length + ' files from\n   "' + cursorPath + '"\n  to', currentOppositePath);
+        if (!targetDir)
+            return;
+        var normTargetDir = targetDir;
+        if (filesToCopy.length === 1 && filesToCopy[0] === cursorPath && normTargetDir.slice(-1) !== '/') {
+            var content = this._drive.read(filesToCopy[0]);
+            this._drive.write(normTargetDir, content);
+        }
+        else {
+            var baseDir = cursorPath.slice(0, cursorPath.lastIndexOf('/') + 1);
+            for (var i = 0; i < filesToCopy.length; i++) {
+                var content = this._drive.read(filesToCopy[i]);
+                var newPath = normTargetDir +
+                    filesToCopy[i].slice(baseDir.length);
+                this._drive.write(newPath, content);
+            }
+        }
+        this.measure();
+        this.arrange();
+    };
+    CommanderShell.prototype._moveCommand = function () {
+        var cursorPath = this._twoPanels.cursorPath();
+        var currentOppositePath = this._twoPanels.currentOppositePath();
+        if (!cursorPath || !currentOppositePath || cursorPath === '/')
+            return;
+        var filesToCopy = this._getFilesFor(cursorPath);
+        var targetDir = prompt('Move/rename ' + filesToCopy.length + ' files from\n   "' + cursorPath + '"\n  to', currentOppositePath);
+        if (!targetDir)
+            return;
+        var normTargetDir = targetDir;
+        if (filesToCopy.length === 1 && filesToCopy[0] === cursorPath && normTargetDir.slice(-1) !== '/') {
+            var content = this._drive.read(filesToCopy[0]);
+            this._drive.write(normTargetDir, content);
+            this._drive.write(filesToCopy[0], null);
+        }
+        else {
+            if (normTargetDir.slice(-1) !== '/')
+                normTargetDir += '/';
+            var baseDir = cursorPath.slice(0, cursorPath.lastIndexOf('/') + 1);
+            for (var i = 0; i < filesToCopy.length; i++) {
+                var content = this._drive.read(filesToCopy[i]);
+                var newPath = normTargetDir +
+                    filesToCopy[i].slice(baseDir.length);
+                this._drive.write(newPath, content);
+                this._drive.write(filesToCopy[i], null);
+            }
+        }
+        this.measure();
+        this.arrange();
+    };
+    CommanderShell.prototype._mkdirCommand = function () {
+        var dir = prompt('Make directory: ');
+        if (!dir || dir === '/')
+            return;
+        var dirPath = dir;
+        if (dir.slice(0, 1) !== '/') {
+            dirPath = this._twoPanels.currentPath() + '/' + dirPath;
+            if (dirPath.slice(0, 2) === '//')
+                dirPath = dirPath.slice(1);
+        }
+        if (dirPath.slice(-1) === '/')
+            dirPath = dirPath.slice(0, dirPath.length - 1);
+        var matchFiles = this._getFilesFor(dirPath);
+        if (matchFiles.length)
+            return;
+        this._drive.write(dirPath + '/', '');
+        this.measure();
+        this.arrange();
+    };
+    CommanderShell.prototype._removeCommand = function () {
+        var cursorPath = this._twoPanels.cursorPath();
+        if (!cursorPath || cursorPath === '/')
+            return;
+        var filesToRemove = this._getFilesFor(cursorPath);
+        if (!confirm('Remove ' + filesToRemove.length + ' files from\n   "' + cursorPath + '"?'))
+            return;
+        for (var i = 0; i < filesToRemove.length; i++) {
+            this._drive.write(filesToRemove[i], null);
+        }
+        this.measure();
+        this.arrange();
     };
     CommanderShell.prototype._closeEditor = function () {
         var newText = this._editor.getText();
@@ -2732,6 +2900,8 @@ var CommanderShell = (function () {
         }
         this._editor.close();
         this._editor = null;
+        this.measure();
+        this.arrange();
     };
     CommanderShell.prototype._openEditor = function (cursorPath) {
         var _this = this;
@@ -3808,6 +3978,24 @@ var panels;
             var pan = this._getPanel(this.isLeftActive());
             return pan.cursorPath();
         };
+        TwoPanels.prototype.currentPath = function () {
+            if (!this.isVisible())
+                return null;
+            var pan = this._getPanel(this.isLeftActive());
+            return pan.currentPath();
+        };
+        TwoPanels.prototype.cursorOppositePath = function () {
+            if (!this.isVisible())
+                return null;
+            var pan = this._getPanel(!this.isLeftActive());
+            return pan.cursorPath();
+        };
+        TwoPanels.prototype.currentOppositePath = function () {
+            if (!this.isVisible())
+                return null;
+            var pan = this._getPanel(!this.isLeftActive());
+            return pan.currentPath();
+        };
         TwoPanels.prototype._selectionGo = function (direction) {
             var panel = this._getPanel(this.isLeftActive()).cursorGo(direction);
             return true;
@@ -4098,7 +4286,7 @@ var terminal;
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<!--total 2144Kb, saved 14 Jun 2015 15:59:11.444 GMT+0100-->
+<!--total 2150Kb, saved 16 Jun 2015 19:01:39.443 GMT+0100-->
 
 <!-- /empty/
 -->
@@ -4530,21 +4718,59 @@ function bootUI(document, window, base) {
     color: 'cyan',
     border: 'none',
     overflow: 'hidden',
-    fontFamily: 'Segoe UI, Toronto, Helvetica, Roboto, Droid Sans, Sans Serif',
-    padding: '2em'
+    fontFamily: 'Segoe UI, Toronto, Helvetica, Roboto, Droid Sans, Sans Serif'
   });
+
+  base.elem('div', {
+    innerHTML:
+    	'<table style="width:100%;" width=100%><tr><td style="width:50%;" width=50% valign=top>'+
+    	'<div style="color: white">'+
+    	'<div style="background: cyan; width: 30%;">######</div>'+
+    	'##### <br>'+
+    	'### <br>'+
+    	'#####' +
+    	'</div>'+
+    	'******* <br>'+
+    	'****** <br>'+
+    	'********* *** <br>'+
+    	'************** <br>'+
+    	'************* <br>'+
+    	'*******' +
+    	'</td><td style="width:50%;" width=50% valign=top>'+
+    	'<div style="color: white">'+
+    	'.. <br>'+
+    	'###### <br>'+
+    	'##### <br>'+
+    	'### <br>'+
+    	'#####' +
+    	'</div>'+
+    	'******* <br>'+
+    	'****** <br>'+
+    	'********* *** <br>'+
+    	'************** <br>'+
+    	'************* <br>'+
+    	'*******' +
+    	'</td></tr></table>'
+  }, document.body);
+
+
+  var progressContainer = base.elem('div', {
+    position: 'absolute',
+    left: 0, top: 0,
+    padding: '4em'
+  }, document.body);
 
   var header = base.elem('h2', {
     text: 'Mini portabled shell',
     color: 'white',
     fontWeight: '100',
     fontSize: '400%'
-  }, document.body);
+  }, progressContainer);
 
   var smallTitle = base.elem('div', {
     text: 'Loading...',
     opacity: 0.8
-  }, document.body);
+  }, progressContainer);
 
   var bootBar = base.elem('div', {
     marginTop: '2em',
@@ -4552,8 +4778,8 @@ function bootUI(document, window, base) {
     height: '2px',
     width: '3%',
     fontSize: '10%',
-    text: '+'
-  }, document.body);
+    innerHTML: '&nbsp;'
+  }, progressContainer);
 
   var darkBottom = base.elem('div', {
     position: 'absolute',
@@ -10912,6 +11138,24 @@ module panels {
       return pan.cursorPath();
     }
 
+    currentPath() {
+      if (!this.isVisible()) return null;
+      var pan = this._getPanel(this.isLeftActive());
+      return pan.currentPath();
+    }
+
+  	cursorOppositePath() {
+      if (!this.isVisible()) return null;
+      var pan = this._getPanel(!this.isLeftActive());
+      return pan.cursorPath();
+    }
+
+  	currentOppositePath() {
+      if (!this.isVisible()) return null;
+      var pan = this._getPanel(!this.isLeftActive());
+      return pan.currentPath();
+    }
+
     private _selectionGo(direction: number) {
       var panel = this._getPanel(this.isLeftActive()).cursorGo(direction);
       return true;
@@ -11391,7 +11635,7 @@ class CommanderShell {
         cursor: 'pointer'
       }, this._host);
       var keyName = (i === 1 ? 'F1' : '' + i);
-      elem('span', { background: 'black', color: 'gray', text: keyName+' ' }, fnKeyText);
+      elem('span', { background: 'black', color: 'gray', text: keyName + ' ' }, fnKeyText);
       elem('span', { background: 'gray', color: 'black', text: fnKeyActions[i] }, fnKeyText);
       this._fnKeys.push(fnKeyText);
     }
@@ -11399,6 +11643,22 @@ class CommanderShell {
     on(this._fnKeys[4 - 1], 'click', () => {
       var cursorPath = this._twoPanels.cursorPath();
       this._openEditor(cursorPath);
+    });
+    on(this._fnKeys[5 - 1], 'click', () => {
+      this._copyCommand();
+      return true;
+    });
+    on(this._fnKeys[6 - 1], 'click', () => {
+      this._moveCommand();
+      return true;
+    });
+    on(this._fnKeys[7 - 1], 'click', () => {
+      this._mkdirCommand();
+      return true;
+    });
+    on(this._fnKeys[8 - 1], 'click', () => {
+      this._removeCommand();
+      return true;
     });
 
     on(this._fnKeys[10 - 1], 'click', () => {
@@ -11433,7 +11693,7 @@ class CommanderShell {
           }
           term.log(args);
           if (typeof _oldLog === 'function')
-	          _oldLog.apply(glob.console, args);
+            _oldLog.apply(glob.console, args);
         };
       }
       else {
@@ -11462,14 +11722,14 @@ class CommanderShell {
     //this._editor.measure();
   }
 
-	arrange() {
+  arrange() {
     this._host.style.width = this._metrics.hostWidth + 'px';
     this._host.style.height = this._metrics.hostHeight + 'px';
     this._twoPanels.arrange(this._metrics);
     this._terminal.arrange(this._metrics);
     //this._editor.arrange();
 
-    var keySize = ((this._metrics.hostWidth / 10)|0);
+    var keySize = ((this._metrics.hostWidth / 10) | 0);
     for (var i = 0; i < this._fnKeys.length; i++) {
       this._fnKeys[i].style.left = (i * keySize) + 'px';
       this._fnKeys[i].style.width = keySize + 'px';
@@ -11517,20 +11777,35 @@ class CommanderShell {
 
     //if (e.keyCode < 32 || e.keyCode > 126) {
     //	this._terminal.log('CommanderShell::keydown ' + e.yCode);
-      //}
+    //}
 
     if (e.keyCode === 115) { // F4
-      this._openEditor(cursorPath);
+      var editorPath = cursorPath;
+      if (e.shiftKey) {
+        editorPath = prompt('Edit file:', editorPath);
+        if (!editorPath) return;
+      }
+      this._openEditor(editorPath);
       return true;
     }
 
     if (e.keyCode === 116) { // F5
-      this._terminal.log(['F5 - copy (not implemented)']);
+      this._copyCommand();
       return true;
     }
 
     if (e.keyCode === 117) { // F6
-      this._terminal.log(['F6 - move (not implemented)']);
+      this._moveCommand();
+      return true;
+    }
+
+    if (e.keyCode === 118) { // F7
+      this._mkdirCommand();
+      return true;
+    }
+
+    if (e.keyCode === 119) { // F8
+      this._removeCommand();
       return true;
     }
 
@@ -11544,17 +11819,132 @@ class CommanderShell {
     }
   }
 
+  private _getFilesFor(path: string): string[] {
+    var fileResult: string[] = [];
+    var allFiles = this._drive.files();
+    for (var i = 0; i < allFiles.length; i++) {
+      var f = allFiles[i];
+      if (f.slice(0, path.length) !== path) continue;
+      if (f===path || f.slice(path.length, path.length+1)==='/')
+      	fileResult.push(f);
+    }
+    return fileResult;
+  }
+
+  private _copyCommand() {
+    var cursorPath = this._twoPanels.cursorPath();
+    var currentOppositePath = this._twoPanels.currentOppositePath();
+    if (!cursorPath || !currentOppositePath || cursorPath === '/') return;
+
+    var filesToCopy: string[] = this._getFilesFor(cursorPath);
+
+    var targetDir = prompt('Copy ' + filesToCopy.length + ' files from\n   "' + cursorPath + '"\n  to', currentOppositePath);
+    if (!targetDir) return;
+
+    var normTargetDir = targetDir;
+
+    if (filesToCopy.length === 1 && filesToCopy[0] === cursorPath && normTargetDir.slice(-1) !== '/') {
+      var content = this._drive.read(filesToCopy[0]);
+      this._drive.write(normTargetDir, content);
+    }
+    else {
+      var baseDir = cursorPath.slice(0, cursorPath.lastIndexOf('/') + 1);
+
+      for (var i = 0; i < filesToCopy.length; i++) {
+        var content = this._drive.read(filesToCopy[i]);
+        var newPath =
+          normTargetDir +
+          filesToCopy[i].slice(baseDir.length);
+        this._drive.write(newPath, content);
+      }
+    }
+    this.measure();
+    this.arrange();
+  }
+
+  private _moveCommand() {
+    var cursorPath = this._twoPanels.cursorPath();
+    var currentOppositePath = this._twoPanels.currentOppositePath();
+    if (!cursorPath || !currentOppositePath || cursorPath === '/') return;
+
+    var filesToCopy: string[] = this._getFilesFor(cursorPath);
+
+    var targetDir = prompt('Move/rename ' + filesToCopy.length + ' files from\n   "' + cursorPath + '"\n  to', currentOppositePath);
+    if (!targetDir) return;
+
+    var normTargetDir = targetDir;
+
+    if (filesToCopy.length === 1 && filesToCopy[0] === cursorPath && normTargetDir.slice(-1) !== '/') {
+      var content = this._drive.read(filesToCopy[0]);
+      this._drive.write(normTargetDir, content);
+      this._drive.write(filesToCopy[0], null);
+    }
+    else {
+      if (normTargetDir.slice(-1) !== '/') normTargetDir += '/';
+      var baseDir = cursorPath.slice(0, cursorPath.lastIndexOf('/') + 1);
+
+      for (var i = 0; i < filesToCopy.length; i++) {
+        var content = this._drive.read(filesToCopy[i]);
+        var newPath =
+          normTargetDir +
+          filesToCopy[i].slice(baseDir.length);
+        this._drive.write(newPath, content);
+        this._drive.write(filesToCopy[i], null);
+      }
+    }
+      this.measure();
+      this.arrange();
+
+  }
+
+  private _mkdirCommand() {
+    var dir = prompt('Make directory: ');
+    if (!dir || dir === '/') return;
+
+    var dirPath = dir;
+    if (dir.slice(0, 1) !== '/') {
+      dirPath = this._twoPanels.currentPath() + '/' + dirPath;
+      if (dirPath.slice(0, 2) === '//') dirPath = dirPath.slice(1);
+    }
+
+    if (dirPath.slice(-1) === '/')
+      dirPath = dirPath.slice(0, dirPath.length - 1);
+
+    var matchFiles = this._getFilesFor(dirPath);
+    if (matchFiles.length) return;
+
+    this._drive.write(dirPath + '/', '');
+    this.measure();
+    this.arrange();
+  }
+
+  private _removeCommand() {
+    var cursorPath = this._twoPanels.cursorPath();
+    if (!cursorPath || cursorPath === '/') return;
+
+    var filesToRemove: string[] = this._getFilesFor(cursorPath);
+
+    if (!confirm('Remove ' + filesToRemove.length + ' files from\n   "' + cursorPath + '"?')) return;
+
+    for (var i = 0; i < filesToRemove.length; i++) {
+      this._drive.write(filesToRemove[i], null);
+    }
+    this.measure();
+    this.arrange();
+  }
 
   private _closeEditor() {
     var newText = this._editor.getText();
     var cursorPath = this._twoPanels.cursorPath();
     var oldText = this._drive.read(cursorPath);
     if (newText !== oldText) {
-      if (confirm('File was changed: '+cursorPath+', save before exit?'))
-      	this._drive.write(cursorPath, newText);
+      if (confirm('File was changed: ' + cursorPath + ', save before exit?'))
+        this._drive.write(cursorPath, newText);
     }
     this._editor.close();
     this._editor = null;
+    this.measure();
+    this.arrange();
   }
 
   private _openEditor(cursorPath: string) {
@@ -11648,7 +12038,7 @@ class CommanderShell {
     }
   }
 
-	private _execute(cursorPath: string) {
+  private _execute(cursorPath: string) {
 
     if (/\.js$/.test(cursorPath)) {
       var text = this._drive.read(cursorPath);
@@ -11666,7 +12056,7 @@ class CommanderShell {
           ani();
           this._terminal.log([result]);
         },
-        1);
+          1);
 
         return true;
       }
@@ -55319,7 +55709,7 @@ return dump.join('\n');
 
 -->
 <!-- /src/readme.md
- #New mini portable shell development
+#New mini portable shell development
 
 Used these open-source libraries:
 
