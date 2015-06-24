@@ -1817,6 +1817,7 @@ var isolation;
         function Context(_window) {
             this._window = _window;
             this._obscureScope = {};
+            this._disposed = false;
             this._frame = createFrame(this._window);
             defineObscureScope(this._obscureScope, this._frame.global);
             defineObscureScope(this._obscureScope, this._frame.window);
@@ -1834,7 +1835,10 @@ var isolation;
             return result;
         };
         Context.prototype.dispose = function () {
-            document.body.removeChild(this._frame.iframe);
+            if (!this._disposed) {
+                document.body.removeChild(this._frame.iframe);
+                this._disposed = true;
+            }
         };
         return Context;
     })();
@@ -1932,188 +1936,6 @@ var isolation;
 })(isolation || (isolation = {}));
 var noapi;
 (function (noapi) {
-    var NoapiContext = (function () {
-        function NoapiContext(window, _drive, options) {
-            var _this = this;
-            this._drive = _drive;
-            this.exitCode = null;
-            this.finished = false;
-            this._waitFor = 0;
-            this.global = {};
-            this.coreModules = {
-                fs: null,
-                os: null,
-                path: null
-            };
-            var cleanOptions = {
-                argv: options && options.argv ? options.argv : ['/node'],
-                cwd: options && options.cwd ? options.cwd : '/',
-                env: options && options.env ? options.env : {}
-            };
-            this.global.process = this.process = noapi.createProcess(this.coreModules, cleanOptions);
-            this.global.module = this.bootModule = noapi.createModule('repl' /*id*/, null /*filename*/, null /*parent*/, require);
-            var noapicontext = this;
-            function require(moduleName) { return noapicontext.requireModule(moduleName, cleanOptions.cwd, null); }
-            this.global.require = (function (moduleName) { return require(moduleName); });
-            this.global.require.resolve = function (id) { return _this.resolve(id, cleanOptions.cwd); };
-            //this.global.module.require = moduleName => require(moduleName);
-            this.coreModules.fs = noapi.createFS(this._drive, this.coreModules);
-            this.coreModules.os = noapi.createOS(this.global);
-            this.coreModules.path = noapi.createPath(this.global);
-            this._context = new isolation.Context(window);
-            this.process.exit = function (code) {
-                _this.finished = true;
-                _this.exitCode = code || 0;
-                _this.dispose();
-            };
-            this.process.abort = function () {
-                _this.finished = true;
-                _this.dispose();
-            };
-            var timeouts = [];
-            this.global.setTimeout = function (fun, time) {
-                var args = [];
-                for (var _i = 2; _i < arguments.length; _i++) {
-                    args[_i - 2] = arguments[_i];
-                }
-                if (_this.finished)
-                    return 0;
-                var wait = _this.keepAlive();
-                var complete = function () {
-                    delete timeouts[result];
-                    wait();
-                    fun();
-                };
-                var passArgs = [];
-                passArgs.push(complete);
-                passArgs.push(time);
-                for (var i = 0; i < args.length; i++) {
-                    passArgs.push(args[i]);
-                }
-                var result = setTimeout.apply(_this.global, passArgs);
-                timeouts[result] = wait;
-                return result;
-            };
-            this.global.clearTimeout = function (tout) {
-                var wait = timeouts[tout];
-                if (wait)
-                    wait();
-                delete timeouts[tout];
-                clearTimeout(tout);
-            };
-            var intervals = [];
-            this.global.setInterval = function (fun, time) {
-                var args = [];
-                for (var _i = 2; _i < arguments.length; _i++) {
-                    args[_i - 2] = arguments[_i];
-                }
-                if (_this.finished)
-                    return 0;
-                var wait = _this.keepAlive();
-                var passArgs = [];
-                passArgs.push(fun);
-                passArgs.push(time);
-                for (var i = 0; i < args.length; i++) {
-                    passArgs.push(args[i]);
-                }
-                var result = setInterval.apply(_this.global, passArgs);
-                intervals[result] = wait;
-                return result;
-            };
-            this.global.clearInterval = function (intv) {
-                var wait = intervals[intv];
-                if (wait)
-                    wait();
-                delete intervals[intv];
-                clearTimeout(intv);
-            };
-            this.process.nextTick = function (fun) {
-                var wait = _this.keepAlive();
-                setTimeout(function () {
-                    wait();
-                    fun();
-                }, 1);
-            };
-        }
-        NoapiContext.prototype.eval = function (code) {
-            var wait = this.keepAlive();
-            try {
-                return this._context.run(code, null, this.global);
-            }
-            finally {
-                wait();
-            }
-        };
-        NoapiContext.prototype.resolve = function (id, modulePath) {
-            if (id.charAt(0) === '.') {
-                return this.coreModules.path.join(modulePath, id);
-            }
-            else if (id.charAt(0) === '/') {
-                return id;
-            }
-            else {
-                var tryPath = this.coreModules.path.normalize(modulePath);
-                var probePatterns = [
-                    '../' + i, '../' + id + '.js', '../' + id + '/index.js',
-                    '../node_modules/' + id + '/index.js'];
-                while (true) {
-                    tryPath = this.coreModules.path.basename(tryPath);
-                    if (!tryPath || tryPath === '/')
-                        return null;
-                    for (var i = 0; i < probePatterns.length; i++) {
-                        var p = this.coreModules.path.join(tryPath, probePatterns[i]);
-                        if (this._drive.read(p))
-                            return p;
-                    }
-                }
-            }
-        };
-        NoapiContext.prototype.requireModule = function (moduleName, parentModulePath, parentModule) {
-            var _this = this;
-            if (this.coreModules.hasOwnProperty(moduleName))
-                return this.coreModules[moduleName];
-            var resolvedPath = this.resolve(moduleName, parentModulePath);
-            if (resolvedPath) {
-                var content = this._drive.read(resolvedPath);
-                if (content) {
-                    var loadedModule = noapi.createModule(moduleName, resolvedPath, parentModule, function (moduleName) { return _this.requireModule(moduleName, resolvedPath, loadedModule); });
-                    var moduleScope = (function () {
-                        var ModuleContext = function () { };
-                        ModuleContext.prototype = _this.global;
-                        var moduleScope = new ModuleContext();
-                        moduleScope.global = moduleScope;
-                        moduleScope.require = function (moduleName) { return loadedModule.require(moduleName); };
-                        moduleScope.exports = loadedModule.exports;
-                        moduleScope.module = loadedModule;
-                        return moduleScope;
-                    })();
-                    this._context.run(content, resolvedPath, moduleScope);
-                    return loadedModule.exports;
-                }
-            }
-        };
-        NoapiContext.prototype.dispose = function () {
-            this._context.dispose();
-        };
-        NoapiContext.prototype.keepAlive = function () {
-            var _this = this;
-            this._waitFor++;
-            return function () {
-                _this._waitFor--;
-                if (_this._waitFor <= 0) {
-                    setTimeout(function () {
-                        if (_this._waitFor <= 0)
-                            _this.dispose();
-                    }, 1000);
-                }
-            };
-        };
-        return NoapiContext;
-    })();
-    noapi.NoapiContext = NoapiContext;
-})(noapi || (noapi = {}));
-var noapi;
-(function (noapi) {
     var NoapiProcess = (function () {
         function NoapiProcess(options) {
             var _this = this;
@@ -2141,7 +1963,11 @@ var noapi;
             function require(moduleName) { return noapicontext.requireModule(moduleName, noapi.dirname(options.scriptPath), null); }
             this.global.require = (function (moduleName) { return require(moduleName); });
             this.global.require.resolve = function (id) { return _this.resolve(id, noopt.cwd); };
-            //this.global.module.require = moduleName => require(moduleName);
+            this.global.__filename = options.scriptPath;
+            this.global.__dirname = noapi.dirname(options.scriptPath);
+            if (options.console)
+                this.global.console = options.console;
+            this._console = options.console;
             this.coreModules.fs = noapi.createFS(options.drive, this.coreModules);
             this.coreModules.os = noapi.createOS(this.global);
             this.coreModules.path = noapi.createPath(this.global);
@@ -2269,6 +2095,10 @@ var noapi;
                         moduleScope.global = moduleScope;
                         moduleScope.require = function (moduleName) { return loadedModule.require(moduleName); };
                         moduleScope.exports = loadedModule.exports;
+                        moduleScope.global.__filename = resolvedPath;
+                        moduleScope.global.__dirname = noapi.dirname(resolvedPath);
+                        if (_this._console)
+                            _this.global.console = _this._console;
                         moduleScope.module = loadedModule;
                         return moduleScope;
                     })();
@@ -3113,10 +2943,15 @@ var CommanderShell = (function () {
         this._repl = new noapi.NoapiProcess({
             window: window,
             drive: this._drive,
-            scriptPath: '/node_modules/repl.js'
+            scriptPath: '/node_modules/repl.js',
+            console: { log: function () {
+                    var args = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        args[_i - 0] = arguments[_i];
+                    }
+                    return _this._terminal.log(args);
+                } }
         });
-        //this._node = new NodeHost(this._drive);
-        //this._node.log = args => this._terminal.log(args);
         elem(this._host, {
             background: 'black',
             color: 'silver'
@@ -3504,7 +3339,14 @@ var CommanderShell = (function () {
                         var proc = new noapi.NoapiProcess({
                             window: window,
                             drive: _this._drive,
-                            scriptPath: cursorPath
+                            scriptPath: cursorPath,
+                            console: { log: function () {
+                                    var args = [];
+                                    for (var _i = 0; _i < arguments.length; _i++) {
+                                        args[_i - 0] = arguments[_i];
+                                    }
+                                    return _this._terminal.log(args);
+                                } }
                         });
                         var result = proc.eval(text);
                         if (typeof proc.exitCode == 'number')
@@ -3528,10 +3370,28 @@ var CommanderShell = (function () {
                 var ani = this._twoPanels.temporarilyHidePanels();
                 setTimeout(function () {
                     try {
-                        var result = _this._repl.eval(text);
+                        var proc = new noapi.NoapiProcess({
+                            window: window,
+                            drive: _this._drive,
+                            scriptPath: '/src/typescript/tsc.js',
+                            argv: ['node', '/src/typescript/tsc.js', cursorPath],
+                            console: { log: function () {
+                                    var args = [];
+                                    for (var _i = 0; _i < arguments.length; _i++) {
+                                        args[_i - 0] = arguments[_i];
+                                    }
+                                    return _this._terminal.log(args);
+                                } }
+                        });
+                        var result = proc.eval(text);
+                        if (typeof proc.exitCode == 'number')
+                            result = proc.exitCode;
+                        else
+                            result = proc.mainModule.exports;
+                        _this._terminal.log([result]);
                     }
                     catch (error) {
-                        _this._terminal.log(error);
+                        _this._terminal.log([error]);
                     }
                     ani();
                 }, 1);
@@ -4805,7 +4665,7 @@ var terminal;
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<!--total 2164Kb, saved 24 Jun 2015 19:34:12.412 GMT+0100-->
+<!--total 2163Kb, saved 24 Jun 2015 21:51:48.903 GMT+0100-->
 
 <!-- /empty/
 -->
@@ -7136,6 +6996,243 @@ module.exports = isArray || function (val) {
 };
 
 -->
+<!-- /src/isolation/noapi/NoapiProcess.ts
+module noapi {
+
+  export class NoapiProcess {
+
+    process: Process;
+    mainModule: Module;
+    global: Global;
+    coreModules: { fs: FS; path: Path, os: OS; };
+
+    private _scriptPath: string;
+    private _drive: persistence.Drive;
+    private _console: any;
+
+    exitCode: number = null;
+    finished = false;
+
+    private _context: isolation.Context;
+    private _waitFor = 0;
+
+    constructor(options: {
+      window: Window;
+      drive: persistence.Drive;
+      scriptPath: string;
+
+      argv?: string[];
+      cwd?: string;
+      env?: any;
+      console?: any;
+    }) {
+
+      this.global = <any>{};
+
+      this.coreModules = {
+        fs: <FS>null,
+        os: <OS>null,
+        path: <Path>null
+      };
+
+      var noopt = {
+        argv: options.argv || ['/node', options.scriptPath],
+        cwd: options.cwd,
+        env: options.env || {}
+      };
+
+      this._scriptPath = options.scriptPath;
+      this._drive = options.drive;
+
+      if (!noopt.cwd)
+        noopt.cwd = dirname(options.scriptPath);
+
+      this.global.process = this.process = createProcess(this.coreModules, noopt);
+      this.global.module = this.mainModule = createModule('repl' /*id*/, null /*filename*/, null /*parent*/, require);
+
+      var noapicontext = this;
+      function require(moduleName: string) { return noapicontext.requireModule(moduleName, dirname(options.scriptPath), null); }
+
+      this.global.require = <any>(moduleName => require(moduleName));
+      this.global.require.resolve = id => this.resolve(id, noopt.cwd);
+      this.global.__filename = options.scriptPath;
+      this.global.__dirname = dirname(options.scriptPath);
+      if (options.console)
+        this.global.console = options.console;
+      this._console = options.console;
+
+      this.coreModules.fs = createFS(options.drive, this.coreModules);
+      this.coreModules.os = createOS(this.global);
+      this.coreModules.path = createPath(this.global);
+
+      this._context = new isolation.Context(window);
+
+      this.process.exit = code => {
+        this.finished = true;
+        this.exitCode = code || 0;
+        this.dispose();
+      };
+
+      this.process.abort = () => {
+        this.finished = true;
+        this.dispose();
+      };
+
+      var timeouts: Function[] = [];
+      (<any>this.global).setTimeout = (fun: Function, time: number, ...args: any[]) => {
+        if (this.finished) return 0;
+        var wait = this.keepAlive();
+        var complete = () => {
+          delete timeouts[result];
+          wait();
+          fun();
+        };
+
+        var passArgs = [];
+        passArgs.push(complete);
+        passArgs.push(time);
+        for (var i = 0; i < args.length; i++) {
+          passArgs.push(args[i]);
+        }
+        var result = setTimeout.apply(this.global, passArgs);
+
+        timeouts[result] = wait;
+        return result;
+      };
+
+      (<any>this.global).clearTimeout = (tout: number) => {
+        var wait = timeouts[tout];
+        if (wait) wait();
+        delete timeouts[tout];
+        clearTimeout(tout);
+      };
+
+      var intervals: Function[] = [];
+      (<any>this.global).setInterval = (fun: Function, time: number, ...args: any[]) => {
+        if (this.finished) return 0;
+        var wait = this.keepAlive();
+
+        var passArgs = [];
+        passArgs.push(fun);
+        passArgs.push(time);
+        for (var i = 0; i < args.length; i++) {
+          passArgs.push(args[i]);
+        }
+        var result = setInterval.apply(this.global, passArgs);
+
+        intervals[result] = wait;
+        return result;
+      };
+
+      (<any>this.global).clearInterval = (intv: number) => {
+        var wait = intervals[intv];
+        if (wait) wait();
+        delete intervals[intv];
+        clearTimeout(intv);
+      };
+
+      this.process.nextTick = fun => {
+        var wait = this.keepAlive();
+        setTimeout(() => {
+          wait();
+          fun();
+        }, 1);
+      };
+
+    }
+
+    eval(code: string) {
+      var wait = this.keepAlive();
+      try {
+        return this._context.run(code, this._scriptPath, this.global);
+      }
+      finally {
+        wait();
+      }
+    }
+
+    resolve(id: string, modulePath: string) {
+      if (id.charAt(0) === '.') {
+        return this.coreModules.path.join(modulePath, id);
+      }
+      else if (id.charAt(0) === '/') {
+        return id;
+      }
+      else {
+        var tryPath = this.coreModules.path.normalize(modulePath);
+        var probePatterns = [
+          '../' + i, '../' + id + '.js', '../' + id + '/index.js',
+          '../node_modules/' + id + '/index.js'];
+
+        while (true) {
+          tryPath = this.coreModules.path.basename(tryPath);
+          if (!tryPath || tryPath === '/') return null;
+          for (var i = 0; i < probePatterns.length; i++) {
+            var p = this.coreModules.path.join(tryPath, probePatterns[i]);
+            if (this._drive.read(p)) return p;
+          }
+        }
+      }
+    }
+
+    requireModule(moduleName: string, parentModulePath: string, parentModule: Module) {
+
+      if (this.coreModules.hasOwnProperty(moduleName))
+        return this.coreModules[moduleName];
+
+      var resolvedPath = this.resolve(moduleName, parentModulePath);
+      if (resolvedPath) {
+        var content = this._drive.read(resolvedPath);
+        if (content) {
+          var loadedModule = createModule(moduleName, resolvedPath, parentModule, moduleName => this.requireModule(moduleName, resolvedPath, loadedModule));
+          var moduleScope = (() => {
+
+            var ModuleContext = () => { };
+            ModuleContext.prototype = this.global;
+
+            var moduleScope = new ModuleContext();
+
+            moduleScope.global = moduleScope;
+            moduleScope.require = function(moduleName) { return loadedModule.require(moduleName); };
+            moduleScope.exports = loadedModule.exports;
+
+            moduleScope.global.__filename = resolvedPath;
+            moduleScope.global.__dirname = dirname(resolvedPath);
+          	if (this._console)
+              this.global.console = this._console;
+
+
+            moduleScope.module = loadedModule;
+
+            return moduleScope;
+          })();
+
+          this._context.run(content, resolvedPath, moduleScope);
+
+          return loadedModule.exports;
+        }
+      }
+    }
+
+    dispose() {
+      this._context.dispose();
+    }
+
+    keepAlive() {
+      this._waitFor++;
+      return () => {
+        this._waitFor--;
+        if (this._waitFor <= 0) {
+          setTimeout(() => {
+            if (this._waitFor <= 0)
+              this.dispose();
+          }, 1000);
+        }
+      };
+    }
+  }
+}
+-->
 <!-- /src/isolation/noapi/apply.ts
 module noapi {
 
@@ -8755,6 +8852,7 @@ module isolation {
 
     private _frame;
     private _obscureScope: any = {};
+    private _disposed = false;
 
     constructor(private _window: Window) {
       this._frame = createFrame(this._window);
@@ -8777,7 +8875,10 @@ module isolation {
     }
 
     dispose() {
-      document.body.removeChild(this._frame.iframe);
+      if (!this._disposed) {
+        document.body.removeChild(this._frame.iframe);
+        this._disposed = true;
+      }
     }
 
   }
@@ -12395,7 +12496,6 @@ class CommanderShell {
   };
 
   private _onsizechangedTimeout: number = 0;
-  //private _node: NodeHost;
   private _repl: noapi.NoapiProcess;
 
   private _editor: editor.Editor = null;
@@ -12407,11 +12507,9 @@ class CommanderShell {
     this._repl = new noapi.NoapiProcess({
       window: window,
       drive: this._drive,
-      scriptPath: '/node_modules/repl.js'
+      scriptPath: '/node_modules/repl.js',
+      console: { log: (...args: any[]) => this._terminal.log(args) }
     });
-
-    //this._node = new NodeHost(this._drive);
-    //this._node.log = args => this._terminal.log(args);
 
     elem(this._host, {
       background: 'black',
@@ -12854,7 +12952,8 @@ class CommanderShell {
             var proc = new noapi.NoapiProcess({
               window: window,
               drive: this._drive,
-              scriptPath: cursorPath
+              scriptPath: cursorPath,
+              console: { log: (...args: any[]) => this._terminal.log(args) }
             });
             var result = proc.eval(text);
             if (typeof proc.exitCode == 'number')
@@ -12880,10 +12979,22 @@ class CommanderShell {
         var ani = this._twoPanels.temporarilyHidePanels();
         setTimeout(() => {
           try {
-            var result = this._repl.eval(text);
+            var proc = new noapi.NoapiProcess({
+              window: window,
+              drive: this._drive,
+              scriptPath: '/src/typescript/tsc.js',
+              argv: ['node', '/src/typescript/tsc.js', cursorPath],
+              console: { log: (...args: any[]) => this._terminal.log(args) }
+            });
+            var result = proc.eval(text);
+            if (typeof proc.exitCode == 'number')
+              result = proc.exitCode;
+            else
+              result = proc.mainModule.exports;
+            this._terminal.log([result]);
           }
           catch (error) {
-            this._terminal.log(error);
+            this._terminal.log([error]);
           }
           ani();
         }, 1);
@@ -12992,70 +13103,6 @@ module CommanderShell {
     hostHeight: number;
     emWidth: number;
     emHeight: number;
-  }
-
-}
--->
-<!-- /src/shell/NodeHost.ts
-class NodeHost {
-
-  private _replGlobal: any;
-  private _replContext: isolation.Context;
-  private _nocontext: noapi.NoapiProcess;
-  private _keepRepl: Function;
-
-  constructor(private _drive: persistence.Drive) {
-    this._replGlobal = this._enrichGlobal({});
-    this._replContext = new isolation.Context(window);
-    this._nocontext = new noapi.NoapiProcess({
-      window: window,
-      drive: this._drive,
-      scriptPath: '/repl'
-    });
-    this._keepRepl = this._nocontext.keepAlive();
-  }
-
-
-  log: (args: any[]) => void = null;
-
-  run(code: string, path: string, argv?: string[]) {
-
-    var isInteractive = !path;
-
-    if (isInteractive) {
-      return this._nocontext.eval(code);
-    }
-    else {
-      var proc = new noapi.NoapiProcess({
-        window: window,
-        drive: this._drive,
-        scriptPath: path
-      });
-      var evalResult = proc.eval(code);
-      if (typeof proc.exitCode == 'number')
-        return proc.exitCode;
-      else
-        return proc.mainModule.exports;
-    }
-
-  }
-
-  private _enrichGlobal(global: any): noapi.Global {
-    noapi.apply(global, this._drive);
-    var that = this;
-    global.console = {
-      log: function() {
-        var args = [];
-        for (var i = 0; i < arguments.length; i++) {
-          args.push(arguments[i]);
-        }
-        if (that.log)
-          that.log(args);
-        else if (typeof console !== 'undefined')
-          console.log(args);
-      }
-    };
-    return <any>global;
   }
 
 }
@@ -56631,232 +56678,6 @@ then one of the local storage options is added upon a brief detection process.
 
 From the external caller the persistence mini-library expects a single call to *mountDrive* function,
 passing in a few inputs and a callback.
--->
-<!-- /src/isolation/noapi/NoapiProcess.ts
-module noapi {
-
-  export class NoapiProcess {
-
-    process: Process;
-    mainModule: Module;
-    global: Global;
-    coreModules: { fs: FS; path: Path, os: OS; };
-
-    private _scriptPath: string;
-    private _drive: persistence.Drive;
-
-    exitCode: number = null;
-    finished = false;
-
-    private _context: isolation.Context;
-    private _waitFor = 0;
-
-    constructor(options: {
-      window: Window;
-      drive: persistence.Drive;
-      scriptPath: string;
-
-      argv?: string[];
-      cwd?: string;
-      env?: any;
-      console?: any;
-    }) {
-
-      this.global = <any>{};
-
-      this.coreModules = {
-        fs: <FS>null,
-        os: <OS>null,
-        path: <Path>null
-      };
-
-      var noopt = {
-        argv: options.argv || ['/node', options.scriptPath],
-        cwd: options.cwd,
-        env: options.env || {}
-      };
-
-      this._scriptPath = options.scriptPath;
-      this._drive = options.drive;
-
-      if (!noopt.cwd)
-        noopt.cwd = dirname(options.scriptPath);
-
-      this.global.process = this.process = createProcess(this.coreModules, noopt);
-      this.global.module = this.mainModule = createModule('repl' /*id*/, null /*filename*/, null /*parent*/, require);
-
-      var noapicontext = this;
-      function require(moduleName: string) { return noapicontext.requireModule(moduleName, dirname(options.scriptPath), null); }
-
-      this.global.require = <any>(moduleName => require(moduleName));
-      this.global.require.resolve = id => this.resolve(id, noopt.cwd);
-      //this.global.module.require = moduleName => require(moduleName);
-
-      this.coreModules.fs = createFS(options.drive, this.coreModules);
-      this.coreModules.os = createOS(this.global);
-      this.coreModules.path = createPath(this.global);
-
-      this._context = new isolation.Context(window);
-
-      this.process.exit = code => {
-        this.finished = true;
-        this.exitCode = code || 0;
-        this.dispose();
-      };
-
-      this.process.abort = () => {
-        this.finished = true;
-        this.dispose();
-      };
-
-      var timeouts: Function[] = [];
-      (<any>this.global).setTimeout = (fun: Function, time: number, ...args: any[]) => {
-        if (this.finished) return 0;
-        var wait = this.keepAlive();
-        var complete = () => {
-          delete timeouts[result];
-          wait();
-          fun();
-        };
-
-        var passArgs = [];
-        passArgs.push(complete);
-        passArgs.push(time);
-        for (var i = 0; i < args.length; i++) {
-          passArgs.push(args[i]);
-        }
-        var result = setTimeout.apply(this.global, passArgs);
-
-        timeouts[result] = wait;
-        return result;
-      };
-
-      (<any>this.global).clearTimeout = (tout: number) => {
-        var wait = timeouts[tout];
-        if (wait) wait();
-        delete timeouts[tout];
-        clearTimeout(tout);
-      };
-
-      var intervals: Function[] = [];
-      (<any>this.global).setInterval = (fun: Function, time: number, ...args: any[]) => {
-        if (this.finished) return 0;
-        var wait = this.keepAlive();
-
-        var passArgs = [];
-        passArgs.push(fun);
-        passArgs.push(time);
-        for (var i = 0; i < args.length; i++) {
-          passArgs.push(args[i]);
-        }
-        var result = setInterval.apply(this.global, passArgs);
-
-        intervals[result] = wait;
-        return result;
-      };
-
-      (<any>this.global).clearInterval = (intv: number) => {
-        var wait = intervals[intv];
-        if (wait) wait();
-        delete intervals[intv];
-        clearTimeout(intv);
-      };
-
-      this.process.nextTick = fun => {
-        var wait = this.keepAlive();
-        setTimeout(() => {
-          wait();
-          fun();
-        }, 1);
-      };
-
-    }
-
-    eval(code: string) {
-      var wait = this.keepAlive();
-      try {
-        return this._context.run(code, this._scriptPath, this.global);
-      }
-      finally {
-        wait();
-      }
-    }
-
-    resolve(id: string, modulePath: string) {
-      if (id.charAt(0) === '.') {
-        return this.coreModules.path.join(modulePath, id);
-      }
-      else if (id.charAt(0) === '/') {
-        return id;
-      }
-      else {
-        var tryPath = this.coreModules.path.normalize(modulePath);
-        var probePatterns = [
-          '../' + i, '../' + id + '.js', '../' + id + '/index.js',
-          '../node_modules/' + id + '/index.js'];
-
-        while (true) {
-          tryPath = this.coreModules.path.basename(tryPath);
-          if (!tryPath || tryPath === '/') return null;
-          for (var i = 0; i < probePatterns.length; i++) {
-            var p = this.coreModules.path.join(tryPath, probePatterns[i]);
-            if (this._drive.read(p)) return p;
-          }
-        }
-      }
-    }
-
-    requireModule(moduleName: string, parentModulePath: string, parentModule: Module) {
-
-      if (this.coreModules.hasOwnProperty(moduleName))
-        return this.coreModules[moduleName];
-
-      var resolvedPath = this.resolve(moduleName, parentModulePath);
-      if (resolvedPath) {
-        var content = this._drive.read(resolvedPath);
-        if (content) {
-          var loadedModule = createModule(moduleName, resolvedPath, parentModule, moduleName => this.requireModule(moduleName, resolvedPath, loadedModule));
-          var moduleScope = (() => {
-
-            var ModuleContext = () => { };
-            ModuleContext.prototype = this.global;
-
-            var moduleScope = new ModuleContext();
-
-            moduleScope.global = moduleScope;
-            moduleScope.require = function(moduleName) { return loadedModule.require(moduleName); };
-            moduleScope.exports = loadedModule.exports;
-
-            moduleScope.module = loadedModule;
-
-            return moduleScope;
-          })();
-
-          this._context.run(content, resolvedPath, moduleScope);
-
-          return loadedModule.exports;
-        }
-      }
-    }
-
-    dispose() {
-      this._context.dispose();
-    }
-
-    keepAlive() {
-      this._waitFor++;
-      return () => {
-        this._waitFor--;
-        if (this._waitFor <= 0) {
-          setTimeout(() => {
-            if (this._waitFor <= 0)
-              this.dispose();
-          }, 1000);
-        }
-      };
-    }
-  }
-}
 -->
 
 <iframe style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; border: none; opacity: 1;"></iframe></body></html>
