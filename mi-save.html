@@ -1,5 +1,5 @@
 <!doctype html>
-<html style="overflow: hidden; width: 1476px; height: 666px;"><head><title>mini shell </title>
+<html style="overflow: hidden; width: 1210px; height: 513px;"><head><title>mini shell </title>
 
 <script data-legit="mi">
   window.__boot_times = window.__boot_times || {};
@@ -450,7 +450,7 @@ function earlyBoot(window) {
   };
 }
 //# sourceURL=/boot/base.js
-</script></head><body style="height: 666px; margin: 0px; padding: 0px; overflow: hidden; width: 1476px;">
+</script></head><body style="height: 513px; margin: 0px; padding: 0px; overflow: hidden; width: 1210px;">
 <script data-legit="mi">
 
 function shellLoader(uniqueKey, document, boot) {
@@ -518,6 +518,8 @@ function shellLoader(uniqueKey, document, boot) {
             boot.api.title('Loaded: ' + progressText('ui'), 0.95);
             global_resize_delayed();
             try {
+                var uibase = window['base'](uiframe.global);
+                window['elem'] = uibase.elem;
                 showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
             }
             catch (error) {
@@ -4645,7 +4647,7 @@ var terminal;
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<!--total 2164Kb, saved 25 Jun 2015 20:44:56.784 GMT+0100-->
+<!--total 2164Kb, saved 25 Jun 2015 21:18:31.784 GMT+0100-->
 
 <!-- /empty/
 -->
@@ -9065,6 +9067,8 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
       global_resize_delayed();
 
       try {
+        var uibase = window['base'](uiframe.global);
+        window['elem'] = uibase.elem;
         showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
       }
       catch (error) {
@@ -56690,4 +56694,4 @@ From the external caller the persistence mini-library expects a single call to *
 passing in a few inputs and a callback.
 -->
 
-<iframe style="position: absolute; left: 0px; top: 0px; width: 1476px; height: 666px; border: none; opacity: 1;"></iframe></body></html>
+<iframe style="position: absolute; left: 0px; top: 0px; width: 1210px; height: 513px; border: none; opacity: 1;"></iframe></body></html>
