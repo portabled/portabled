@@ -504,6 +504,8 @@ function shellLoader(uniqueKey, document, boot) {
             var resizeHandlers = [];
             on(window, 'resize', global_resize_detect);
             on(document.body, 'resize', global_resize_detect);
+            if (document.documentElement)
+                on(document.documentElement, 'resize', global_resize_detect);
             on(uiframe.document.body, 'touchstart', global_resize_detect);
             on(uiframe.document.body, 'touchmove', global_resize_detect);
             on(uiframe.document.body, 'touchend', global_resize_detect);
@@ -514,6 +516,7 @@ function shellLoader(uniqueKey, document, boot) {
             on(uiframe.document.body, 'keyup', global_resize_detect);
             uiframe.global.require = shell_require;
             boot.api.title('Loaded: ' + progressText('ui'), 0.95);
+            global_resize_delayed();
             try {
                 showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
             }
@@ -557,13 +560,17 @@ function shellLoader(uniqueKey, document, boot) {
                     setTimeout(global_resize_delayed, 5);
                 }
             }
-            var lastMetrics = {};
+            var lastMetrics = null;
             function global_resize_delayed() {
                 wasResized = false;
                 var metrics = getMetrics();
-                if (metrics.windowWidth !== lastMetrics.windowWidth
-                    && metrics.windowHeight !== lastMetrics.windowHeight) {
+                if (!lastMetrics || (metrics.windowWidth !== lastMetrics.windowWidth
+                    && metrics.windowHeight !== lastMetrics.windowHeight)) {
                     lastMetrics = metrics;
+                    if (uiframe) {
+                        uiframe.iframe.style.width = metrics.windowWidth + 'px';
+                        uiframe.iframe.style.height = metrics.windowHeight + 'px';
+                    }
                     for (var i = 0; i < resizeHandlers.length; i++) {
                         var f = resizeHandlers[i];
                         if (f)
@@ -571,10 +578,21 @@ function shellLoader(uniqueKey, document, boot) {
                     }
                 }
             }
+            function realMin(x, y) {
+                if (y > 100 && (x === 0 || y < x))
+                    return y;
+                else
+                    return x;
+            }
+            var dump = true;
             function getMetrics() {
+                if (dump) {
+                    console.log(getMetrics);
+                    dump = false;
+                }
                 var metrics = {
-                    windowWidth: window.innerWidth || document.body.parentElement.clientWidth || document.body.clientWidth,
-                    windowHeight: window.innerHeight || document.body.parentElement.clientHeight || document.body.clientHeight
+                    windowWidth: Math.max(realMin(realMin(realMin(0, window.innerWidth), document.body.parentElement.clientWidth), document.body.clientWidth), 100),
+                    windowHeight: Math.max(realMin(realMin(realMin(0, window.innerHeight), document.body.parentElement.clientHeight), document.body.clientHeight), 100)
                 };
                 return metrics;
             }
@@ -2808,6 +2826,15 @@ var noapi;
 })(noapi || (noapi = {}));
 var nobrowser;
 (function (nobrowser) {
+    var HostedWindow = (function () {
+        function HostedWindow() {
+        }
+        return HostedWindow;
+    })();
+    nobrowser.HostedWindow = HostedWindow;
+})(nobrowser || (nobrowser = {}));
+var nobrowser;
+(function (nobrowser) {
     function overrideLocalStorage(drive, cachePath) {
         var cachePathDir = cachePath + (cachePath.slice(-1) === '/' ? '' : '/');
         return LocalStorageOverride;
@@ -3477,56 +3504,6 @@ var CommanderShell = (function () {
         }
     };
     return CommanderShell;
-})();
-var NodeHost = (function () {
-    function NodeHost(_drive) {
-        this._drive = _drive;
-        this.log = null;
-        this._replGlobal = this._enrichGlobal({});
-        this._replContext = new isolation.Context(window);
-        this._nocontext = new noapi.NoapiProcess({
-            window: window,
-            drive: this._drive,
-            scriptPath: '/repl'
-        });
-        this._keepRepl = this._nocontext.keepAlive();
-    }
-    NodeHost.prototype.run = function (code, path, argv) {
-        var isInteractive = !path;
-        if (isInteractive) {
-            return this._nocontext.eval(code);
-        }
-        else {
-            var proc = new noapi.NoapiProcess({
-                window: window,
-                drive: this._drive,
-                scriptPath: path
-            });
-            var evalResult = proc.eval(code);
-            if (typeof proc.exitCode == 'number')
-                return proc.exitCode;
-            else
-                return proc.mainModule.exports;
-        }
-    };
-    NodeHost.prototype._enrichGlobal = function (global) {
-        noapi.apply(global, this._drive);
-        var that = this;
-        global.console = {
-            log: function () {
-                var args = [];
-                for (var i = 0; i < arguments.length; i++) {
-                    args.push(arguments[i]);
-                }
-                if (that.log)
-                    that.log(args);
-                else if (typeof console !== 'undefined')
-                    console.log(args);
-            }
-        };
-        return global;
-    };
-    return NodeHost;
 })();
 var build;
 (function (build) {
@@ -4665,7 +4642,7 @@ var terminal;
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<!--total 2163Kb, saved 24 Jun 2015 21:51:48.903 GMT+0100-->
+<!--total 2164Kb, saved 25 Jun 2015 19:46:16.668 GMT+0100-->
 
 <!-- /empty/
 -->
@@ -8700,6 +8677,15 @@ declare module noapi {
   }
 }
 -->
+<!-- /src/isolation/nobrowser/HostedWindow.ts
+module nobrowser {
+
+  export class HostedWindow {
+    
+  }
+
+}
+-->
 <!-- /src/isolation/nobrowser/overrideLocalStorage.ts
 module nobrowser {
 
@@ -9054,10 +9040,12 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
       var uiframeBase = (<any>window).base(uiframe.global);
       uiframeBase.apply();
 
+
       var wasResized = false;
       var resizeHandlers: any[] = [];
       on(window, 'resize', global_resize_detect);
       on(document.body, 'resize', global_resize_detect);
+      if (document.documentElement) on(document.documentElement, 'resize', global_resize_detect);
       on(uiframe.document.body, 'touchstart', global_resize_detect);
       on(uiframe.document.body, 'touchmove', global_resize_detect);
       on(uiframe.document.body, 'touchend', global_resize_detect);
@@ -9070,6 +9058,8 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
 
       (<any>uiframe.global).require = shell_require;
       boot.api.title('Loaded: ' + progressText('ui'), 0.95);
+
+      global_resize_delayed();
 
       try {
         showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
@@ -9118,14 +9108,18 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
         }
       }
 
-      var lastMetrics: any = {};
+      var lastMetrics: any = null;
       function global_resize_delayed() {
         wasResized = false;
 
         var metrics = getMetrics();
-        if (metrics.windowWidth !== lastMetrics.windowWidth
-          && metrics.windowHeight !== lastMetrics.windowHeight) {
+        if (!lastMetrics || (metrics.windowWidth !== lastMetrics.windowWidth
+          && metrics.windowHeight !== lastMetrics.windowHeight)) {
           lastMetrics = metrics;
+          if (uiframe) {
+            uiframe.iframe.style.width = metrics.windowWidth + 'px';
+            uiframe.iframe.style.height = metrics.windowHeight + 'px';
+          }
 
           for (var i = 0; i < resizeHandlers.length; i++) {
             var f = resizeHandlers[i];
@@ -9135,10 +9129,25 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
         }
       }
 
+      function realMin(x: number, y: number) {
+        if (y > 100 && (x === 0 || y < x)) return y;
+        else return x;
+      }
+
+      var dump = true;
       function getMetrics() {
+        if (dump) {
+          console.log(getMetrics);
+          dump = false;
+        }
+
         var metrics = {
-          windowWidth: window.innerWidth || document.body.parentElement.clientWidth || document.body.clientWidth,
-          windowHeight: window.innerHeight || document.body.parentElement.clientHeight || document.body.clientHeight
+          windowWidth: Math.max(
+          	realMin(realMin(realMin(0, window.innerWidth), document.body.parentElement.clientWidth), document.body.clientWidth),
+            100),
+          windowHeight: Math.max(
+          	realMin(realMin(realMin(0, window.innerHeight), document.body.parentElement.clientHeight), document.body.clientHeight),
+            100)
         };
         return metrics;
       }
@@ -56680,4 +56689,4 @@ From the external caller the persistence mini-library expects a single call to *
 passing in a few inputs and a callback.
 -->
 
-<iframe style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; border: none; opacity: 1;"></iframe></body></html>
+<iframe style="position: absolute; left: 0px; top: 0px; width: 1366px; height: 634px; border: none; opacity: 1;"></iframe></body></html>
