@@ -1,5 +1,5 @@
 <!doctype html>
-<html style="overflow: hidden;height:  414px;"><head><title>mini shell </title>
+<html style="overflow: hidden; width: 1476px; height: 666px;"><head><title>mini shell </title>
 
 <script data-legit="mi">
   window.__boot_times = window.__boot_times || {};
@@ -450,7 +450,7 @@ function earlyBoot(window) {
   };
 }
 //# sourceURL=/boot/base.js
-</script></head><body style="height: 568px; margin: 0px; padding: 0px; overflow: hidden; width: 586px;">
+</script></head><body style="height: 666px; margin: 0px; padding: 0px; overflow: hidden; width: 1476px;">
 <script data-legit="mi">
 
 function shellLoader(uniqueKey, document, boot) {
@@ -567,7 +567,6 @@ function shellLoader(uniqueKey, document, boot) {
                 if (!lastMetrics || (metrics.windowWidth !== lastMetrics.windowWidth
                     && metrics.windowHeight !== lastMetrics.windowHeight)) {
                     lastMetrics = metrics;
-                    console.log(metrics);
                     if (uiframe) {
                         var w = metrics.windowWidth + 'px';
                         var h = metrics.windowHeight + 'px';
@@ -575,6 +574,10 @@ function shellLoader(uniqueKey, document, boot) {
                         uiframe.iframe.style.height = h;
                         document.body.style.width = w;
                         document.body.style.height = h;
+                        if (document.body.parentElement) {
+                            document.body.parentElement.style.width = w;
+                            document.body.parentElement.style.height = h;
+                        }
                     }
                     for (var i = 0; i < resizeHandlers.length; i++) {
                         var f = resizeHandlers[i];
@@ -589,12 +592,7 @@ function shellLoader(uniqueKey, document, boot) {
                 else
                     return x;
             }
-            var dump = true;
             function getMetrics() {
-                if (dump) {
-                    console.log(getMetrics);
-                    dump = false;
-                }
                 var metrics = {
                     windowWidth: window.innerWidth || (document.body.parentElement ? document.body.parentElement.clientWidth : 0) || document.body.clientWidth,
                     windowHeight: window.innerHeight || (document.body.parentElement ? document.body.parentElement.clientHeight : 0) || document.body.clientHeight
@@ -4647,7 +4645,7 @@ var terminal;
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<!--total 2164Kb, saved 25 Jun 2015 20:02:52.661 GMT+0100-->
+<!--total 2164Kb, saved 25 Jun 2015 20:44:56.784 GMT+0100-->
 
 <!-- /empty/
 -->
@@ -9121,7 +9119,6 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
         if (!lastMetrics || (metrics.windowWidth !== lastMetrics.windowWidth
           && metrics.windowHeight !== lastMetrics.windowHeight)) {
           lastMetrics = metrics;
-          console.log(metrics);
           if (uiframe) {
             var w = metrics.windowWidth + 'px';
             var h = metrics.windowHeight + 'px';
@@ -9129,12 +9126,10 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
             uiframe.iframe.style.height = h;
             document.body.style.width = w;
             document.body.style.height = h;
-            /*
             if (document.body.parentElement) {
               document.body.parentElement.style.width = w;
               document.body.parentElement.style.height = h;
             }
-            */
           }
 
           for (var i = 0; i < resizeHandlers.length; i++) {
@@ -9150,13 +9145,7 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
         else return x;
       }
 
-      var dump = true;
       function getMetrics() {
-        if (dump) {
-          console.log(getMetrics);
-          dump = false;
-        }
-
         var metrics = {
           windowWidth: window.innerWidth || (document.body.parentElement ? document.body.parentElement.clientWidth : 0) || document.body.clientWidth,
           windowHeight: window.innerHeight || (document.body.parentElement ? document.body.parentElement.clientHeight : 0) || document.body.clientHeight
@@ -56701,4 +56690,4 @@ From the external caller the persistence mini-library expects a single call to *
 passing in a few inputs and a callback.
 -->
 
-<iframe style="position: absolute; left: 0px; top: 0px; width: 586px; height: 568px; border: none; opacity: 1;"></iframe></body></html>
+<iframe style="position: absolute; left: 0px; top: 0px; width: 1476px; height: 666px; border: none; opacity: 1;"></iframe></body></html>
