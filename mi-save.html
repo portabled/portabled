@@ -3428,12 +3428,14 @@ var CommanderShell = (function () {
                         setTimeout(function () {
                             if (!finishedOK) {
                                 var compileTime = +new Date() - start;
-                                console.log('Compilation seems to have failed after ' + compileTime / 1000 + ' sec.');
+                                _this._terminal.log(['Compilation seems to have failed after ' + compileTime / 1000 + ' sec.']);
                                 ani();
                             }
                         }, 100);
                         var start = +new Date();
+                        _this._terminal.log(['... started at ' + (new Date())]);
                         var result = proc.eval(text);
+                        _this._terminal.log(['...finished at ' + (new Date())]);
                         if (typeof proc.exitCode == 'number')
                             result = proc.exitCode;
                         else
@@ -4678,7 +4680,7 @@ var terminal;
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<!--total 3245Kb, saved 28 Jun 2015 22:25:43.051 GMT+0100-->
+<!--total 3245Kb, saved 28 Jun 2015 22:30:35.046 GMT+0100-->
 
 <!-- /empty/
 -->
@@ -17762,12 +17764,14 @@ class CommanderShell {
             setTimeout(() => {
               if (!finishedOK) {
                 var compileTime = +new Date() - start;
-                console.log('Compilation seems to have failed after ' + compileTime/1000 + ' sec.');
+                this._terminal.log(['Compilation seems to have failed after ' + compileTime / 1000 + ' sec.']);
                 ani();
               }
             }, 100);
             var start = +new Date();
+            this._terminal.log(['... started at ' + (new Date())]);
             var result = proc.eval(text);
+            this._terminal.log(['...finished at ' + (new Date())]);
             if (typeof proc.exitCode == 'number')
               result = proc.exitCode;
             else
