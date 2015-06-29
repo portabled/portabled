@@ -2,6 +2,7 @@
 <html style="overflow: hidden; width: 1366px; height: 634px;"><head><title>mini shell </title>
 
 <script data-legit="mi">
+  // ONERROR
   window.__boot_times = window.__boot_times || {};
 window.__boot_times.onerror_start = +new Date();
 
@@ -36,7 +37,10 @@ window.onerror = function onerror() {
 }
 //# sourceURL=boot/onerror.js
 </script>
+
+
 <script data-legit="mi">
+  // EARLYBOOT
   earlyBoot(window);
 
   	function base(window) {
@@ -451,8 +455,12 @@ function earlyBoot(window) {
 }
 //# sourceURL=/boot/base.js
 </script></head><body style="height: 634px; margin: 0px; padding: 0px; overflow: hidden; width: 1366px;">
+
+
 <script data-legit="mi">
 
+  // LOADER, SHELL
+//declare var showCommanderInContext;
 function shellLoader(uniqueKey, document, boot) {
     var driveMount = persistence.bootMount(uniqueKey, document);
     return continueLoading();
@@ -520,12 +528,15 @@ function shellLoader(uniqueKey, document, boot) {
             try {
                 var uibase = window['base'](uiframe.global);
                 window['elem'] = uibase.elem;
+                var showCommanderJS = drive.read('/shell/showCommander.js');
+                var showCommanderText = "(function() {\nreturn showCommanderInContext;\nfunction showCommanderInContext(drive, window, document, require) {\n" + showCommanderJS + "\n  showCommander(drive);\n} })() //# sourceURL=/shell/showCommander.js ";
+                var showCommanderInContext = uiframe.evalFN(showCommanderText);
                 showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
             }
             catch (error) {
                 alert('Shell initialisation failed ' + error.message + '\n' + error.stack + '\n' + error);
             }
-            boot.api.title('Completed: ' + progressText('ui'), 0.99);
+            boot.api.title('Completed: ' + progressText('ui') + ' ' + new Date(drive.timestamp), 0.99);
             function shell_require(moduleName) {
                 switch (moduleName) {
                     case 'window': return window;
@@ -1833,7 +1844,12 @@ var persistence;
     persistence.normalizePath = normalizePath;
 })(persistence || (persistence = {}));
 
-function showCommanderInContext(drive, window, document, require) {
+//# sourceURL=/load/shellLoader.ts.js
+</script>
+
+<!--total 3362Kb, saved 29 Jun 2015 22:08:01.706 GMT+0100-->
+
+<!-- /shell/showCommander.js
 var isolation;
 (function (isolation) {
     var Context = (function () {
@@ -3078,6 +3094,7 @@ var CommanderShell = (function () {
         };
         applyConsole(_glob);
         applyConsole(window);
+        this._terminal.log([new Date(this._drive.timestamp)]);
     }
     CommanderShell.prototype.measure = function () {
         this._metrics.emWidth = this._metricElem.offsetWidth;
@@ -3493,8 +3510,11 @@ var CommanderShell = (function () {
                     '}',
                     '<' + '/' + 's' + 'cript>'].join('\n'));
                 blankWindow.document.close();
+                var buildScope = {
+                    embedFile: function (file) { return _this._drive.read(file); }
+                };
                 try {
-                    build.processTemplate(htmlTemplate, [], function (txt) {
+                    build.processTemplate(htmlTemplate, [buildScope], function (txt) {
                         _this._terminal.log([txt]);
                         blankWindow.log(txt);
                     }, function (error, result) {
@@ -4675,12 +4695,7 @@ var terminal;
     terminal.logAppendObj = logAppendObj;
 })(terminal || (terminal = {}));
 
-  showCommander(drive);
-}
-//# sourceURL=/load/shellLoader.ts.js
-</script>
-
-<!--total 3245Kb, saved 28 Jun 2015 22:30:35.046 GMT+0100-->
+-->
 
 <!-- /empty/
 -->
@@ -9020,7 +9035,7 @@ module isolation {
 }
 -->
 <!-- /src/load/shellLoader.ts
-declare var showCommanderInContext;
+//declare var showCommanderInContext;
 
 function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.BootModuleAPI): shellLoader.ContinueLoading {
 
@@ -9107,13 +9122,23 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
       try {
         var uibase = window['base'](uiframe.global);
         window['elem'] = uibase.elem;
+        var showCommanderJS = drive.read('/shell/showCommander.js');
+        var showCommanderText =
+`(function() {
+return showCommanderInContext;
+function showCommanderInContext(drive, window, document, require) {
+`+showCommanderJS+`
+  showCommander(drive);
+} })() //# sourceURL=/shell/showCommander.js `;
+        var showCommanderInContext = uiframe.evalFN(showCommanderText);
+
         showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
       }
       catch (error) {
         alert('Shell initialisation failed ' + error.message+'\n'+error.stack+'\n'+error);
       }
 
-      boot.api.title('Completed: ' + progressText('ui'), 0.99);
+      boot.api.title('Completed: ' + progressText('ui') + ' ' + new Date(drive.timestamp), 0.99);
 
       function shell_require(moduleName): any {
         switch (moduleName) {
@@ -17380,6 +17405,7 @@ class CommanderShell {
 
     applyConsole(_glob);
     applyConsole(window);
+    this._terminal.log([new Date(this._drive.timestamp)]);
   }
 
   measure() {
@@ -17836,10 +17862,14 @@ class CommanderShell {
           '<' + '/' + 's' + 'cript>'].join('\n'));
         blankWindow.document.close();
 
+        var buildScope = {
+          embedFile: (file: string) => this._drive.read(file)
+        };
+
         try {
           build.processTemplate(
             htmlTemplate,
-            [],
+            [buildScope],
             txt => {
               this._terminal.log([txt]);
               (<any>blankWindow).log(txt);
@@ -61216,10 +61246,14 @@ console.log('I\'ve changed its colour: ', apple);
 <title>mini shell </title>
 
 <script data-legit=mi>
+  // ONERROR
   <%=embedFile('boot/onerror.js')%>
 //# sourceURL=boot/onerror.js
 </script>
+
+
 <script data-legit=mi>
+  // EARLYBOOT
   earlyBoot(window);
 
   	<%=typescriptBuild('boot/*')%>
@@ -61227,18 +61261,18 @@ console.log('I\'ve changed its colour: ', apple);
     <%=embedFile('boot/bootUI.js')%>
 //# sourceURL=/boot/base.js
 </script>
+
+
 <script data-legit=mi>
 
+  // LOADER, SHELL
 <%=typescriptBuild('load/*', 'persistence/*', 'boot/base.d.ts', 'typings/*')%>
-function showCommanderInContext(drive, window, document, require) {
-<%=typescriptBuild('shell/*', 'noapi/*', 'isolation/*',   'boot/base.d.ts', 'persistence/Drive.ts', 'typings/*')%>
-  showCommander(drive);
-}
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
 <*!-- total 12Mb, saved <%=(function() {
 
+// TOTAL SUMMARY
 var monthsPrettyCase = ('Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec').split('|');
 
 var saveDate = new Date();
@@ -61258,13 +61292,14 @@ if (gmtMatch)
 
 return dtText;
 
-function num2(n) {
-	return n <= 9 ? '0' + n : '' + n;
-}
-
+function num2(n) { return n <= 9 ? '0' + n : '' + n; }
 
 })()
 %> --*>
+
+<*!-- /shell/showCommander.js
+<%=typescriptBuild('shell/*', 'noapi/*', 'isolation/*',   'boot/base.d.ts', 'persistence/Drive.ts', 'typings/*')%>
+--*>
 
 <*!-- /empty/
 --*>
