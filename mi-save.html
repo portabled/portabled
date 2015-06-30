@@ -552,7 +552,6 @@ function shellLoader(uniqueKey, document, boot) {
             }
             if (uiframe.document.close)
                 uiframe.document.close();
-            boot.api.title('Completed: ' + progressText('ui') + ' ' + new Date(drive.timestamp), 0.99);
             function shell_require(moduleName) {
                 switch (moduleName) {
                     case 'nowindow': return window;
@@ -633,24 +632,28 @@ function shellLoader(uniqueKey, document, boot) {
                 };
                 return metrics;
             }
-            var start = new Date().valueOf();
-            var fadeintTime = Math.min(500, ((+new Date()) - boot.bootStartTime) * 0.9);
-            var animateFadeIn = setInterval(function () {
-                var passed = new Date().valueOf() - start;
-                var opacity = Math.min(passed, fadeintTime) / fadeintTime;
-                boot.iframe.style.opacity = (1 - opacity).toString();
-                if (uiframe.iframe.style.filter)
-                    boot.iframe.style.filter = 'alpha(opacity=' + ((opacity * 100) | 0) + ')';
-                uiframe.iframe.style.opacity = '1';
-                uiframe.iframe.style.filter = 'alpha(opacity=100)';
-                if (passed >= fadeintTime) {
-                    clearInterval(animateFadeIn);
-                    if (boot.iframe.parentElement)
-                        boot.iframe.parentElement.removeChild(boot.iframe);
-                }
-            }, 10);
-            //if (typeof console !== 'undefined' && console.log)
-            //  console.log(window['dbgDrive'] = drive);
+            boot.api.title('Preloaded: ' + progressText('ui'), 0.98);
+            uiframe.global.shell.start(function () {
+                var msg = 'Completed: ' + progressText('ui');
+                boot.api.title(msg, 0.99);
+                var start = new Date().valueOf();
+                var fadeintTime = Math.min(500, ((+new Date()) - boot.bootStartTime) * 0.9);
+                var animateFadeIn = setInterval(function () {
+                    var passed = new Date().valueOf() - start;
+                    var opacity = Math.min(passed, fadeintTime) / fadeintTime;
+                    boot.iframe.style.opacity = (1 - opacity).toString();
+                    if (uiframe.iframe.style.filter)
+                        boot.iframe.style.filter = 'alpha(opacity=' + ((opacity * 100) | 0) + ')';
+                    uiframe.iframe.style.opacity = '1';
+                    uiframe.iframe.style.filter = 'alpha(opacity=100)';
+                    if (passed >= fadeintTime) {
+                        clearInterval(animateFadeIn);
+                        if (boot.iframe.parentElement)
+                            boot.iframe.parentElement.removeChild(boot.iframe);
+                    }
+                }, 10);
+                return msg;
+            });
         });
     }
     function createFrame() {
@@ -670,12 +673,6 @@ function shellLoader(uniqueKey, document, boot) {
             '*,*:before,*:after{box-sizing:inherit;}' +
             'html{box-sizing:border-box;}' +
             '</' + 'style' + '>\n' +
-            '<' + 'script' + '>' +
-            'window.onerror = function(a,b,c,d,e,f,g,h,i,j,k,l) {\n' +
-            '  if (window.__onerror) window.__onerror(a,b,c,d,e,f,g,h,i,j,k,l);\n' +
-            '  else alert(a+b+c+d+e+f+g+h+i+j+k+l);' +
-            '}' +
-            '</' + 'script' + '>' +
             '</' + 'head' + '>' +
             '<' + 'body' + '>');
         return {
@@ -1899,7 +1896,7 @@ var persistence;
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<!--total 3376Kb, saved 30 Jun 2015 23:31:02.795 GMT+0100-->
+<!--total 3378Kb, saved 1 Jul 2015 00:06:11.796 GMT+0100-->
 
 <!-- /shell/showCommander.js
 var isolation;
@@ -3031,7 +3028,7 @@ var nobrowser;
 var shell;
 (function (shell) {
     var CommanderShell = (function () {
-        function CommanderShell(_host, _drive) {
+        function CommanderShell(_host, _drive, complete) {
             var _this = this;
             this._host = _host;
             this._drive = _drive;
@@ -3155,7 +3152,9 @@ var shell;
             };
             applyConsole(_glob);
             applyConsole(window);
-            this._terminal.log([new Date(this._drive.timestamp)]);
+            setTimeout(function () {
+                _this._terminal.writeDirect(complete());
+            }, 1);
         }
         CommanderShell.prototype.measure = function () {
             this._metrics.emWidth = this._metricElem.offsetWidth / 8;
@@ -4568,7 +4567,7 @@ var shell;
 })(shell || (shell = {}));
 var shell;
 (function (shell) {
-    setTimeout(function () {
+    function start(complete) {
         var drive = require('nodrive');
         var parentWin = require('nowindow');
         parentWin.document.body.background = 'black';
@@ -4576,8 +4575,9 @@ var shell;
             parentWin.document.parentElement.body.background = 'black';
         document.body.style.overflow = 'hidden';
         document.body.parentElement.style.overflow = 'hidden';
-        var commander = new shell.CommanderShell(document.body, drive);
-    }, 1);
+        var commander = new shell.CommanderShell(document.body, drive, complete);
+    }
+    shell.start = start;
 })(shell || (shell = {}));
 var shell;
 (function (shell) {
@@ -4594,12 +4594,19 @@ var shell;
                 this._history = elem('div', { className: 'terminal-history' }, this._host);
                 this._historyContent = elem('pre', {
                     className: 'terminal-history-content',
-                    text: 'Hello world from mini-shell\n\nVersion 0.7s\nJune 2015\nOleg Mihailik\n\nPlease be careful.'
+                    text: 'Hello world from mini-shell\n\nVersion 0.7s\n' + shell.buildMessage + '\nOleg Mihailik\n\nPlease be careful.'
                 }, this._history);
                 this._prompt = elem('div', { className: 'terminal-prompt', text: '>' }, this._host);
                 this._input = elem('textarea', { className: 'terminal-input', autofocus: true }, this._host);
                 setTimeout(function () { return _this._input.focus(); }, 1);
             }
+            Terminal.prototype.writeDirect = function (text) {
+                elem('div', { text: text, opacity: 0.4 }, this._historyContent);
+                if (this._hostMetrics) {
+                    this.measure();
+                    this.arrange(this._hostMetrics);
+                }
+            };
             Terminal.prototype.log = function (args) {
                 terminal.log(args, this._historyContent);
                 if (this._hostMetrics) {
@@ -4822,6 +4829,50 @@ var shell;
     })(terminal = shell.terminal || (shell.terminal = {}));
 })(shell || (shell = {}));
 
+-->
+
+<!-- /shell/buildMessage.js
+
+var shell;
+if (!shell) shell = {};
+shell.buildMessage = 'Built at 1 Jul 2015 00:06:11.798 GMT+0100';
+
+shell.buildTime = 1435705571799;
+-->
+
+<!-- /shell/!onerror.js
+window.__boot_times = window.__boot_times || {};
+window.__boot_times.onerror_start = +new Date();
+
+window.onerror = function onerror() {
+
+  var msg = [];
+  for (var i = 0; i < arguments.length; i++) {
+    var a = arguments[i];
+    if (a && (typeof a === 'object')) {
+
+      if (a.stack) {
+        msg.push(a.stack);
+      }
+      else {
+        var msg1 = [];
+        for (var k in a) {
+          var r = a[k];
+          if (typeof r === 'function' || (typeof r === 'object' && !r)) continue;
+          msg1.push(k+':'+r);
+        }
+        msg.push(msg1.join(', '));
+      }
+    }
+    else {
+      msg.push(a===null ? 'null' : a);
+    }
+
+  }
+
+  alert(msg.join('\n'));
+
+}
 -->
 
 <!-- /empty/
@@ -9273,8 +9324,6 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
       if (uiframe.document.close)
       	uiframe.document.close();
 
-      boot.api.title('Completed: ' + progressText('ui') + ' ' + new Date(drive.timestamp), 0.99);
-
       function shell_require(moduleName): any {
         switch (moduleName) {
           case 'nowindow': return window;
@@ -9364,27 +9413,34 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
         return metrics;
       }
 
-      var start = new Date().valueOf();
-      var fadeintTime = Math.min(500, ((+new Date()) - boot.bootStartTime) * 0.9);
-      var animateFadeIn = setInterval(function() {
-        var passed = new Date().valueOf() - start;
-        var opacity = Math.min(passed, fadeintTime) / fadeintTime;
-        boot.iframe.style.opacity = (1 - opacity).toString();
-        if (uiframe.iframe.style.filter)
-        	boot.iframe.style.filter = 'alpha(opacity=' + ((opacity * 100) | 0) + ')';
-        uiframe.iframe.style.opacity = '1';
+      boot.api.title('Preloaded: ' + progressText('ui'), 0.98);
 
-        uiframe.iframe.style.filter = 'alpha(opacity=100)';
+      (<any>uiframe.global).shell.start(() => {
+        var msg = 'Completed: ' + progressText('ui');
+        boot.api.title(msg, 0.99);
 
-        if (passed >= fadeintTime) {
-          clearInterval(animateFadeIn);
-          if (boot.iframe.parentElement) // old Opera may keep firing even after clearInterval
-            boot.iframe.parentElement.removeChild(boot.iframe);
-        }
-      }, 10);
+        var start = new Date().valueOf();
+        var fadeintTime = Math.min(500, ((+new Date()) - boot.bootStartTime) * 0.9);
+        var animateFadeIn = setInterval(function() {
+          var passed = new Date().valueOf() - start;
+          var opacity = Math.min(passed, fadeintTime) / fadeintTime;
+          boot.iframe.style.opacity = (1 - opacity).toString();
+          if (uiframe.iframe.style.filter)
+            boot.iframe.style.filter = 'alpha(opacity=' + ((opacity * 100) | 0) + ')';
+          uiframe.iframe.style.opacity = '1';
 
-      //if (typeof console !== 'undefined' && console.log)
-      //  console.log(window['dbgDrive'] = drive);
+          uiframe.iframe.style.filter = 'alpha(opacity=100)';
+
+          if (passed >= fadeintTime) {
+            clearInterval(animateFadeIn);
+            if (boot.iframe.parentElement) // old Opera may keep firing even after clearInterval
+              boot.iframe.parentElement.removeChild(boot.iframe);
+          }
+        }, 10);
+
+        return msg;
+      });
+
 
     });
 
@@ -9414,12 +9470,6 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
       '*,*:before,*:after{box-sizing:inherit;}' +
       'html{box-sizing:border-box;}' +
       '</' + 'style' + '>\n' +
-      '<'+'script'+'>'+
-      'window.onerror = function(a,b,c,d,e,f,g,h,i,j,k,l) {\n'+
-      '  if (window.__onerror) window.__onerror(a,b,c,d,e,f,g,h,i,j,k,l);\n'+
-      '  else alert(a+b+c+d+e+f+g+h+i+j+k+l);'+
-      '}'+
-      '</'+'script'+'>'+
       '</'+'head'+'>'+
       '<' + 'body' + '>');
 
@@ -17169,7 +17219,7 @@ module shell.terminal {
       this._history = <any>elem('div', { className: 'terminal-history' }, this._host);
       this._historyContent = <any>elem('pre', {
         className: 'terminal-history-content',
-        text: 'Hello world from mini-shell\n\nVersion 0.7s\nJune 2015\nOleg Mihailik\n\nPlease be careful.'
+        text: 'Hello world from mini-shell\n\nVersion 0.7s\n'+shell.buildMessage+'\nOleg Mihailik\n\nPlease be careful.'
       }, this._history);
 
       this._prompt = <any>elem('div', { className: 'terminal-prompt', text: '>' }, this._host);
@@ -17178,6 +17228,15 @@ module shell.terminal {
 
       setTimeout(() => this._input.focus(), 1);
 
+    }
+
+  	writeDirect(text: string) {
+      elem('div', { text, opacity: 0.4 }, this._historyContent);
+
+      if (this._hostMetrics) {
+        this.measure();
+        this.arrange(this._hostMetrics);
+      }
     }
 
     log(args: any[]) {
@@ -17479,7 +17538,7 @@ module shell {
 
     private _fnKeys: HTMLElement[] = [];
 
-    constructor(private _host: HTMLElement, private _drive: persistence.Drive) {
+    constructor(private _host: HTMLElement, private _drive: persistence.Drive, complete: () => string) {
 
       this._repl = new noapi.HostedProcess({
         window: window,
@@ -17598,7 +17657,10 @@ module shell {
 
       applyConsole(_glob);
       applyConsole(window);
-      this._terminal.log([new Date(this._drive.timestamp)]);
+
+      setTimeout(() => {
+        this._terminal.writeDirect(complete());
+      }, 1);
     }
 
     measure() {
@@ -18161,7 +18223,10 @@ declare var require;
 
 module shell {
 
-  setTimeout(() => {
+  export var buildTime: number;
+  export var buildMessage: string;
+
+  export function start(complete: () => string) {
     var drive = require('nodrive');
     var parentWin = require('nowindow');
     parentWin.document.body.background = 'black';
@@ -18171,10 +18236,10 @@ module shell {
     document.body.style.overflow = 'hidden';
     document.body.parentElement.style.overflow = 'hidden';
 
-    var commander = new CommanderShell(document.body, drive);
+    var commander = new CommanderShell(document.body, drive, complete);
 
-}, 1);
-  
+}
+
 }
 -->
 <!-- /src/typescript/lib.d.ts
@@ -61541,6 +61606,43 @@ function num2(n) { return n <= 9 ? '0' + n : '' + n; }
 
 <*!-- /shell/showCommander.js
 <%=typescriptBuild('shell/*', 'noapi/*', 'isolation/*',   'boot/base.d.ts', 'persistence/Drive.ts', 'typings/*')%>
+--*>
+
+<*!-- /shell/buildMessage.js
+
+var shell;
+if (!shell) shell = {};
+shell.buildMessage = 'Built at <%=(function() {
+
+var monthsPrettyCase = ('Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec').split('|');
+
+var saveDate = new Date();
+var dtText =
+  saveDate.getDate() + ' ' +
+  monthsPrettyCase[saveDate.getMonth()] + ' ' +
+  saveDate.getFullYear() + ' ' +
+  num2(saveDate.getHours()) + ':' +
+  num2(saveDate.getMinutes()) + ':' +
+  num2(saveDate.getSeconds()) + '.' +
+  (+saveDate).toString().slice(-3);
+
+var saveDateLocalStr = saveDate.toString();
+var gmtMatch = (/(GMT\s*[\-\+]\d+(\:\d+)?)/i).exec(saveDateLocalStr);
+if (gmtMatch)
+	dtText += ' ' + gmtMatch[1];
+
+return dtText;
+
+function num2(n) { return n <= 9 ? '0' + n : '' + n; }
+
+})()
+%>';
+
+shell.buildTime = <%=+new Date()%>;
+--*>
+
+<*!-- /shell/!onerror.js
+<%=embedFile('/boot/onerror.js')%>
 --*>
 
 <*!-- /empty/
