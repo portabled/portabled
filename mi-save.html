@@ -526,23 +526,31 @@ function shellLoader(uniqueKey, document, boot) {
             boot.api.title('Loaded: ' + progressText('ui'), 0.95);
             global_resize_delayed();
             try {
-                var uibase = window['base'](uiframe.global);
-                window['elem'] = uibase.elem;
-                var showCommanderJS = drive.read('/shell/showCommander.js');
-                var showCommanderText = "(function() {\nreturn showCommanderInContext;\nfunction showCommanderInContext(drive, window, document, require) {\n" + showCommanderJS + "\n  showCommander(drive);\n} })() //# sourceURL=/shell/showCommander.js ";
-                var showCommanderInContext = uiframe.evalFN(showCommanderText);
-                showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
+                var files = drive.files();
+                var shellScripts = [];
+                for (var i = 0; i < files.length; i++) {
+                    if (!/^\/shell\//.test(files[i]))
+                        continue;
+                    var content = drive.read(files[i]);
+                    if (/\.js$/.test(files[i])) {
+                        uiframe.document.write('<' + 'script' + '>' + content + ' //# sourceURL=' + files[i] + '</' + 'script' + '>');
+                    }
+                    else if (/\.css$/.test(files[i])) {
+                        uiframe.document.write('<' + 'style' + ' type="text/css">' + content + ' //# sourceURL=' + files[i] + '</' + 'style' + '>');
+                    }
+                }
             }
             catch (error) {
                 alert('Shell initialisation failed ' + error.message + '\n' + error.stack + '\n' + error);
             }
+            if (uiframe.document.close)
+                uiframe.document.close();
             boot.api.title('Completed: ' + progressText('ui') + ' ' + new Date(drive.timestamp), 0.99);
             function shell_require(moduleName) {
                 switch (moduleName) {
-                    case 'window': return window;
-                    case 'document': return document;
-                    case 'ui': return uiframe;
-                    case 'drive': return drive;
+                    case 'nowindow': return window;
+                    case 'noui': return uiframe;
+                    case 'nodrive': return drive;
                     case 'resize': return { on: onresize, off: offresize };
                     case 'timings': return timings;
                 }
@@ -631,6 +639,37 @@ function shellLoader(uniqueKey, document, boot) {
             //if (typeof console !== 'undefined' && console.log)
             //  console.log(window['dbgDrive'] = drive);
         });
+    }
+    function createFrame() {
+        var ifr = elem('iframe', {
+            position: 'absolute',
+            left: 0, top: 0,
+            width: '100%', height: '100%',
+            border: 'none',
+            src: 'about:blank'
+        }, window.document.body);
+        var ifrwin = ifr.contentWindow || ifr.window;
+        var ifrdoc = ifrwin.document;
+        ifrdoc.write('<!' + 'doctype html' + '>' +
+            '<' + 'html' + '>' +
+            '<' + 'head' + '><' + 'style' + '>' +
+            'body,html{margin:0;padding:0;border:none;height:100%;border:none;background:black;}' +
+            '*,*:before,*:after{box-sizing:inherit;}' +
+            'html{box-sizing:border-box;}' +
+            '</' + 'style' + '>\n' +
+            '<' + 'script' + '>' +
+            'window.onerror = function(a,b,c,d,e,f,g,h,i,j,k,l) {\n' +
+            '  if (window.__onerror) window.__onerror(a,b,c,d,e,f,g,h,i,j,k,l);\n' +
+            '  else alert(a+b+c+d+e+f+g+h+i+j+k+l);' +
+            '}' +
+            '</' + 'script' + '>' +
+            '</' + 'head' + '>' +
+            '<' + 'body' + '>');
+        return {
+            document: ifrdoc,
+            global: ifrwin,
+            iframe: ifr
+        };
     }
 }
 var persistence;
@@ -1847,7 +1886,7 @@ var persistence;
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<!--total 3362Kb, saved 29 Jun 2015 22:08:01.706 GMT+0100-->
+<!--total 3364Kb, saved 29 Jun 2015 23:22:10.788 GMT+0100-->
 
 <!-- /shell/showCommander.js
 var isolation;
@@ -3321,8 +3360,8 @@ var CommanderShell = (function () {
         }
     };
     CommanderShell.prototype._exportAllHTML = function () {
-        var window = require('window');
-        var document = require('document');
+        var window = require('nowindow');
+        var document = window.document;
         this._terminal.log(['@save']);
         var filename = saveFileName();
         exportBlob(filename, ['<!doctype html>\n', document.documentElement.outerHTML]);
@@ -4461,6 +4500,10 @@ function showCommander(drive) {
     elem('style', { text: styleText }, document.body);
     var commander = new CommanderShell(document.body, drive);
 }
+setTimeout(function () {
+    var drive = require('nodrive');
+    showCommander(drive);
+}, 1);
 var terminal;
 (function (terminal) {
     var Terminal = (function () {
@@ -9120,32 +9163,33 @@ function shellLoader(uniqueKey: string, document: Document, boot: shellLoader.Bo
       global_resize_delayed();
 
       try {
-        var uibase = window['base'](uiframe.global);
-        window['elem'] = uibase.elem;
-        var showCommanderJS = drive.read('/shell/showCommander.js');
-        var showCommanderText =
-`(function() {
-return showCommanderInContext;
-function showCommanderInContext(drive, window, document, require) {
-`+showCommanderJS+`
-  showCommander(drive);
-} })() //# sourceURL=/shell/showCommander.js `;
-        var showCommanderInContext = uiframe.evalFN(showCommanderText);
-
-        showCommanderInContext(drive, uiframe.global, uiframe.document, shell_require);
+        var files = drive.files();
+        var shellScripts: string[] = [];
+        for (var i = 0; i < files.length; i++) {
+          if (!/^\/shell\//.test(files[i])) continue;
+          var content = drive.read(files[i]);
+          if (/\.js$/.test(files[i])) {
+            uiframe.document.write('<' + 'script' + '>' + content + ' //# sourceURL=' + files[i] + '</' + 'script' + '>');
+          }
+          else if (/\.css$/.test(files[i])) {
+            uiframe.document.write('<' + 'style' + ' type="text/css">' + content + ' //# sourceURL=' + files[i] + '</' + 'style' + '>');
+          }
+        }
       }
       catch (error) {
         alert('Shell initialisation failed ' + error.message+'\n'+error.stack+'\n'+error);
       }
 
+      if (uiframe.document.close)
+      	uiframe.document.close();
+
       boot.api.title('Completed: ' + progressText('ui') + ' ' + new Date(drive.timestamp), 0.99);
 
       function shell_require(moduleName): any {
         switch (moduleName) {
-          case 'window': return window;
-          case 'document': return document;
-          case 'ui': return uiframe;
-          case 'drive': return drive;
+          case 'nowindow': return window;
+          case 'noui': return uiframe;
+          case 'nodrive': return drive;
           case 'resize': return { on: onresize, off: offresize };
           case 'timings': return timings;
         }
@@ -9246,6 +9290,46 @@ function showCommanderInContext(drive, window, document, require) {
 
   }
 
+  function createFrame() {
+
+    var ifr = <HTMLIFrameElement>elem(
+      'iframe',
+      {
+        position: 'absolute',
+        left: 0, top: 0,
+        width: '100%', height: '100%',
+        border: 'none',
+        src: 'about:blank'
+      },
+      window.document.body);
+
+    var ifrwin: Window = ifr.contentWindow || (<any>ifr).window;
+    var ifrdoc = ifrwin.document;
+
+    ifrdoc.write(
+      '<*!' + 'doctype html' + '>' +
+      '<' + 'html' + '>' +
+      '<' + 'head' + '><' + 'style' + '>' +
+      'body,html{margin:0;padding:0;border:none;height:100%;border:none;background:black;}' +
+      '*,*:before,*:after{box-sizing:inherit;}' +
+      'html{box-sizing:border-box;}' +
+      '</' + 'style' + '>\n' +
+      '<'+'script'+'>'+
+      'window.onerror = function(a,b,c,d,e,f,g,h,i,j,k,l) {\n'+
+      '  if (window.__onerror) window.__onerror(a,b,c,d,e,f,g,h,i,j,k,l);\n'+
+      '  else alert(a+b+c+d+e+f+g+h+i+j+k+l);'+
+      '}'+
+      '</'+'script'+'>'+
+      '</'+'head'+'>'+
+      '<' + 'body' + '>');
+
+    return {
+      document: ifrdoc,
+      global: ifrwin,
+      iframe: ifr
+    };
+
+  }
 }
 
 module shellLoader {
@@ -17662,8 +17746,8 @@ class CommanderShell {
   }
 
   private _exportAllHTML() {
-    var window = require('window');
-    var document = require('document');
+    var window = require('nowindow');
+    var document = window.document;
 
     this._terminal.log(['@save']);
     var filename = saveFileName();
@@ -17934,6 +18018,11 @@ function showCommander(drive: persistence.Drive) {
   elem('style', { text: styleText }, document.body);
   var commander = new CommanderShell(document.body, drive);
 }
+
+setTimeout(() => {
+  var drive = require('nodrive');
+  showCommander(drive);
+}, 1);
 -->
 <!-- /src/typescript/lib.d.ts
 /*! *****************************************************************************
