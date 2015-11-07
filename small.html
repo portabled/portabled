@@ -1,5 +1,5 @@
 <!doctype html>
-<html style="overflow: hidden; color: black; width: 1366px; height: 634px; background: black;"><head><meta charset="utf-8">
+<html style="overflow: hidden; color: black; background: black;"><head><meta charset="utf-8">
 <title>mini shell </title>
 
 <script data-legit="mi">
@@ -36,11 +36,6 @@ window.onerror = function onerror() {
   alert(msg.join('\n'));
 
 }
-
-
-
-
-
 //# sourceURL=boot/onerror.js
 </script>
 
@@ -50,13 +45,15 @@ window.onerror = function onerror() {
   earlyBoot(window);
 
   	function base(window) {
+    var frsz = fitresize();
     return {
         getText: getText,
         setText: setText,
         elem: elem,
         on: on, off: off,
         createFrame: createFrame,
-        apply: apply
+        apply: apply,
+        fitresize: frsz
     };
     function apply() {
         window.getText = getText;
@@ -65,6 +62,7 @@ window.onerror = function onerror() {
         window.on = on;
         window.off = off;
         window.createFrame = createFrame;
+        window.fitresize = frsz;
     }
     function getText(obj) {
         if (typeof obj === 'function') {
@@ -279,9 +277,110 @@ window.onerror = function onerror() {
             window.onerror.apply(window, arguments);
         }
     }
+    function fitresize() {
+        var needResize = false;
+        var fitFrameList = [];
+        var newSize = {
+            windowWidth: 0,
+            windowHeight: 0,
+            scrollX: 0,
+            scrollY: 0
+        };
+        on(window, 'scroll', global_resize_detect);
+        on(window, 'resize', global_resize_detect);
+        if (window.document) {
+            var body = window.document.body;
+            var docElem;
+            if (docElem = window.document.documentElement || (body ? body.parentElement || body.parentNode : null)) {
+                on(docElem, 'resize', global_resize_detect);
+                on(docElem, 'scroll', global_resize_detect);
+            }
+            if (body) {
+                on(body, 'resize', global_resize_detect);
+                on(body, 'scroll', global_resize_detect);
+            }
+        }
+        var state = {
+            fitframe: fitframe,
+            windowWidth: 0,
+            windowHeight: 0,
+            scrollX: 0,
+            scrollY: 0,
+            onresize: null
+        };
+        getMetrics(state);
+        return state;
+        function fitframe(frame) {
+            var frdoc = frame.document || frame.contentDocument || (frame.contentWindow ? frame.contentWindow.document : null);
+            var frbody = frdoc ? frdoc.body : null;
+            var frwindow = frame.contentWindow || frame.contentWindow;
+            var docs = [frdoc, frbody, frwindow];
+            var events = ['touchstart', 'touchmove', 'touchend', 'pointerdown', 'pointerup', 'pointerout', 'keydown', 'keyup'];
+            for (var i = 0; i < docs.length; i++) {
+                if (!docs[i])
+                    continue;
+                for (var j = 0; j < events.length; j++) {
+                    on(docs[i], events[j], global_resize_detect);
+                }
+            }
+            fitFrameList.push(frame);
+            global_resize_detect();
+        }
+        function global_resize_detect() {
+            if (needResize)
+                return;
+            needResize = true;
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(check_resize_now);
+            }
+            else {
+                setTimeout(check_resize_now, 5);
+            }
+        }
+        function getMetrics(metrics) {
+            metrics.windowWidth = window.innerWidth || (document.body ? (document.body.parentElement ? document.body.parentElement.clientWidth : 0) || document.body.clientWidth : null);
+            metrics.windowHeight = window.innerHeight || (document.body ? (document.body.parentElement ? document.body.parentElement.clientHeight : 0) || document.body.clientHeight : null);
+            metrics.scrollX = window.scrollX || window.pageXOffset || (document.body ? document.body.scrollLeft || (document.body.parentElement ? document.body.parentElement.scrollLeft : 0) || 0 : null);
+            metrics.scrollY = window.scrollY || window.pageYOffset || (document.body ? document.body.scrollTop || (document.body.parentElement ? document.body.parentElement.scrollTop : 0) || 0 : null);
+        }
+        function check_resize_now() {
+            getMetrics(newSize);
+            if (newSize.windowWidth === state.windowWidth
+                && newSize.windowHeight === state.windowHeight
+                && newSize.scrollX === state.scrollX
+                && newSize.scrollY === state.scrollY) {
+                needResize = false;
+                return;
+            }
+            apply_new_size_now();
+            needResize = false;
+        }
+        function apply_new_size_now() {
+            state.windowWidth = newSize.windowWidth;
+            state.windowHeight = newSize.windowHeight;
+            state.scrollX = newSize.scrollX;
+            state.scrollY = newSize.scrollY;
+            var wpx = state.windowWidth + 'px';
+            var hpx = state.windowHeight + 'px';
+            var xpx = state.scrollX + 'px';
+            var ypx = state.scrollY + 'px';
+            for (var i = 0; i < fitFrameList.length; i++) {
+                var fr = fitFrameList[i];
+                if (!fr.parentElement && !fr.parentNode)
+                    continue;
+                fr.style.left = xpx;
+                fr.style.top = ypx;
+                fr.style.width = wpx;
+                fr.style.height = hpx;
+            }
+            if (state.onresize)
+                state.onresize();
+        }
+    }
 }
 function earlyBoot(window) {
-    base(window).apply();
+    var ba = base(window);
+    ba.apply();
     window.__boot_times.earlyBootStart = (+new Date());
     document.write('<' + 'style' + ' data-legit=mi>' +
         '*{display:none;background:black;color:black;}' +
@@ -304,6 +403,7 @@ function earlyBoot(window) {
     var bootFrame = createFrame();
     bootFrame.iframe.style.zIndex = 2000;
     bootFrame.iframe.style.display = 'block';
+    fitresize.fitframe(bootFrame.iframe);
     base(bootFrame.global).apply();
     var bootUI = window.bootUI;
     var bootAPI = bootUI(bootFrame.document, bootFrame.global, { elem: bootFrame.global.elem });
@@ -469,13 +569,8 @@ function earlyBoot(window) {
     }
   };
 }
-
-
-
-
-
 //# sourceURL=/boot/base.js
-</script></head><body background="black" style="height: 634px; margin: 0px; padding: 0px; overflow: hidden; color: black; width: 1366px; background: black;">
+</script></head><body background="black" style="height: 100%; margin: 0px; padding: 0px; overflow: hidden; color: black; background: black;">
 
 
 <script data-legit="mi">
@@ -483,6 +578,7 @@ function earlyBoot(window) {
   // LOADER
 //declare var showCommanderInContext;
 function shellLoader(uniqueKey, document, boot) {
+    var resizeHandlers = [];
     var driveMount = persistence.bootMount(uniqueKey, document);
     return continueLoading();
     function continueLoading() {
@@ -495,7 +591,20 @@ function shellLoader(uniqueKey, document, boot) {
     var prevStageStart;
     var prevTimeText;
     function progressText(stage) {
-        var fileText = driveMount.loadedFileCount + ' (' + driveMount.totalSize + ' total)';
+        function formatSize(size) {
+            var totalSize = size | 0;
+            if (totalSize < 1024 * 4) {
+                totalSize += 'b';
+            }
+            else if (totalSize < 1024 * 1024) {
+                totalSize = Math.round(totalSize / 1024) + 'Kb';
+            }
+            else {
+                totalSize = Math.round(totalSize / 1024 / 1024 * 10) / 10 + 'Mb';
+            }
+            return totalSize;
+        }
+        var fileText = driveMount.loadedFileCount + ' (' + formatSize(driveMount.loadedSize) + ' of ' + formatSize(driveMount.totalSize) + ')';
         var now = +new Date();
         if (!prevStage) {
             timings = [
@@ -517,12 +626,13 @@ function shellLoader(uniqueKey, document, boot) {
             return fileText + prevTimeText;
         }
         else {
-            return fileText + prevTimeText + ' ' + prevStage + ' ' + (now - prevStageStart) + 'ms';
+            return fileText + prevTimeText + ' ' + prevStage + ' ' + Math.round((now - prevStageStart) / 100) / 10 + 's';
         }
     }
     function finishLoading() {
         boot.api.title('Loading modifications: ' + progressText('local'), 0.85);
         driveMount.finishLoading(function (drive) {
+            var ts = drive.timestamp;
             if (typeof boot.api.drive === 'function') {
                 boot.api.drive(drive);
             }
@@ -532,27 +642,17 @@ function shellLoader(uniqueKey, document, boot) {
             uiframe.iframe.style.filter = 'alpha(opacity=0)';
             var uiframeBase = window.base(uiframe.global);
             uiframeBase.apply();
-            var wasResized = false;
-            var resizeHandlers = [];
-            on(window, 'scroll', global_resize_detect);
-            on(window, 'resize', global_resize_detect);
-            on(document.body, 'resize', global_resize_detect);
-            on(document.body, 'scroll', global_resize_detect);
-            if (document.documentElement)
-                on(document.documentElement, 'resize', global_resize_detect);
-            if (document.documentElement)
-                on(document.documentElement, 'scroll', global_resize_detect);
-            on(uiframe.document.body, 'touchstart', global_resize_detect);
-            on(uiframe.document.body, 'touchmove', global_resize_detect);
-            on(uiframe.document.body, 'touchend', global_resize_detect);
-            on(uiframe.document.body, 'pointerdown', global_resize_detect);
-            on(uiframe.document.body, 'pointerup', global_resize_detect);
-            on(uiframe.document.body, 'pointerout', global_resize_detect);
-            on(uiframe.document.body, 'keydown', global_resize_detect);
-            on(uiframe.document.body, 'keyup', global_resize_detect);
+            fitresize.fitframe(uiframe.iframe);
+            fitresize.onresize = function () {
+                var met = metricsOnly();
+                for (var i = 0; i < resizeHandlers.length; i++) {
+                    var h = resizeHandlers[i];
+                    if (h)
+                        h(met);
+                }
+            };
             uiframe.global.require = shell_require;
             boot.api.title('Loaded: ' + progressText('ui'), 0.95);
-            global_resize_delayed();
             // TODO: do this concurrently with drive loading
             try {
                 var indexHTML = drive.read('/shell/index.html');
@@ -590,11 +690,11 @@ function shellLoader(uniqueKey, document, boot) {
                     glo.shell.start(shellComplete);
                 }
                 else {
-                    setTimeout(checkShellCompleteOrWait, 10);
+                    setTimeout(checkShellCompleteOrWait, 50);
                 }
             }
             function shellComplete() {
-                var msg = 'Completed: ' + progressText('ui');
+                var msg = 'Completed: ' + progressText('ui') + '\n  *edited on ' + new Date(ts);
                 boot.api.title(msg, 0.99);
                 var start = new Date().valueOf();
                 var fadeintTime = Math.min(500, ((+new Date()) - boot.bootStartTime) * 0.9);
@@ -629,6 +729,7 @@ function shellLoader(uniqueKey, document, boot) {
                 if (typeof handler !== 'function')
                     return;
                 resizeHandlers.push(handler);
+                handler(metricsOnly());
             }
             function offresize(handler) {
                 if (typeof handler !== 'function')
@@ -639,67 +740,15 @@ function shellLoader(uniqueKey, document, boot) {
                     }
                 }
             }
-            function global_resize_detect() {
-                if (wasResized)
-                    return;
-                wasResized = true;
-                if (typeof requestAnimationFrame === 'function') {
-                    requestAnimationFrame(global_resize_delayed);
-                }
-                else {
-                    setTimeout(global_resize_delayed, 5);
-                }
-            }
-            var lastMetrics = null;
-            var lastScroll = null;
-            function global_resize_delayed() {
-                var scrollPos = getScroll();
-                if (!lastScroll || (scrollPos.x !== lastScroll.x || scrollPos.y !== lastScroll.y)) {
-                    lastScroll = scrollPos;
-                    uiframe.iframe.style.left = scrollPos.x + 'px';
-                    uiframe.iframe.style.top = scrollPos.y + 'px';
-                }
-                wasResized = false;
-                var metrics = getMetrics();
-                if (!lastMetrics || (metrics.windowWidth !== lastMetrics.windowWidth
-                    || metrics.windowHeight !== lastMetrics.windowHeight)) {
-                    lastMetrics = metrics;
-                    var w = metrics.windowWidth + 'px';
-                    var h = metrics.windowHeight + 'px';
-                    if (boot && boot.iframe) {
-                        boot.iframe.style.width = w;
-                        boot.iframe.style.height = h;
-                    }
-                    if (uiframe) {
-                        uiframe.iframe.style.width = w;
-                        uiframe.iframe.style.height = h;
-                    }
-                    document.body.style.width = w;
-                    document.body.style.height = h;
-                    if (document.body.parentElement) {
-                        document.body.parentElement.style.width = w;
-                        document.body.parentElement.style.height = h;
-                    }
-                    for (var i = 0; i < resizeHandlers.length; i++) {
-                        var f = resizeHandlers[i];
-                        if (f)
-                            f(metrics);
-                    }
-                }
-            }
-            function getScroll() {
-                var x = window.scrollX || window.pageXOffset || document.body.scrollLeft || (document.body.parentElement ? document.body.parentElement.scrollLeft : 0) || 0;
-                var y = window.scrollY || window.pageYOffset || document.body.scrollTop || (document.body.parentElement ? document.body.parentElement.scrollTop : 0) || 0;
-                return { x: x, y: y };
-            }
-            function getMetrics() {
-                var metrics = {
-                    windowWidth: window.innerWidth || (document.body.parentElement ? document.body.parentElement.clientWidth : 0) || document.body.clientWidth,
-                    windowHeight: window.innerHeight || (document.body.parentElement ? document.body.parentElement.clientHeight : 0) || document.body.clientHeight
-                };
-                return metrics;
-            }
         });
+        function metricsOnly() {
+            return {
+                windowWidth: fitresize.windowWidth,
+                windowHeight: fitresize.windowHeight,
+                scrollX: fitresize.scrollX,
+                scrollY: fitresize.scrollY
+            };
+        }
     }
     function createFrame() {
         var ifr = elem('iframe', {
@@ -1671,7 +1720,7 @@ var persistence;
                         // 25 Apr 2015 22:52:01.231
                         try {
                             var savedDay = parseInt(savedMatch[1]);
-                            var savedMonth = monthsUpperCase.indexOf(savedMatch[2].toUpperCase());
+                            var savedMonth = indexOf(monthsUpperCase, savedMatch[2].toUpperCase());
                             var savedYear = parseInt(savedMatch[3]);
                             if (savedYear < 100)
                                 savedYear += 2000; // no 19xx notation anymore :-(
@@ -1728,6 +1777,15 @@ var persistence;
             return DOMTotals;
         })();
         dom.DOMTotals = DOMTotals;
+        function indexOf(array, item) {
+            if (array.indexOf)
+                return array.indexOf(item);
+            for (var i = 0; i < array.length; i++) {
+                if (array[i] === item)
+                    return i;
+            }
+            return -1;
+        }
     })(dom = persistence.dom || (persistence.dom = {}));
 })(persistence || (persistence = {}));
 var persistence;
@@ -2007,7 +2065,7 @@ var persistence;
 //# sourceURL=/load/shellLoader.ts.js
 </script>
 
-<!--total 29Mb, saved 1 Nov 2015 17:29:22.092 GMT+0000-->
+<!--total 29Mb, saved 7 Nov 2015 09:27:11.535 GMT+0000-->
 
 <!-- /shell/showCommander.js
 var isolation;
@@ -3264,6 +3322,7 @@ var shell;
             this._host = _host;
             this._originalDrive = _originalDrive;
             this._editor = null;
+            this._savedPosns = {};
             var wrappedDrive = persistence.trackChanges(this._originalDrive);
             this._drive = wrappedDrive.drive;
             wrappedDrive.onchanges = function (changedFiles) { return _this._onDriveChange(changedFiles); };
@@ -3271,13 +3330,15 @@ var shell;
                 window: window,
                 drive: this._drive,
                 scriptPath: '/node_modules/repl.js',
-                console: { log: function () {
+                console: {
+                    log: function () {
                         var args = [];
                         for (var _i = 0; _i < arguments.length; _i++) {
                             args[_i - 0] = arguments[_i];
                         }
-                        return _this._terminal.log(args);
-                    } }
+                        _this._terminal.log(args);
+                    }
+                }
             });
             this._enhanceNoprocess(this._repl);
             this._replAlive = this._repl.keepAlive();
@@ -3414,7 +3475,11 @@ var shell;
                 return true;
             if (e.altKey || e.metaKey) {
                 if (e.keyCode === ('E').charCodeAt(0) && cursorPath) {
-                    this._openEditor(cursorPath);
+                    return this._openEditor(cursorPath);
+                }
+                if (e.keyCode === ('S').charCodeAt(0)) {
+                    shell.actions.save();
+                    return true;
                 }
             }
         };
@@ -3429,6 +3494,9 @@ var shell;
             return true;
         };
         CommanderShell.prototype._closeEditor = function () {
+            var pos = this._editor.getPosition ? this._editor.getPosition() : null;
+            if (pos)
+                this._savedPosns[this._twoPanels.cursorPath()] = pos;
             this._editor.close();
             this._editor = null;
             this.measure();
@@ -3438,6 +3506,7 @@ var shell;
             var _this = this;
             if (!cursorPath)
                 return false;
+            var posn = this._savedPosns[cursorPath];
             var handlerList = [];
             for (var k in shell.handlers)
                 if (shell.handlers.hasOwnProperty(k)) {
@@ -3453,11 +3522,15 @@ var shell;
                     return false;
                 _this._editor = ha.edit(cursorPath, _this._drive, _this._host);
                 if (_this._editor) {
+                    if (posn && _this._editor.setPosition)
+                        _this._editor.setPosition(posn);
                     // force relayout just in case
                     _this.measure();
                     _this.arrange();
                     _this._editor.requestClose = function () { return _this._closeEditor(); };
                     _this._terminal.writeDirect('@edit ' + cursorPath);
+                    if (posn && _this._editor.setPosition)
+                        _this._editor.setPosition(posn);
                     return true;
                 }
                 return false;
@@ -3678,131 +3751,46 @@ var shell;
             this._terminal.writeDirect('@build ' + cursorPath);
             var ani = this._twoPanels.temporarilyHidePanels();
             setTimeout(function () {
-                var htmlTemplate = _this._drive.read(cursorPath);
-                var blankWindow = window.open('', '_blank' + (+new Date()));
-                var pollUntil = (+new Date()) + 1000;
-                while (+new Date() < pollUntil) {
+                var ctx = shell.build.spawnWindowContext(cursorPath, 'Building ' + cursorPath, function () {
+                    var args = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        args[_i - 0] = arguments[_i];
+                    }
+                    return console.log.apply(args);
+                });
+                var blankWindow = ctx.blankWindow;
+                var proc = ctx.noprocess;
+                _this._enhanceNoprocess(proc);
+                shell.build.buildInContext(cursorPath, _this._drive, function (code) { return proc.eval(code); }, function () {
+                    var args = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        args[_i - 0] = arguments[_i];
+                    }
+                    _this._terminal.log(args);
                     try {
-                        var blankWindowDoc = blankWindow.document;
+                        blankWindow.log(args.join(' '));
                     }
-                    catch (error) { }
-                }
-                if (!blankWindowDoc) {
-                    alert('Cannot open a window to host the built document');
-                    ani();
-                    return;
-                }
-                blankWindow.document.open();
-                blankWindow.document.write([
-                    '<html><title>Building ' + cursorPath + '...</title>',
-                    '<style>',
-                    'html, body { background: black; color: greenyellow; }',
-                    'h2 { font-weight: 100; width: 40%; position: fixed; font-size: 200%; }',
-                    'pre { width: 50%; padding-left: 50%; opacity: 1; transition: opacity 1s; }',
-                    '</style>',
-                    '<h2>Building ' + cursorPath + '</h2>',
-                    '<' + 's' + 'cript>',
-                    'var textContentProp = "textContent" in document.createElement("pre") ? "textContent" : "innerText";',
-                    'var lastLogElem;',
-                    'function log(text) {',
-                    '  var logElem = document.createElement("pre");',
-                    '  logElem[textContentProp]=text;',
-                    '  document.body.appendChild(logElem);',
-                    '  logElem.scrollIntoView();',
-                    '  if (lastLogElem) {',
-                    '    lastLogElem.style.opacity = 0.5;',
-                    '  }',
-                    '  lastLogElem = logElem;',
-                    '}',
-                    '<' + '/' + 's' + 'cript>'].join('\n'));
-                blankWindow.document.close();
-                var currentBase = cursorPath.slice(0, cursorPath.lastIndexOf('/') + 1);
-                var restrictedDrive = _this._drive;
-                restrictedDrive = {
-                    timestamp: _this._drive.timestamp,
-                    files: function () {
-                        var fi = _this._drive.files();
-                        var result = [];
-                        for (var i = 0; i < fi.length; i++) {
-                            if (fi[i].length > currentBase.length && fi[i].slice(0, currentBase.length) === currentBase)
-                                result.push(fi[i].slice(currentBase.length - 1));
-                        }
-                        return result;
-                    },
-                    read: function (file) {
-                        if (file.charAt(0) === '/')
-                            file = file.slice(1);
-                        return _this._drive.read(currentBase + file);
-                    },
-                    write: function (file, content) {
-                        if (file.charAt(0) === '/')
-                            file = file.slice(1);
-                        _this._drive.write(file, content);
+                    catch (err) {
+                        _this._terminal.log(['cannot log messages to build window ', err.message]);
                     }
-                };
-                var buildScope = {
-                    portabled: { build: { processTemplate: { mainDrive: restrictedDrive } } },
-                    drive: restrictedDrive,
-                    embedFile: function (file) {
-                        var fullPath = file.charAt(0) === '/' ? file : currentBase + file;
-                        var result = _this._drive.read(fullPath);
-                        if (!result)
-                            throw new Error('File not found embedFile(' + file + ') at ' + fullPath);
-                        return result;
-                    },
-                    typescriptBuild: function () {
-                        var files = [];
-                        for (var _i = 0; _i < arguments.length; _i++) {
-                            files[_i - 0] = arguments[_i];
-                        }
-                        console.log('shell.build.typescriptBuild(', files, ', ', currentBase, ', ', _this._drive, ')');
-                        return shell.build.typescriptBuild(files, currentBase, _this._drive);
-                    }
-                };
-                try {
-                    var proc = new noapi.HostedProcess({
-                        window: blankWindow,
-                        drive: _this._drive,
-                        scriptPath: cursorPath,
-                        argv: [],
-                        console: {
-                            log: function () {
-                                var args = [];
-                                for (var _i = 0; _i < arguments.length; _i++) {
-                                    args[_i - 0] = arguments[_i];
-                                }
-                                _this._terminal.log(args);
-                                blankWindow.log(args.join(','));
-                            }
-                        }
-                    });
-                    _this._enhanceNoprocess(proc);
-                    shell.build.processTemplate(htmlTemplate, [buildScope], function (code) { return proc.eval(code); }, function (txt) {
-                        _this._terminal.log([txt]);
-                        blankWindow.log(txt);
-                    }, function (error, result) {
-                        if (error) {
-                            _this._terminal.log([error]);
-                            ani();
-                            return;
-                        }
-                        try {
-                            var blob = new Blob([result], { type: 'text/html' });
-                            var url = URL.createObjectURL(blob);
-                            blankWindow.location.replace(url);
-                        }
-                        catch (blobError) {
-                            blankWindow.document.open();
-                            blankWindow.document.write(result);
-                            blankWindow.document.close();
-                        }
+                }, function (error, html) {
+                    if (error) {
+                        _this._terminal.log([error]);
                         ani();
-                    }, function (action) { return setTimeout(action, 1); });
-                }
-                catch (errorProcessTemplate) {
+                        return;
+                    }
+                    try {
+                        var blob = new Blob([html], { type: 'text/html' });
+                        var url = URL.createObjectURL(blob);
+                        blankWindow.location.replace(url);
+                    }
+                    catch (blobError) {
+                        blankWindow.document.open();
+                        blankWindow.document.write(html);
+                        blankWindow.document.close();
+                    }
                     ani();
-                    _this._terminal.log([errorProcessTemplate, errorProcessTemplate.stack]);
-                }
+                });
             }, 1);
             this._terminal.storeAsHistory('@build ' + cursorPath);
             return true;
@@ -3845,7 +3833,8 @@ var shell;
                 normTargetDir = cursorPath.slice(0, cursorPath.lastIndexOf('/') + 1) + normTargetDir;
             var targetDirFiles = actions.getDirFiles(drive, normTargetDir);
             if (filesToCopy.length === 1 && filesToCopy[0] === cursorPath
-                && targetDirFiles.length === 1 && targetDirFiles[0] === normTargetDir) {
+                && ((targetDirFiles.length === 1 && targetDirFiles[0] === normTargetDir)
+                    || (!targetDirFiles.length && targetDir.slice(-1) !== '/'))) {
                 var content = drive.read(filesToCopy[0]);
                 drive.write(normTargetDir, content);
                 if (move)
@@ -3994,12 +3983,12 @@ var shell;
             }
             function saveFileName() {
                 if (window.location.protocol.toLowerCase() === 'blob:')
-                    return 'mi-save.html';
+                    return 'index.html';
                 var urlParts = window.location.pathname.split('/');
                 var currentFileName = decodeURI(urlParts[urlParts.length - 1]);
                 var lastDot = currentFileName.indexOf('.');
                 if (lastDot > 0) {
-                    currentFileName = currentFileName.slice(0, lastDot) + '.html';
+                    currentFileName = (currentFileName.slice(0, lastDot) || 'index') + '.html';
                 }
                 else {
                     currentFileName += '.html';
@@ -4014,6 +4003,136 @@ var shell;
 (function (shell) {
     var build;
     (function (build) {
+        function buildInContext(templateFile, drive, eval, log, callback) {
+            var currentBase = templateFile.slice(0, templateFile.lastIndexOf('/') + 1);
+            var restrictedDrive = createRestrictedDrive(currentBase, drive);
+            var buildScope = {
+                drive: restrictedDrive,
+                embedFile: function (file) { return build.embedFile(file, currentBase, drive); },
+                encodeForDOMDrive: function (content) { return build.encodeForDOMDrive(content); },
+                typescriptBuild: function () {
+                    var files = [];
+                    for (var _i = 0; _i < arguments.length; _i++) {
+                        files[_i - 0] = arguments[_i];
+                    }
+                    return shell.build.typescriptBuild(files, currentBase, drive);
+                }
+            };
+            var htmlTemplate = drive.read(templateFile);
+            build.processTemplate(htmlTemplate, [buildScope], function (code) { return eval(code); }, function (txt) { return log(txt); }, function (error, result) {
+                callback(error, result);
+            }, function (continueAction) {
+                setTimeout(function () {
+                    try {
+                        continueAction();
+                    }
+                    catch (error) {
+                        callback(error, null);
+                    }
+                }, 2);
+            });
+        }
+        build.buildInContext = buildInContext;
+        function createRestrictedDrive(currentBase, drive) {
+            var restrictedDrive = drive;
+            restrictedDrive = {
+                timestamp: drive.timestamp,
+                files: function () {
+                    var fi = drive.files();
+                    var result = [];
+                    for (var i = 0; i < fi.length; i++) {
+                        if (fi[i].length > currentBase.length && fi[i].slice(0, currentBase.length) === currentBase)
+                            result.push(fi[i].slice(currentBase.length - 1));
+                    }
+                    return result;
+                },
+                read: function (file) {
+                    if (file.charAt(0) === '/')
+                        file = file.slice(1);
+                    return drive.read(currentBase + file);
+                },
+                write: function (file, content) {
+                    if (file.charAt(0) === '/')
+                        file = file.slice(1);
+                    drive.write(file, content);
+                }
+            };
+            return restrictedDrive;
+        }
+        build.createRestrictedDrive = createRestrictedDrive;
+    })(build = shell.build || (shell.build = {}));
+})(shell || (shell = {}));
+var shell;
+(function (shell) {
+    var build;
+    (function (build) {
+        function embedFile(file, currentBase, drive) {
+            var fullPath = file.charAt(0) === '/' ? file : currentBase + file;
+            var result = drive.read(fullPath);
+            if (!result)
+                throw new Error('File not found embedFile(' + file + ') at ' + fullPath);
+            return result;
+        }
+        build.embedFile = embedFile;
+    })(build = shell.build || (shell.build = {}));
+})(shell || (shell = {}));
+var shell;
+(function (shell) {
+    var build;
+    (function (build) {
+        function encodeForDOMDrive(content) {
+            var protectedText = content.
+                replace(/\-\-(\**)\>/g, '--*$1>').
+                replace(/\<(\**)\!/g, '<*$1!');
+            return protectedText;
+        }
+        build.encodeForDOMDrive = encodeForDOMDrive;
+    })(build = shell.build || (shell.build = {}));
+})(shell || (shell = {}));
+var shell;
+(function (shell) {
+    var build;
+    (function (build) {
+        var formatDrive;
+        (function (formatDrive) {
+            function file(file, content) {
+                // TODO: generate full DOM file HTML chunk
+            }
+            formatDrive.file = file;
+            function fileContentLF(content) {
+                var protectedText = content.
+                    replace(/\-\-(\**)\>/g, '--*$1>').
+                    replace(/\<(\**)\!/g, '<*$1!');
+                return protectedText;
+            }
+            formatDrive.fileContentLF = fileContentLF;
+            function date(date) {
+                var timestamp = +date;
+                var resultStr = date.getDate() + ' ' +
+                    monthsPrettyCase[saveDate.getMonth()] + ' ' +
+                    date.getFullYear() + ' ' +
+                    num2(date.getHours()) + ':' +
+                    num2(date.getMinutes()) + ':' +
+                    num2(date.getSeconds()) + '.' +
+                    timestamp.toString().slice(-3);
+                var saveDateLocalStr = date.toString();
+                var gmtMatch = (/(GMT\s*[\-\+]\d+(\:\d+)?)/i).exec(saveDateLocalStr);
+                if (gmtMatch)
+                    resultStr += ' ' + gmtMatch[1];
+                return resultStr;
+            }
+            formatDrive.date = date;
+            var monthsPrettyCase = ('Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec').split('|');
+            function num2(n) {
+                return n <= 9 ? '0' + n : '' + n;
+            }
+        })(formatDrive = build.formatDrive || (build.formatDrive = {}));
+    })(build = shell.build || (shell.build = {}));
+})(shell || (shell = {}));
+var shell;
+(function (shell) {
+    var build;
+    (function (build) {
         function processTemplate(template, scopes, evalFn, log, callback, continueWith) {
             // <%= expr %>
             // <% statement %>
@@ -4021,7 +4140,7 @@ var shell;
             log('Generating build script...');
             continueWith(function () {
                 var fnText = generateBuildScript(template, scopes);
-                log('Preprocessing build script...');
+                log('Executing build script...');
                 continueWith(function () {
                     try {
                         var fnMake = evalFn('(function(){ return function(scopes, catcher) { try { ' +
@@ -4030,7 +4149,6 @@ var shell;
                             '		var err1 = {}; for (var k in err) { err1[k] = err[k]; } if (err.stack) err1.stack = err.stack; catcher(err1); ' +
                             ' } }; ' +
                             ' })()');
-                        log('Executing build script...');
                         var transmitErr;
                         var output = fnMake(scopes, function (catchErr) { transmitErr = catchErr; });
                         var outputIndex = 0;
@@ -4058,7 +4176,7 @@ var shell;
                             }
                             var outputChunk = output[outputIndex];
                             if (typeof outputChunk === 'function') {
-                                log('Processing ' + outputChunk + '...');
+                                //log('Processing ' + outputChunk + '...');
                                 continueWith(function () {
                                     try {
                                         var chunkResult = outputChunk();
@@ -4078,7 +4196,8 @@ var shell;
                             else {
                                 var literal = String(outputChunk);
                                 collectChunk(literal);
-                                if (+new Date() - startTime > 300) {
+                                var now = +new Date();
+                                if (now - startTime > 100) {
                                     continueWith(processNextOutputChunk);
                                     break;
                                 }
@@ -4087,20 +4206,6 @@ var shell;
                     }
                     function collectChunk(literal) {
                         output[outputIndex] = literal;
-                        var literalLines = (literal.length > 100 ? literal.slice(0, 50) + '\n...\n' + literal.slice(literal.length - 5) : literal).split('\n');
-                        while (literalLines.length && !literalLines[0])
-                            literalLines.shift();
-                        while (literalLines.length && !literalLines[literalLines.length - 1])
-                            literalLines.pop();
-                        if (literalLines.length > 4)
-                            literalLines.splice(2, literalLines.length - 4, '...');
-                        if (literalLines.length) {
-                            for (var i = 0; i < literalLines.length; i++) {
-                                if (literalLines[i] && literalLines[i].length > 50)
-                                    literalLines[i] = literalLines[i].slice(0, 25) + '...' + literalLines[i].slice(-25);
-                            }
-                            log(literalLines.join('\n'));
-                        }
                         outputIndex++;
                     }
                 });
@@ -4184,10 +4289,77 @@ var shell;
 (function (shell) {
     var build;
     (function (build) {
+        function spawnWindowContext(scriptPath, titleText, log) {
+            var blankWindow = createBlankWindow();
+            var proc = new noapi.HostedProcess({
+                window: blankWindow,
+                drive: this._drive,
+                scriptPath: scriptPath,
+                argv: [],
+                console: {
+                    log: function () {
+                        var args = [];
+                        for (var _i = 0; _i < arguments.length; _i++) {
+                            args[_i - 0] = arguments[_i];
+                        }
+                        log(args);
+                        blankWindow.log(args.join(' '));
+                    }
+                }
+            });
+            return {
+                noprocess: proc,
+                blankWindow: blankWindow
+            };
+            function createBlankWindow() {
+                var blankWindow = window.open('', '_blank' + (+new Date()));
+                var pollUntil = (+new Date()) + 1000;
+                while (+new Date() < pollUntil) {
+                    try {
+                        var blankWindowDoc = blankWindow.document;
+                    }
+                    catch (error) { }
+                }
+                if (!blankWindowDoc) {
+                    //alert('Cannot open a window to host the built document');
+                    return;
+                }
+                blankWindow.document.open();
+                blankWindow.document.write([
+                    '<html><title>' + titleText + '...</title>',
+                    '<style>',
+                    'html, body { background: black; color: greenyellow; }',
+                    'h2 { font-weight: 100; width: 40%; position: fixed; font-size: 200%; }',
+                    'pre { width: 50%; padding-left: 50%; opacity: 1; transition: opacity 1s; }',
+                    '</style>',
+                    '<h2>' + titleText + '</h2>',
+                    '<' + 's' + 'cript>',
+                    'var textContentProp = "textContent" in document.createElement("pre") ? "textContent" : "innerText";',
+                    'var lastLogElem;',
+                    'function log(text) {',
+                    '  var logElem = document.createElement("pre");',
+                    '  logElem[textContentProp]=text;',
+                    '  document.body.appendChild(logElem);',
+                    '  logElem.scrollIntoView();',
+                    '  if (lastLogElem) {',
+                    '    lastLogElem.style.opacity = 0.5;',
+                    '  }',
+                    '  lastLogElem = logElem;',
+                    '}',
+                    '<' + '/' + 's' + 'cript>'].join('\n'));
+                blankWindow.document.close();
+                return blankWindow;
+            }
+        }
+        build.spawnWindowContext = spawnWindowContext;
+    })(build = shell.build || (shell.build = {}));
+})(shell || (shell = {}));
+var shell;
+(function (shell) {
+    var build;
+    (function (build) {
         function typescriptBuild(files, baseDir, drive) {
             var fileList = expandGlobs(files, baseDir, drive);
-            console.log('typescriptBuild ' + files.join(', '));
-            console.log(fileList.join(', '));
             var emitAnchor;
             for (var i = 0; i < fileList.length; i++) {
                 if (!/\.d\.ts$/.test(fileList[i])
@@ -4222,8 +4394,8 @@ var shell;
                         (ts.DiagnosticCategory[err.category]) + err.code +
                         (pos ? ' @' + pos.line + ':' + pos.character : ' @@' + err.start) + ' ' + err.messageText);
                 }
-                console.log('TypeScript compilation ' + errors.length + ' messsages in ' + errorFiles + ' files:\n' +
-                    errors.join('\n'));
+                console.log({ TypescriptCompilation: files.join(', ') + ' ' + errors.length + ' messsages in ' + errorFiles + ' files' });
+                console.log(errors.join('\n'));
             }
             return result.outputFiles[0].text;
             function createService() {
@@ -4247,9 +4419,9 @@ var shell;
                     getCancellationToken: null,
                     getCurrentDirectory: function () { return '/'; },
                     getDefaultLibFileName: function () { return '/src/typescript/lib/lib.d.ts'; },
-                    log: function (s) { return console.log(s); },
-                    trace: function (s) { return console.log({ trace: s }); },
-                    error: function (s) { return console.log({ error: s }); },
+                    log: function (s) { return console.log({ tslog: s }); },
+                    trace: function (s) { return console.log({ tstrace: s }); },
+                    error: function (s) { return console.log({ tserror: s }); },
                     useCaseSensitiveFileNames: function () { return true; },
                     resolveModuleNames: function (moduleNames, containingFile) {
                         console.log('resolveModuleNames ', moduleNames, ' ', containingFile);
@@ -4290,176 +4462,8 @@ var shell;
         build.typescriptBuild = typescriptBuild;
     })(build = shell.build || (shell.build = {}));
 })(shell || (shell = {}));
-var shell;
-(function (shell) {
-    var build;
-    (function (build) {
-        function processTemplate(template, scopes, evalFn, log, callback, continueWith) {
-            // <%= expr %>
-            // <% statement %>
-            // <%-- comment --%>
-            log('Generating build script...');
-            continueWith(function () {
-                var fnText = generateBuildScript(template, scopes);
-                log('Preprocessing build script...');
-                continueWith(function () {
-                    try {
-                        var fnMake = evalFn('(function(){ return function(scopes, catcher) { try { ' +
-                            fnText +
-                            ' } catch (err) { ' +
-                            '		var err1 = {}; for (var k in err) { err1[k] = err[k]; } if (err.stack) err1.stack = err.stack; catcher(err1); ' +
-                            ' } }; ' +
-                            ' })()');
-                        log('Executing build script...');
-                        var transmitErr;
-                        var output = fnMake(scopes, function (catchErr) { transmitErr = catchErr; });
-                        var outputIndex = 0;
-                    }
-                    catch (error) {
-                        log('Build failure ' + error);
-                        callback(error);
-                        return;
-                    }
-                    if (transmitErr) {
-                        log('Build failure ' + transmitErr);
-                        callback(transmitErr);
-                        return;
-                    }
-                    processNextOutputChunk();
-                    function processNextOutputChunk() {
-                        var startTime = +new Date();
-                        // all heavy chunks will bail out and queue the next one on continueWith,
-                        // simple literal insertions keep going for a slice of time
-                        while (true) {
-                            if (outputIndex >= output.length) {
-                                var result = output.join('');
-                                callback(null, result);
-                                return;
-                            }
-                            var outputChunk = output[outputIndex];
-                            if (typeof outputChunk === 'function') {
-                                log('Processing ' + outputChunk + '...');
-                                continueWith(function () {
-                                    try {
-                                        var chunkResult = outputChunk();
-                                        var literal = String(chunkResult);
-                                    }
-                                    catch (error) {
-                                        callback(error);
-                                        return;
-                                    }
-                                    log('...OK [' + literal.length + ']');
-                                    collectChunk(literal);
-                                    processNextOutputChunk();
-                                    //setTimeout(processNextOutputChunk, 1);
-                                });
-                                break;
-                            }
-                            else {
-                                var literal = String(outputChunk);
-                                collectChunk(literal);
-                                if (+new Date() - startTime > 300) {
-                                    continueWith(processNextOutputChunk);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    function collectChunk(literal) {
-                        output[outputIndex] = literal;
-                        var literalLines = (literal.length > 100 ? literal.slice(0, 50) + '\n...\n' + literal.slice(literal.length - 5) : literal).split('\n');
-                        while (literalLines.length && !literalLines[0])
-                            literalLines.shift();
-                        while (literalLines.length && !literalLines[literalLines.length - 1])
-                            literalLines.pop();
-                        if (literalLines.length > 4)
-                            literalLines.splice(2, literalLines.length - 4, '...');
-                        if (literalLines.length) {
-                            for (var i = 0; i < literalLines.length; i++) {
-                                if (literalLines[i] && literalLines[i].length > 50)
-                                    literalLines[i] = literalLines[i].slice(0, 25) + '...' + literalLines[i].slice(-25);
-                            }
-                            log(literalLines.join('\n'));
-                        }
-                        outputIndex++;
-                    }
-                });
-            });
-        }
-        build.processTemplate = processTemplate;
-        function generateBuildScript(template, scopes) {
-            var generated = [];
-            for (var i = 0; i < scopes.length; i++) {
-                generated.push('with(scopes[' + i + ']) {');
-            }
-            generated.push('var output =[];');
-            var index = 0;
-            while (index < template.length) {
-                var nextOpenASP = template.indexOf('<%', index);
-                if (nextOpenASP < 0) {
-                    generateWrite(generated, template.slice(index));
-                    break;
-                }
-                var ch = template.charAt(nextOpenASP + 2);
-                if (ch === '=') {
-                    var closeASP = template.indexOf('%>', nextOpenASP);
-                    if (closeASP < 0) {
-                        generateWrite(generated, template.slice(index));
-                        break;
-                    }
-                    generateWrite(generated, template.slice(index, nextOpenASP));
-                    generateRedirect(generated, template.slice(nextOpenASP + 3, closeASP));
-                    index = closeASP + 2;
-                }
-                else if (ch === '-') {
-                    var closeCommentMatch = template.charAt(nextOpenASP + 3) === '-' ? '--%>' : '-%>';
-                    var closeComment = template.indexOf(closeCommentMatch, nextOpenASP);
-                    if (closeComment < 0) {
-                        generateWrite(generated, template.slice(index));
-                        break;
-                    }
-                    generateWrite(generated, template.slice(index, nextOpenASP));
-                    index = closeComment + closeCommentMatch.length;
-                }
-                else {
-                    var closeASP = template.indexOf('%>', nextOpenASP);
-                    if (closeASP < 0) {
-                        generateWrite(generated, template.slice(index));
-                        break;
-                    }
-                    generateWrite(generated, template.slice(index, nextOpenASP));
-                    generateStatement(generated, template.slice(nextOpenASP + 2, closeASP));
-                    index = closeASP + 2;
-                }
-            }
-            for (var i = 0; i < scopes.length; i++) {
-                generated.push('}');
-            }
-            generated.push('return output;');
-            var fnText = generated.join('\n');
-            return fnText;
-        }
-        function generateWrite(generated, chunk) {
-            if (chunk)
-                generated.push('output.push(\'' + stringLiteral(chunk) + '\');');
-        }
-        function generateRedirect(generated, redirect) {
-            generated.push('output.push(' + redirect + ');');
-        }
-        function generateStatement(generated, statement) {
-            generated.push(statement);
-        }
-        function stringLiteral(text) {
-            return text.
-                replace(/\\/g, '\\\\').
-                replace(/\n/g, '\\n').
-                replace(/\r/g, '\\r').
-                replace(/\t/g, '\\t').
-                replace(/\'/g, '\\\'').
-                replace(/\"/g, '\\"');
-        }
-    })(build = shell.build || (shell.build = {}));
-})(shell || (shell = {}));
+// --- this is /src/shell/build/typescriptBuild.ts 
+// --- this is /src/shell/editor/CMEditor.ts
 var shell;
 (function (shell) {
     var editor;
@@ -4507,6 +4511,18 @@ var shell;
                 ]);
                 this._cm.on('change', function () { return _this._queueDetectChange(); });
             }
+            CMEditor.prototype.getPosition = function () {
+                var selections = this._cm.getDoc().listSelections();
+                var scrollInfo = this._cm.getScrollInfo();
+                return {
+                    selections: selections,
+                    scrollInfo: scrollInfo
+                };
+            };
+            CMEditor.prototype.setPosition = function (pos) {
+                this._cm.scrollTo(pos.scrollInfo.left, pos.scrollInfo.top);
+                this._cm.getDoc().setSelections(pos.selections);
+            };
             CMEditor.prototype.arrange = function (metrics) {
                 this._keybar.arrange(metrics);
             };
@@ -4629,6 +4645,18 @@ var shell;
                 this._host.removeChild(this._textarea);
                 this._host.removeChild(this._title);
             };
+            Editor.prototype.getPosition = function () {
+                return {
+                    selectionStart: this._textarea.selectionStart,
+                    selectionEnd: this._textarea.selectionEnd
+                };
+            };
+            Editor.prototype.setPosition = function (pos) {
+                if ('selectionStart' in this._textarea)
+                    this._textarea.selectionStart = pos.selectionStart;
+                if ('selectionEnd' in this._textarea)
+                    this._textarea.selectionEnd = pos.selectionEnd;
+            };
             Editor.prototype._queueDetectChange = function () {
                 var _this = this;
                 if (!this._textchangeclosure)
@@ -4687,7 +4715,7 @@ var shell;
 })(shell || (shell = {}));
 /*module shell.handlers {
   export var defaults = text;
-}*/
+}*/ 
 var shell;
 (function (shell) {
     var handlers;
@@ -4727,7 +4755,9 @@ var shell;
                         editorInstance.close();
                     },
                     arrange: function (metrics) { return editorInstance.arrange ? editorInstance.arrange(metrics) : null; },
-                    requestClose: null
+                    requestClose: null,
+                    getPosition: function () { return editorInstance.getPosition(); },
+                    setPosition: function (pos) { return editorInstance.setPosition(pos); }
                 };
                 editorInstance.requestClose = function () {
                     if (res.requestClose)
@@ -5886,11 +5916,17 @@ var shell;
             };
             Terminal.prototype.writeDirect = function (text) {
                 elem('div', { text: text, opacity: 0.4 }, this._historyContent);
-                this._queueRearrange();
+                this._rearrangeNow();
             };
             Terminal.prototype.log = function (args) {
                 terminal.log(args, this._historyContent);
-                this._queueRearrange();
+                this._rearrangeNow();
+            };
+            Terminal.prototype._rearrangeNow = function () {
+                if (this._hostMetrics) {
+                    this.measure();
+                    this.arrange(this._hostMetrics);
+                }
             };
             Terminal.prototype.isInputEmpty = function () {
                 return !this._input.value;
@@ -5966,14 +6002,8 @@ var shell;
                     clearTimeout(this._rearrangeDelay);
                     this._rearrangeDelay = 0;
                 }
-                if (!this._rearrangeClosure) {
-                    this._rearrangeClosure = function () {
-                        if (_this._hostMetrics) {
-                            _this.measure();
-                            _this.arrange(_this._hostMetrics);
-                        }
-                    };
-                }
+                if (!this._rearrangeClosure)
+                    this._rearrangeClosure = function () { return _this._rearrangeNow(); };
                 this._rearrangeDelay = setTimeout(this._rearrangeClosure, 10);
             };
             Terminal.prototype._evalAndLogResults = function (code) {
@@ -56589,22 +56619,13 @@ var TypeScript;
     })(Services = TypeScript.Services || (TypeScript.Services = {}));
 })(TypeScript || (TypeScript = {}));
 /* @internal */
-var toolsVersion = "1.6";
-
-
-
-
-
-
--->
+var toolsVersion = "1.6";-->
 
 <!-- /shell/buildMessage.js
+var shell=shell||{};
+shell.buildMessage = 'Built on 7 Nov 2015 09:25:43.039 GMT+0000\n  using Mozilla/5.0 (X11; Linux i686)\n  AppleWebKit/537.36 (KHTML, like Gecko)\n  Chrome/42.0.2311.90 Safari/537.36';
 
-var shell;
-if (!shell) shell = {};
-shell.buildMessage = 'Built at 1 Nov 2015 17:23:42.307 GMT+0000';
-
-shell.buildTime = 1446398622307;
+shell.buildTime = 1446888343042;
 -->
 
 <!-- /shell/!onerror.js
@@ -56640,31 +56661,40 @@ window.onerror = function onerror() {
   alert(msg.join('\n'));
 
 }
+-->
 
-
-
-
-
+<!-- /empty/
 -->
 
 
+<!-- /LF-file.txt
+123
+456-->
 
+<!-- /CRLF-file [CRLF]
+123
+456-->
 
+<!-- /CR-file [CR]
+123
+456-->
 
+<!-- /exportsome.js
+module.exports = 55-->
 
+<!-- /exports_fs.js
+module.exports = require('fs')-->
 
+<!-- /exports_process.js
+module.exports = process-->
 
+<!-- /eval-file.txt [eval]
+ "random char: " + String.fromCharCode(Math.random()*16000)+"\n"+
+ "date: "+new Date()+"\n"+
+ "location: "+location -->
 
-
-
-
-
-
-
-
-
-
-
+<!-- /json-file.txt [json]
+"new ok \u2222 and what\r\n or \u0001?\n\n\n"-->
 
 
 
@@ -56698,27 +56728,12 @@ window.onerror = function onerror() {
 .CodeMirror .cm-trailingspace {
   background: linear-gradient(to right, cornflowerblue -5%, transparent 50%, gold 100%)
 }
-
-
-
-
-
 .javascript-panel-entry.panels-entry-plain {
   color: lime;
 }
-
-
-
-
-
 .typescript-panel-entry.panels-entry-plain {
   color: forestgreen;
 }
-
-
-
-
-
 .panels-scroll-host {
   position: absolute;
   left: 0; top: 0; width: 0; height: 0;
@@ -56784,12 +56799,6 @@ window.onerror = function onerror() {
 .panels-panel-active .panels-entry-file-current {
   color: navy;
 }
-
-
-
-
-
-
 .terminal-history {
   position: absolute;
   left: 0; bottom: 1.8em;
@@ -56824,11 +56833,6 @@ window.onerror = function onerror() {
   resize: none;
   overflow: hidden;
 }
-
-
-
-
-
 -->
 
 <!-- /shell/codemirror/combine.css
@@ -57166,12 +57170,6 @@ div.CodeMirror-dragcursors {
 
 /* Help users use markselection to safely style text background */
 span.CodeMirror-selectedtext { background: none; }
-
-
-
-
-
-
 .CodeMirror-hints {
   position: absolute;
   z-index: 10;
@@ -57210,12 +57208,6 @@ li.CodeMirror-hint-active {
   background: #08f;
   color: white;
 }
-
-
-
-
-
-
 /* The lint marker gutter */
 .CodeMirror-lint-markers {
   width: 16px;
@@ -57289,12 +57281,6 @@ li.CodeMirror-hint-active {
   background-position: right bottom;
   width: 100%; height: 100%;
 }
-
-
-
-
-
-
 .CodeMirror-dialog {
   position: absolute;
   left: 0; right: 0;
@@ -57327,12 +57313,6 @@ li.CodeMirror-hint-active {
 .CodeMirror-dialog button {
   font-size: 70%;
 }
-
-
-
-
-
-
 .CodeMirror-foldmarker {
   color: blue;
   text-shadow: #b9f 1px 1px 2px, #b9f -1px -1px 2px, #b9f 1px -1px 2px, #b9f -1px 1px 2px;
@@ -57353,12 +57333,6 @@ li.CodeMirror-hint-active {
 .CodeMirror-foldgutter-folded:after {
   content: "\25B8";
 }
-
-
-
-
-
-
 .cm-s-rubyblue.CodeMirror { background: #112435; color: white; }
 .cm-s-rubyblue div.CodeMirror-selected { background: #38566F; }
 .cm-s-rubyblue .CodeMirror-line::selection, .cm-s-rubyblue .CodeMirror-line > span::selection, .cm-s-rubyblue .CodeMirror-line > span > span::selection { background: rgba(56, 86, 111, 0.99); }
@@ -57384,12 +57358,6 @@ li.CodeMirror-hint-active {
 .cm-s-rubyblue span.cm-error { color: #AF2018; }
 
 .cm-s-rubyblue .CodeMirror-activeline-background { background: #173047; }
-
-
-
-
-
-
 -->
 
 
@@ -66251,12 +66219,6 @@ li.CodeMirror-hint-active {
 
   return CodeMirror;
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/dialog/dialog.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -66416,12 +66378,6 @@ li.CodeMirror-hint-active {
     return close;
   });
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/search/search.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -66652,12 +66608,6 @@ li.CodeMirror-hint-active {
   CodeMirror.commands.replace = replace;
   CodeMirror.commands.replaceAll = function(cm) {replace(cm, true);};
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/search/searchcursor.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -66849,12 +66799,6 @@ li.CodeMirror-hint-active {
       this.setSelections(ranges, 0);
   });
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/hint/show-hint.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -67297,12 +67241,6 @@ li.CodeMirror-hint-active {
 
   CodeMirror.defineOption("hintOptions", null);
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/lint/lint.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -67536,12 +67474,6 @@ li.CodeMirror-hint-active {
     if (this.state.lint) startLinting(this);
   });
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/mode/javascript/javascript.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -68254,12 +68186,6 @@ CodeMirror.defineMIME("text/typescript", { name: "javascript", typescript: true 
 CodeMirror.defineMIME("application/typescript", { name: "javascript", typescript: true });
 
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/tern/tern.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -68962,12 +68888,6 @@ CodeMirror.defineMIME("application/typescript", { name: "javascript", typescript
     this.request = function(body, c) { send({type: "req", body: body}, c); };
   }
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/hint/javascript-hint.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -69116,12 +69036,6 @@ CodeMirror.defineMIME("application/typescript", { name: "javascript", typescript
     return found;
   }
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/mode/css/css.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -69949,12 +69863,6 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
   });
 
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/hint/css-hint.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -70017,12 +69925,6 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
     };
   });
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/mode/multiplex.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -70148,12 +70050,6 @@ CodeMirror.multiplexingMode = function(outer /*, others */) {
 };
 
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/mode/sass/sass.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -70570,12 +70466,6 @@ CodeMirror.defineMode("sass", function(config) {
 CodeMirror.defineMIME("text/x-sass", "sass");
 
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/mode/xml/xml.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -70963,12 +70853,6 @@ if (!CodeMirror.mimeModes.hasOwnProperty("text/html"))
   CodeMirror.defineMIME("text/html", {name: "xml", htmlMode: true});
 
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/hint/xml-hint.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -71081,12 +70965,6 @@ if (!CodeMirror.mimeModes.hasOwnProperty("text/html"))
 
   CodeMirror.registerHelper("hint", "xml", getHints);
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/mode/htmlmixed/htmlmixed.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -71239,12 +71117,6 @@ if (!CodeMirror.mimeModes.hasOwnProperty("text/html"))
 
   CodeMirror.defineMIME("text/html", "htmlmixed");
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/mode/htmlembedded/htmlembedded.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -71275,12 +71147,6 @@ if (!CodeMirror.mimeModes.hasOwnProperty("text/html"))
   CodeMirror.defineMIME("application/x-jsp", {name: "htmlembedded", scriptingModeSpec:"text/x-java"});
   CodeMirror.defineMIME("application/x-erb", {name: "htmlembedded", scriptingModeSpec:"ruby"});
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/hint/html-hint.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -71631,12 +71497,6 @@ if (!CodeMirror.mimeModes.hasOwnProperty("text/html"))
   }
   CodeMirror.registerHelper("hint", "html", htmlHint);
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/mode/markdown/markdown.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -72442,12 +72302,6 @@ CodeMirror.defineMode("markdown", function(cmCfg, modeCfg) {
 CodeMirror.defineMIME("text/x-markdown", "markdown");
 
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/edit/matchbrackets.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -72570,12 +72424,6 @@ CodeMirror.defineMIME("text/x-markdown", "markdown");
     return scanForBracket(this, pos, dir, style, config);
   });
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/selection/active-line.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -72649,12 +72497,6 @@ CodeMirror.defineMIME("text/x-markdown", "markdown");
     updateActiveLines(cm, sel.ranges);
   }
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/edit/trailingspace.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -72684,12 +72526,6 @@ CodeMirror.defineMIME("text/x-markdown", "markdown");
       });
   });
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/fold/foldcode.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -72841,12 +72677,6 @@ CodeMirror.defineMIME("text/x-markdown", "markdown");
     return getOption(this, options, name);
   });
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/fold/foldgutter.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -72995,12 +72825,6 @@ CodeMirror.defineMIME("text/x-markdown", "markdown");
       updateFoldInfo(cm, line, line + 1);
   }
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/fold/brace-fold.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -73108,12 +72932,6 @@ CodeMirror.registerHelper("fold", "include", function(cm, start) {
 });
 
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/fold/comment-fold.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -73173,12 +72991,6 @@ CodeMirror.registerGlobalHelper("fold", "comment", function(mode) {
 });
 
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/fold/markdown-fold.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -73230,12 +73042,6 @@ CodeMirror.registerHelper("fold", "markdown", function(cm, start) {
 });
 
 });
-
-
-
-
-
-
 {};
 // import codemirror-part/addon/fold/xml-fold.js
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
@@ -73420,12 +73226,6 @@ CodeMirror.registerHelper("fold", "markdown", function(cm, start) {
     return findMatchingClose(iter, name);
   };
 });
-
-
-
-
-
-
 -->
 
 
@@ -74149,6 +73949,4 @@ CodeMirror.registerHelper("fold", "markdown", function(cm, start) {
 
 
 
-
-
-<iframe frameborder="0" style="position: absolute; left: 0px; top: 0px; width: 1366px; height: 634px; border: none; opacity: 1;"></iframe></body></html>
+<iframe frameborder="0" style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; border: none; opacity: 1;"></iframe></body></html>
