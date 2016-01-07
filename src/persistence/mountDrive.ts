@@ -1,17 +1,8 @@
-module portabled.persistence {
-
-  export function defaultPersistenceModules() {
-    return [
-      persistence.indexedDB,
-      persistence.webSQL,
-      persistence.localStorage
-    ];
-  }
+module persistence {
 
   export function mountDrive(
-    dom: Drive,
+    loadDOMDrive: (callback: (dom: Drive) => void)=> void,
     uniqueKey: string,
-    domTimestamp: number,
     optionalModules: Drive.Optional[],
     callback: mountDrive.Callback): void {
 
@@ -27,7 +18,7 @@ module portabled.persistence {
       }
 
       if (driveIndex >= optionalModules.length) {
-        callback(new MountedDrive(dom, null));
+        loadDOMDrive(dom => callback(new MountedDrive(dom, null)));
         return;
       }
 
@@ -41,30 +32,33 @@ module portabled.persistence {
             return;
           }
 
-          if (detached.timestamp > domTimestamp) {
-            var callbackWithShadow: Drive.Detached.CallbackWithShadow = loadedDrive => {
-              dom.timestamp = detached.timestamp;
-              callback(new MountedDrive(dom, loadedDrive));
-            };
-            if (callback.progress)
-              callbackWithShadow.progress = callback.progress;
-            detached.applyTo(dom, callbackWithShadow);
-          }
-          else {
-            var callbackWithShadow: Drive.Detached.CallbackWithShadow = loadedDrive => {
-              callback(new MountedDrive(dom, loadedDrive));
-            };
-            if (callback.progress)
-              callbackWithShadow.progress = callback.progress;
-            detached.purge(callbackWithShadow);
-          }
+          loadDOMDrive(dom => {
+            if (detached.timestamp > dom.timestamp) {
+              var callbackWithShadow: Drive.Detached.CallbackWithShadow = loadedDrive => {
+                dom.timestamp = detached.timestamp;
+                callback(new MountedDrive(dom, loadedDrive));
+              };
+              if (callback.progress)
+                callbackWithShadow.progress = callback.progress;
+              loadDOMDrive(dom => detached.applyTo(dom, callbackWithShadow));
+            }
+            else {
+              var callbackWithShadow: Drive.Detached.CallbackWithShadow = loadedDrive => {
+                callback(new MountedDrive(dom, loadedDrive));
+              };
+              if (callback.progress)
+                callbackWithShadow.progress = callback.progress;
+              detached.purge(callbackWithShadow);
+            }
+          });
+
         });
     }
 
   }
-  
+
   export module mountDrive {
-    
+
     export interface Callback {
 
       (drive: Drive): void;
@@ -72,17 +66,18 @@ module portabled.persistence {
       progress?: (current: number, total: number) => void;
 
     }
-    
+
   }
-  
+
   class MountedDrive implements Drive {
 
+    updateTime = true;
     timestamp: number = 0;
 
     constructor (private _dom: Drive, private _shadow: Drive.Shadow) {
       this.timestamp = this._dom.timestamp;
     }
-    
+
     files(): string[] {
       return this._dom.files();
     }
@@ -92,6 +87,10 @@ module portabled.persistence {
     }
 
     write(file: string, content: string) {
+      if (this.updateTime) {
+        this.timestamp = +new Date();
+      }
+
       this._dom.timestamp = this.timestamp;
       this._dom.write(file, content);
       if (this._shadow) {
@@ -100,5 +99,5 @@ module portabled.persistence {
       }
     }
   }
-  
+
 }

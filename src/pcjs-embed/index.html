@@ -1,0 +1,189 @@
+<!doctyle html>
+<meta charset="utf-8">
+<title>Embedded PC (using pcjs.org by Jeff Parsons @jeffpar)</title>
+
+<% var fs = require('fs'); %>
+
+<script data-legit=mi>
+  // ONERROR
+  <%=fs.readFileSync('../boot/onerror.js')%>
+//# sourceURL=boot/onerror.js
+</script>
+
+
+<script data-legit=mi>
+// EARLYBOOT
+earlyBoot(window);
+
+<%=typescriptBuild('../boot/*')%>
+
+// BASE
+<%=typescriptBuild('../boot/base.d.ts', 'boot/bootUI.ts')%>
+//# sourceURL=/boot/base.js
+</script>
+
+<script data-legit=mi>
+
+// LOADER
+<%=typescriptBuild('../load/*', '../persistence/*', '../boot/base.d.ts', '../typings/webSQL.d.ts')%>
+//# sourceURL=/load/shellLoader.ts.js
+</script>
+
+<%=formatDrive.totals(new Date(), 14*1024*1024)%>
+
+<%=formatDrive.file('/shell/!onerror.js', fs.readFileSync('../boot/onerror.js'))%>
+
+<%=formatDrive.file('/shell/pcjs-embed.js', typescriptBuild('embed/*', '../persistence/API.d.ts', '../typings/*'))%>
+
+<%=formatDrive.file('/shell/components.css', fs.readFileSync('versions/1.20.2/components.css'))%>
+
+<%=formatDrive.file('/splash.img', fs.readFileSync('splash-turbo.img'))%>
+
+
+<%=(function() {
+   // EMBEDDED DEMO FILES
+	var includeFiles = [
+   'components.xsl',
+    'turbo.xml', 'turbo-ega.xml',
+    //'sample1.xml', 'ibm-basic-1.00.json', '1981-04-24.json','ibm-mda-cga.json',
+    'ibm-ega.json', 'ibm-xebec-1982.json', 'ibm-ega.json', 'ibm-basic-1.10.json', '1982-11-08.json', 'MSDOS320-DISK1.json', 'fd1.json', 'fd2.json', '10mb-ega.json',
+    // EGA 'ibm-ega.json', 'ibm-xebec-1982.json', 'ibm-ega.json', 'ibm-basic-1.10.json', '1982-11-08.json', 'MSDOS320-DISK1.json', 'fd1.json', 'fd2.json', '10mb-ega.json'
+   	//'ibm-vga.json','1988-01-28.json', 'ibm-vga-lockfs.xml', '68mb.json'
+   ];
+
+	var fileDump = [];
+  for (var i = 0; i < includeFiles.length; i++) {
+
+		var embedFN = 'demos/'+includeFiles[i];
+    var content = fs.readFileSync(embedFN);
+
+	  fileDump.push(formatDrive.file('/'+embedFN, content));
+  }
+	return fileDump.join('\n');
+
+})()%>
+
+<%=(function(){
+
+  var output = [
+    'function pcjs() {',
+    'var window = this.window, document = this.document, XMLHttpRequest = this.XMLHttpRequest, localStorage = this.localStorage;'
+  ];
+
+
+   var fileList = [
+
+     'versions/1.20.2/pc.js'
+
+     /*
+   // PCJS uncompiled
+    "modules/shared/lib/defines.js",
+    "modules/shared/lib/diskapi.js",
+    "modules/shared/lib/dumpapi.js",
+    "modules/shared/lib/reportapi.js",
+    "modules/shared/lib/userapi.js",
+    "modules/shared/lib/strlib.js",
+    "modules/shared/lib/usrlib.js",
+    "modules/shared/lib/weblib.js",
+    "modules/shared/lib/component.js",
+    "modules/pcjs/lib/defines.js",
+    "modules/pcjs/lib/interrupts.js",
+    "modules/pcjs/lib/messages.js",
+    "modules/pcjs/lib/panel.js",
+    "modules/pcjs/lib/bus.js",
+    "modules/pcjs/lib/memory.js",
+    "modules/pcjs/lib/cpu.js",
+    "modules/pcjs/lib/x86.js",
+    "modules/pcjs/lib/x86seg.js",
+    "modules/pcjs/lib/x86cpu.js",
+    "modules/pcjs/lib/x86func.js",
+    "modules/pcjs/lib/x86ops.js",
+    "modules/pcjs/lib/x86op0f.js",
+    "modules/pcjs/lib/x86modb.js",
+    "modules/pcjs/lib/x86modw.js",
+    "modules/pcjs/lib/x86modb16.js",
+    "modules/pcjs/lib/x86modw16.js",
+    "modules/pcjs/lib/x86modb32.js",
+    "modules/pcjs/lib/x86modw32.js",
+    "modules/pcjs/lib/x86modsib.js",
+    "modules/pcjs/lib/chipset.js",
+    "modules/pcjs/lib/rom.js",
+    "modules/pcjs/lib/ram.js",
+    "modules/pcjs/lib/keyboard.js",
+    "modules/pcjs/lib/video.js",
+    "modules/pcjs/lib/serialport.js",
+    "modules/pcjs/lib/mouse.js",
+    "modules/pcjs/lib/disk.js",
+    "modules/pcjs/lib/fdc.js",
+    "modules/pcjs/lib/hdc.js",
+    "modules/pcjs/lib/debugger.js",
+    "modules/pcjs/lib/state.js",
+    "modules/pcjs/lib/computer.js",
+    "modules/shared/lib/embed.js"
+    */
+	];
+
+   for (var i = 0; i < fileList.length; i++) {
+
+		output.push('');
+		output.push('// '+fileList[i]);
+
+    var content = fs.readFileSync(fileList[i]);
+		if (!content) throw new Error('File '+fileList[i]+' is missing.');
+		content = content.replace(/var APPNAME \= \"\"/g, 'var APPNAME = "PCjs"');
+
+    var fnName = fileList[i].slice(1).replace('/', '_');
+
+    output.push(content);
+
+	 }
+
+  /* for uncompiled PCJS
+  output = output.concat([
+    'var reported_computer_wait = false;',
+    'function waitOverride(a,b,c,d) {',
+    '	if (!reported_computer_wait) {',
+    '		reported_computer_wait = true;',
+    '		var _comp = this;',
+    '		setTimeout(function() {',
+    '			compCallback(_comp);',
+    '		}, 100);',
+    '	}',
+    '	return this._wait(a,b,c,d);',
+    '}',
+    '',
+    'Computer.prototype._wait = Computer.prototype.wait;',
+    'Computer.prototype.wait = waitOverride;',
+    ]);*/
+
+  output.push('}');
+
+   return formatDrive.file('/shell/!pc.js', output.join('\n'));
+
+})()%>
+
+
+<!-- /shell/z-pcjs-override.css
+.pcjs-container {
+	overflow: hidden;
+}
+.pcjs-menu {
+	display: none;
+}
+.pcjs-video .pcjs-control {
+	display: none;
+}
+-->
+
+
+<%=(function() {
+  var cacheFiles = fs.readdirSync('cache');
+  var cacheFileFmt = [];
+  for (var i = 0; i < cacheFiles.length; i++) {
+    var shortname = cacheFiles[i].split('/').slice(-1)[0];
+    cacheFileFmt.push(
+      formatDrive.file('/cache/'+shortname, fs.readFileSync(cacheFiles[i])));
+  }
+  return cacheFileFmt.join('\n');
+})()
+%>

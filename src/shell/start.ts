@@ -1,11 +1,22 @@
-module portabled.shell {
+declare var require;
 
-  export function start() {
+module shell {
 
-    addEventListener(window, 'load', () => {
-      var co = new consoleUI.ConsoleUI(document.body);
-      var pan = new panels.Panels(document.body);
-    });
-  }
+  export var buildTime: number;
+  export var buildMessage: string;
+
+  export function start(complete: () => string) {
+    var drive = require('nodrive');
+    var parentWin = require('nowindow');
+
+    // TODO: shouldn't try to get to top window I suspect?
+    var topWindow = parentWin;
+    while (topWindow.parent && topWindow.parent !== topWindow) {
+      topWindow = topWindow.parent;
+    }
+
+    var commander = new CommanderShell(topWindow, document.body, drive, complete);
+
+	}
 
 }

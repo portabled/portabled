@@ -284,7 +284,7 @@ interface CodeMirror {
 }
 
 declare module CodeMirror {
-  
+
   export interface ScrollInfo {
     left: any;
     top: any;
@@ -293,16 +293,16 @@ declare module CodeMirror {
     clientWidth: any;
     clientHeight: any;
   }
-  
+
   export interface CodeMirrorStatic {
-    
+
     Pass: any;
 
     new (host: HTMLElement, options?: CodeMirror.Options): CodeMirror;
-    new (callback: (host: HTMLElement) => void , options?: CodeMirror.Options): CodeMirror;
+    new (callback: (host: HTMLElement) => void, options?: CodeMirror.Options): CodeMirror;
 
     (host: HTMLElement, options?: CodeMirror.Options): CodeMirror;
-    (callback: (host: HTMLElement) => void , options?: CodeMirror.Options): CodeMirror;
+    (callback: (host: HTMLElement) => void, options?: CodeMirror.Options): CodeMirror;
 
     Doc: {
       (text: string, mode?: any, firstLineNumber?: number): Doc;
@@ -394,7 +394,7 @@ declare module CodeMirror {
     on(line: LineWidget, eventName: 'redraw', handler: () => void);
     off(line: LineWidget, eventName: 'redraw', handler: () => void);
   }
-  
+
   export interface Doc {
 
     /** Get the current editor content. You can pass it an optional argument to specify the string to be used to separate lines (defaults to "\n"). */
@@ -746,9 +746,9 @@ declare module CodeMirror {
     Thus, it polls. Default is 100 milliseconds. */
     pollInterval?: number
 
-        /** By default, CodeMirror will combine adjacent tokens into a single span if they have the same class.
-        This will result in a simpler DOM tree, and thus perform better. With some kinds of styling(such as rounded corners),
-        this will change the way the document looks. You can set this option to false to disable this behavior. */
+    /** By default, CodeMirror will combine adjacent tokens into a single span if they have the same class.
+    This will result in a simpler DOM tree, and thus perform better. With some kinds of styling(such as rounded corners),
+    this will change the way the document looks. You can set this option to false to disablis behavior. */
         flattenSpans?: boolean;
 
     /** When highlighting long lines, in order to stay responsive, the editor will give up and simply style

@@ -1,0 +1,65 @@
+.panels-scroll-host {
+  position: absolute;
+  left: 0; top: 0; width: 0; height: 0;
+  overflow: auto;
+  overflow-y: hidden;
+  background: black;
+  background: transparent;
+}
+
+.panels-scroll-content {
+  width: 0; height: 0;   overflow: hidden;
+}
+
+.panels-panel {
+  width: 0; height: 0;
+  overflow: auto;
+  overflow-x: hidden;
+  background: rgba(4, 12, 64, 0.95) !important;
+  background: navy;
+  color: darkcyan;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  cursor: default;
+}
+
+.panels-panel * {
+  cursor: default;
+}
+
+.panels-left-panel {
+  float: left;
+}
+
+.panels-right-panel {
+  float: right;
+}
+
+.panels-panel-page {
+  clear: both;
+}
+
+.panels-page-separator {
+  clear: both;
+}
+
+.panels-panel-column {
+  float: left;
+}
+
+.panels-entry {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.panels-entry-dir {
+  color: white;
+}
+
+.panels-panel-active .panels-entry-current {
+  background: darkcyan;
+}
+
+.panels-panel-active .panels-entry-file-current {
+  color: navy;
+}

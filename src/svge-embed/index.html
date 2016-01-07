@@ -1,0 +1,118 @@
+<!doctype html>
+<title>SVG editor / EMBED</title>
+
+
+<script data-legit=mi>
+  // ONERROR
+  <%=embedFile('boot/onerror.js')%>
+//# sourceURL=boot/onerror.js
+</script>
+
+
+<script data-legit=mi>
+  // EARLYBOOT
+  earlyBoot(window);
+
+  	<%=typescriptBuild('boot/*')%>
+
+  	<%=embedFile('/boot/bootUI.js')%>
+//# sourceURL=/boot/base.js
+</script>
+
+<script data-legit=mi>
+
+  // LOADER
+<%=typescriptBuild('load/*', 'persistence/*', 'boot/base.d.ts', 'typings/*')%>
+//# sourceURL=/load/shellLoader.ts.js
+</script>
+
+<!-- total 12Mb, saved <%=(function() {
+
+// TOTAL SUMMARY
+var monthsPrettyCase = ('Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec').split('|');
+
+var saveDate = new Date();
+var dtText =
+  saveDate.getDate() + ' ' +
+  monthsPrettyCase[saveDate.getMonth()] + ' ' +
+  saveDate.getFullYear() + ' ' +
+  num2(saveDate.getHours()) + ':' +
+  num2(saveDate.getMinutes()) + ':' +
+  num2(saveDate.getSeconds()) + '.' +
+  (+saveDate).toString().slice(-3);
+
+var saveDateLocalStr = saveDate.toString();
+var gmtMatch = (/(GMT\s*[\-\+]\d+(\:\d+)?)/i).exec(saveDateLocalStr);
+if (gmtMatch)
+	dtText += ' ' + gmtMatch[1];
+
+return dtText;
+
+function num2(n) { return n <= 9 ? '0' + n : '' + n; }
+
+})()
+%> -->
+
+<!-- /shell/!onerror.js
+<%=embedFile('/boot/onerror.js')%>
+-->
+
+<!-- /shell/svge-embed.js
+<%=typescriptBuild('svge-embed/embed/*', 'persistence/API.d.ts', 'typings/*')%>
+-->
+
+<%(function() {
+
+  // THE ACTUAL BUILD SCRIPT IS IN  [build]  SUBDIRECTORY
+
+	var buildScript = typescriptBuild('svge-embed/build/*', 'persistence/API.d.ts', 'typings/*')();
+  console.log({ buildScript: buildScript });
+
+  var buildFN = eval('(function() { return buildFN; function buildFN(portabled) {    '+
+    buildScript+'\n'+
+    '} })() //# sourceURL=/build/svge-build.js ');
+
+  buildFN(portabled);
+
+})()%>
+
+<%=shellFile('index.html')%>
+
+<%=shellFile('jquery.js', '1-jquery.js')%>
+<%=shellFile('svgedit.js', '2-svgedit.js')%>
+<%=shellFile('svg-editor.js', '3-svg-editor.js')%>
+
+<%=shellFile('jgraduate/css/jPicker.css')%>
+<%=shellFile('jgraduate/css/jgraduate.css')%>
+<%=shellFile('svg-editor.css')%>
+<%=shellFile('spinbtn/JQuerySpinBtn.css')%>
+<% /*shellFile('custom.css')*/ %>
+<%=shellFile('js-hotkeys/jquery.hotkeys.min.js')%>
+<%=shellFile('jquerybbq/jquery.bbq.min.js')%>
+<%=shellFile('svgicons/jquery.svgicons.js')%>
+<%=shellFile('jgraduate/jquery.jgraduate.min.js')%>
+<%=shellFile('spinbtn/JQuerySpinBtn.min.js')%>
+<%=shellFile('touch.js')%>
+
+<%=shellFile('jquery-svg.js')%>
+
+  <%=shellFile('contextmenu/jquery.contextMenu.js')%>
+<%=shellFile('browser.js')%>
+<%=shellFile('svgtransformlist.js')%>
+<%=shellFile('math.js')%>
+<%=shellFile('units.js')%>
+<%=shellFile('svgutils.js')%>
+<%=shellFile('sanitize.js')%>
+<%=shellFile('history.js')%>
+<%=shellFile('coords.js')%>
+<%=shellFile('recalculate.js')%>
+<%=shellFile('select.js')%>
+<%=shellFile('draw.js')%>
+<%=shellFile('path.js')%>
+<%=shellFile('svgcanvas.js')%>
+<%=shellFile('locale/locale.js')%>
+<%=shellFile('contextmenu.js')%>
+
+<%=shellFile('jquery-ui/jquery-ui-1.8.17.custom.min.js')%>
+<%=shellFile('jgraduate/jpicker.js')%>
+<% /* shellFile('config.js') */ %>

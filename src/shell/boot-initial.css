@@ -1,9 +1,0 @@
-body {
-  opacity: 0.3;
-
-	filter: blur(2px);
-
-  filter: url("#boot_gaussian_blur");
-  -webkit-filter: blur(2px);
-  -o-filter: blur(3px);
-}
