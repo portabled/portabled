@@ -108,7 +108,7 @@ ui = ui.
 
 var srcFiles = dirExpand(['..'], /.*/);
 var srcLead = path.resolve('../..');
-if (/.\/$/.test(srcLead)) srcLead = srcLead.slice(0, srcLead.length-1);
+if (/\/$/.test(srcLead)) srcLead = srcLead.slice(0, srcLead.length-1);
 
 var srcTotalSize = 0;
 for (var i = 0; i < srcFiles.length; i++) {
@@ -340,3 +340,4 @@ function dirExpand(files, regexp) {
   //console.log(result.length,' ('+exc.length+') skipped: ',exc);
   return result;
 }
+

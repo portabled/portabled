@@ -103,6 +103,7 @@ module noapi {
         var nextSlash = fname.indexOf('/', fullPath.length+plusSlash);
         if (nextSlash > 0)
           fname = fname.slice(0, nextSlash);
+        fname = fname.slice(fullPath.length+plusSlash);
 
         if (resultMap[fname]) continue;
         resultMap[fname] = 1;
