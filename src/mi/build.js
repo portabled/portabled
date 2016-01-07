@@ -59,20 +59,20 @@ catch (error) {
 
 var html = [];
 
-var bootUI = fs.readFileSync('boot.html');
+var bootUI = fs.readFileSync('boot.html')+'';
 
-var ui = fs.readFileSync('ui.html');
+var ui = fs.readFileSync('ui.html')+'';
 
 ui = ui.
-  replace(/#on-error#/, fs.readFileSync('../shell/onerror.js')).
-  replace(/#cm-style#/, fs.readFileSync('../imports/cm/cm.css').replace(/\$/g, '$$$$')).
-  replace(/#cm-script#/, fs.readFileSync('../imports/cm/cm.js').replace(/\$/g, '$$$$')).
-  replace(/#ts-script#/, fs.readFileSync('../imports/ts/typescript.js').replace(/\$/g, '$$$$'));
+  replace(/#on-error#/, fs.readFileSync('../shell/onerror.js')+'').
+  replace(/#cm-style#/, (fs.readFileSync('../imports/cm/cm.css')+'').replace(/\$/g, '$$$$')).
+  replace(/#cm-script#/, (fs.readFileSync('../imports/cm/cm.js')+'').replace(/\$/g, '$$$$')).
+  replace(/#ts-script#/, (fs.readFileSync('../imports/ts/typescript.js')+'').replace(/\$/g, '$$$$'));
 
 
 var eq80;
 var eq80path = '../eq80/eq80.html';
-var eq80html = fs.readFileSync(eq80path);
+var eq80html = (fs.readFileSync(eq80path)+'');
 var eq80script =  /\<script.*\>([\s\S]*)\<\/script\>/.exec(eq80html)[1] + '//'+'# '+'sourceURL=' + path.resolve(eq80path);
 var eq80script = 'var noui = true;'+eq80script;
 
@@ -100,7 +100,7 @@ catch (error) {
 
 var cssFiles = dirExpand(['../shell'], /\.css$/);
 for (var i = 0; i < cssFiles.length; i++) {
-  cssFiles[i] = fs.readFileSync(cssFiles[i]);
+  cssFiles[i] = (fs.readFileSync(cssFiles[i])+'');
 }
 
 ui = ui.
@@ -110,7 +110,7 @@ var srcFiles = dirExpand(['..'], /.*/);
 var srcTotalSize = 0;
 for (var i = 0; i < srcFiles.length; i++) {
   var fi = new eq80.persistence.dom.DOMFile(/*node*/null, srcFiles[i], null, 0, 0);
-  var fiHTML = '<'+'!-- '+fi.write(fs.readFileSync(srcFiles[i])) + '--'+'>';
+  var fiHTML = '<'+'!-- '+fi.write(fs.readFileSync(srcFiles[i])+'') + '--'+'>';
   srcTotalSize += fiHTML.length;
   srcFiles[i] = fiHTML;
 }
@@ -125,7 +125,7 @@ ui = ui.
   replace(/\#builtStr\#/, miBuildDate.toString()).
   replace(/\#taken\#/, (miBuildDate - buildStart).toString()).
   replace(/\#style\#/, jsString(cssFiles.join('\n'))).
-  replace(/\#cm-style\#/, jsString(fs.readFileSync('../imports/cm/cm.css'))).
+  replace(/\#cm-style\#/, jsString(fs.readFileSync('../imports/cm/cm.css')+'')).
   replace(/\#platform\#/, jsString(platform.toString()));
 
 html.push(
@@ -157,7 +157,7 @@ html.push(
   '}//'+'# '+'sourceURL=ui.html\n'+
   '</'+'script>');
 
-html.push(fs.readFileSync('dummy.html'));
+html.push(fs.readFileSync('dummy.html')+'');
 
 
 html = html.concat(srcFiles);

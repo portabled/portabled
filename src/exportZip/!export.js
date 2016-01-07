@@ -36,15 +36,10 @@ function exportAllZIP() {
         var url = window.URL.createObjectURL(blob);
         console.log('Preparing to save the ZIP [' + blob.size + ' of '+files.length+' files] ', url);
 
-        try {
-          var a = eq80.ui.contentWindow.document.createElement('a');
-          a.href = url;
-          a.setAttribute('download', filename);
-          a.click();
-        }
-        finally {
-          a.parentElement.removeChild(a);
-        }
+        var a = eq80.ui.contentWindow.document.createElement('a');
+        a.href = url;
+        a.setAttribute('download', filename);
+        a.click();
 
       });
     };
