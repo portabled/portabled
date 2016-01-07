@@ -64,7 +64,7 @@ var bootUI = fs.readFileSync('boot.html');
 var ui = fs.readFileSync('ui.html');
 
 ui = ui.
-  replace(/#on-error#/, fs.readFileSync('../boot/onerror.js')).
+  replace(/#on-error#/, fs.readFileSync('../shell/onerror.js')).
   replace(/#cm-style#/, fs.readFileSync('../imports/cm/cm.css').replace(/\$/g, '$$$$')).
   replace(/#cm-script#/, fs.readFileSync('../imports/cm/cm.js').replace(/\$/g, '$$$$')).
   replace(/#ts-script#/, fs.readFileSync('../imports/ts/typescript.js').replace(/\$/g, '$$$$'));

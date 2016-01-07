@@ -249,8 +249,9 @@ module noapi {
     function readFileSync(filename: string, options?: { encoding?: string; flag?: string; }): any {
 
       // TODO: handle encoding and other
-      return drive.read(modules.path.resolve(filename));
-
+      var result = drive.read(modules.path.resolve(filename));
+      if (result || typeof result==='string') return result;
+      else throw new Error('ENOENT: no such file or directory, open \''+filename+'\'');
     }
 
     function readSync(fd: number, buffer: Buffer, offset: number, length: number, position: number): number {
