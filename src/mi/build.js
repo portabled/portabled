@@ -107,9 +107,12 @@ ui = ui.
 	replace(/#shell-style#/, cssFiles.join('\n'));
 
 var srcFiles = dirExpand(['..'], /.*/);
+var srcLead = path.resolve('../..');
+if (/.\/$/.test(srcLead)) srcLead = srcLead.slice(0, srcLead.length-1);
+
 var srcTotalSize = 0;
 for (var i = 0; i < srcFiles.length; i++) {
-  var fi = new eq80.persistence.dom.DOMFile(/*node*/null, srcFiles[i], null, 0, 0);
+  var fi = new eq80.persistence.dom.DOMFile(/*node*/null, srcFiles[i].slice(srcLead.length), null, 0, 0);
   var fiHTML = '<'+'!-- '+fi.write(fs.readFileSync(srcFiles[i])+'') + '--'+'>';
   srcTotalSize += fiHTML.length;
   srcFiles[i] = fiHTML;
@@ -238,8 +241,9 @@ function jsStringLong(str) {
 
 function jsString(str) {
   var hasNewlines = false && str.indexOf('\n')>=0;
-  if (typeof nowin.JSON !== 'undefined' && typeof JSON.stringify === 'function')
-    return hasNewlines ? ('[\n  '+JSON.stringify(str).replace(/\</g, '<"+"').replace(/([^\\])\\n/g, '$1",\n  "')+'\n  ].join("\\n")') : JSON.stringify(str).replace(/\<\/script\>/gi, '<"+"/script>');
+  var _JSON = typeof JSON!=='undefined'? JSON : nowin ? nowin.JSON : null;
+  if (_JSON && typeof _JSON.stringify === 'function')
+    return hasNewlines ? ('[\n  '+_JSON.stringify(str).replace(/\</g, '<"+"').replace(/([^\\])\\n/g, '$1",\n  "')+'\n  ].join("\\n")') : _JSON.stringify(str).replace(/\<\/script\>/gi, '<"+"/script>');
   else
   	return (hasNewlines ? '[\n  "' : '"') + str.replace(/[\"\s\\\<]/g, function(ch) {
       if (ch==' ') return ch;
@@ -325,7 +329,9 @@ function dirExpand(files, regexp) {
       continue;
     }
 
-    var list = dirExpand(fs.readdirSync(fi), regexp);
+    var dirFiles = fs.readdirSync(fi);
+    for (var j = 0; j < dirFiles.length; j++) dirFiles[j] = path.resolve(files[i], dirFiles[j]);
+    var list = dirExpand(dirFiles, regexp);
     if (!list.length) continue;
     if (list.length===1) result.push(list[0]);
     else result = result.concat(list);
