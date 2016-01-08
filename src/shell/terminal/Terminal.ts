@@ -48,10 +48,12 @@ module shell.terminal {
       version: string) {
       this._history = <any>elem('div', { className: 'terminal-history' }, this._host);
 
+      var nowTimeForBuildMessage = +new Date();
+
       var buildMessage = shell.buildMessage;
       if (!buildMessage && typeof eq80 !== 'undefined' && eq80.ui && eq80.ui.contentWindow.build) {
-        buildMessage = 'Built on '+persistence.dom.DOMTotals.formatDate(new Date(eq80.ui.contentWindow.build.timestamp))+'\n'+
-          (eq80.build ? '  (eq80 on '+persistence.dom.DOMTotals.formatDate(new Date(eq80.build.timestamp))+')\n' : '')+
+        buildMessage = 'Built on '+persistence.dom.DOMTotals.formatDate(new Date(eq80.ui.contentWindow.build.timestamp))+' - '+Terminal.agoText(nowTimeForBuildMessage-eq80.ui.contentWindow.build.timestamp)+'\n'+
+          (eq80.build ? '(eq80 on '+persistence.dom.DOMTotals.formatDate(new Date(eq80.build.timestamp))+' - '+Terminal.agoText(nowTimeForBuildMessage-eq80.build.timestamp)+')\n' : '')+
 					'  *using '+(eq80.ui.contentWindow.build.platform||'').replace(/\) /g,')\n   ')+'\n'+
           (eq80.build && eq80.build.platform !== eq80.ui.contentWindow.build.platform  ? '  (eq80 using '+(eq80.build.platform||'').replace(/\) /g,')\n   ')+')\n' : '')+
           '  *taken '+((eq80.ui.contentWindow.build.taken/100)|0)/10+' s.'+
@@ -122,7 +124,7 @@ module shell.terminal {
             (earlyDom > 100 ? ' boot UI '+((earlyDom/100)|0)/10 + 's.':(documentLoaded+=earlyDom,'')) +
             (driveLoaded > 100 ? ' dom filesystem '+((documentLoaded/100)|0)/10 + 's. local modifications '+((driveLoaded/100)|0)/10+'s.':' dom drive '+(((documentLoaded+driveLoaded)/100)|0)/10+'s.') +
           	' shell UI '+((uiLoaded/100)|0)/10+'s.\n'+
-            '  *edited at '+persistence.dom.DOMTotals.formatDate(new Date(eq80.drive.timestamp))+' ('+Terminal.agoText(eq80.drive.timestamp - finishLoading)+')'
+            '  *edited at '+persistence.dom.DOMTotals.formatDate(new Date(eq80.drive.timestamp))+' ('+Terminal.agoText(finishLoading-eq80.drive.timestamp)+')'
           	);
         }
       }, 1);
@@ -155,7 +157,7 @@ module shell.terminal {
       }
       this._keyEchoTimeout = setTimeout(this._keyEchoTimeoutClosure, 600);
 
-      var kn = keyName(e);
+      var kn = e.shellKeyNames[0];
 
       setText(this._keyCodeEcho, e.keyCode+'# ');
       setText(this._keyNameEcho, kn);

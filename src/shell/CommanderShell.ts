@@ -231,7 +231,7 @@ namespace shell {
 
     private _keydownCore(e: KeyboardEvent) {
 
-      var knames = keyNameList(e);
+      enrichKeyEvent(e);
 
       if (this._editor) {
         if (this._editor.handleKeydown) {
@@ -247,26 +247,17 @@ namespace shell {
 
       this._terminal.echoKey(e);
 
-      var pressed: any = {};
-
-      for (var i = 0; i < knames.length; i++) {
-        pressed[knames[i]]=1;
-        var kn = knames[i].replace(/\-/g, '');
-      	if (typeof this[kn]==='function') {
-          var proc = this[kn](e);
-          if (proc) return proc;
-        }
-      }
-
       if (this._twoPanels.isVisible() && (e.keyCode !== 13 || this._terminal.isInputEmpty())) {
         if (this._twoPanels.keydown(e)) return true;
       }
+
+      var disp = dispatchKeyEvent(e, this);
 
       var cursorPath = this._twoPanels.cursorPath();
 
       var refocusInput = true;
       if (e.ctrlKey) refocusInput = false;
-      if (pressed['Ctrl-V']) refocusInput = true;
+      if (e.shellPressed['Ctrl-V']) refocusInput = true;
 
       if (refocusInput)
       	this._terminal.focus();
