@@ -222,59 +222,39 @@ module shell.panels {
       return animateBack;
     }
 
-    keydown(e: KeyboardEvent): boolean {
-      switch (e.keyCode) {
-        case 38:
-          return this._selectionGo(-1);
-        case 40:
-          return this._selectionGo(+1);
-        case 33:
-          return this._selectionGo(-100);
-        case 34:
-          return this._selectionGo(+100);
-        case 37:
-          return this._selectionGo(-10);
-        case 39:
-          return this._selectionGo(+10);
-        case 36:
-          return this._selectionGo(-100000);
-        case 35:
-          return this._selectionGo(+100000);
-        case 9:
-          this.toggleActivePanel();
-          return true;
-        case 85: // U
-          if (e.ctrlKey || e.metaKey)
-            return this.togglePanelPaths();
-          break;
+  	Up() { return this._selectionGo(-1); }
+  	Down() { return this._selectionGo(+1); }
 
-        case 112: // F1
-          if (e.ctrlKey || e.metaKey) {
-            return this.togglePartHidden(true);
-          }
-          break;
+  	PgUp() { return this._selectionGo(-100); }
+  	PgDn() { return this._selectionGo(+100); }
 
-        case 113: // F2
-          if (e.ctrlKey || e.metaKey) {
-            return this.togglePartHidden(false);
-          }
-          break;
+  	Left() { return this._selectionGo(-10); }
+		Right() { return this._selectionGo(+10); }
 
-        case 13: // Enter
-          if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
-          return this._notePathChange(() => {
-            var activePa = this._getPanel(this.isLeftActive());
-            return activePa.navigateCursor();
-          });
+  	Home() { return this._selectionGo(-100000); }
+  	End() { return this._selectionGo(+100000); }
 
-        default:
-          if (e.ctrlKey) {
-            //console.log('ctrl ' + e.keyCode);
-          }
-          break;
-      }
+  	Tab() {
+      this.toggleActivePanel();
+      return true;
+    }
 
-      return false;
+  	CtrlU() {
+      return this.togglePanelPaths();
+    }
+
+  	MetaU() {
+      return this.CtrlU();
+    }
+
+  	CtrlF1() { return this.togglePartHidden(true /* left */); }
+  	CtrlF2() { return this.togglePartHidden(false /* left */); }
+
+  	Enter() {
+      return this._notePathChange(() => {
+        var activePa = this._getPanel(this.isLeftActive());
+        return activePa.navigateCursor();
+      });
     }
 
     togglePartHidden(leftPanel: boolean) {

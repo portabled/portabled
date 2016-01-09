@@ -4,7 +4,7 @@ module shell.keybar {
 
     private _fnKeys: { element: HTMLElement; text: string; action: Function; }[] = [];
 
-    constructor(private _host: HTMLElement, keys: { text: string; action?: Function; }[]) {
+    constructor(private _host: HTMLElement, keys: { text: string; action?: (e: KeyboardEvent) => boolean; }[]) {
       for (var i = 0; i < keys.length; i++) {
         var k = keys[i];
         var keyElem = elem('div', {

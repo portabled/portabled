@@ -59,6 +59,7 @@ catch (error) {
 
 var html = [];
 
+console.log('Combining boot pack...');
 var bootUI = fs.readFileSync('boot.html')+'';
 
 var ui = fs.readFileSync('ui.html')+'';
@@ -80,7 +81,7 @@ eval(eq80script);
 
 // module.exports = eq80;
 
-
+console.log('Compiling shell...');
 var shellCore = compile([
   '../shell',
   '../typings',
@@ -92,6 +93,8 @@ var shellCore = compile([
 ui = ui.
 	replace(/#shell-script#/, shellCore);
 
+
+console.log('Detecting platform...');
 var platform;
 try { platform = require('nowindow').navigator.userAgent }
 catch (error) {
@@ -106,6 +109,7 @@ for (var i = 0; i < cssFiles.length; i++) {
 ui = ui.
 	replace(/#shell-style#/, cssFiles.join('\n'));
 
+console.log('Preparing src...');
 var srcFiles = dirExpand(['..'], /.*/);
 var srcLead = path.resolve('../..');
 if (/\/$/.test(srcLead)) srcLead = srcLead.slice(0, srcLead.length-1);
@@ -120,9 +124,11 @@ for (var i = 0; i < srcFiles.length; i++) {
 
 var miBuildDate = new Date();
 
+console.log('Encoding build date and summary: '+miBuildDate+'...');
 var totalsComment = '<'+'!-- '+ (new eq80.persistence.dom.DOMTotals(miBuildDate, srcTotalSize, /*node*/null)).updateNode() + ' --'+'>\n';
 html.unshift(eq80html.replace(/\<\/title\>/, '<'+'/title>' + totalsComment));
 
+console.log('Merging shell pack...');
 ui = ui.
   replace(/\#built\#/, (+miBuildDate).toString()).
   replace(/\#builtStr\#/, miBuildDate.toString()).
@@ -160,11 +166,13 @@ html.push(
   '}//'+'# '+'sourceURL=ui.html\n'+
   '</'+'script>');
 
+console.log('Sample/dummy files...');
 html.push(fs.readFileSync('dummy.html')+'');
 
 
 html = html.concat(srcFiles);
 
+console.log('Reporting the build result...');
 passResult();
 
 

@@ -196,7 +196,7 @@ namespace shell {
 
     Enter(e) {
       if (this._terminal.isInputEmpty()) {
-        if (this._twoPanels.keydown(e)) return true;
+        if (dispatchKeyEvent(e, this._twoPanels) return true;
         var cursorPath = this._twoPanels.cursorPath();
         return this._execute(cursorPath, null);
       }

@@ -74,12 +74,17 @@ module persistence {
     updateTime = true;
     timestamp: number = 0;
 
+    private _cachedFiles: string[] = null;
+
     constructor (private _dom: Drive, private _shadow: Drive.Shadow) {
       this.timestamp = this._dom.timestamp;
     }
 
     files(): string[] {
-      return this._dom.files();
+      if (!this._cachedFiles)
+        this._cachedFiles = this._dom.files();
+
+      return this._cachedFiles.slice(0);
     }
 
     read(file: string): string {
