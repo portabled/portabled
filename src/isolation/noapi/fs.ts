@@ -77,11 +77,11 @@ module noapi {
 
     return { fs: fs, filesChanged: onfilesChanged };
 
-    var _cache: { all: FNode; root: FNode; };
+    var _cache: { all: fs_cache.FNode; root: fs_cache.FNode; };
     var _cache_timestamp;
     function get_cache() {
 			if (!_cache && _cache_timestamp !== drive.timestamp)
-      	_cache = fs_cache_structure(drive.files());
+      	_cache = fs_cache.fs_cache_structure(drive.files());
       return _cache;
     }
 
@@ -283,7 +283,7 @@ module noapi {
 
       var path = get_fdtable()[fd];
 
-      writeFileSync(path, buffer);
+      writeFileSync(path, <any>buffer);
     }
 
 

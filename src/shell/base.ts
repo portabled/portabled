@@ -103,7 +103,7 @@ function off(obj, eventName, handler) {
 };
 
 function elem(tag: Element | string, style?: any, parent?: Element): HTMLElement {
-  var e = (<any>tag).tagName ? tag : window.document.createElement(tag);
+  var e = (<any>tag).tagName ? <HTMLElement>tag : window.document.createElement(<string>tag);
 
   if (!parent && style && style.tagName) {
     parent = style;
@@ -117,12 +117,13 @@ function elem(tag: Element | string, style?: any, parent?: Element): HTMLElement
     else {
       for (var k in style) if (style.hasOwnProperty(k)) {
         if (k === 'text') {
-          setText(e, style[k]);
+          setText(
+            e, style[k]);
         }
         else if (k === 'className') {
           e.className = style[k];
         }
-        else if (k === 'background') {
+        else if (k === 'background' && e.style) {
           e.style.background = style[k];
         }
         else if (!(e.style && k in e.style) && k in e) {

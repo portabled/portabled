@@ -196,7 +196,7 @@ namespace shell {
 
     Enter(e) {
       if (this._terminal.isInputEmpty()) {
-        if (dispatchKeyEvent(e, this._twoPanels) return true;
+        if (dispatchKeyEvent(e, this._twoPanels)) return true;
         var cursorPath = this._twoPanels.cursorPath();
         return this._execute(cursorPath, null);
       }
@@ -248,7 +248,7 @@ namespace shell {
       this._terminal.echoKey(e);
 
       if (this._twoPanels.isVisible() && (e.keyCode !== 13 || this._terminal.isInputEmpty())) {
-        if (dispatchKeyEvent(e, this._twoPanels) return true;
+        if (dispatchKeyEvent(e, this._twoPanels)) return true;
       }
 
       var disp = dispatchKeyEvent(e, this);
