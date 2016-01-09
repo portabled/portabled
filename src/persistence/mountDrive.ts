@@ -92,9 +92,10 @@ module persistence {
     }
 
     write(file: string, content: string) {
-      if (this.updateTime) {
+      if (this.updateTime)
         this.timestamp = +new Date();
-      }
+
+      this._cachedFiles = null;
 
       this._dom.timestamp = this.timestamp;
       this._dom.write(file, content);
