@@ -186,7 +186,7 @@ namespace shell {
       return res;
     }
 
-  	Escape(e) {
+    Escape(e) {
     	if (!this._terminal.isInputEmpty())
           return this._terminal.keydown(e, this._twoPanels.cursorPath());
 
@@ -248,7 +248,7 @@ namespace shell {
       this._terminal.echoKey(e);
 
       if (this._twoPanels.isVisible() && (e.keyCode !== 13 || this._terminal.isInputEmpty())) {
-        if (this._twoPanels.keydown(e)) return true;
+        if (dispatchKeyEvent(e, this._twoPanels) return true;
       }
 
       var disp = dispatchKeyEvent(e, this);
