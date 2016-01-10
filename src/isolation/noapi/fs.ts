@@ -109,7 +109,7 @@ namespace noapi {
         throw new Error('ENOTDIR: not a directory, scandir \''+path+'\'');
 
       var result: string[] = fno.files; // cached file list (from previous calls of this function
-      if (result) return result;
+      if (result) return result.slice(0);
       result = [];
       for (var k in fno) if (fno.hasOwnProperty(k)) {
         if (k.charCodeAt(0)!==47) continue; // not slash = not a fnode entry in the map
@@ -118,7 +118,7 @@ namespace noapi {
         else result.push(chno.name);
       }
       fno.files = result;
-      return result;
+      return result.slice(0);
     }
 
     function readdirSync_old(path: string): string[] {
