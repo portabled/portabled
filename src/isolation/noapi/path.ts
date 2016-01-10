@@ -75,7 +75,7 @@ module noapi {
       if (/^\.\//.test(path))
         path = path.replace(/^\.\//, '');
 
-      if (path.charCodeAt(0)!==47) { // starts with NO slash
+      if (/^[^\/^\.]/.test(path)) { // starts with NO slash, neither . or ..
         var cwd = process.cwd();
         if (cwd.slice(-1)==='/')
           path = cwd + path;
@@ -85,13 +85,14 @@ module noapi {
 
       if (path==='/') return '/';
 
-      if (!/\/\.+\//.test(path) && !/\/\.+$/.test(path)) // has no dot-directories such as . or ..  ?
+      if (!/^\.+$/.test(path) && !/^\.+\//.test(path) && !/\/\.+\//.test(path) && !/\/\.+$/.test(path)) // has no dot-directories such as . or ..  ?
         return path;
 
       var trailingSlash = path.slice(-1)==='/';
-      var parts = path.slice(1, path.length + (trailingSlash ? -1 : 0)).split('/');
+      var parts = path.split('/');
       var newParts: string[] = [];
       for (var i = 0; i < parts.length; i++) {
+        if (!parts[i]) continue;
         if (parts[i]==='.') continue;
         if (parts[i]==='..') {
           if (newParts.length) newParts.pop(); // going up beyond root returns root

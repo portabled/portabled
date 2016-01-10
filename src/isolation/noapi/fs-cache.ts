@@ -4,8 +4,8 @@ namespace noapi {
 
     export function fs_cache_structure(files: string[]) {
 
-      var all: FNode = {};
-      var root: FNode = {};
+      var all: { [fullPath: string]: FNode; } = {};
+      var root: FNode = {name: '/', files: null};
 
       files.sort();
       for (var i = 0; i < files.length; i++) {
@@ -27,21 +27,21 @@ namespace noapi {
 
         var nextSlash = fi.indexOf('/', parentSlash+1);
         if (nextSlash<0) {
-          all[fi] = parent[fi] = fi.slice(nextSlash+1);
+          all[fi] = parent[fi] = fi.slice(parentSlash +1);
           return;
         }
 
         var dirPath = fi.slice(0, nextSlash);
 
         if (typeof parent[dirPath]!=='object')
-          parent[dirPath] = {};
+          parent[dirPath] = {name: fi.slice(parentSlash+1, nextSlash),files:null};
         parent = all[dirPath] = parent[dirPath];
 
         parentSlash = nextSlash;
       }
     }
 
-    export type FNode = { [path: string]: FNode; } | string;
+    export type FNode = any | string;
 
   }
 

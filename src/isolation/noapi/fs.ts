@@ -1,4 +1,4 @@
-module noapi {
+namespace noapi {
 
   export function createFS(
     drive: persistence.Drive,
@@ -86,6 +86,42 @@ module noapi {
     }
 
     function readdirSync(path: string): string[] {
+      var fullPath = modules.path.resolve(path);
+      var fsch = get_cache();
+
+      var fno: fs_cache.FNode;
+      if (fullPath==='/') {
+        fno = fsch.root;
+      }
+      else {
+        var fullPathDirName = fullPath;
+      	if (/.\/$/.test(fullPath))
+          fullPathDirName = fullPath.slice(0, fullPath.length-1);
+        else
+          fullPath += '/';
+      }
+
+      fno = fsch.all[fullPathDirName];
+      if (!fno)
+        throw new Error('ENOENT: no such file or directory, scandir \''+path+'\'');
+
+      if (typeof fno==='string')
+        throw new Error('ENOTDIR: not a directory, scandir \''+path+'\'');
+
+      var result: string[] = fno.files; // cached file list (from previous calls of this function
+      if (result) return result;
+      result = [];
+      for (var k in fno) if (fno.hasOwnProperty(k)) {
+        if (k.charCodeAt(0)!==47) continue; // not slash = not a fnode entry in the map
+        var chno = fno[k];
+        if (typeof chno==='string') result.push(chno);
+        else result.push(chno.name);
+      }
+      fno.files = result;
+      return result;
+    }
+
+    function readdirSync_old(path: string): string[] {
       var fullPath = modules.path.resolve(path);
       var plusSlash = fullPath.charCodeAt(fullPath.length-1)===47 ? 0 : 1; // 47 is forwardslash
 

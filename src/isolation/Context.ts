@@ -12,8 +12,7 @@ module isolation {
       defineObscureScope(this._obscureScope, this._frame.global);
       defineObscureScope(this._obscureScope, this._frame.window);
       this._obscureScope.global = void 0;
-      var setGlobal = this._frame.evalFN('(function() { return function(global) { window.global = global; }; })()');
-      setGlobal(this._obscureScope);
+      this._frame.global = this._obscureScope;
     }
 
     runWrapped(code: string, path: string, scope: any) {

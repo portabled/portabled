@@ -8,9 +8,14 @@ var Blob = window.Blob;
 var encodeURIComponent = window.encodeURIComponent;
 var FileReader = window.FileReader;
 
+var zip;
+
 eval(fs.readFileSync('zip.js')+'\n//# '+'sourceURL=zip.js');
 eval(fs.readFileSync('inflate.js')+'\n//# '+'sourceURL=inflate.js');
 eval(fs.readFileSync('deflate.js')+'\n//# '+'sourceURL=deflate.js');
+
+if (!zip)
+  zip = window.zip || this.zip;
 
 exportAllZIP();
 
