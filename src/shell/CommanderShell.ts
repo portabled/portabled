@@ -252,6 +252,7 @@ namespace shell {
       }
 
       var disp = dispatchKeyEvent(e, this);
+      if (disp) return disp;
 
       var cursorPath = this._twoPanels.cursorPath();
 

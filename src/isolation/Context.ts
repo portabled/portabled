@@ -42,6 +42,7 @@ module isolation {
       fnText.push(path);
       var fnTextStr = fnText.join('');
       var fn = this._frame.evalFN(fnTextStr);
+      //this._frame.window.global = null;
       var result = fn.apply(this._frame.global, args);
       return result;
     }
@@ -52,6 +53,7 @@ module isolation {
       var decoratedCode =
         'with(window.global){with(global){   ' + code +
         '\n }}  //# sourceURL=' + path;
+      this._frame.window.global = this._obscureScope;
       var result = this._frame.evalFN(decoratedCode);
       //this._obscureScope.global = null;
       return result;
@@ -107,6 +109,7 @@ module isolation {
   }
 
   function defineObscureScope(scope: any, pollutedGlobal: any) {
+    var validIdentifier = /^[_$a-zA-Z][_$0-9a-zA-Z]*$/;
 
     var natives = this._natives ? this._natives : (this._natives = defineAllowedNatives());
 
@@ -114,7 +117,7 @@ module isolation {
 
     // normal properties
     for (var k in pollutedGlobal) {
-      if (scope[k] || natives[k]) continue;
+      if (scope[k] || natives[k] || !validIdentifier.test(k)) continue;
       scope[k] = dummy;
     }
 
@@ -122,7 +125,7 @@ module isolation {
     if (Object.getOwnPropertyNames) {
       var props = Object.getOwnPropertyNames(pollutedGlobal);
       for (var i = 0; i < props.length; i++) {
-        if (scope[props[i]] || natives[props[i]]) continue;
+        if (scope[props[i]] || natives[props[i]] || !validIdentifier.test(props[i])) continue;
         scope[props[i]] = dummy;
       }
 
@@ -132,7 +135,7 @@ module isolation {
         && pollutedGlobal.constructor.prototype !== Object.prototype) {
         props = Object.getOwnPropertyNames(pollutedGlobal.constructor.prototype);
         for (var i = 0; i < props.length; i++) {
-          if (scope[props[i]] || natives[props[i]]) continue;
+          if (scope[props[i]] || natives[props[i]] || !validIdentifier.test(props[i])) continue;
           scope[props[i]] = dummy;
         }
       }
