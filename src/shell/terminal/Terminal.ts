@@ -45,6 +45,7 @@ module shell.terminal {
     constructor(
       private _host: HTMLElement,
       private _repl: noapi.HostedProcess,
+      private _checkInactive: () => boolean,
       version: string) {
       this._history = <any>elem('div', { className: 'terminal-history' }, this._host);
 
@@ -99,6 +100,12 @@ module shell.terminal {
       };
 
       on(this._input, 'keydown', <any>((e: KeyboardEvent) => {
+        if (this._checkInactive()) {
+          if (e.preventDefault)
+            e.preventDefault();
+          return false;
+        }
+
         detectEnter();
         //if (this.onkeydown) return this.onkeydown(e);
       }));

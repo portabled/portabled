@@ -1,5 +1,4 @@
 declare var eq80, noui;
-declare var persistence;
 
 var fitFrameList = [];
 
@@ -16,21 +15,17 @@ document.title = ':';
 
 // creates both frames invisible
 var boot = eq80.boot = createFrame();
+boot.style.zIndex = <any>100;
 var ui = eq80.ui = createFrame();
+ui.style.zIndex = <any>10;
 
 document.title = '/';
-
-// loads persistence library
-eq80.persistence = persistence;
-persistence(persistence);
-
-document.title = '/.';
 
 var sz = fitresize();
 sz.fitframe(boot);
 sz.fitframe(ui);
 
-document.title = '/:';
+document.title = '/.';
 
 
 eq80.on = on; // supported events: progress, load, resize
@@ -44,9 +39,9 @@ var resizeReportCallbacks = [];
 
 
 var uniqueKey = deriveUniqueKey(location);
-var continueMount = persistence.bootMount(uniqueKey, document); // start persistence detection and loading (both DOM and HTML5)
+var continueMount = eq80.persistence.bootMount(uniqueKey, document); // start persistence detection and loading (both DOM and HTML5)
 
-document.title = '//';
+document.title = '/:';
 
 var keepLoading = setInterval(function() {
 
@@ -64,8 +59,8 @@ var keepLoading = setInterval(function() {
   eq80.continueMount = continueMount = continueMount.continueLoading();
 
   if (prevLoadedSize !== continueMount.loadedSize || prevTotalSize !== continueMount.totalSize) {
-    if (document.title==='//')
-      document.title = '//.';
+    if (document.title==='/:')
+      document.title = '//';
 
     for (var i = 0; i < progressCallbacks.length; i++) {
       var callback = progressCallbacks[i];
@@ -75,10 +70,10 @@ var keepLoading = setInterval(function() {
 
 }, 100);
 
-if (typeof window.addEventListener === 'function') {
+if (window.addEventListener) {
   window.addEventListener('load', window_onload, true);
 }
-else if (typeof (<any>window).attachEvent === 'function') {
+else if ((<any>window).attachEvent) {
   (<any>window).attachEvent('onload', window_onload);
 }
 else {
@@ -99,7 +94,7 @@ function window_onload() {
   continueMount.finishLoading(function(drive) {
     eq80.timings.driveLoaded = +new Date();
     eq80.drive = drive;
-    if (loadedCallbacks.length) {
+    if (loadedCallbacks && loadedCallbacks.length) {
       for (var i = 0; i < loadedCallbacks.length; i++) {
         var callback = loadedCallbacks[i];
         callback(drive);
@@ -144,8 +139,8 @@ function fadeToUI() {
           ui.style.opacity = null;
           ui.style.filter = null;
 
-          if (document.title==='//.')
-      			document.title = '//:';
+          if (document.title==='//')
+      			document.title = '//.';
 
         }, 1);
       }
@@ -157,21 +152,32 @@ function on(eventName, callback, _more) {
 
   if (typeof eventName === 'string') {
     if (typeof callback !== 'function') return;
-    if (eventName === 'progress') progressCallbacks.push(callback);
-    if (eventName === 'load') loadedCallbacks.push(callback);
-    if (eventName === 'resize') {
-      resizeCallbacks.push(callback);
-      resizeReportCallbacks.push(callback);
-      if (resizeReportCallbacks.length===1) {
-        setTimeout(() => {
-          for (var i = 0; i < resizeReportCallbacks.length; i++) {
-            var cb = resizeReportCallbacks[i];
-            cb(sz);
-          }
-          resizeReportCallbacks = [];
-        }, 1);
-      }
+    switch (eventName) {
+
+			case 'progress':
+        progressCallbacks.push(callback);
+        break;
+
+      case 'load':
+        if (loadedCallbacks) loadedCallbacks.push(callback);
+        else setTimeout(function() { callback(eq80.drive); }, 1);
+    		break;
+
+      case 'resize':
+        resizeCallbacks.push(callback);
+        resizeReportCallbacks.push(callback);
+        if (resizeReportCallbacks.length===1) {
+          setTimeout(() => {
+            for (var i = 0; i < resizeReportCallbacks.length; i++) {
+              var cb = resizeReportCallbacks[i];
+              cb(sz);
+            }
+            resizeReportCallbacks = [];
+          }, 1);
+      	}
+        break;
     }
+
     return;
   }
 
@@ -256,7 +262,7 @@ function fitresize() {
   }
 
   function fitframe(frame) {
-    var frwindow = frame.contentWindow || frame.contentWindow;
+    var frwindow = frame.contentWindow || (<any>frame.window);
     var frdoc = frwindow.document;
     var frbody = frdoc ? frdoc.body: null;
     var docs = [frdoc, frbody, frwindow];
@@ -369,11 +375,20 @@ function createFrame() {
     'body{margin:0;padding:0;border:none;height:100%;border:none;overflow:hidden;}' +
     '*,*:before,*:after{box-sizing:inherit;}' +
     'html{box-sizing:border-box;}' +
-    '</' + 'style><' + 'body><' + 'body></' + 'html>');
+    '</' + 'style><' + 'body>'+
+    (ifrwin.eval?'' :
+     '<'+'script id=__eval_export_IE_script>window.__eval_export_IE = function() { return (0,eval)(arguments[0]); }</'+'script>'
+     )+
+    '<' + 'body></' + 'html>');
   if (ifrdoc.close) ifrdoc.close();
 
-  fitFrameList.push(iframe);
+  if (!ifrwin.eval) {
+    ifrwin.eval = ifrwin.__eval_export_IE;
+    var delScript = ifrdoc.scripts[ifrdoc.scripts.length-1];
+    if (delScript) delScript.parentElement.removeChild(delScript);
+  }
 
+  fitFrameList.push(iframe);
 
   return iframe;
 } // createFrame
@@ -411,9 +426,9 @@ function removeSpyElements() {
   function removeElements(tagName) {
     var list = document.getElementsByTagName(tagName);
     for (var i = 0; i < list.length; i++) {
-      var elem = list[i] || list.item(i);
+      var elem: HTMLElement = list[i] || list.item(i);
       if ((<any>elem).__knownFrame) continue;
-      if (elem && (typeof elem.getAttribute === 'function') && elem.getAttribute('data-legit')!=='mi') {
+      if (elem && elem.parentElement && elem.getAttribute && elem.getAttribute('data-legit')!=='mi') {
         if ((ui && elem===ui) || (boot && elem===boot)) continue;
         elem.parentElement.removeChild(elem);
         i--;

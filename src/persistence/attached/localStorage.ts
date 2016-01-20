@@ -10,6 +10,15 @@ module persistence {
     export var name = 'localStorage';
 
     export function detect(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
+      try {
+        detectCore(uniqueKey, callback);
+      }
+      catch (error) {
+        callback(null);
+      }
+    }
+
+    function detectCore(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
       var localStorageInstance = getLocalStorage();
       if (!localStorageInstance) {
         callback(null);

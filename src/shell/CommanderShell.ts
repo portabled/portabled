@@ -20,6 +20,7 @@ namespace shell {
     private _savedPosns: any = {};
 
     private _keybar: keybar.Keybar;
+  	private _dialogHost = new DialogHost();
 
     constructor(private _topWindow: Window, private _host: HTMLElement, private _originalDrive: persistence.Drive, complete: () => string) {
 
@@ -45,7 +46,7 @@ namespace shell {
 
       this._metrics = new layout.MetricsCollector(window);
 
-      this._terminal = new terminal.Terminal(this._host, this._repl, version);
+      this._terminal = new terminal.Terminal(this._host, this._repl, () => this._editor || this._dialogHost.active(), version);
       this._twoPanels = new panels.TwoPanels(this._host, '/', '/src', this._drive);
       this._twoPanels.ondoubleclick = () => this._twoPanels_doubleclick();
 
@@ -229,9 +230,41 @@ namespace shell {
       return this._openEditor(cursorPath, e.shiftKey);
     }
 
+  	AltT() {
+      this._popup(0);
+      return true;
+    }
+
+  	private _popup(level: number) {
+      var btn = document.createElement('button');
+      btn.textContent = 'HELLO DIALOG level '+level+'\n'+new Date();
+      btn.style.cssText = 'position: absolute; left: '+(level*5+10)+'%; top: '+(level*5+10)+'%; width: '+(100 - 2*(level*5+10))+'%; height: '+(100 - 2*(level*5+10))+'%;';
+      var dlg = this._dialogHost.show(btn);
+
+      setTimeout(() => {
+        btn.focus();
+        on(btn, 'keydown', e => {
+          enrichKeyEvent(e);
+          if (e.shellPressed.Escape) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if ('cancelBubble' in e) e.cancelBubble = true;
+            dlg.close();
+            return true;
+          }
+        });
+        btn.onclick = e => {
+          e.cancelBubble = true;
+          this._popup(level+1);
+        };
+        dlg.onclose = () => this._terminal.writeDirect('Popup closed '+btn.textContent+'!');
+      }, 10);
+    }
+
     private _keydownCore(e: KeyboardEvent) {
 
       enrichKeyEvent(e);
+
+      if (this._dialogHost.active()) return;
 
       if (this._editor) {
         if (this._editor.handleKeydown) {

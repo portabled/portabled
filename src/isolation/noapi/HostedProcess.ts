@@ -47,6 +47,7 @@ module noapi {
 
       this.global.require = <any>(moduleName => require(moduleName));
       this.global.require.resolve = id => this.resolve(id, this.cwd);
+      this.global.require.main = this.mainModule;
       this.global.__filename = this._scriptPath;
       this.global.__dirname = dirname(this._scriptPath);
       this.global.console = this.console;
@@ -149,25 +150,22 @@ module noapi {
     }
 
     resolve(id: string, modulePath: string) {
-      if (id.charAt(0) === '.') {
-        return this.coreModules.path.resolve(modulePath, id);
-      }
-      else if (id.charAt(0) === '/') {
+      if (id.charAt(0) === '/') {
         return id;
       }
       else {
         var tryPath = this.coreModules.path.normalize(modulePath);
         var probePatterns = [
-          '../' + i, '../' + id + '.js', '../' + id + '/index.js',
-          '../node_modules/' + id + '/index.js'];
+          id, id + '.js', id + '/index.js',
+          'node_modules/' + id + '/index.js'];
 
         while (true) {
-          tryPath = this.coreModules.path.basename(tryPath);
           if (!tryPath || tryPath === '/') return null;
           for (var i = 0; i < probePatterns.length; i++) {
-            var p = this.coreModules.path.join(tryPath, probePatterns[i]);
+            var p = this.coreModules.path.resolve(tryPath, probePatterns[i]);
             if (this._drive.read(p)) return p;
           }
+          tryPath = this.coreModules.path.basename(tryPath);
         }
       }
     }
@@ -180,13 +178,15 @@ module noapi {
       var resolvedPath = this.resolve(moduleName, parentModulePath);
       if (resolvedPath) {
         var content = this._drive.read(resolvedPath);
+
         if (content) {
 
+          var moduleDir = dirname(resolvedPath);
           var loadedModule = createModule(
             moduleName,
             resolvedPath,
             parentModule,
-            moduleName => this.requireModule(moduleName, resolvedPath, loadedModule));
+            moduleName => this.requireModule(moduleName, moduleDir, loadedModule));
 
           var moduleScope = (() => {
 
@@ -197,6 +197,8 @@ module noapi {
 
             moduleScope.global = moduleScope;
             moduleScope.require = function(moduleName) { return loadedModule.require(moduleName); };
+            moduleScope.require.resolve = id => this.resolve(id, moduleDir);
+            moduleScope.require.main = this.mainModule;
             moduleScope.exports = loadedModule.exports;
 
             moduleScope.global.__filename = resolvedPath;

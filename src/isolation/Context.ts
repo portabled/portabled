@@ -94,10 +94,17 @@ module isolation {
 
     var ifrwin: Window = ifr.contentWindow || (<any>ifr).window;
     var ifrdoc = ifrwin.document;
+    if (!ifrdoc.body) ifrdoc.write('<'+'body'+'></'+'body'+'>');
 
-    var ifrwin_eval: typeof eval = (<any>ifrwin).eval;
-
-    ifrdoc.body.innerHTML = '';
+    var ifrwin_eval: typeof eval = (<any>ifrwin).eval || (<any>ifrwin).window.eval;
+    if (!ifrwin_eval) {
+      ifrdoc.write('<'+'script'+'>window.__eval = function() { return eval(arguments[0]) }</'+'script'+'>');
+      ifrwin_eval = (<any>ifrwin).window.__eval;
+      ifrwin_eval = ifrwin_eval('(function() { return function() { eval(arguments[0]); }; })()');
+      try { ifrwin.window.__eval = null; } catch (error) { }
+      try { delete ifrwin.window.__eval; } catch (error) { }
+      ifrdoc.body.innerHTML = '';
+    }
 
     return {
       document: ifrdoc,

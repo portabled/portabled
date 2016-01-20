@@ -7,16 +7,15 @@
 <script data-legit=mi>
 function eq80() {
 eq80.build = {
-  timestamp: 1452121223381, // Wed Jan 06 2016 23:00:23 GMT+0000 (GMT)
-  taken: 10690,
-  platform: "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36"
+  timestamp: 1453320137593, // Wed Jan 20 2016 20:02:17 GMT+0000 (GMT)
+  taken: 14718,
+  platform: "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.111 Safari/537.36"
 }
 
-if (typeof noui !== "undefined" && noui) {
-  eq80.persistence = persistence;
-	persistence(persistence);
-  return;
-}
+eq80.persistence = init_persistence();
+if (typeof noui !== "undefined" && noui) return;
+
+
 var fitFrameList = [];
 eq80.timings = {
     start: +new Date()
@@ -27,16 +26,14 @@ removeSpyElements();
 document.title = ':';
 // creates both frames invisible
 var boot = eq80.boot = createFrame();
+boot.style.zIndex = 100;
 var ui = eq80.ui = createFrame();
+ui.style.zIndex = 10;
 document.title = '/';
-// loads persistence library
-eq80.persistence = persistence;
-persistence(persistence);
-document.title = '/.';
 var sz = fitresize();
 sz.fitframe(boot);
 sz.fitframe(ui);
-document.title = '/:';
+document.title = '/.';
 eq80.on = on; // supported events: progress, load, resize
 eq80.fadeToUI = fadeToUI;
 var progressCallbacks = [];
@@ -44,8 +41,8 @@ var loadedCallbacks = [];
 var resizeCallbacks = [];
 var resizeReportCallbacks = [];
 var uniqueKey = deriveUniqueKey(location);
-var continueMount = persistence.bootMount(uniqueKey, document); // start persistence detection and loading (both DOM and HTML5)
-document.title = '//';
+var continueMount = eq80.persistence.bootMount(uniqueKey, document); // start persistence detection and loading (both DOM and HTML5)
+document.title = '/:';
 var keepLoading = setInterval(function () {
     if (!eq80.timings.domStarted
         && (continueMount.loadedSize || continueMount.totalSize))
@@ -56,18 +53,18 @@ var keepLoading = setInterval(function () {
     var prevTotalSize = continueMount.totalSize;
     eq80.continueMount = continueMount = continueMount.continueLoading();
     if (prevLoadedSize !== continueMount.loadedSize || prevTotalSize !== continueMount.totalSize) {
-        if (document.title === '//')
-            document.title = '//.';
+        if (document.title === '/:')
+            document.title = '//';
         for (var i = 0; i < progressCallbacks.length; i++) {
             var callback = progressCallbacks[i];
             callback(continueMount.loadedSize, continueMount.totalSize);
         }
     }
 }, 100);
-if (typeof window.addEventListener === 'function') {
+if (window.addEventListener) {
     window.addEventListener('load', window_onload, true);
 }
-else if (typeof window.attachEvent === 'function') {
+else if (window.attachEvent) {
     window.attachEvent('onload', window_onload);
 }
 else {
@@ -83,7 +80,7 @@ function window_onload() {
     continueMount.finishLoading(function (drive) {
         eq80.timings.driveLoaded = +new Date();
         eq80.drive = drive;
-        if (loadedCallbacks.length) {
+        if (loadedCallbacks && loadedCallbacks.length) {
             for (var i = 0; i < loadedCallbacks.length; i++) {
                 var callback = loadedCallbacks[i];
                 callback(drive);
@@ -122,8 +119,8 @@ function fadeToUI() {
                         boot.parentElement.removeChild(boot);
                     ui.style.opacity = null;
                     ui.style.filter = null;
-                    if (document.title === '//.')
-                        document.title = '//:';
+                    if (document.title === '//')
+                        document.title = '//.';
                 }, 1);
             }
         }
@@ -133,22 +130,29 @@ function on(eventName, callback, _more) {
     if (typeof eventName === 'string') {
         if (typeof callback !== 'function')
             return;
-        if (eventName === 'progress')
-            progressCallbacks.push(callback);
-        if (eventName === 'load')
-            loadedCallbacks.push(callback);
-        if (eventName === 'resize') {
-            resizeCallbacks.push(callback);
-            resizeReportCallbacks.push(callback);
-            if (resizeReportCallbacks.length === 1) {
-                setTimeout(function () {
-                    for (var i = 0; i < resizeReportCallbacks.length; i++) {
-                        var cb = resizeReportCallbacks[i];
-                        cb(sz);
-                    }
-                    resizeReportCallbacks = [];
-                }, 1);
-            }
+        switch (eventName) {
+            case 'progress':
+                progressCallbacks.push(callback);
+                break;
+            case 'load':
+                if (loadedCallbacks)
+                    loadedCallbacks.push(callback);
+                else
+                    setTimeout(function () { callback(eq80.drive); }, 1);
+                break;
+            case 'resize':
+                resizeCallbacks.push(callback);
+                resizeReportCallbacks.push(callback);
+                if (resizeReportCallbacks.length === 1) {
+                    setTimeout(function () {
+                        for (var i = 0; i < resizeReportCallbacks.length; i++) {
+                            var cb = resizeReportCallbacks[i];
+                            cb(sz);
+                        }
+                        resizeReportCallbacks = [];
+                    }, 1);
+                }
+                break;
         }
         return;
     }
@@ -221,7 +225,7 @@ function fitresize() {
         global_resize_detect();
     }
     function fitframe(frame) {
-        var frwindow = frame.contentWindow || frame.contentWindow;
+        var frwindow = frame.contentWindow || frame.window;
         var frdoc = frwindow.document;
         var frbody = frdoc ? frdoc.body : null;
         var docs = [frdoc, frbody, frwindow];
@@ -318,9 +322,18 @@ function createFrame() {
         'body{margin:0;padding:0;border:none;height:100%;border:none;overflow:hidden;}' +
         '*,*:before,*:after{box-sizing:inherit;}' +
         'html{box-sizing:border-box;}' +
-        '</' + 'style><' + 'body><' + 'body></' + 'html>');
+        '</' + 'style><' + 'body>' +
+        (ifrwin.eval ? '' :
+            '<' + 'script id=__eval_export_IE_script>window.__eval_export_IE = function() { return (0,eval)(arguments[0]); }</' + 'script>') +
+        '<' + 'body></' + 'html>');
     if (ifrdoc.close)
         ifrdoc.close();
+    if (!ifrwin.eval) {
+        ifrwin.eval = ifrwin.__eval_export_IE;
+        var delScript = ifrdoc.scripts[ifrdoc.scripts.length - 1];
+        if (delScript)
+            delScript.parentElement.removeChild(delScript);
+    }
     fitFrameList.push(iframe);
     return iframe;
 } // createFrame
@@ -352,7 +365,7 @@ function removeSpyElements() {
             var elem = list[i] || list.item(i);
             if (elem.__knownFrame)
                 continue;
-            if (elem && (typeof elem.getAttribute === 'function') && elem.getAttribute('data-legit') !== 'mi') {
+            if (elem && elem.parentElement && elem.getAttribute && elem.getAttribute('data-legit') !== 'mi') {
                 if ((ui && elem === ui) || (boot && elem === boot))
                     continue;
                 elem.parentElement.removeChild(elem);
@@ -361,10 +374,11 @@ function removeSpyElements() {
         }
     }
 }
+// boot 
+
+function init_persistence() {
 
 
-function persistence(p) {
-var persistence = p;
 var persistence;
 (function (persistence) {
     function getIndexedDB() {
@@ -541,6 +555,15 @@ var persistence;
         (function (localStorage) {
             localStorage.name = 'localStorage';
             function detect(uniqueKey, callback) {
+                try {
+                    detectCore(uniqueKey, callback);
+                }
+                catch (error) {
+                    callback(null);
+                }
+            }
+            localStorage.detect = detect;
+            function detectCore(uniqueKey, callback) {
                 var localStorageInstance = getLocalStorage();
                 if (!localStorageInstance) {
                     callback(null);
@@ -550,7 +573,6 @@ var persistence;
                 var dt = new LocalStorageDetached(access);
                 callback(dt);
             }
-            localStorage.detect = detect;
             var LocalStorageAccess = (function () {
                 function LocalStorageAccess(_localStorage, _prefix) {
                     this._localStorage = _localStorage;
@@ -657,6 +679,15 @@ var persistence;
         (function (webSQL) {
             webSQL.name = 'webSQL';
             function detect(uniqueKey, callback) {
+                try {
+                    detectCore(uniqueKey, callback);
+                }
+                catch (error) {
+                    callback(null);
+                }
+            }
+            webSQL.detect = detect;
+            function detectCore(uniqueKey, callback) {
                 var openDatabaseInstance = getOpenDatabase();
                 if (!openDatabaseInstance) {
                     callback(null);
@@ -694,7 +725,6 @@ var persistence;
                     callback(null);
                 });
             }
-            webSQL.detect = detect;
             var WebSQLDetached = (function () {
                 function WebSQLDetached(_db, timestamp, _metadataTableIsValid) {
                     this._db = _db;
@@ -1165,7 +1195,7 @@ var persistence;
                         // try to insert at the start, so new files will be loaded first
                         var anchor = this._anchorNode;
                         if (!anchor) {
-                            anchor = document.getElementsByTagName('script');
+                            anchor = document.getElementsByTagName('script')[0];
                             if (anchor)
                                 anchor = getNextNode(anchor);
                         }
@@ -1585,18 +1615,21 @@ var persistence;
             this._shadow = _shadow;
             this.updateTime = true;
             this.timestamp = 0;
+            this._cachedFiles = null;
             this.timestamp = this._dom.timestamp;
         }
         MountedDrive.prototype.files = function () {
-            return this._dom.files();
+            if (!this._cachedFiles)
+                this._cachedFiles = this._dom.files();
+            return this._cachedFiles.slice(0);
         };
         MountedDrive.prototype.read = function (file) {
             return this._dom.read(file);
         };
         MountedDrive.prototype.write = function (file, content) {
-            if (this.updateTime) {
+            if (this.updateTime)
                 this.timestamp = +new Date();
-            }
+            this._cachedFiles = null;
             this._dom.timestamp = this.timestamp;
             this._dom.write(file, content);
             if (this._shadow) {
@@ -1677,9 +1710,10 @@ var persistence;
     }
     persistence.trackChanges = trackChanges;
 })(persistence || (persistence = {}));
+// persistene 
 
-} // persistence 
-
+return persistence;
+}
 }
 eq80();
 //# sourceURL=eq80.js

@@ -92,14 +92,16 @@ function loaded() {
     subtitle.innerText = 'Loaded.';
 }
 
-if (window.eq80) {
-  window.eq80.boot.style.opacity = 1;
-  window.eq80.boot.style.display = 'block';
-}
+if (parent.eq80) {
+  parent.eq80.boot.style.opacity = 1;
+  parent.eq80.boot.style.display = 'block';
 
-eq80.on('progress', function(loadedSize, totalSize) {
-  title('Loading: '+Math.round(loadedSize/1024)+' of '+Math.round(totalSize/1024)+'Kb...', loadedSize/totalSize);
-});
+
+	parent.eq80.on('progress', function(loadedSize, totalSize) {
+  	title('Loading: '+Math.round(loadedSize/1024)+' of '+Math.round(totalSize/1024)+'Kb...', loadedSize/totalSize);
+	});
+
+}
 </script>
 
 </body>

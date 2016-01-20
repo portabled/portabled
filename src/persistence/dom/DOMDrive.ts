@@ -75,7 +75,7 @@ module persistence.dom {
           // try to insert at the start, so new files will be loaded first
           var anchor = this._anchorNode;
           if (!anchor) {
-            anchor = document.getElementsByTagName('script');
+            anchor = document.getElementsByTagName('script')[0];
             if (anchor) anchor = getNextNode(anchor);
           }
 

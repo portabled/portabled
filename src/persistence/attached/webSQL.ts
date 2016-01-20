@@ -9,6 +9,15 @@ module persistence {
     export var name = 'webSQL';
 
     export function detect(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
+      try {
+        detectCore(uniqueKey, callback);
+      }
+      catch (error) {
+        callback(null);
+      }
+    }
+
+    function detectCore(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
 
       var openDatabaseInstance = getOpenDatabase();
       if (!openDatabaseInstance) {

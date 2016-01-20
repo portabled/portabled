@@ -39,6 +39,14 @@ module shell.terminal {
           break;
         }
 
+        if (typeof obj.tagName === 'string' && 'innerHTML' in obj && obj.children && typeof obj.children.length==='number'
+          	&& !obj.parentElement && !obj.parentNode
+            && obj.style && typeof obj.style.display === 'string' && obj.style.display !== 'none') {
+          elem(<any>obj, <any>output);
+          break;
+        }
+
+
         if (obj.constructor && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
           elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
           if (obj.constructor.prototype && obj.constructor.prototype.constructor

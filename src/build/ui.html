@@ -1,5 +1,5 @@
 <!doctype html>
-<html><head>
+<html style="margin: 0px; padding: 0px; overflow: hidden;"><head>
 <meta charset="utf-8">
 <!-- shell UI -->
 <style>
@@ -7,7 +7,7 @@
 html{box-sizing:border-box;}
 </style>
 </head>
-<body bgcolor=black style="background: black; overflow: hidden;">
+<body bgcolor=black style="background: black; overflow: hidden; margin: 0px; padding: 0px;">
 
 <script id=shell-script>
 var build = {
@@ -35,10 +35,16 @@ var build = {
 </style>
 
 <script id=shell-script>
+var eq80 = parent.eq80;
 var persistence = eq80.persistence, drive = eq80.drive;
 function require(mod) { return ({nodrive: eq80.drive, nowindow: eq80.window, resize: { on: function(callback) { eq80.on("resize", callback); } }})[mod]; }
 
 #shell-script#
+
+
+eq80.on('load', function() {
+	shell.start(eq80.fadeToUI);
+});
 
 //# sourceURL=/shell-script.js</script>
 
