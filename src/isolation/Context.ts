@@ -101,8 +101,8 @@ module isolation {
       ifrdoc.write('<'+'script'+'>window.__eval = function() { return eval(arguments[0]) }</'+'script'+'>');
       ifrwin_eval = (<any>ifrwin).window.__eval;
       ifrwin_eval = ifrwin_eval('(function() { return function() { eval(arguments[0]); }; })()');
-      try { ifrwin.window.__eval = null; } catch (error) { }
-      try { delete ifrwin.window.__eval; } catch (error) { }
+      try { (<any>ifrwin.window).__eval = null; } catch (error) { }
+      try { delete (<any>ifrwin.window).__eval; } catch (error) { }
       ifrdoc.body.innerHTML = '';
     }
 

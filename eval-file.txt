@@ -1,3 +1,3 @@
-random char: ᢳ
-date: Wed Jan 20 2016 20:04:51 GMT+0000 (GMT)
-location: file:///home/omi/portabled/index.html
+random char: ρ
+date: Sat Jan 30 2016 22:24:18 GMT+0000 (GMT Standard Time)
+location: https://portabled.github.io/portabled/

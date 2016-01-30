@@ -9,7 +9,7 @@ namespace shell {
     private _popupStack: DialogInstance[] = [];
 
   	private _animateInterval: number = null;
-  	private _animateOutDialog: DialogInstance = false;
+  	private _animateOutDialog: DialogInstance = null;
   	private _animationLastTime = 0;
   	private _animationLastPhase = 0;
 
@@ -21,21 +21,22 @@ namespace shell {
     }
 
     show(dialogBody: HTMLElement): DialogInfo {
-      dialogBody.onclick = dialogBody.onmousedown = dialogBody.ontouchstart = e => {
-        if (typeof e.preventDefault === 'function') e.preventDefault();
-        e.cancelBubble = true;
-      };
+      //var handleClick = (e: Event) => {
+      //  if (typeof e.preventDefault === 'function') e.preventDefault();
+      //  e.cancelBubble = true;
+      //};
+      //dialogBody.onclick = dialogBody.onmousedown = dialogBody.ontouchstart = <any>handleClick;
 
       if (this._shade) {
         var lastTopDialog = this._popupStack[this._popupStack.length-1];
         if (lastTopDialog) {
         	// move current dialog underneath the shade
           document.body.removeChild(lastTopDialog.dialogBody);
-          lastTopDialog.dialogBody.style.opacity = 1;
+          lastTopDialog.dialogBody.style.opacity = <any>1;
           document.body.insertBefore(lastTopDialog.dialogBody, this._shade);
         }
         else if (this._animateOutDialog) {
-          document.body.removeChild(this._animateOutDialog);
+          document.body.removeChild(this._animateOutDialog.dialogBody);
           this._animateOutDialog = null;
         }
       }
@@ -64,7 +65,7 @@ namespace shell {
       if (newPhase >=1 && goingIn) {
         var dlg = this._popupStack[this._popupStack.length-1];
         dlg.dialogBody.style.opacity = <any>1;
-        this._shade.opacity = <any>shadeOpacity;
+        this._shade.style.opacity = <any>shadeOpacity;
 
         clearInterval(this._animateInterval);
         this._animateInterval = null;
@@ -79,7 +80,7 @@ namespace shell {
 
         var nextDlg = this._popupStack[this._popupStack.length-1||0];
         if (nextDlg) {
-        	this._shade.style.opacity = shadeOpacity;
+        	this._shade.style.opacity = <any>shadeOpacity;
           document.body.removeChild(nextDlg.dialogBody);
           document.body.appendChild(nextDlg.dialogBody);
         }
@@ -115,6 +116,7 @@ namespace shell {
 
       var handleCancelRequest;
       var clickCancelRequest = e => {
+        if (e.srcElement!==this._shade && e.targetElement!==this._shade) return;
         if (typeof e.preventDefault === 'function') e.preventDefault();
         if ('cancelBubble' in e) e.cancelBubble = true;
         if (!handleCancelRequest) {
@@ -133,7 +135,7 @@ namespace shell {
   	private _dialogInstance_close(cancelCheck: boolean) {
 
       // TODO: handle out-of-order closing
-      var dlg = this.active();
+      var dlg = <DialogInstance>this.active();
       if (!dlg) return;
       if (cancelCheck && typeof dlg.oncancelling === 'function' && dlg.oncancelling()) return;
 

@@ -103,7 +103,7 @@ module shell.panels {
             break;
           }
         }
-        this._redrawNow();
+        this._queueRedraw();
       }
 
       return true;
@@ -244,12 +244,23 @@ module shell.panels {
       }
     }
 
+    private _redrawNowClosure = () => this._redrawNow();
+
     private _queueRedraw() {
       if (this._redrawRequested) return;
-      this._redrawRequested = setTimeout(() => this._redrawNow(), 100);
+      if (typeof requestAnimationFrame) {
+        this._redrawRequested = requestAnimationFrame(this._redrawNowClosure);
+      }
+      else if (typeof webkitRequestAnimationFrame) {
+        this._redrawRequested = webkitRequestAnimationFrame(this._redrawNowClosure);
+      }
+      else {
+      	this._redrawRequested = setTimeout(this._redrawNowClosure, 1);
+      }
     }
 
     private _redrawNow() {
+      var startRedraw = Date.now ? Date.now() : +new Date();
 
       if (!this._metrics.windowMetrics.emHeight) {
         this._queueRedraw();
@@ -439,6 +450,20 @@ module shell.panels {
 
 
       this._redrawRequested = 0;
+      var endRedraw = Date.now ? Date.now() : + new Date();
+
+      if (!(<any>window).__redraw) {
+        (<any>window).__redraw = { averageHundreds: [], hcount: 1, htotal: endRedraw - startRedraw };
+      }
+      else if ((<any>window).__redraw.hcount === 100) {
+        (<any>window).__redraw.averageHundreds.push((<any>window).__redraw.htotal/(<any>window).__redraw.hcount);
+        (<any>window).__redraw.htotal = endRedraw - startRedraw;
+        (<any>window).__redraw.hcount = 1;
+      }
+      else {
+        (<any>window).__redraw.htotal += endRedraw - startRedraw;
+        (<any>window).__redraw.hcount++;
+      }
 
       // end of _redrawNow()
     }

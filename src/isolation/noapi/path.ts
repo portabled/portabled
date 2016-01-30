@@ -34,6 +34,8 @@ module noapi {
     }
 
     function join_core(paths: any[]): string {
+      if (paths.length===1) return paths[0];
+
       var parts: string[] = [];
       var trailSlash = false;
       for (var i = 0; i < paths.length; i++) {
@@ -71,6 +73,7 @@ module noapi {
 
       if (typeof path !== 'string') throw new Error('Path must be a string. Received '+typeof path);
       if (!path || path === '.' || path === './') return process.cwd();
+      if (path==='/') return '/';
 
       if (/^\.\//.test(path))
         path = path.replace(/^\.\//, '');
@@ -82,8 +85,6 @@ module noapi {
         else
           path = cwd + '/' + path;
       }
-
-      if (path==='/') return '/';
 
       if (!/^\.+$/.test(path) && !/^\.+\//.test(path) && !/\/\.+\//.test(path) && !/\/\.+$/.test(path))
         return path; // has no dot-directories such as . or ..  ?

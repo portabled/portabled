@@ -8,9 +8,9 @@ module noapi {
       env: any;
     }): Process {
 
-    var evt = createEventEmitter();
+    var evt = new EventEmitter();
 
-    return {
+    return <Process><any>{
       abort, exit, kill,
       nextTick,
       chdir, cwd,

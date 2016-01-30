@@ -80,8 +80,10 @@ namespace noapi {
     var _cache: { all: fs_cache.FNode; root: fs_cache.FNode; };
     var _cache_timestamp;
     function get_cache() {
-			if (!_cache && _cache_timestamp !== drive.timestamp)
+			if (!_cache || _cache_timestamp !== drive.timestamp) {
       	_cache = fs_cache.fs_cache_structure(drive.files());
+        _cache_timestamp = drive.timestamp;
+      }
       return _cache;
     }
 
@@ -99,9 +101,9 @@ namespace noapi {
           fullPathDirName = fullPath.slice(0, fullPath.length-1);
         else
           fullPath += '/';
+      	fno = fsch.all[fullPathDirName];
       }
 
-      fno = fsch.all[fullPathDirName];
       if (!fno)
         throw new Error('ENOENT: no such file or directory, scandir \''+path+'\'');
 

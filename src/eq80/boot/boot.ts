@@ -430,8 +430,7 @@ function removeSpyElements() {
       if ((<any>elem).__knownFrame) continue;
       if (elem && elem.parentElement && elem.getAttribute && elem.getAttribute('data-legit')!=='mi') {
         if ((ui && elem===ui) || (boot && elem===boot)) continue;
-        elem.parentElement.removeChild(elem);
-        i--;
+        try{ elem.parentElement.removeChild(elem); i--; } catch (error) { }
       }
     }
   }

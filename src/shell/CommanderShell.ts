@@ -34,7 +34,8 @@ namespace shell {
         window);
       this._repl.cwd = '/';
       this._repl.console.log =  (...args: any[]) => {
-        this._terminal.log(args);
+        console.log.apply(console, args);
+        // this._terminal.log(args);
       };
       this._enhanceNoprocess(this._repl);
       this._replAlive = this._repl.keepAlive();
@@ -46,8 +47,12 @@ namespace shell {
 
       this._metrics = new layout.MetricsCollector(window);
 
-      this._terminal = new terminal.Terminal(this._host, this._repl, () => this._editor || this._dialogHost.active(), version);
-      this._twoPanels = new panels.TwoPanels(this._host, '/', '/src', this._drive);
+      this._terminal = new terminal.Terminal(this._host, this._repl, () => <any>this._editor || this._dialogHost.active(), version);
+      var panelDirService =
+          // panels.driveDirectoryService(this._drive);
+      		panels.fsDirectoryService(this._repl.coreModules.fs);
+
+      this._twoPanels = new panels.TwoPanels(this._host, '/', '/src', panelDirService);
       this._twoPanels.ondoubleclick = () => this._twoPanels_doubleclick();
 
       var _lastCwd: string;
@@ -119,6 +124,9 @@ namespace shell {
       if (_glob.console && window.console && _glob.console.log && _glob.console.log!==window.console.log)
         applyConsole(_glob);
       applyConsole(window);
+      var parent = window.parent;
+      if (parent !== window.parent)
+        applyConsole(parent);
 
       setTimeout(() => {
         this._terminal.writeDirect(complete());
@@ -241,9 +249,7 @@ namespace shell {
       btn.style.cssText = 'position: absolute; left: '+(level*5+10)+'%; top: '+(level*5+10)+'%; width: '+(100 - 2*(level*5+10))+'%; height: '+(100 - 2*(level*5+10))+'%;';
       var dlg = this._dialogHost.show(btn);
 
-      setTimeout(() => {
-        btn.focus();
-        on(btn, 'keydown', e => {
+      var keydownHandler = (e:KeyboardEvent) => {
           enrichKeyEvent(e);
           if (e.shellPressed.Escape) {
             if (typeof e.preventDefault === 'function') e.preventDefault();
@@ -251,7 +257,11 @@ namespace shell {
             dlg.close();
             return true;
           }
-        });
+        };
+
+      setTimeout(() => {
+        btn.focus();
+        on(btn, 'keydown', <any>keydownHandler);
         btn.onclick = e => {
           e.cancelBubble = true;
           this._popup(level+1);
@@ -428,6 +438,8 @@ namespace shell {
     private _enhanceNoprocess(nopro: noapi.HostedProcess) {
       nopro.coreModules['nodrive'] = this._drive;
       nopro.coreModules['nowindow'] = window;
+      nopro.coreModules['noshell'] = this;
+      nopro.coreModules['nodialog'] = this._dialogHost;
     }
 
     private _terminalExecute(code: string) {
@@ -562,7 +574,8 @@ namespace shell {
         setTimeout(() => {
           try {
             var proc = new noapi.HostedProcess(argList[0], this._drive, window);
-            proc.console.log = (...args: any[]) => this._terminal.log(args);
+            proc.console.log = (...args: any[]) => { console.log.apply(console, args); };
+
             proc.cwd = this._twoPanels.currentPath();
             for (var i = 1; i < argList.length; i++) {
             	proc.argv.push(argList[i]);

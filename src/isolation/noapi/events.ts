@@ -1,77 +1,91 @@
-module noapi {
+namespace noapi {
 
-  export function createEventEmitter(): EventEmitter {
-
-    var _listeners: { [eventKey: string]: Function[]; } = {};
-
-    var result = {
-      addListener, removeListener, removeAllListeners,
-      on, once,
-      setMaxListeners,
-      listeners,
-      emit
+  export function createEvents() {
+    return {
+      EventEmitter
     };
-    return result;
+  }
 
-    function addListener(event: string, listener: Function): EventEmitter {
+  export class EventEmitter {
+
+    private _listeners: { [eventKey: string]: { callback: Function; once?: boolean; }[]; }  = {};
+
+    addListener(event: string, listener: Function) {
       var key = '*' + event;
-      var list = _listeners[key] || (this._listeners[key] = []);
-      list.push(listener);
-      return result;
+      var list = this._listeners[key] || (this._listeners[key] = []);
+      list.push({ callback: listener });
+      return this;
     }
 
-    function removeListener(event: string, listener: Function): EventEmitter {
+    removeListener(event: string, listener: Function) {
       var key = '*' + event;
-      var list = _listeners[key];
+      var list = this._listeners[key];
       if (list) {
         for (var i = 0; i < list.length; i++) {
-          if (list[i] === listener) {
+          if (list[i].callback === listener) {
             list.splice(i, 1);
             break;
           }
         }
       }
-      return result;
+      return this;
     }
 
-    function removeAllListeners(event?: string): EventEmitter {
+    removeAllListeners(event?: string) {
       var key = '*' + event;
-      delete _listeners[key];
-      return result;
+      delete this._listeners[key];
+      return this;
     }
 
-    function setMaxListeners(n: number): void {
+    setMaxListeners(n: number): void {
       // too complicated for now, ignore
     }
 
-    function listeners(event: string): Function[] {
+    listeners(event: string): Function[] {
       var key = '*' + event;
-      var list = _listeners[key];
-      if (list)
-        return list.slice(0);
-      else
-        return [];
+      var list = this._listeners[key];
+      if (!list) return [];
+      var result: Function[] = [];
+      for (var i = 0; i < list.length; i++)
+        result.push(list[i].callback);
+
+      return result;
     }
 
-    function emit(event: string, ...args: any[]): boolean {
+    emit(event: string, ...args: any[]): boolean {
       var key = '*' + event;
-      var list = _listeners[key];
+      var list = this._listeners[key];
       if (!list) return false;
       for (var i = 0; i < list.length; i++) {
-        var f = list[i];
-        f.apply(null, args);
+        var item = list[i];
+
+        if (args.length) {
+          item.callback.apply(null, args);
+        }
+        else {
+          var cb = item.callback;
+          cb(); // direct calling can be quicker
+        }
+
+        if (item.once) {
+          list.splice(i, 1);
+          i--;
+        }
       }
       return true;
     }
 
-    function on(event: string, listener: Function): EventEmitter {
-      return addListener(event, listener);
+    on(event: string, listener: Function) {
+      return this.addListener(event, listener);
     }
 
-    function once(event: string, listener: Function): EventEmitter {
-      return on(event, listener);
-    }
-
+    once(event: string, listener: Function) {
+      var key = '*' + event;
+      var list = this._listeners[key] || (this._listeners[key] = []);
+      list.push({ callback: listener, once: true });
+      return this;
+  	}
   }
+
 
 }

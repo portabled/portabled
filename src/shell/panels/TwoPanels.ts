@@ -16,21 +16,17 @@ module shell.panels {
 
     ondoubleclick: () => boolean = null;
 
-    private _directoryService: (path: string) => Panel.DirectoryEntry[];
-
     constructor(
       private _host: HTMLElement,
       leftPath: string,
       rightPath: string,
-      private _drive: persistence.Drive) {
+      private _directoryService: (path: string) => Panel.DirectoryEntry[]) {
 
       this._scrollHost = <any>elem('div', { className: 'panels-scroll-host' }, this._host);
       this._scrollContent = <any>elem('div', { className: 'panels-scroll-content' }, this._scrollHost);
 
       this._leftPanelHost = <any>elem('div', { className: 'panels-panel panels-left-panel' }, this._scrollContent);
       this._rightPanelHost = <any>elem('div', { className: 'panels-panel panels-right-panel' }, this._scrollContent);
-
-      this._directoryService = driveDirectoryService(this._drive);
 
       this._leftPanel = new Panel(
         this._leftPanelHost,

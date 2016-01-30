@@ -7,8 +7,8 @@
 <script data-legit=mi>
 function eq80() {
 eq80.build = {
-  timestamp: 1453320137593, // Wed Jan 20 2016 20:02:17 GMT+0000 (GMT)
-  taken: 14718,
+  timestamp: 1453330602908, // Wed Jan 20 2016 22:56:42 GMT+0000 (GMT)
+  taken: 13836,
   platform: "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.111 Safari/537.36"
 }
 
@@ -368,8 +368,11 @@ function removeSpyElements() {
             if (elem && elem.parentElement && elem.getAttribute && elem.getAttribute('data-legit') !== 'mi') {
                 if ((ui && elem === ui) || (boot && elem === boot))
                     continue;
-                elem.parentElement.removeChild(elem);
-                i--;
+                try {
+                    elem.parentElement.removeChild(elem);
+                    i--;
+                }
+                catch (error) { }
             }
         }
     }

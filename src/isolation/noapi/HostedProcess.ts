@@ -5,7 +5,7 @@ module noapi {
     process: Process;
     mainModule: Module;
     global: Global;
-    coreModules: { fs: FS; path: Path, os: OS; };
+    coreModules: { fs: FS; path: Path; os: OS; events: any; http: any; };
 
     exitCode: number = null;
     finished = false;
@@ -29,7 +29,9 @@ module noapi {
       this.coreModules = {
         fs: <FS>null,
         os: <OS>null,
-        path: <Path>null
+        path: <Path>null,
+        events: null,
+        http: null
       };
 
       this.argv = ['/node', this._scriptPath];
@@ -57,6 +59,8 @@ module noapi {
       this.coreModules.fs = fsTuple.fs;
       this.coreModules.os = createOS(this.global);
       this.coreModules.path = createPath(this.process);
+      this.coreModules.http = createHTTP();
+      this.coreModules.events = createEvents();
 
       this._context = new isolation.Context(window);
 

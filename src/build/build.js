@@ -83,11 +83,12 @@ html.push(
   'if (doc.close) doc.close(); })((eq80.boot.contentWindow||eq80.boot.window).document);\n'+
   '</'+'script>\n'+
 	'<'+'script id=shellui data-legit=mi>\n'+
-  'eq80.on("load", initUI); \n'+
   'var initUI_interval = setInterval(initUI, 10);\n'+
+  'eq80.on("load", initUI); \n'+
   'function initUI() {\n'+
-  '  if (typeof eq80==="undefined") return;\n'+
+  '  if (!initUI_interval || typeof eq80==="undefined") return;\n'+
   '  clearInterval(initUI_interval);\n'+
+  '  initUI_interval = null;\n'+
   '  (function(doc) {\n'+
   '    if (doc.open) doc.open();\n'+
   '    var htmlText='+eq80.jsStringLong(ui)+';\n'+

@@ -1,6 +1,6 @@
 interface KeyboardEvent {
   shellKeyNames: string[];
-  shellPressed: { [key: string]: boolean; };
+  shellPressed: any; // { [key: string]: boolean; };
 }
 
 namespace shell {
