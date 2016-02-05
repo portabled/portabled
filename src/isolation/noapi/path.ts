@@ -58,7 +58,7 @@ module noapi {
       }
 
       if (trailSlash)
-        parts.push('/');
+        parts.push('');
 
       return parts.join('/');
     }
@@ -128,6 +128,8 @@ module noapi {
 
     if (ext && result.length >= ext.length && result.slice(-ext.length) === ext)
       result = result.slice(0, result.length - ext.length);
+
+    return result;
   }
 
   export function dirname(p: string): string {

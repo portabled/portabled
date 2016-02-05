@@ -24,8 +24,7 @@ var shellCore = eq80.compile([
   '../shell',
   '../typings',
   '../persistence/API.d.ts',
-  '../isolation/noapi', '../isolation/Context.ts',
-  '../imports/ts/typescriptServices.d.ts'
+  '../isolation/noapi', '../isolation/Context.ts'
 ])['output.js'];
 
 ui = ui.
@@ -64,7 +63,14 @@ var miBuildDate = new Date();
 
 console.log('Encoding build date and summary: '+miBuildDate+'...');
 var totalsComment = '<'+'!-- '+ (new eq80.persistence.dom.DOMTotals(miBuildDate, srcTotalSize, /*node*/null)).updateNode() + ' --'+'>\n';
-html.unshift(eq80.html.replace(/\<\/title\>/, '<'+'/title>' + totalsComment));
+html.unshift(
+  eq80.html.replace(
+    /\<\/title\>/,
+    '<'+'/title>' +
+    '<meta http-equiv="x-ua-compatible" cpmtemt="IE=edge">'+
+    '<HTA:APPLICATION id="htaHeader" SINGLEINSTANCE="no"></HTA:APPLICATION>'+
+    totalsComment +
+    fs.readFileSync('favicon.base64.html')));
 
 console.log('Merging shell pack...');
 ui = ui.
@@ -83,18 +89,24 @@ html.push(
   'if (doc.close) doc.close(); })((eq80.boot.contentWindow||eq80.boot.window).document);\n'+
   '</'+'script>\n'+
 	'<'+'script id=shellui data-legit=mi>\n'+
-  'var initUI_interval = setInterval(initUI, 10);\n'+
-  'eq80.on("load", initUI); \n'+
-  'function initUI() {\n'+
-  '  if (!initUI_interval || typeof eq80==="undefined") return;\n'+
-  '  clearInterval(initUI_interval);\n'+
-  '  initUI_interval = null;\n'+
-  '  (function(doc) {\n'+
+	'function initUI() {\n\n'+
+  '  function dumpToDoc() {\n'+
   '    if (doc.open) doc.open();\n'+
   '    var htmlText='+eq80.jsStringLong(ui)+';\n'+
   '		 doc.write(htmlText);\n'+
-  '  	 if (doc.close) doc.close(); })((eq80.ui.contentWindow || eq80.ui.window).document);\n'+
-  '}//'+'# '+'sourceURL=ui.html\n'+
+  '  	 if (doc.close) doc.close();\n'+
+  '  }\n\n\n'+
+  '  if (!initUI_interval || typeof eq80==="undefined" || !eq80.ui) return;\n'+
+  '  clearInterval(initUI_interval);\n'+
+  '  initUI_interval = null;\n'+
+  '  document.title = "/ / .";\n'+
+  '  var doc = (eq80.ui.contentWindow || eq80.ui.window).document;\n'+
+  '  document.title = "/ / :";\n'+
+	'  dumpToDoc();\n'+
+  '  document.title = "/ / :.";\n'+
+  '}\n\n'+
+  'var initUI_interval = setInterval(initUI, 10);\n'+
+  'eq80.on("load", initUI);  //'+'# '+'sourceURL=ui.html\n'+
   '</'+'script>');
 
 console.log('Sample/dummy files...');

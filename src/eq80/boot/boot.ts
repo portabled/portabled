@@ -1,50 +1,10 @@
-declare var eq80, noui;
-
-var fitFrameList = [];
-
-
-eq80.timings = {
-  start: +new Date()
+window.onerror = function(...args: any[]) {
+  alert('UNHANDLED\n'+args.join('\n'));
 };
-eq80.window = window;
-document.title = '.';
 
-removeSpyElements();
+function onkeeploading() {
 
-document.title = ':';
-
-// creates both frames invisible
-var boot = eq80.boot = createFrame();
-boot.style.zIndex = <any>100;
-var ui = eq80.ui = createFrame();
-ui.style.zIndex = <any>10;
-
-document.title = '/';
-
-var sz = fitresize();
-sz.fitframe(boot);
-sz.fitframe(ui);
-
-document.title = '/.';
-
-
-eq80.on = on; // supported events: progress, load, resize
-
-eq80.fadeToUI = fadeToUI;
-
-var progressCallbacks = [];
-var loadedCallbacks = [];
-var resizeCallbacks = [];
-var resizeReportCallbacks = [];
-
-
-var uniqueKey = deriveUniqueKey(location);
-var continueMount = eq80.persistence.bootMount(uniqueKey, document); // start persistence detection and loading (both DOM and HTML5)
-
-document.title = '/:';
-
-var keepLoading = setInterval(function() {
-
+  if (document.title==='/:') document.title = '/:.';
   if (!eq80.timings.domStarted
       && (continueMount.loadedSize || continueMount.totalSize))
     eq80.timings.domStarted = +new Date();
@@ -59,8 +19,7 @@ var keepLoading = setInterval(function() {
   eq80.continueMount = continueMount = continueMount.continueLoading();
 
   if (prevLoadedSize !== continueMount.loadedSize || prevTotalSize !== continueMount.totalSize) {
-    if (document.title==='/:')
-      document.title = '//';
+  	if (document.title==='/:' || document.title==='/:.') document.title = '//';
 
     for (var i = 0; i < progressCallbacks.length; i++) {
       var callback = progressCallbacks[i];
@@ -68,19 +27,26 @@ var keepLoading = setInterval(function() {
     }
   }
 
-}, 100);
-
-if (window.addEventListener) {
-  window.addEventListener('load', window_onload, true);
-}
-else if ((<any>window).attachEvent) {
-  (<any>window).attachEvent('onload', window_onload);
-}
-else {
-  window.onload = window_onload;
 }
 
 function window_onload() {
+
+  function onfinishloading(drive) {
+    eq80.timings.driveLoaded = +new Date();
+    eq80.drive = drive;
+    if (loadedCallbacks && loadedCallbacks.length) {
+  		if (document.title==='/:' || document.title==='/:.' || document.title==='//') document.title = '//.';
+      for (var i = 0; i < loadedCallbacks.length; i++) {
+        var callback = loadedCallbacks[i];
+        callback(drive);
+      }
+    }
+    else {
+  		if (document.title==='/:' || document.title==='/:.' || document.title==='//') document.title = '//,';
+      fadeToUI();
+    }
+  }
+
   if (typeof eq80==='undefined' || eq80.window!==window) return;
 
   clearInterval(keepLoading);
@@ -91,22 +57,12 @@ function window_onload() {
 
   sz.update();
 
-  continueMount.finishLoading(function(drive) {
-    eq80.timings.driveLoaded = +new Date();
-    eq80.drive = drive;
-    if (loadedCallbacks && loadedCallbacks.length) {
-      for (var i = 0; i < loadedCallbacks.length; i++) {
-        var callback = loadedCallbacks[i];
-        callback(drive);
-      }
-    }
-    else {
-      fadeToUI();
-    }
-  });
+  continueMount.finishLoading(onfinishloading);
+
 }
 
 function fadeToUI() {
+  sz.update();
   ui.style.opacity = '0';
   ui.style.filter = 'alpha(opacity=0)';
   ui.style.display = 'block';
@@ -139,8 +95,8 @@ function fadeToUI() {
           ui.style.opacity = null;
           ui.style.filter = null;
 
-          if (document.title==='//')
-      			document.title = '//.';
+          if (document.title==='//.')
+      			document.title = '//:';
 
         }, 1);
       }
@@ -216,7 +172,6 @@ function off(obj, eventName, callback) {
   }
 } // off
 
-
 function fitresize() {
 
   var needResize = false;
@@ -258,7 +213,7 @@ function fitresize() {
   return state;
 
   function update() {
-    global_resize_detect();
+    check_resize_now();
   }
 
   function fitframe(frame) {
@@ -354,11 +309,9 @@ function fitresize() {
 
 } // fitresize
 
-
-
-
 function createFrame() {
   var iframe = document.createElement('iframe');
+  (<any>iframe).application='yes';
   (<any>iframe).__knownFrame = true;
   iframe.style.cssText = 'position:absolute; left:0; top:0; width:100%; height:100%; border:none;display:none;';
   iframe.src = 'about:blank';
@@ -376,17 +329,10 @@ function createFrame() {
     '*,*:before,*:after{box-sizing:inherit;}' +
     'html{box-sizing:border-box;}' +
     '</' + 'style><' + 'body>'+
-    (ifrwin.eval?'' :
-     '<'+'script id=__eval_export_IE_script>window.__eval_export_IE = function() { return (0,eval)(arguments[0]); }</'+'script>'
-     )+
     '<' + 'body></' + 'html>');
   if (ifrdoc.close) ifrdoc.close();
 
-  if (!ifrwin.eval) {
-    ifrwin.eval = ifrwin.__eval_export_IE;
-    var delScript = ifrdoc.scripts[ifrdoc.scripts.length-1];
-    if (delScript) delScript.parentElement.removeChild(delScript);
-  }
+  (<any>ifrwin).eval = 23;
 
   fitFrameList.push(iframe);
 
@@ -435,3 +381,66 @@ function removeSpyElements() {
     }
   }
 }
+
+
+
+
+
+
+
+declare var eq80, noui;
+
+var fitFrameList = [];
+
+
+eq80.timings = {
+  start: +new Date()
+};
+eq80.window = window;
+document.title = '.';
+
+removeSpyElements();
+
+document.title = ':';
+
+// creates both frames invisible
+var boot = eq80.boot = createFrame();
+boot.style.zIndex = <any>100;
+var ui = eq80.ui = createFrame();
+ui.style.zIndex = <any>10;
+
+document.title = '/';
+
+var sz = fitresize();
+sz.fitframe(boot);
+sz.fitframe(ui);
+
+document.title = '/.';
+
+
+eq80.on = on; // supported events: progress, load, resize
+
+eq80.fadeToUI = fadeToUI;
+
+var progressCallbacks = [];
+var loadedCallbacks = [];
+var resizeCallbacks = [];
+var resizeReportCallbacks = [];
+
+
+var uniqueKey = deriveUniqueKey(location);
+var continueMount = eq80.persistence.bootMount(uniqueKey, document); // start persistence detection and loading (both DOM and HTML5)
+
+document.title = '/:';
+
+if (window.addEventListener) {
+  window.addEventListener('load', window_onload, true);
+}
+else if ((<any>window).attachEvent) {
+  (<any>window).attachEvent('onload', window_onload);
+}
+else {
+  window.onload = window_onload;
+}
+
+var keepLoading = setInterval(onkeeploading, 100);

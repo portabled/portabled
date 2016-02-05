@@ -183,6 +183,7 @@ namespace noapi {
 
       if (existsSync(path)) throw new Error('Directory \'' + path + '\'');
 
+      setDriveTimestamp();
       drive.write(normPath, '');
     }
 
@@ -195,6 +196,7 @@ namespace noapi {
       if (oldContent !== null) {
         // TODO: check if directory is in the way
         // if (nofs
+        setDriveTimestamp();
         drive.write(norm_newPath, oldContent);
         drive.write(norm_oldPath, null);
         return;
@@ -226,6 +228,7 @@ namespace noapi {
           var oldContent = drive.read(fi);
           var restPath = fi.slice(norm_newPath.length);
           var newFiPath = norm_newPath + restPath;
+          setDriveTimestamp();
           drive.write(newFiPath, oldContent);
           drive.write(newFiPath, null);
         }
@@ -302,9 +305,13 @@ namespace noapi {
     }
 
 
+    function setDriveTimestamp() {
+      drive.timestamp = Date.now ? Date.now() : +new Date();
+    }
 
     function writeFileSync(filename: string, content: string) {
 
+      setDriveTimestamp();
       drive.write(modules.path.resolve(filename), content);
 
     }

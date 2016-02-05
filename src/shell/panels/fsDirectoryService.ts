@@ -23,6 +23,7 @@ module shell.panels {
         var entry = { path: entryPath, name, flags: isDirectory ? Panel.EntryFlags.Directory : 0 };
         result.push(entry);
       }
+
       return result;
     };
 

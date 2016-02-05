@@ -1,3 +1,5 @@
+declare var webkitRequestAnimationFrame;
+
 module shell.panels {
 
   var panelClass = 'panels-panel-page';
@@ -50,6 +52,26 @@ module shell.panels {
         this._nextRedrawScrollToCurrent = true;
       }
       this._queueRedraw();
+    }
+
+  	trySelectFileInCurrentDir(file: string) {
+      this._redrawNow();
+      if (!this._pages) return false;
+      for (var i = 0; i < this._pages.length; i++) {
+        var p = this._pages[i];
+        for (var j = 0; j <p.columns.length; j++) {
+          var c = p.columns[j];
+          for (var k = 0; k < c.entries.length; k++) {
+            var e = c.entries[k];
+            if (e.path===file) {
+              this._cursorPath = file;
+        			this._nextRedrawScrollToCurrent = true;
+      				this._queueRedraw();
+              return true;
+            }
+          }
+        }
+      }
     }
 
     handleClick(e: MouseEvent): boolean {
@@ -248,10 +270,10 @@ module shell.panels {
 
     private _queueRedraw() {
       if (this._redrawRequested) return;
-      if (typeof requestAnimationFrame) {
+      if (typeof requestAnimationFrame !=='undefined') {
         this._redrawRequested = requestAnimationFrame(this._redrawNowClosure);
       }
-      else if (typeof webkitRequestAnimationFrame) {
+      else if (typeof webkitRequestAnimationFrame !=='undefined') {
         this._redrawRequested = webkitRequestAnimationFrame(this._redrawNowClosure);
       }
       else {

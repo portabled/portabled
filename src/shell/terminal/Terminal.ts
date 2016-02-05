@@ -116,8 +116,6 @@ module shell.terminal {
       on(this._input, 'propertychange', detectEnter);
 
       setTimeout(() => {
-        this._input.focus();
-
       	var finishLoading = +new Date();
         if (typeof eq80 !== 'undefined' && eq80.timings) {
           var total = finishLoading-eq80.timings.start;

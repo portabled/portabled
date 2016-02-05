@@ -87,6 +87,7 @@ module isolation {
 
   function createFrame(window: Window) {
     var ifr = window.document.createElement('iframe');
+    (<any>ifr).application = 'yes';
     ifr.src = 'about:blank';
     ifr.style.display = 'none';
     ifr.style.width = ifr.style.height = <any>0;
@@ -97,10 +98,25 @@ module isolation {
     if (!ifrdoc.body) ifrdoc.write('<'+'body'+'></'+'body'+'>');
 
     var ifrwin_eval: typeof eval = (<any>ifrwin).eval || (<any>ifrwin).window.eval;
-    if (!ifrwin_eval) {
+    if (ifrwin_eval) {
+      try {
+        var tmp = { ifrwin_eval };
+        if (tmp.ifrwin_eval('true') !== true)
+          ifrwin_eval = null;;
+      }
+      catch (err) {
+        ifrwin_eval = null;
+      }
+
+      if (!ifrwin_eval) {
+        var evalProxyText = '(function() { return function() { return eval(arguments[0]); }; })()';
+        ifrwin_eval = (<any>ifrwin).eval(evalProxyText) || (<any>ifrwin).window.eval(evalProxyText);
+      }
+    }
+    else {
       ifrdoc.write('<'+'script'+'>window.__eval = function() { return eval(arguments[0]) }</'+'script'+'>');
       ifrwin_eval = (<any>ifrwin).window.__eval;
-      ifrwin_eval = ifrwin_eval('(function() { return function() { eval(arguments[0]); }; })()');
+      ifrwin_eval = ifrwin_eval('(function() { return function() { return eval(arguments[0]); }; })()');
       try { (<any>ifrwin.window).__eval = null; } catch (error) { }
       try { delete (<any>ifrwin.window).__eval; } catch (error) { }
       ifrdoc.body.innerHTML = '';

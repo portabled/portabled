@@ -31,28 +31,33 @@ namespace noapi {
         }
         this._method = options.method || 'GET';
         this._callback = callback || options.callback;
+        var req_callback = (status, headers, data) => {
+          // TODO: report result
+        };
 
-        this._xhr.onreadystatechange = () => this._xhr_onreadystatechange();
-        this._xhr.open(this._url, this._method, true);
-        this._xhr.send();
-        // TODO: fallback to a public CORS proxy
-        // TODO: fallback to YQL
-        // TODO: fallback to a public JSONP proxy
-
-      }
-
-      _xhr_onreadystatechange() {
-        if (this._finished) return;
-        if (this._xhr.readyState!==4) return;
-        var response = new IncomingMessage(this._xhr, this);
-        this.emit('response', response);
-        setTimeout(() => {
-          response.emit('ready');
-          setTimeout(() => {
-            this.emit('close');
-            response.emit('close');
-          }, 1);
-        }, 1);
+        xhr_request( // normal XHR
+          this._url, this._method,
+          /*headers*/null, /*body*/null,
+          req_callback,
+        	() => { // public CORS proxy fallback
+            corsProxy_request(
+              this._url, this._method,
+              /*headers*/null, /*body*/null,
+              req_callback,
+              () => { // public JSONP proxy fallback
+                jsonpProxy_request(
+                  this._url, this._method,
+                  /*headers*/null, /*body*/null,
+                  req_callback,
+                  () => { // YQL fallback
+                    yqlProxy_request(
+                      this._url, this._method,
+                      /*headers*/null, /*body*/null,
+                      req_callback,
+                    	/*fallback*/ null);
+                  });
+              });
+          });
       }
 
     }
@@ -81,6 +86,35 @@ namespace noapi {
       request: (options, callback) => new ClientRequest(options, callback)
     };
 
+  }
+
+  function xhr_request(url: string, method: string, headers: any, body, callback: (status, headers, data) => void, fallback: () => void) {
+    var xhr = createXHR();
+    this._xhr.onreadystatechange = xhr_onreadystatechange;
+    this._xhr.open(this._url, this._method, true);
+    // TODO: set method, headers and body
+    this._xhr.send();
+
+    function xhr_onreadystatechange() {
+      if (xhr.readyState!==4) return;
+      if (!xhr.status) return fallback();
+
+      if (xhr.status === 200) {
+        callback(xhr.status, /*headers*/{}, xhr.response);
+      }
+    };
+  }
+
+	function corsProxy_request(url: string, method: string, headers: any, body, callback: (status, headers, data) => void, fallback: () => void) {
+    // TODO: implement CORS proxy request
+  }
+
+	function jsonpProxy_request(url: string, method: string, headers: any, body, callback: (status, headers, data) => void, fallback: () => void) {
+    // TODO: implement JSONP proxy request
+  }
+
+	function yqlProxy_request(url: string, method: string, headers: any, body, callback: (status, headers, data) => void, fallback: () => void) {
+    // TODO: implement YQL proxy request
   }
 
   function createXHR(): any {

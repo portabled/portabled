@@ -38,7 +38,6 @@ function eq80_build() {
 
   var html = [
     '<!doctype html><head><meta charset="utf-8"><title>mini shell </title>',
-    fs.readFileSync('../favicon.base64.html'),
     '<'+'style data-legit=mi> *{display:none;background:black;color:black;} html,body{display:block;background:black;color:black;margin:0;padding:0;height:100%;overflow:hidden;} </'+'style>',
     '</head><body>',
     '<'+'script data-legit=mi>',
@@ -309,6 +308,15 @@ function createLink(filename, content) {
       //link.download = filename;
       if ('textContent' in link) link.textContent = filename;
       else link.innerText = filename;
+
+      if (window.navigator.msSaveOrOpenBlob) {
+        link.onclick = function(e) {
+    			if (!e) e = window.event;
+          e.cancelBubble = true;
+          if (e.preventDefault) e.preventDefault();
+          window.navigator.msSaveOrOpenBlob(blob, filename);
+        };
+      }
       return link;
     }
   }
@@ -319,10 +327,11 @@ function createLink(filename, content) {
   else link.innerText = filename;
   link.href = '#';
   link.onclick = function(e) {
+    if (!e) e = window.event;
     if (e.preventDefault) e.preventDefault();
     if ('cancelBubble' in e) e.cancelBubble = true;
 
-    var blankWindow = window.open('_blank'+(+new Date()));
+    var blankWindow = window.open('about:blank', '_blank'+(+new Date()));
 
     if (blankWindow.document.open)
       blankWindow.document.open();

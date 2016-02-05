@@ -84,9 +84,10 @@ function runWithGithubApi(Github) {
       var html = '<!'+'doctype html>'+
           win.parent.document.documentElement.outerHTML;
       console.log('html ',+html.length);
-      repo.write(inputs.push_branch.value, inputs.push_file.value, html, push_commit_message.value, options, function(err) {
+      var wr = repo.write(inputs.push_branch.value, inputs.push_file.value, html, push_commit_message.value, options, function(err) {
      	   console.log('write ',err);
       });
+      console.log(wr);
     };
 
   }, 100);

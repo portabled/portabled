@@ -1,7 +1,7 @@
 module shell.actions {
 
-  export function move(drive: persistence.Drive, selectedPath: string, targetPanelPath: string) {
-    return copyOrMove(true /*move*/, drive, selectedPath, targetPanelPath);
+  export function move(env: ActionContext) {
+    return copyOrMove(true /*move*/, env);
   }
 
 }

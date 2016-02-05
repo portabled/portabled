@@ -24,7 +24,7 @@ namespace shell {
 
     constructor(private _topWindow: Window, private _host: HTMLElement, private _originalDrive: persistence.Drive, complete: () => string) {
 
-      var wrappedDrive = persistence.trackChanges(this._originalDrive);
+      var wrappedDrive = trackChanges(this._originalDrive);
       this._drive = wrappedDrive.drive;
       wrappedDrive.onchanges = changedFiles => this._onDriveChange(changedFiles);
 
@@ -69,7 +69,7 @@ namespace shell {
       this._keybar = new keybar.Keybar(this._host, [
         { text: 'Help' },
         { text: '<None>' },
-        { text: 'View' },
+        { text: 'Import', action: () => this._command(actions.importAction) },
         { text: 'Edit', action: () => this._openEditor(this._twoPanels.cursorPath()) || true },
         { text: 'Copy', action: () => this._command(actions.copy) },
         { text: 'Move/Rename', action: () => this._command(actions.move) },
@@ -132,6 +132,7 @@ namespace shell {
         this._terminal.writeDirect(complete());
         this.measure();
         this.arrange();
+        this._terminal.focus();
       }, 1);
 
       this._terminal.onexecute = code=> this._terminalExecute(code);
@@ -191,6 +192,8 @@ namespace shell {
       if (res) {
         if (e.preventDefault)
           e.preventDefault();
+        e.cancelBubble = true;
+        e.returnValue = false;
       }
       return res;
     }
@@ -315,7 +318,7 @@ namespace shell {
       if (this._keybar.handleKeydown(e)) return true;
     }
 
-    private _command(action: (drive: persistence.Drive, selectedPath: string, targetPanelPath: string) => boolean, extraArgs?: string) {
+    private _command(action: (env?: actions.ActionContext) => boolean, extraArgs?: string) {
 
       var cursorPath = this._twoPanels.cursorPath();
       var currentOppositePath = this._twoPanels.currentOppositePath();
@@ -334,7 +337,17 @@ namespace shell {
       var cursorPath = this._twoPanels.cursorPath();
       var currentOppositePath = this._twoPanels.currentOppositePath();
 
-      var runResult = action(this._drive, cursorPath, currentOppositePath);
+      var runResult = action({
+    		drive: this._drive,
+  			cursorPath: cursorPath,
+  			currentPanelPath: this._twoPanels.currentPath(),
+  			targetPanelPath: currentOppositePath,
+  			dialogHost: this._dialogHost,
+  			repl: this._repl,
+        selectFile: (file: string) => {
+          this._twoPanels.selectFile(this._repl.coreModules.path.resolve(file));
+        }
+			});
 
       if (!runResult) return false;
 
@@ -463,9 +476,9 @@ namespace shell {
         case 'tsc':
         case '@tsc':
           return this._tsc(moreArgs);
-        case 'build':
-        case '@build':
-          return this._build(moreArgs);
+        case 'window':
+        case '@window':
+          return this._window(moreArgs);
         case 'F4':
         case 'edit':
         case '@edit':
@@ -475,6 +488,11 @@ namespace shell {
         case 'copy':
         case '@copy':
           return this._command(actions.copy, moreArgs);
+
+        case 'F3':
+        case 'import':
+        case '@import':
+          return this._command(actions.importAction, moreArgs);
 
         case 'F6':
         case 'move':
@@ -660,7 +678,7 @@ namespace shell {
         return this._tsc(cursorPath);
       }
       else if (/.html$/.test(cursorPath)) {
-        return this._build(cursorPath);
+        return this._window(cursorPath);
       }
       else {
         var ani = this._twoPanels.temporarilyHidePanels();
@@ -672,13 +690,11 @@ namespace shell {
       }
     }
 
-    private _build(cursorPath: string) {
+    private _window(cursorPath: string) {
 
-      this._terminal.writeDirect('@build ' + cursorPath);
+      this._terminal.writeDirect('@window ' + cursorPath);
       var ani = this._twoPanels.temporarilyHidePanels();
       setTimeout(() => {
-
-        var buildStart = (+new Date());
 
         var uiDoc: any = this._host;
         while (true) {
@@ -687,63 +703,40 @@ namespace shell {
           uiDoc = uiDocParent;
         }
 
-        var ctx = build.spawnWindowContext(uiDoc, cursorPath, 'Building '+cursorPath, this._drive, (...args) => console.log.apply(args));
-        var blankWindow = ctx.blankWindow;
-        var proc = ctx.noprocess;
-        this._enhanceNoprocess(proc);
+        var html = this._drive.read(cursorPath);
+        var blankWindow = require('nowindow').open('about:blank');
 
-        build.buildInContext(
-          cursorPath,
-          this._drive,
-          moduleName => proc.requireModule(moduleName, proc.cwd, null),
-          code => proc.eval(code, true /* use 'with' statement */),
-          (...args: any[]) => {
-            this._terminal.log(args);
-            try { (<any>blankWindow).log(args.join(' ')); }
-            catch (err) { this._terminal.log(['cannot log messages to build window ', err.message]); }
-          },
-          (error: Error, html: string) => {
-            if (error) {
-              this._terminal.log([error]);
-              ani();
-              return;
-            }
+        if (typeof Blob==='function'
+            && typeof URL!=='undefined'
+            && typeof URL.createObjectURL==='function') {
+          try {
+            showUsingBlob();
+          }
+          catch (blobError) {
+            showUsingDocumentWrite();
+          }
+        }
+        else {
+          showUsingDocumentWrite();
+        }
 
-            var buildTimeTotal = (+new Date()) - buildStart;
-            this._terminal.log(['Built '+html.length+'-character text in '+Math.round(buildTimeTotal/100)/10+' sec.']);
+        ani();
 
-            if (typeof Blob==='function'
-                && typeof URL!=='undefined'
-               	&& typeof URL.createObjectURL==='function') {
-              try {
-                showUsingBlob();
-              }
-              catch (blobError) {
-                showUsingDocumentWrite();
-              }
-            }
-            else {
-              showUsingDocumentWrite();
-            }
+        function showUsingBlob() {
+          var blob = new Blob([html], { type: 'text/html' });
+          var url = URL.createObjectURL(blob);
+          blankWindow.location.replace(url);
+        }
 
-            ani();
-
-            function showUsingBlob() {
-              var blob = new Blob([html], { type: 'text/html' });
-              var url = URL.createObjectURL(blob);
-              blankWindow.location.replace(url);
-            }
-
-            function showUsingDocumentWrite() {
-              blankWindow.document.open();
-              blankWindow.document.write(html);
-              blankWindow.document.close();
-            }
-          });
+        function showUsingDocumentWrite() {
+          blankWindow.document.open();
+          blankWindow.document.write(html);
+          blankWindow.document.close();
+        }
 
       }, 1);
 
-      this._terminal.storeAsHistory('@build ' + cursorPath);
+      this._terminal.storeAsHistory('@window ' + cursorPath);
       return true;
     }
 

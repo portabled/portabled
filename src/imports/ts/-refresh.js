@@ -3,9 +3,7 @@ console.log(importgh);
 
 var libFiles = [
   'tsc.js',
-  'lib.d.ts',
-  'typescript.js',
-  'typescriptServices.d.ts'
+  'lib.d.ts'
 ];
 
 for (var i = 0; i < libFiles.length; i++) {

@@ -43,7 +43,14 @@ function require(mod) { return ({nodrive: eq80.drive, nowindow: eq80.window, res
 
 
 eq80.on('load', function() {
-	shell.start(eq80.fadeToUI);
+  try {
+	shell.start(function() {
+    eq80.fadeToUI();
+  });
+  }
+  catch (startError) {
+    alert('start:\n'+startError.message+'\n\n'+startError+'\n\n'+startError.stack);
+  }
 });
 
 //# sourceURL=/shell-script.js</script>

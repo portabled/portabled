@@ -145,6 +145,7 @@ module shell.editor {
       //highlightSelectionMatches: {showToken: /\w/},
       styleActiveLine: true,
       tabSize: 2,
+      jumpCharBase: 1,
       theme: 'rubyblue'
     });
   }

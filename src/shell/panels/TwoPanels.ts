@@ -167,6 +167,33 @@ module shell.panels {
       return this._notePathChange(() => this._toggleActivePanel());
     }
 
+  	selectFile(file: string) {
+      this._notePathChange(() => {
+        if (!this.isVisible())
+          this.toggleVisibility();
+
+        var isLeftActive = this._leftPanel.isActive();
+        var foundInExisting  = this._getPanel(isLeftActive).trySelectFileInCurrentDir(file);
+        if (!foundInExisting) {
+        	foundInExisting = this._getPanel(!isLeftActive).trySelectFileInCurrentDir(file);
+          if (foundInExisting) {
+            this._toggleActivePanel();
+          }
+          else {
+            if (file==='/') {
+              this.setPath('/');
+            }
+            else {
+              var lastSlash = file.lastIndexOf('/');
+              if (lastSlash===file.length-1) lastSlash = file.lastIndexOf('/', lastSlash);
+              var parentDir = file.slice(0, lastSlash);
+              this._getPanel(isLeftActive).set({currentPath: parentDir, cursorPath: file});
+            }
+          }
+        }
+      });
+    }
+
   	private _toggleActivePanel() {
       if (!this.isVisible()) return;
 

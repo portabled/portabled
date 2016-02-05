@@ -70,10 +70,8 @@
 function title(t, ratio) {
   var subtitle = document.getElementById('subtitle');
 
-  if ('textContent' in subtitle)
-    subtitle.textContent = t;
-  else
-    subtitle.innerText = t;
+  if ('textContent' in subtitle) subtitle.textContent = t;
+  else subtitle.innerText = t;
 
   if (typeof console !== 'undefined' && typeof console.log === 'function')
     console.log(t);
@@ -86,13 +84,20 @@ function title(t, ratio) {
 
 function loaded() {
   var subtitle = document.getElementById('subtitle');
-  if ('textContent' in subtitle)
-    subtitle.textContent = 'Loaded.';
-  else
-    subtitle.innerText = 'Loaded.';
+  if ('textContent' in subtitle) subtitle.textContent = 'Loaded.';
+  else subtitle.innerText = 'Loaded.';
 }
 
 if (parent.eq80) {
+  var subtitle = document.getElementById('subtitle');
+  if (subtitle) {
+    if ('textContent' in subtitle) subtitle.textContent = '*Loading . . .';
+    else subtitle.innerText = '*Loading . . .';
+  }
+  else {
+    alert('DOM is confused - subtitle');
+  }
+
   parent.eq80.boot.style.opacity = 1;
   parent.eq80.boot.style.display = 'block';
 
@@ -102,6 +107,17 @@ if (parent.eq80) {
 	});
 
 }
+else {
+  var subtitle = document.getElementById('subtitle');
+  if (subtitle) {
+    if ('textContent' in subtitle) subtitle.textContent = '*Loading... . .';
+    else subtitle.innerText = '*Loaded... . .';
+  }
+  else {
+    alert('DOM is confused -- subtitle');
+  }
+}
+
 </script>
 
 </body>

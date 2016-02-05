@@ -15,7 +15,9 @@ module shell.terminal {
       case 'function':
         var funContainer = elem('span', output);
         var funFunction = elem('span', { text: 'function ', color: 'silver', opacity: 0.5 }, funContainer);
-        var funName = elem('span', { text: obj.name, color: 'cornflowerblue', fontWeight: 'bold' }, funContainer);
+        if (obj.name)
+        	elem('span', { text: obj.name, color: 'cornflowerblue', fontWeight: 'bold' }, funContainer);
+
         elem('span', { text: '() { ... }', opacity: 0.5, title: obj }, funContainer);
         break;
 
@@ -40,14 +42,14 @@ module shell.terminal {
         }
 
         if (typeof obj.tagName === 'string' && 'innerHTML' in obj && obj.children && typeof obj.children.length==='number'
-          	&& !obj.parentElement && !obj.parentNode
+          	&& !obj.parentElement && (!obj.parentNode || !/HTML/i.test(obj.tagName||'')) // in legacy browsers parentNode may be documentElement, skip those
             && obj.style && typeof obj.style.display === 'string' && obj.style.display !== 'none') {
           elem(<any>obj, <any>output);
           break;
         }
 
 
-        if (obj.constructor && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
+        if (obj.constructor && obj.constructor.name && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
           elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
           if (obj.constructor.prototype && obj.constructor.prototype.constructor
             && obj.constructor.prototype.constructor.name
