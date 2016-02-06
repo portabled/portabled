@@ -1,5 +1,42 @@
 module shell.terminal {
 
+  var ansiColorStyles = {
+
+    '30': { color: 'black' },
+    '31': { color: 'firebrick' },
+    '32': { color: 'forestgreen' },
+    '33': { color: 'olive' },
+    '34': { color: 'navy' },
+    '35': { color: 'MediumVioletRed' },
+    '36': { color: 'teal' },
+    '37': { color: 'silver' },
+    '90': { color: 'gray' },
+    '91': { color: 'tomato' },
+    '92': { color: 'lime' },
+    '93': { color: 'gold' },
+    '94': { color: 'cornflowerblue' },
+    '95': { color: 'HotPink' },
+    '96': { color: 'aqua' },
+    '97': { color: 'white' },
+
+    '40': { background: 'black' },
+    '41': { background: 'firebrick' },
+    '42': { background: 'forestgreen' },
+    '43': { background: 'olive' },
+    '44': { background: 'navy' },
+    '45': { background: 'MediumVioletRed' },
+    '46': { background: 'teal' },
+    '47': { background: 'silver' },
+    '100': { background: 'gray' },
+    '101': { background: 'tomato' },
+    '102': { background: 'lime' },
+    '103': { background: 'gold' },
+    '104': { background: 'cornflowerblue' },
+    '105': { background: 'HotPink' },
+    '106': { background: 'aqua' },
+    '107': { background: 'white' }
+  };
+
   export function logAppendObj(obj: any, output: HTMLDivElement, level: number) {
 
     switch (typeof obj) {
@@ -22,10 +59,56 @@ module shell.terminal {
         break;
 
       case 'string':
-        var strContainer = elem('span', output);
-        elem('span', { text: '"', color: 'tomato' }, strContainer);
-        elem('span', { text: obj, color: 'tomato', opacity: 0.5 }, strContainer);
-        elem('span', { text: '"', color: 'tomato' }, strContainer);
+        if (level===0) {
+          var colorRegex =/\u001b\[((\d+)(\;\d+)?)m/g;
+          var next = colorRegex.exec(obj);
+          if (next) {
+            var colorStr = elem('span', { color: 'silver' }, output);
+            var lastColorDef: any = null;
+            var strIndex =0;
+            while (strIndex < obj.length) {
+              var nextIndex = next ? next.index : obj.length;
+              var nextChunk: any = { text: obj.slice(strIndex, nextIndex) };
+
+              if (lastColorDef && lastColorDef.color) nextChunk.color = lastColorDef.color;
+              if (lastColorDef && lastColorDef.background) nextChunk.background = lastColorDef.background;
+
+              elem('span', nextChunk, colorStr);
+
+              if (!next) break;
+
+              if (/\;/.test(next[1])) {
+                var nums = next[1].split(';');
+                var def1 = ansiColorStyles[nums[0]];
+                var def2 = ansiColorStyles[nums[1]];
+                if (!def1) lastColorDef = def2;
+                else if (!def2) lastColorDef = def1;
+                else {
+                  lastColorDef = {
+                    color: def1.color || def2.color,
+                    background: def1.background || def2.background
+                  };
+                }
+              }
+              else {
+              	lastColorDef = ansiColorStyles[next[1]];
+              }
+              strIndex = next.index + next[0].length;
+              colorRegex.lastIndex = strIndex;
+
+              var next = colorRegex.exec(obj);
+            }
+          }
+          else {
+          	elem('span', { text: obj, color: 'silver' }, output);
+          }
+        }
+        else {
+          var strContainer = elem('span', output);
+          elem('span', { text: '"', color: 'silver' }, strContainer);
+          elem('span', { text: obj, color: 'white', opacity: 0.5 }, strContainer);
+          elem('span', { text: '"', color: 'silver' }, strContainer);
+        }
         break;
 
       default:

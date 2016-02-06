@@ -2,6 +2,7 @@ module shell.terminal {
 
   export function log(args: any[], historyContent: HTMLElement) {
     var output = elem('div', historyContent);
+
     for (var i = 0; i < args.length; i++) {
       if (i > 0)
         elem('span', { text: ' ' }, output);

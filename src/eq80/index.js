@@ -2,7 +2,7 @@ var buildStart = new Date();
 
 var fs = fs || require('fs');
 var path = path || require('path');
-var ts = ts || require('../imports/ts/typescript.js');
+var _process = process;
 
 
 if (require.main===module) {
@@ -203,65 +203,45 @@ function jsString(str) {
 
 function compile(files) {
 
-  var ops = ts.getDefaultCompilerOptions();
+  var tscScript = path.resolve('../imports/ts/tsc.js');
 
+  var process;
+
+  var args = dirExpand(files);
+  args.push('--pretty');
+  args.push('--out');
+  args.push('output.js');
   var outputs = {};
 
+  var ChakraHost = {
+    args: args,
+    currentDirectory: _process.cwd(),
+    executingFile: tscScript,
+    newLine: '\n',
+    useCaseSensitiveFileNames: true,
+    echo: function(s) { console.log(s); },
+    quit: function(exitCode) { return; },
+    fileExists: function(path) { return fs.existsSync(path) && !fs.statSync(path).isDirectory(); },
+    directoryExists: function(path) { return fs.existsSync(path) && !fs.statSync(path).isDirectory(); },
+    createDirectory: function(path) { return; }, // directories are created when files are written
+    resolvePath: function(path_) { return path.resolve(path_); },
+    readFile: function(path) { return fs.readFileSync(path); },
+    writeFile: function(path, contents) { outputs[path] = contents; },
+    readDirectory: function(path, extension, exclude) { return fs.readdirSync(path); }
+  };
+
+  var tscScript = fs.readFileSync(tscScript);
+  eval(tscScript);
+
+  return outputs;
+
+  /*
   ops.target = ts.ScriptTarget.ES5;
   ops.declaration = true;
   ops.outFile = 'output.js';
   // ops.module = ts.ModuleKind.CommonJS;
+  */
 
-  var basehost = ts.createCompilerHost(ops);
-
-  OverrideHost.prototype = basehost;
-
-  var cohost = new OverrideHost();
-
-  cohost.writeFile = function(name, text) {
-    outputs[name] = text;
-  };
-
-  var expandFiles = dirExpand(files);
-
-  var prog = ts.createProgram(expandFiles, ops, cohost);
-
-  prog.emit();
-
-  var diagnostics = ts.getPreEmitDiagnostics(prog);
-
-  for (var i = 0; i < diagnostics.length; i++) {
-    var dg = diagnostics[i];
-    if (!dg) continue;
-    var pos = dg.file ? ts.getLineAndCharacterOfPosition(dg.file, dg.start) : null;
-    if (typeof dg.messageText === 'string') {
-      if (pos)
-    		console.log(dg.file.fileName, pos.line, pos.character, dg.messageText);
-      else
-    		console.log('GLOBAL', dg.messageText);
-    }
-    else {
-      if (pos)
-      	console.log(dg.file.fileName, pos.line, pos.character);
-      else
-        console.log('GLOBAL');
-      var chain = dg.messageText;
-      while (chain) {
-        console.log('  '+chain.messageText);
-        chain = chain.next;
-      }
-    }
-  }
-  if (!diagnostics.length) {
-    console.log('compiled with zero problems');
-  }
-  else if (diagnostics.length>1) {
-    console.log(diagnostics.length+' compile messages');
-  }
-
-  return outputs;
-
-  function OverrideHost() {}
 }
 
 function dirExpand(files, regexp) {

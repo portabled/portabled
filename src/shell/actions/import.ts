@@ -17,6 +17,7 @@ module shell.actions {
     var dlg = env.dialogHost.show(dlgBody);
 
     var ctls = children(dlgBody, 'div', 'input', 'button');
+    var tablist: ImportTab[] = [];
 
     dlgBody.onkeydown = (e) => {
       if (!e) e = (<any>window).event;
@@ -63,7 +64,7 @@ module shell.actions {
 
     var interpretedAsIs: FileData[] = null;
     var interpretedAsEq80Container: FileData[] = null;
-    // TODO: var interpretedAsZip: FileData[] = null;
+    var interpretedAsZip: FileData[] = null;
 
 
     return true;
@@ -84,7 +85,7 @@ module shell.actions {
     }
 
     function ensureContentAreaPrepared() {
-      if ((<any>ensureContentAreaPrepared).__prepared) return;
+      if (tablist.length) return;
 
       ctls.import_file.parentElement.removeChild(ctls.import_file);
       var stash_import_file = ctls.import_file;
@@ -126,10 +127,6 @@ module shell.actions {
       ctls.import_file.style.cssText = 'min-width: 25%; width: auto; background: black; color: gray; border: none; font: inherit; font-size: 120%; padding: 3px; padding-left: 0.6em;';
       ctls.import_file_host.appendChild(ctls.import_file);
 
-      (<any>ensureContentAreaPrepared).__prepared = true;
-
-      var tablist: { tag: HTMLElement; body: HTMLElement; }[] = [];
-
       initTab('files');
       initTab('eq80');
       initTab('zip');
@@ -141,7 +138,8 @@ module shell.actions {
       function initTab(name: string) {
         var tab = {
           tag: ctls['import_tab_'+name],
-          body: ctls['import_body_'+name]
+          body: ctls['import_body_'+name],
+          disabled: false
       	};
         tablist.push(tab);
         tab.tag.onclick = function() { selectTab(tab) };
@@ -161,11 +159,74 @@ module shell.actions {
       }
     }
 
-    function createImportPreview(host: HTMLElement) {
+    function createBrowserUI(tab: ImportTab, files: FileData[]) {
+      if (!files) {
+        tab.disabled = true;
+        tab.tag.style.display = 'none';
+        tab.body.style.display = 'none';
+        return;
+      }
+
+      tab.disabled = false;
+
+      tab.body.style.overflow = null;
+      tab.body.innerHTML =
+        '<table style="width: 100%; height: 100%" cellpadding=0 cellspacing=0>'+
+        '<tr height=100%><td id=import_browser_directory_tree height=100% width=35% valign=top style="height: 100%; width: 35%; overflow: auto;">'+
+        'DIRECTORY TREE GOES HERE'+
+        '</td><td id=import_browser_file_list height=100% width=65% valign=top style="height: 100%; width: 65%; overflow: auto;">'+
+        'FILE LIST GOES HERE'+
+        '</td></tr>'+
+        '<tr height=1><td id=import_browser_status_bar height=1 colspan=2 style="height: 1px; text-align: right">'+
+        'status bar text'+
+        '</td></tr>'+
+        '</table>';
+      var bctls = children(tab.body, 'td');
+
+      updateStatusBar();
+      updateTree();
+      updateFileList();
+
+      function updateStatusBar() {
+        var statusText = files.length === 0 ? 'No files' : files.length === 1 ? '1 file' : files.length+' files';
+        if ('textInput' in bctls.import_browser_status_bar) bctls.import_browser_status_bar.textInput = statusText;
+        else bctls.import_browser_status_bar.innerText = statusText;
+      }
+
+      function updateTree() {
+        // TODO: infer tree structure from the file list
+      }
+
+      function updateFileList() {
+        bctls.import_browser_file_list.innerHTML = '';
+        for (var i = 0; i < files.length; i++) {
+          var fi = document.createElement('div');
+          fi.style.cssText = 'display: inline-block; min-width: 30%; padding: 0.5em; padding-top: 3px; padding-bottom: 3px;';
+          if ('textContent' in fi) fi.textContent = files[i].path;
+          else fi.innerText = files[i].path;
+          bctls.import_browser_file_list.appendChild(fi);
+        }
+      }
     }
 
     function interpretFileListAsIs(files: FileList) {
-      // TODO: stash it in appropriate variables
+
+      var list: FileData[] = [];
+      for (var i = 0; i < files.length; i++) {
+        list.push(createEntry(files[i]));
+      }
+
+      return list;
+
+      function createEntry(file: File): FileData {
+				return {
+          path: files[i].name,
+          getContent(callback: (error: any, result: any) => void) {
+          	callback(new Error('Not implemented'), null);
+        	}
+        };
+      }
+
     }
 
     function interpretFileAsEq80Container(file: File) {
@@ -174,12 +235,18 @@ module shell.actions {
 
     function updateInterpretedSections() {
       ensureContentAreaPrepared();
-      // TODO: update visibility, selection
+      createBrowserUI(tablist[0], interpretedAsIs);
     }
 
     interface FileData {
       path: string;
-      content: any;
+      getContent(callback: (error: any, result: any) => void);
+    }
+
+    interface ImportTab {
+      tag: HTMLElement;
+      body: HTMLElement;
+      disabled: boolean;
     }
 
   }
