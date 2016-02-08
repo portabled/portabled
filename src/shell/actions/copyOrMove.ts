@@ -1,233 +1,37 @@
 module shell.actions {
 
   export function copyOrMove(move: boolean, env: ActionContext) {
-    if (!env.cursorPath || env.cursorPath === '/' || !env.targetPanelPath) return false;
 
-    var dlgBody = document.createElement('div');
-    dlgBody.style.cssText =
-      'position: absolute; left: 30%; top: 40%; height: auto; width: auto; min-width: 40%;'+
-      'background: cornflowerblue; color: black; border: solid 1px white;'+
-      'padding: 1em;';
+    function ExtendContext() { }
+    ExtendContext.prototype = env;
+    var contextCopy: copyMoveImport.ExtendedActionContext = <any>new ExtendContext();
+    contextCopy.from = env.repl.coreModules.path.resolve(env.cursorPath);
+    contextCopy.dirSource = false;
+    try {
+      if (env.repl.coreModules.fs.statSync(contextCopy.from).isDirectory())
+        contextCopy.dirSource = true;
+    }
+    catch (error) { }
 
-    dlgBody.innerHTML =
-      '<pre style="margin: 0px;">'+
-      '<div style="font-size: 160%; font-weight: light;">'+ (move ? 'Move (F6)' : 'Copy (F5)')+'</div>'+
-      '<div>from<span id=from_label_extra></span>:</div>'+
-      '<pre id=copy-from style="width: 95%; background: navy; color: silver; border: none; font: inherit; font-size: 120%; padding: 3px; padding-left: 0.6em; opacity: 0.8;"></pre>'+
-      '<div>to<span id=to_label_extra></span>:</div>'+
-      '<input id=copy-to style="width: 95%; background: navy; color: silver; border: none; font: inherit; font-size: 120%; padding: 3px; padding-left: 0.6em;">'+
-      '<pre id=copy-overlap-message style="background: tomato; color: white; display: none;"></pre>'+
-    	'<div style="text-align: right; margin-top: 0.5em; margin-right: 5%;"><button id=copy-button style="font: inherit; font-size: 120%;"> Copy </button></div>'+
-      '</pre>';
-
-    var dlg = env.dialogHost.show(dlgBody);
-
-    var from_label_extra = dlgBody.getElementsByTagName('span')[0];
-    var to_label_extra = dlgBody.getElementsByTagName('span')[1];
-    var copy_from = dlgBody.getElementsByTagName('pre')[1];
-    var copy_to = dlgBody.getElementsByTagName('input')[0];
-    var copy_overlap_message = dlgBody.getElementsByTagName('pre')[2];
-    var copy_button = dlgBody.getElementsByTagName('button')[0];
+    contextCopy.title = move ? 'Move (F6)' : 'Copy (F5)';
+    contextCopy.buttonText = move ? 'Move' : 'Copy';
+    contextCopy.sourceFiles =[];
 
     var filesToCopy: string[] = getDirFiles(env.drive, env.cursorPath);
-
-
-    var dirSource: boolean = env.cursorPath==='/';
-    var targetDir: string;
-    var hasOverlap = false;
-
-    copy_from.textContent = copy_from.innerText = env.repl.coreModules.path.resolve(env.cursorPath);
-    try {
-      var srcStat = env.repl.coreModules.fs.statSync(env.cursorPath);
-      if (srcStat.isDirectory()) {
-        from_label_extra.textContent = from_label_extra.innerText = ' (dir with '+filesToCopy.length+' file'+(filesToCopy.length===1?'':'s')+')';
-        dirSource = true;
-      }
-      else {
-        from_label_extra.textContent = from_label_extra.innerText = ' (file)';
-      }
-    }
-    catch (err) {
-      from_label_extra.textContent = from_label_extra.innerText = ' ('+err.message+')';
+    for (var i = 0; i < filesToCopy.length; i++) {
+      contextCopy.sourceFiles.push(makeSourceEntry(filesToCopy[i]));
     }
 
-		copy_to.value = env.targetPanelPath;
-    updateToLabel();
+    return copyMoveImport(contextCopy);
 
-    copy_button.onclick = function() {
-      commit();
-      dlg.close();
-    };
-
-    dlgBody.onkeydown = (e) => {
-      if (!e) e = (<any>window).event;
-      enrichKeyEvent(e);
-      if (e.shellPressed.Escape) {
-        if ('cancelBubble' in e) e.cancelBubble = true;
-        if (e.preventDefault) e.preventDefault();
-        dlg.close();
-      }
-      else if (e.shellPressed.Enter) {
-        if ('cancelBubble' in e) e.cancelBubble = true;
-        if (e.preventDefault) e.preventDefault();
-        updateToLabel();
-        if (hasOverlap) return;
-        commit();
-        dlg.close();
-      }
-      else {
-        queue_updateToLabel();
-      }
-    };
-
-    (<any>copy_to).onchange = queue_updateToLabel;
-    (<any>copy_to).oninput = queue_updateToLabel;
-    (<any>copy_to).ontextInput = queue_updateToLabel;
-    (<any>copy_to).ontextinput = queue_updateToLabel;
-    (<any>copy_to).onmousedown = queue_updateToLabel;
-    (<any>copy_to).onmouseup = queue_updateToLabel;
-
-    setTimeout(function() {
-      copy_to.focus();
-      if (copy_to.select) copy_to.select();
-      else if (copy_to.setSelectionRange) copy_to.setSelectionRange(0, (copy_to.value||'').length);
-    }, 1);
-
-    function queue_updateToLabel() {
-      if ((<any>queue_updateToLabel)._timeout) return;
-      (<any>queue_updateToLabel)._timeout = setTimeout(function() {
-        (<any>queue_updateToLabel)._timeout = 0;
-        updateToLabel();
-      }, 300);
+    function makeSourceEntry(path: string) {
+      return {
+        path: path,
+        getContent: () => env.repl.coreModules.fs.readFileSync(path) + '',
+        remove: move ? () => env.drive.write(path, null) : null
+      };
     }
 
-    function updateToLabel() {
-      try {
-        var trg = copy_to.value;
-        if (trg) trg = trg.replace(/^\s+/, '').replace(/\s+$/, '');
-        if (!trg) {
-          var to_label_text = '';
-        }
-        else {
-          trg = env.repl.coreModules.path.resolve(trg);
-          var isDir = trg === '/' ? true : env.repl.coreModules.fs.statSync(trg).isDirectory();
-          var trgFiles = getDirFiles(env.drive, trg);
-          if (isDir) {
-            var to_label_text = ' (dir with '+trgFiles.length+' file'+(trgFiles.length===1?'':'s')+')';
-          }
-          else {
-            to_label_text = ' (file)';
-          }
-
-          hasOverlap = false;
-          var overlapCount = 0;
-          var pairs = generateMovePairs();
-          for (var i = 0; i < pairs.length; i++) {
-            if (env.repl.coreModules.fs.existsSync(pairs[i].target)) {
-              hasOverlap = true;
-              overlapCount++;
-            }
-          }
-
-          if (hasOverlap) {
-            if (isDir)
-              to_label_text = to_label_text.replace(
-                ')',
-                ', '+overlapCount+(overlapCount<pairs.length?' out of '+pairs.length:'')+
-                ' to overwrite existing)');
-            else
-              to_label_text = '(file to overwrite existing)';
-          }
-
-          if (hasOverlap) {
-            copy_overlap_message.style.display = 'block';
-            copy_overlap_message.textContent = copy_overlap_message.innerText = (move ? 'Move':'Copy')+' anyway, including overwrite?';
-            copy_button.parentElement.style.textAlign = 'left';
-          }
-          else {
-            copy_overlap_message.style.display = 'none';
-            copy_button.parentElement.style.textAlign = 'right';
-          }
-
-        }
-      }
-      catch (err) {
-        to_label_text = ' (new)';
-        hasOverlap = false;
-        copy_overlap_message.style.display = 'none';
-        copy_button.parentElement.style.textAlign = 'right';
-      }
-
-      to_label_extra.textContent = to_label_extra.innerText = to_label_text;
-
-    }
-
-    function generateMovePairs() {
-      var targetName = copy_to.value;
-      if (!targetName) return null;
-      targetName = targetName.replace(/^\s+/, '').replace(/\s+$/,'');
-      if (!targetName) return null;
-      targetDir = env.repl.coreModules.path.resolve(targetName);
-
-      if (!dirSource) {
-        if (targetName.slice(-1)!=='/'
-           && (!env.repl.coreModules.fs.existsSync(targetDir) || !env.repl.coreModules.fs.statSync(targetDir).isDirectory())) {
-          // consider target a file
-          var target = env.repl.coreModules.path.resolve(targetDir);
-        }
-        else {
-          // consider target a directory where to put a file
-          var fn = env.repl.coreModules.path.basename(env.cursorPath);
-          var target = targetDir==='/' ? '/'+fn : env.repl.coreModules.path.resolve(targetDir, fn);
-        }
-
-        if (env.cursorPath===target) return null;
-        return [{ source: env.cursorPath, target: target }];
-      }
-      else {
-        var prefix = env.repl.coreModules.path.resolve(env.cursorPath, '..');
-        if (prefix!=='/') prefix += '/';
-
-        var result: any[] = [];
-
-        for (var i = 0; i < filesToCopy.length; i++) {
-        	var trgFile = targetDir === '/' ?
-              '/'+filesToCopy[i].slice(prefix.length) :
-              env.repl.coreModules.path.resolve(targetDir, filesToCopy[i].slice(prefix.length));
-
-          if (filesToCopy[i]!==trgFile)
-          	result.push({ source: filesToCopy[i], target: trgFile });
-        }
-
-        return result;
-      }
-    }
-
-    function commit() {
-
-      var pairs = generateMovePairs();
-      if (!pairs || !pairs.length) return;
-
-      env.drive.timestamp = +new Date();
-
-      var trgFileMap: any = {};
-      for (var i = 0; i < pairs.length; i++) {
-        if (move) trgFileMap[pairs[i].target] = true;
-        var content = env.drive.read(pairs[i].source);
-        env.drive.write(pairs[i].target, content);
-      }
-
-      if (move) {
-        for (var i = 0; i < pairs.length; i++) {
-          if (!trgFileMap[pairs[i].source])
-            env.drive.write(pairs[i].source, null);
-        }
-      }
-
-      env.selectFile(
-        dirSource ? targetDir : pairs[0].target);
-
-    }
   }
 
 }

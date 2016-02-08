@@ -13,7 +13,7 @@ module shell.actions {
       '<div><span id=deleting-header>Deleting these XXX files:</span></div>'+
       '<pre id=delete-list style="width: 95%; background: black; color: tomato; border: none; font: inherit; font-size: 120%; padding: 3px; padding-left: 0.6em; opacity: 0.8;"></pre>'+
       '<div>- please confirm deletion</div>'+
-    	'<div style="text-align: right; margin-top: 0.5em; margin-right: 5%;"><button id=delete-button style="font: inherit; font-size: 120%;"> Copy </button></div>'+
+    	'<div style="text-align: right; margin-top: 0.5em; margin-right: 5%;"><button id=delete-button style="font: inherit; font-size: 120%;"> Delete </button></div>'+
       '</pre>';
 
     var dlg = env.dialogHost.show(dlgBody);

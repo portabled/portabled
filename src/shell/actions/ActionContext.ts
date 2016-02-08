@@ -8,6 +8,7 @@ namespace shell.actions {
     dialogHost: DialogHost;
     repl: noapi.HostedProcess;
     selectFile(file: string);
+    files: FileList;
   }
 
 }

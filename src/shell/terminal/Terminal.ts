@@ -61,12 +61,24 @@ module shell.terminal {
           (eq80.build ? '\n  (eq80 '+((eq80.build.taken/100)|0)/10+' s.)' : '');
       }
 
-      this._historyContent = <any>elem('pre', {
-        className: 'terminal-history-content',
-        text:
-        	'Hello world from mini-shell\n\nVersion '+version+'\n' +
-        	buildMessage + '\nOleg Mihailik\n\nPlease be careful.'
-      }, this._history);
+      this._historyContent = <any>elem('pre', { className: 'terminal-history-content' }, this._history);
+      elem('div', { text: 'Hello world from mini-shell\n\nVersion '+version }, this._historyContent);
+
+      var refLine = elem('div', 'Uses ', this._historyContent);
+      elem('a', { text: 'TypeScript', href: 'https://github.com/Microsoft/TypeScript/' }, refLine);
+      elem('span', { text: ' from Microsoft and others (with ' }, refLine);
+      elem('a', { text: 'Apache', href: 'https://github.com/Microsoft/TypeScript/blob/master/LICENSE.txt' }, refLine);
+      elem('span', { text: ' license), ' }, refLine);
+
+      elem('a', { text: 'CodeMirror', href: 'http://codemirror.net/' }, refLine);
+      elem('span', { text: ' from Marijn Haverbeke and others (with ' }, refLine);
+      elem('a', { text: 'MIT', href: 'http://codemirror.net/LICENSE' }, refLine);
+      elem('span', { text: ' license).' }, refLine);
+
+
+      elem('div', { text: buildMessage + '\n - by Oleg Mihailik\n\nPlease be careful.' }, this._historyContent);
+
+
 
       this._prompt = <any>elem('div', { className: 'terminal-prompt' }, this._host);
       elem('span', { className: 'terminal-prompt-lead', text: String.fromCharCode(26410) }, this._prompt);

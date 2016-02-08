@@ -52,7 +52,11 @@ namespace shell {
           // panels.driveDirectoryService(this._drive);
       		panels.fsDirectoryService(this._repl.coreModules.fs);
 
-      this._twoPanels = new panels.TwoPanels(this._host, '/', '/src', panelDirService);
+      this._twoPanels = new panels.TwoPanels(
+        this._host,
+        '/',
+        this._repl.coreModules.fs.existsSync('/src') && this._repl.coreModules.fs.statSync('/src').isDirectory() ? '/src' : '/',
+        panelDirService);
       this._twoPanels.ondoubleclick = () => this._twoPanels_doubleclick();
 
       var _lastCwd: string;
@@ -90,6 +94,29 @@ namespace shell {
       this.arrange();
 
       on(this._host, 'keydown', e => this._keydown(<any>e));
+
+      var dragIgnore = (e) => {
+        if (!e) e = (<any>window).event;
+        if (e.preventDefault) e.preventDefault();
+        if (e.stopPropagation) e.stopPropagation();
+      };
+
+      on(this._host, 'dragenter', dragIgnore);
+      on(this._host, 'dragover', dragIgnore);
+
+    	on(this._host, 'drop', (e) => {
+        if (!e) e = (<any>window).event;
+        var dt = (<any>e).dataTransfer;
+        var files = dt ? dt.files : null;
+        if (!files) return;
+
+        if (e.preventDefault) e.preventDefault();
+        if (e.stopPropagation) e.stopPropagation();
+
+      	this._command(actions.importAction, files);
+
+    	});
+
 
       var _glob = (function() { return this; })();
       var applyConsole = (glob) => {
@@ -318,12 +345,13 @@ namespace shell {
       if (this._keybar.handleKeydown(e)) return true;
     }
 
-    private _command(action: (env?: actions.ActionContext) => boolean, extraArgs?: string) {
+    private _command(action: (env?: actions.ActionContext) => boolean, extraArgs?: string|FileList) {
 
       var cursorPath = this._twoPanels.cursorPath();
       var currentOppositePath = this._twoPanels.currentOppositePath();
+    	var files: FileList = null;
 
-    	if (extraArgs) {
+    	if (typeof extraArgs === 'string') {
       	if (extraArgs.indexOf(' ')) {
           var spacePos = extraArgs.indexOf(' ');
           cursorPath = extraArgs.slice(0, spacePos);
@@ -333,9 +361,9 @@ namespace shell {
     			cursorPath = extraArgs;
 				}
 			}
-
-      var cursorPath = this._twoPanels.cursorPath();
-      var currentOppositePath = this._twoPanels.currentOppositePath();
+			else if (extraArgs && extraArgs.length) {
+        files = extraArgs;
+      }
 
       var runResult = action({
     		drive: this._drive,
@@ -346,7 +374,8 @@ namespace shell {
   			repl: this._repl,
         selectFile: (file: string) => {
           this._twoPanels.selectFile(this._repl.coreModules.path.resolve(file));
-        }
+        },
+        files: files
 			});
 
       if (!runResult) return false;
@@ -520,6 +549,15 @@ namespace shell {
 					return this._command(actions.remove, moreArgs);
 
         default:
+
+          try { var fileExists = this._repl.coreModules.fs.existsSync(code); }
+          catch (error) { }
+
+          if (fileExists) {
+            this._execute(code, null);
+            return true;
+          }
+
           var result = this._repl.eval(code, true /*use 'with' statement*/);
           if (result !== void 0) {
             this._terminal.log([result]);
@@ -669,15 +707,77 @@ namespace shell {
       }
     }
 
+		private _tryExtract(file: string, htmlContent: string) {
+      var importedFiles: { path: string; content: string; }[] = [];
+      var pos = 0;
+      while (true) {
+        pos = htmlContent.indexOf('<!'+'--', pos);
+        if (pos<0) break;
+        var end = htmlContent.indexOf('--'+'>', pos+4);
+        if (end<0) break;
+
+        var cmnt = new persistence.dom.CommentHeader(<any>{ nodeValue: htmlContent.slice(pos+4, end) });
+        var domFile = persistence.dom.DOMFile.tryParse(cmnt);
+        if (domFile) {
+          importedFiles.push({ path: domFile.path, content: domFile.read() });
+        }
+
+        pos = end+3;
+      }
+
+      if (importedFiles.length) {
+      	this._command(env => {
+          var envExt: actions.copyMoveImport.ExtendedActionContext = <any>env;
+          envExt.cursorPath = file.replace(/.html$/, '')+'/';
+          envExt.dirSource = true;
+          envExt.title = 'Extract';
+          envExt.buttonText = 'Extract';
+          envExt.from = file;
+          envExt.sourceFiles = [];
+          envExt.virtualSource = true;
+
+          var removed = true; // do not remove existing HTML container for now, it's not intuitively expected with this dialog popping up
+
+          var createEntry = (i: number) => {
+            return {
+              path: importedFiles[i].path,
+              getContent: () => importedFiles[i].content,
+              remove: () => {
+              	if (removed) return;
+              	removed = true;
+              	var expandedFile = this._repl.coreModules.path.resolve(file);
+              	this._drive.write(expandedFile, null);
+            	}
+            };
+          }
+
+          for (var i = 0; i < importedFiles.length; i++) {
+            envExt.sourceFiles.push(createEntry(i));
+          }
+
+          actions.copyMoveImport(<any>envExt);
+
+          return true;
+        });
+        return true;
+      }
+    }
+
     private _execute(cursorPath: string, callback: Function) {
 
       if (/\.js$/.test(cursorPath)) {
         return this._node(cursorPath);
       }
       else if (/\.ts$/.test(cursorPath)) {
-        return this._tsc(cursorPath);
+        return this._tsc(cursorPath+' --pretty');
       }
       else if (/.html$/.test(cursorPath)) {
+        var htmlContent = this._repl.coreModules.fs.readFileSync(cursorPath)+'';
+        if (/\<\!\-\-\s*total /.test(htmlContent)) {
+          var extractOK = this._tryExtract(cursorPath, htmlContent);
+          if (extractOK) return true;
+        }
+
         return this._window(cursorPath);
       }
       else {

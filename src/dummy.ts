@@ -1,4 +1,4 @@
-£class Apple {
+class Apple {
   constructor(public color = 'red') {
   }
 }
