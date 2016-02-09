@@ -172,8 +172,14 @@ module shell.actions {
         return [{ source: env.sourceFiles[0], target: target }];
       }
       else {
-        var prefix = env.repl.coreModules.path.resolve(env.cursorPath, '..');
+        var prefix = env.virtualSource ? '/' : env.repl.coreModules.path.resolve(env.cursorPath, '..');
         if (prefix!=='/') prefix += '/';
+
+        if (!env.virtualSource && targetDir.slice(-1) !== '/') {
+          // allow renaming of directories, strip the name of the source dir from the target
+          prefix = env.repl.coreModules.path.resolve(env.cursorPath);
+        	if (prefix!=='/') prefix += '/';
+        }
 
         var result: { source: copyMoveImport.SourceEntry; target: string }[] = [];
 

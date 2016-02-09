@@ -285,13 +285,34 @@ module shell.panels {
       var startRedraw = Date.now ? Date.now() : +new Date();
 
       if (!this._metrics.windowMetrics.emHeight) {
-        this._queueRedraw();
+        this._queueRedraw(); // no redraw for empty-sized element, wait
         return;
       }
 
       var prevOffset = this._calcEntryTopOffset(Math.max(0, this._cursorEntryIndex));
 
-      var entries = this._directoryService(this._path);
+      try {
+      	var entries = this._directoryService(this._path);
+      }
+      catch (error) {
+
+        // the directory no longer exists, go up
+        while (true) {
+          if (!this._path || this._path==='/') {
+            entries = [];
+            break;
+          }
+
+          this._path = this._path.slice(0, this._path.lastIndexOf('/'));
+          try {
+      		  entries = this._directoryService(this._path);
+            break;
+          }
+          catch (error) { continue; }
+
+        }
+      }
+
       this._entries = [];
 
       entries.sort((e1, e2) => {
@@ -319,17 +340,32 @@ module shell.panels {
         return;
       }
 
+      var lastCursorEntryIndex = this._cursorEntryIndex;
       this._cursorEntryIndex = -1;
+      var seekApproxEntryIndex = true;
+      var approxEntryIndex = -1;
       for (var i = 0; i < entries.length; i++) {
         if (entries[i].path === this._cursorPath) {
           this._cursorEntryIndex = i;
           break;
         }
+
+        if (entries[i].path > this._cursorPath) {
+          if (seekApproxEntryIndex
+              && Math.abs(i-lastCursorEntryIndex) < Math.abs(approxEntryIndex-lastCursorEntryIndex))
+            // look for paths right after removed,
+            // and seek the closest to previously selected
+          	approxEntryIndex = i;
+          seekApproxEntryIndex = false;
+        }
+        else {
+          seekApproxEntryIndex = true;
+        }
       }
 
       if (this._cursorEntryIndex < 0) {
-        this._cursorEntryIndex = 0;
-        this._cursorPath = entries.length > 0 ? entries[0].path : null;
+        this._cursorEntryIndex = Math.max(0, approxEntryIndex);
+        this._cursorPath = entries.length > 0 ? entries[this._cursorEntryIndex].path : null;
       }
 
       this._entriesInColumn = Math.max(3, ((this._metrics.hostHeight / this._metrics.windowMetrics.emHeight) | 0) - 2);

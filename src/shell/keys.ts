@@ -38,7 +38,7 @@ namespace shell {
 
     for (var i = 0; i < knames.length; i++) {
       var sim = knames[i];
-      if (/\-/.test(sim)) sim = simplifiedKeyNames[sim] || (simplifiedKeyNames[sim].replace(/\-/g, ''));
+      if (/\-/.test(sim)) sim = simplifiedKeyNames[sim] || (simplifiedKeyNames[sim] = sim.replace(/\-/g, ''));
       if (typeof handlers[sim]==='function') {
         var proc = handlers[sim](e);
         if (proc) return proc;

@@ -27,7 +27,8 @@ namespace noapi {
 
         var nextSlash = fi.indexOf('/', parentSlash+1);
         if (nextSlash<0) {
-          all[fi] = parent[fi] = fi.slice(parentSlash +1);
+          if (parentSlash<fi.length-1) // Names like /empty/ are used to denote a directory, so don't read it as a '' file in /empty dir
+          	all[fi] = parent[fi] = fi.slice(parentSlash +1);
           return;
         }
 

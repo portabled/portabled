@@ -16,7 +16,7 @@ module persistence.dom {
 
       for (var i = 0; i < files.length; i++) {
         this._byPath[files[i].path] = files[i];
-        if (!this._anchorNode) this._anchorNode = getNextNode(files[i].node);
+        if (!this._anchorNode) this._anchorNode = files[i].node;
       }
     }
 
@@ -74,12 +74,15 @@ module persistence.dom {
           f.write(content);
           // try to insert at the start, so new files will be loaded first
           var anchor = this._anchorNode;
-          if (!anchor) {
-            anchor = document.getElementsByTagName('script')[0];
+          if (!anchor || anchor.parentElement != this._document.body) {
+            // this happens when filesystem is empty, or nodes got removed
+            anchor = this._document.body.getElementsByTagName('script')[0];
             if (anchor) anchor = getNextNode(anchor);
+            if (anchor) this._anchorNode = anchor;
           }
 
           this._document.body.insertBefore(f.node, anchor);
+          this._anchorNode = f.node; // next time insert before this node
           this._byPath[file] = f;
           totalDelta += f.contentLength;
         }
@@ -109,6 +112,7 @@ module persistence.dom {
     export interface HTMLBodyElementSubset {
       appendChild(node: Node);
       insertBefore(newChild: Node, refNode?: Node);
+      getElementsByTagName(tag: string): NodeList;
       firstChild: Node;
     }
   }
