@@ -107,8 +107,8 @@ namespace shell {
     	on(this._host, 'drop', (e) => {
         if (!e) e = (<any>window).event;
         var dt = (<any>e).dataTransfer;
-        var files = dt ? dt.files : null;
-        if (!files) return;
+        var files = dt ? dt.items || dt.files : null;
+        if (!files || !files.length) return;
 
         if (e.preventDefault) e.preventDefault();
         if (e.stopPropagation) e.stopPropagation();
@@ -156,9 +156,13 @@ namespace shell {
         applyConsole(parent);
 
       setTimeout(() => {
-        this._terminal.writeDirect(complete());
+        var reslt = complete();
+        if (reslt)
+        	this._terminal.writeDirect(reslt);
+
         this.measure();
         this.arrange();
+
         this._terminal.focus();
       }, 1);
 

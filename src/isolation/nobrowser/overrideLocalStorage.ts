@@ -1,10 +1,6 @@
 module nobrowser {
 
-  export function overrideLocalStorage(drive: persistence.Drive, cachePath: string) {
-
-    var cachePathDir = cachePath + (cachePath.slice(-1) === '/' ? '' : '/');
-
-    return LocalStorageOverride;
+  export function overrideLocalStorage(drive: { files(): string[]; read(key: string); write(key: string, value: string) }) {
 
     class LocalStorageOverride {
 
@@ -15,15 +11,14 @@ module nobrowser {
         var files = drive.files();
         for (var i = 0; i < files.length; i++) {
           var f = files[i];
-          if (f.length > cachePathDir.length && f.slice(0, cachePathDir.length) === cachePathDir)
-            this._keys.push(f.slice(cachePathDir.length));
+          this._keys.push(f);
         }
         this.length = this._keys.length;
       }
 
       clear() {
         for (var i = 0; i < this._keys.length; i++) {
-          var f = cachePathDir + this._keys[i];
+          var f = this._keys[i];
           drive.write(f, null);
         }
         this._keys = [];
@@ -34,13 +29,11 @@ module nobrowser {
       }
 
     	getItem(key: string): string {
-        var keypath = cachePathDir + key;
-        return drive.read(keypath);
+        return drive.read(key);
       }
 
     	setItem(key: string, value: string): void {
-        var keypath = cachePathDir + key;
-        drive.write(keypath, value);
+        drive.write(key, value);
         for (var i = 0; i < this._keys.length; i++) {
           if (key === this._keys[i]) return;
         }
@@ -49,17 +42,18 @@ module nobrowser {
       }
 
     	removeItem(key: string): void {
-        var keypath = cachePathDir + key;
         for (var i = 0; i < this._keys.length; i++) {
           if (key === this._keys[i]) {
             this._keys.splice(i, 1);
             this.length++;
-            drive.write(keypath, null);
+            drive.write(key, null);
             return;
           }
         }
       }
     }
+
+    return LocalStorageOverride;
 
   }
 }

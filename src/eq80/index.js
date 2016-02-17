@@ -18,15 +18,20 @@ else {
 
   (function() {
     var eq80;
-    var eq80path = '../eq80/eq80.html';
-    var eq80html = module.exports.html = (fs.readFileSync(eq80path)+'');
-
-    var eq80script =  /\<script.*\>([\s\S]*)\<\/script\>/.exec(eq80html)[1] + '//'+'# '+'sourceURL=' + path.resolve(eq80path);
-    var eq80script = 'var noui = true;'+eq80script;
+    var eq80path = '../eq80/eq80.js';
+    var eq80script = module.exports.script = fs.readFileSync(eq80path);
+    var eq80html = module.exports.html =
+        '<!doctype html><head><meta charset="utf-8"><title>mini shell </title>\n'+
+				'<style data-legit=mi> *{display:none;background:black;color:black;} html,body{display:block;background:black;color:black;margin:0;padding:0;height:100%;overflow:hidden;} </style>\n'+
+        '</head><body>\n'+
+        '<'+'script data-legit=mi>\n'+
+        eq80script+'\n'+
+        '</'+'script'+'>';
 
     eval(eq80script);
+    eq80();
 
-    for (var k in eq80) if (eq80.hasOwnProperty(k)) {
+    for (var k in eq80) if (!(k in Date)) {
       module.exports[k] = eq80[k];
     }
   })();
@@ -36,35 +41,23 @@ function eq80_build() {
 
   var eq80Script = buildMainScript();
 
-  var html = [
-    '<!doctype html><head><meta charset="utf-8"><title>mini shell </title>',
-    '<'+'style data-legit=mi> *{display:none;background:black;color:black;} html,body{display:block;background:black;color:black;margin:0;padding:0;height:100%;overflow:hidden;} </'+'style>',
-    '</head><body>',
-    '<'+'script data-legit=mi>',
-    eq80Script,
-    'eq80();',
-    '//'+'# '+'sourceURL=eq80.js',
-    '</'+'script>'
-  ];
+  var withSourceURL =
+      eq80Script + '//'+'# '+'sourceURL=eq80.js';
 
 
 
 
-  var eq80Path = path.resolve('eq80.html');
-  var fullHtml = html.join('\n');
-  fs.writeFileSync(eq80Path, html.join('\n'));
+  var eq80Path = path.resolve('eq80.js');
+  fs.writeFileSync(eq80Path, withSourceURL);
 
-  console.log(fullHtml.length+' characters saved at ', createLink(eq80Path, html));
+  console.log(withSourceURL.length+' characters saved at ', createLink(eq80Path, withSourceURL));
 
 }
 
 function buildMainScript() {
 
-  console.log('Compiling boot...');
-  var boot = compile(['boot', '../persistence/API.d.ts', '../typings/webSQL.d.ts']);
-
-  console.log('Compiling persistence...');
-  var persistence = compile(['../persistence', '../typings/webSQL.d.ts']);
+  console.log('Compiling persistence + boot...');
+  var boot = compile(['../persistence', '../typings/webSQL.d.ts', 'boot', '../persistence/API.d.ts', '../typings/webSQL.d.ts']);
 
   var buildEnd = new Date();
 
@@ -72,19 +65,11 @@ function buildMainScript() {
       'function eq80() {\n'+
 
       injectBuildDiagnostics()+'\n\n'+
-      'eq80.persistence = init_persistence();\n'+
-      'if (typeof noui !== "undefined" && noui) return;\n'+
-      '\n\n'+
-
-
-      boot['output.js']+'// boot \n\n'+
-
-      'function init_persistence() {\n'+
-      '\n\n'+
-      persistence['output.js']+'// persistene \n\n'+
-      'return persistence;\n'+
-      '}\n'+
-      '}';
+      'var persistence=eq80.persistence={};\n\n'+
+      boot['output.js'].replace(/var persistence\;/g, '/*var persistence;*/')+'\n\n'+
+      'if (typeof window!=="undefined" && window) boot();\n'+
+      '}'+'\n'+
+      'eq80();';
 
   return result;
 

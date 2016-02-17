@@ -164,12 +164,12 @@ module noapi {
           'node_modules/' + id + '/index.js'];
 
         while (true) {
-          if (!tryPath || tryPath === '/') return null;
           for (var i = 0; i < probePatterns.length; i++) {
             var p = this.coreModules.path.resolve(tryPath, probePatterns[i]);
             if (this._drive.read(p)) return p;
           }
-          tryPath = this.coreModules.path.basename(tryPath);
+          if (!tryPath || tryPath === '/') return null;
+          tryPath = this.coreModules.path.dirname(tryPath);
         }
       }
     }

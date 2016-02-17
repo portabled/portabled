@@ -62,14 +62,17 @@ var miBuildDate = new Date();
 
 console.log('Encoding build date and summary: '+miBuildDate+'...');
 var totalsComment = '<'+'!-- '+ (new eq80.persistence.dom.DOMTotals(miBuildDate, srcTotalSize, /*node*/null)).updateNode() + ' --'+'>\n';
-html.unshift(
-  eq80.html.replace(
-    /\<\/title\>/,
-    '<'+'/title>' +
+html.push(
+  '<!doctype html><head><meta charset="utf-8"><title> mini shell </title>\n'+
     '<meta http-equiv="x-ua-compatible" cpmtemt="IE=edge">'+
     '<HTA:APPLICATION id="htaHeader" SINGLEINSTANCE="no"></HTA:APPLICATION>'+
     totalsComment +
-    fs.readFileSync('favicon.base64.html')));
+    fs.readFileSync('favicon.base64.html')+
+    '<style data-legit=mi> *{display:none;background:black;color:black;} html,body{display:block;background:black;color:black;margin:0;padding:0;height:100%;overflow:hidden;} </style>\n'+
+    '</head><body>\n'+
+    '<'+'script data-legit=mi>\n'+
+  	eq80.script);
+
 
 console.log('Merging shell pack...');
 ui = ui.
@@ -80,33 +83,48 @@ ui = ui.
   replace(/\#cm-style\#/, eq80.jsString(fs.readFileSync('../imports/cm/cm.css')+'')).
   replace(/\#platform\#/, eq80.jsString(platform.toString()));
 
+var minishellScript =
+  	'function minishell() { \n'+
+    '(function(doc) {\n'+
+    'if (doc.open) doc.open();\n'+
+    'doc.write('+eq80.jsStringLong(bootUI) +');\n'+
+    'if (doc.close) doc.close(); })((eq80.boot.contentWindow||eq80.boot.window).document);\n'+
+    '\n\n'+
+    'function initUI() {\n\n'+
+    '  function dumpToDoc() {\n'+
+    '    if (doc.open) doc.open();\n'+
+    '    var htmlText='+eq80.jsStringLong(ui)+';\n'+
+    '		 doc.write(htmlText);\n'+
+    '  	 if (doc.close) doc.close();\n'+
+    '  }\n\n\n'+
+    '  if (!initUI_interval || typeof eq80==="undefined" || !eq80.ui) return;\n'+
+    '  clearInterval(initUI_interval);\n'+
+    '  initUI_interval = null;\n'+
+    '  document.title = "/ / .";\n'+
+    '  var doc = (eq80.ui.contentWindow || eq80.ui.window).document;\n'+
+    '  document.title = "/ / :";\n'+
+    '  dumpToDoc();\n'+
+    '  document.title = "/ / :.";\n'+
+    '}\n\n'+
+    'var initUI_interval = setInterval(initUI, 10);\n'+
+    'eq80.on("load", initUI);\n'+
+  '};\n'+
+  'minishell();';
+
 html.push(
-	'<'+'script id=bootui data-legit=mi>\n'+
-  '(function(doc) {\n'+
-  'if (doc.open) doc.open();\n'+
-  'doc.write('+eq80.jsStringLong(bootUI) +');\n'+
-  'if (doc.close) doc.close(); })((eq80.boot.contentWindow||eq80.boot.window).document);\n'+
-  '</'+'script>\n'+
-	'<'+'script id=shellui data-legit=mi>\n'+
-	'function initUI() {\n\n'+
-  '  function dumpToDoc() {\n'+
-  '    if (doc.open) doc.open();\n'+
-  '    var htmlText='+eq80.jsStringLong(ui)+';\n'+
-  '		 doc.write(htmlText);\n'+
-  '  	 if (doc.close) doc.close();\n'+
-  '  }\n\n\n'+
-  '  if (!initUI_interval || typeof eq80==="undefined" || !eq80.ui) return;\n'+
-  '  clearInterval(initUI_interval);\n'+
-  '  initUI_interval = null;\n'+
-  '  document.title = "/ / .";\n'+
-  '  var doc = (eq80.ui.contentWindow || eq80.ui.window).document;\n'+
-  '  document.title = "/ / :";\n'+
-	'  dumpToDoc();\n'+
-  '  document.title = "/ / :.";\n'+
-  '}\n\n'+
-  'var initUI_interval = setInterval(initUI, 10);\n'+
-  'eq80.on("load", initUI);  //'+'# '+'sourceURL=ui.html\n'+
+  minishellScript+
+ 	'//'+'# '+'sourceURL=/eq80_minishell.js\n'+
   '</'+'script>');
+
+var smallHtml = html.join('\n');
+fs.writeFileSync('../../empty.html', smallHtml);
+console.log('Saved '+smallHtml.length+' characters in '+path.resolve('../../empty.html'));
+
+var link = eq80.createLink('empty.html', html);
+if (typeof link!=='string') {
+  console.log('Open built empty shell ('+smallHtml.length+' characters) in new window: ', link);
+}
+
 
 console.log('Sample/dummy files...');
 html.push(fs.readFileSync('dummy.html')+'');

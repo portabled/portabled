@@ -63,9 +63,11 @@ namespace shell {
           this._animationLastPhase +
           (this._animationLastTime ? (+newTime - this._animationLastTime)/(goingIn ? fadeDuration : fadeDuration/2) : 0) * (goingIn?+1:-1);
       if (newPhase >=1 && goingIn) {
-        var dlg = this._popupStack[this._popupStack.length-1];
-        dlg.dialogBody.style.opacity = <any>1;
-        this._shade.style.opacity = <any>shadeOpacity;
+        var dlg = this._popupStack[this._popupStack.length-1||0];
+        if (dlg) {
+          dlg.dialogBody.style.opacity = <any>1;
+          this._shade.style.opacity = <any>shadeOpacity;
+        }
 
         clearInterval(this._animateInterval);
         this._animateInterval = null;

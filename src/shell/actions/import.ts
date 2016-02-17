@@ -37,7 +37,10 @@ module shell.actions {
       function processFileList(leadPath: string, fileList: FileList) {
         for (var i = 0; i < fileList.length; i++) {
           var fi: any = fileList[i];
-          var fiPath = env.repl.coreModules.path.join(leadPath || '/', fi.name);
+          var fiPath = env.repl.coreModules.path.join(
+            leadPath || '/',
+            fi.relativePath || fi.webkitRelativePath || fi.msRelativePath || fi.mozRelativePath || fi.oRelativePath
+            || fi.name);
 
           if (fi.isFile) {
             addFileEntry(fiPath, fi);
@@ -103,7 +106,23 @@ module shell.actions {
       }
 
       function addFileEntry(path: string, fileEntry: any) {
-        addFile(path, fileEntry.file());
+        outstandingFileCount++;
+        fileEntry.file(
+          file => {
+            addFile(path, file);
+            outstandingFileCount--;
+            if (!outstandingDirCount && !outstandingFileCount) {
+              onFileListCompleted();
+              return;
+            }
+          },
+          error => {
+            outstandingFileCount--;
+            if (!outstandingDirCount && !outstandingFileCount) {
+              onFileListCompleted();
+              return;
+            }
+          });
       }
 
       function addFile(path: string, file: File) {
