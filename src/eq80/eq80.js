@@ -1,8 +1,8 @@
 function eq80() {
 eq80.build = {
-  timestamp: 1455753669242, // Thu Feb 18 2016 00:01:09 GMT+0000 (GMT Standard Time)
-  taken: 7471,
-  platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.109 Safari/537.36"
+  timestamp: 1456260855927, // Tue Feb 23 2016 20:54:15 GMT+0000 (GMT Standard Time)
+  taken: 7480,
+  platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36"
 }
 
 var persistence=eq80.persistence={};
@@ -1659,6 +1659,6 @@ function boot() {
 }
 
 
-if (typeof window!=="undefined" && window) boot();
+if (typeof window!=="undefined" && window && window.document) boot();
 }
 eq80();//# sourceURL=eq80.js

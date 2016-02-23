@@ -90,7 +90,7 @@ function run() {
 
     if (!eq80_script) {
       console.log('No embedded nonode recognized, using pre-existing...');
-      return require('../eq80');
+      return require('./eq80');
     }
     else {
       console.log('Extracted eq80 script['+eq80_script.length+'] '+eq80_script.split('\n').slice(0,2).join('; \\n ')+'...')
@@ -98,12 +98,11 @@ function run() {
 
     console.log('Initializing eq80 script...');
     try {
-      (0,eval)('var noui = true, window = { eval: eval }, location = "dummy";'+eq80_script+' //'+'# '+'sourceURL=' + file); // TODO: inject necessary LFs to align line numbers
-      console.log('eq80 ',typeof eq80);
+      return (0,eval)('(function() { var noui = true, window = { eval: eval }, location = "dummy"; '+eq80_script+' \n return eq80; })() //'+'# '+'sourceURL=' + file); // TODO: inject necessary LFs to align line numbers
     }
     catch (error) {
       console.log(error.message+' - using pre-existing...');
-      return require('../eq80');
+      return require('./eq80');
     }
   }
 

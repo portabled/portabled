@@ -67,7 +67,7 @@ function buildMainScript() {
       injectBuildDiagnostics()+'\n\n'+
       'var persistence=eq80.persistence={};\n\n'+
       boot['output.js'].replace(/var persistence\;/g, '/*var persistence;*/')+'\n\n'+
-      'if (typeof window!=="undefined" && window) boot();\n'+
+      'if (typeof window!=="undefined" && window && window.document) boot();\n'+
       '}'+'\n'+
       'eq80();';
 
