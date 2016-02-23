@@ -6,36 +6,19 @@ run();
 function run() {
   var file = process.argv[2];
   if (!file) {
-    console.log('!extract.js  nonode-file  [output-nonode-file]');
+    console.log('copy.js  nonode-file  [output-nonode-file]');
     return;
   }
 
   console.log('Loading '+file+'...');
   var fullHtml = fs.readFileSync(file)+'';
 
-  var eq80_script = findScript(fullHtml, function(js) {
-    return js.indexOf('indexedDB')>=0 &&
-      js.indexOf('openDatabase')>=0 &&
-      js.indexOf('localStorage')>=0 &&
-      js.indexOf('persistence')>=0;
-  });
-
-  if (!eq80_script) {
-    console.log('No nonode recognized.');
-    return;
-  }
-  else {
-    console.log('Extracted eq80 script['+eq80_script.length+'] '+eq80_script.split('\n').slice(0,2).join('; \\n ')+'...')
-  }
-
-  console.log('Initializing eq80 script...');
-  (0,eval)('var noui = true, window = { eval: eval }, location = "dummy";'+eq80_script+' //'+'# '+'sourceURL=' + file); // TODO: inject necessary LFs to align line numbers
-  console.log('eq80 ',typeof eq80);
+  var eq80 = extractEQ80();
 
   console.log('Extracting files...');
   var allFiles = findFiles(fullHtml);
   console.log((allFiles.length||'no')+' found.');
-  
+
   var outputFile = process.argv[3];
   if (!outputFile) {
     console.log('Writing at '+path.resolve('.')+'...')
@@ -95,6 +78,33 @@ function run() {
       fs.mkdirSync(dir);
     }
     catch (error) { }
+  }
+
+  function extractEQ80() {
+    var eq80_script = findScript(fullHtml, function(js) {
+      return js.indexOf('indexedDB')>=0 &&
+        js.indexOf('openDatabase')>=0 &&
+        js.indexOf('localStorage')>=0 &&
+        js.indexOf('persistence')>=0;
+    });
+
+    if (!eq80_script) {
+      console.log('No embedded nonode recognized, using pre-existing...');
+      return require('./eq80');
+    }
+    else {
+      console.log('Extracted eq80 script['+eq80_script.length+'] '+eq80_script.split('\n').slice(0,2).join('; \\n ')+'...')
+    }
+
+    console.log('Initializing eq80 script...');
+    try {
+      (0,eval)('var noui = true, window = { eval: eval }, location = "dummy";'+eq80_script+' //'+'# '+'sourceURL=' + file); // TODO: inject necessary LFs to align line numbers
+      console.log('eq80 ',typeof eq80);
+    }
+    catch (error) {
+      console.log(error.message+' - using pre-existing...');
+      return require('./eq80');
+    }
   }
 
   function findFiles(htmlContent) {
