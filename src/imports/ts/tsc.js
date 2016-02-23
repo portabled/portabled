@@ -33845,7 +33845,7 @@ var ts;
                 }
             }
             var sourceFile = hostGetSourceFile(fileName, languageVersion, onError);
-            if (sourceFile && compilerOptions.watch) {
+            if (sourceFile && compilerOptions.hasOwnProperty('watch')) {
                 var filePath = ts.toPath(sourceFile.fileName, ts.sys.getCurrentDirectory(), ts.createGetCanonicalFileName(ts.sys.useCaseSensitiveFileNames));
                 sourceFile.fileWatcher = ts.sys.watchFile(filePath, function (fileName, removed) { return sourceFileChanged(sourceFile, removed); });
             }

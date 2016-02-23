@@ -35,11 +35,15 @@ module shell.keybar {
 
     handleKeydown(e: KeyboardEvent): boolean {
       var fnKeyIndex = e.keyCode - 112;
-      if (fnKeyIndex < 0 || fnKeyIndex >= this._fnKeys.length) return false;
+      if (fnKeyIndex < 0 || fnKeyIndex >= this._fnKeys.length) {
+        // TODO: handle shift/ctrl/alt
+        return false;
+      }
+
       var k = this._fnKeys[fnKeyIndex];
       if (!k.action) return false;
-      k.action();
-      return true;
+      var reslt = k.action();
+      if (reslt || typeof reslt==='undefined') return true;
     }
 
   	remove() {

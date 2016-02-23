@@ -254,8 +254,8 @@ module shell.panels {
   	Left() { return this._selectionGo(-10); }
 		Right() { return this._selectionGo(+10); }
 
-  	Home() { return this._selectionGo(-100000); }
-  	End() { return this._selectionGo(+100000); }
+  	Home() { return this._selectionGo(-1000000); }
+  	End() { return this._selectionGo(+1000000); }
 
   	Tab() {
       this.toggleActivePanel();

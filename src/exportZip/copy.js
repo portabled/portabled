@@ -90,7 +90,7 @@ function run() {
 
     if (!eq80_script) {
       console.log('No embedded nonode recognized, using pre-existing...');
-      return require('./eq80');
+      return require('../eq80');
     }
     else {
       console.log('Extracted eq80 script['+eq80_script.length+'] '+eq80_script.split('\n').slice(0,2).join('; \\n ')+'...')
@@ -103,7 +103,7 @@ function run() {
     }
     catch (error) {
       console.log(error.message+' - using pre-existing...');
-      return require('./eq80');
+      return require('../eq80');
     }
   }
 

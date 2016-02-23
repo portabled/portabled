@@ -1,7 +1,7 @@
 function eq80() {
 eq80.build = {
-  timestamp: 1455697523511, // Wed Feb 17 2016 08:25:23 GMT+0000 (GMT Standard Time)
-  taken: 7625,
+  timestamp: 1455753669242, // Thu Feb 18 2016 00:01:09 GMT+0000 (GMT Standard Time)
+  taken: 7471,
   platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.109 Safari/537.36"
 }
 
@@ -1575,7 +1575,7 @@ function boot() {
             '<' + 'body></' + 'html>');
         if (ifrdoc.close)
             ifrdoc.close();
-        ifrwin.eval = 23;
+        //(<any>ifrwin).eval = 23;
         fitFrameList.push(iframe);
         return iframe;
     } // createFrame

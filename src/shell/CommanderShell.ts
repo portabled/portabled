@@ -264,44 +264,22 @@ namespace shell {
 
     AltE(e) {
       var cursorPath = this._twoPanels.cursorPath();
-      return this._openEditor(cursorPath, e.shiftKey);
+      return this._openEditor(cursorPath, false);
+    }
+
+    AltF4(e) {
+      var cursorPath = this._twoPanels.cursorPath();
+      return this._openEditor(cursorPath, true);
+    }
+
+    ShiftF4(e) {
+      var cursorPath = this._twoPanels.cursorPath();
+      return this._openEditor(cursorPath, true);
     }
 
     MetaE(e) {
       var cursorPath = this._twoPanels.cursorPath();
-      return this._openEditor(cursorPath, e.shiftKey);
-    }
-
-  	AltT() {
-      this._popup(0);
-      return true;
-    }
-
-  	private _popup(level: number) {
-      var btn = document.createElement('button');
-      btn.textContent = 'HELLO DIALOG level '+level+'\n'+new Date();
-      btn.style.cssText = 'position: absolute; left: '+(level*5+10)+'%; top: '+(level*5+10)+'%; width: '+(100 - 2*(level*5+10))+'%; height: '+(100 - 2*(level*5+10))+'%;';
-      var dlg = this._dialogHost.show(btn);
-
-      var keydownHandler = (e:KeyboardEvent) => {
-          enrichKeyEvent(e);
-          if (e.shellPressed.Escape) {
-            if (typeof e.preventDefault === 'function') e.preventDefault();
-            if ('cancelBubble' in e) e.cancelBubble = true;
-            dlg.close();
-            return true;
-          }
-        };
-
-      setTimeout(() => {
-        btn.focus();
-        on(btn, 'keydown', <any>keydownHandler);
-        btn.onclick = e => {
-          e.cancelBubble = true;
-          this._popup(level+1);
-        };
-        dlg.onclose = () => this._terminal.writeDirect('Popup closed '+btn.textContent+'!');
-      }, 10);
+      return this._openEditor(cursorPath, false);
     }
 
     private _keydownCore(e: KeyboardEvent) {
@@ -405,80 +383,135 @@ namespace shell {
 
       if (!cursorPath) withPrompt = true;
       if (!withPrompt) {
-        var files = this._drive.files();
-        for (var i = 0; i < files.length; i++) {
-          var fname = files[i];
-          if (fname.length<=cursorPath.length) continue;
-          if (fname.charAt(cursorPath.length)!=='/') continue;
-          if (fname.slice(0, cursorPath.length)===cursorPath) {
+
+        try {
+          var stat = this._repl.coreModules.fs.statSync(cursorPath);
+          if (!stat.isFile() || stat.isDirectory())
             withPrompt = true;
-            break;
-          }
+        }
+        catch (err) {
+          withPrompt = true;
         }
       }
 
+      var edit = () => {
+        cursorPath = this._repl.coreModules.path.resolve(cursorPath);
+
+        var posn = this._savedPosns[cursorPath];
+
+        var handlerList: shell.handlers.Handler[] = [];
+        for (var k in shell.handlers) if (shell.handlers.hasOwnProperty(k)) {
+          var ha: shell.handlers.Handler = shell.handlers[k];
+          if (typeof ha === 'object'
+            && ((ha.preferredFiles && typeof ha.preferredFiles.test === 'function')
+              || (ha.handlesFiles && typeof ha.handlesFiles.test === 'function'))) {
+            handlerList.push(ha);
+          }
+        }
+
+        var loadEditor = (ha: handlers.Handler) => {
+          if (typeof ha.edit !== 'function') return false;
+          this._editor = ha.edit(cursorPath, this._drive, this._host);
+          if (this._editor) {
+            if (posn && this._editor.setPosition)
+              this._editor.setPosition(posn);
+
+            // force relayout just in case
+            this.measure();
+            this.arrange();
+            this._editor.requestClose = () => this._closeEditor();
+            this._terminal.writeDirect('@edit ' + cursorPath);
+
+            if (posn && this._editor.setPosition)
+              this._editor.setPosition(posn);
+
+            return true;
+          }
+          return false;
+        };
+
+        for (var i = 0; i < handlerList.length; i++) { // find preferred handlers
+          var ha = handlerList[i];
+          if (ha.entryClass && ha.preferredFiles && ha.preferredFiles.test(cursorPath)) {
+            if (loadEditor(ha)) return true;
+          }
+        }
+
+        for (var i = 0; i < handlerList.length; i++) { // find fallback handlers
+          var ha = handlerList[i];
+          if (ha.entryClass && ha.handlesFiles && ha.handlesFiles.test(cursorPath)) {
+            if (loadEditor(ha)) return true;
+          }
+        }
+
+        ha = <any>handlers.text; // default
+        if (ha) {
+          if (loadEditor(ha)) return true;
+        }
+
+        return false;
+      };
+
+      var showPrompt = () => {
+        var dlgBody = document.createElement('div');
+        dlgBody.style.cssText =
+          'position: absolute; left: 30%; top: 40%; height: auto; width: auto; min-width: 40%;'+
+          'background: gray; color: black; border: solid 1px white;'+
+          'padding: 1em;';
+
+        dlgBody.innerHTML =
+          '<pre style="margin: 0px;">'+
+          '<div style="font-size: 160%; font-weight: light;">Edit (F4)</div>'+
+          '<input id=edit-name style="width: 95%; background: black; color: silver; border: none; font: inherit; font-size: 120%; padding: 3px; padding-left: 0.6em;">'+
+          '<div style="text-align: right; margin-top: 0.5em; margin-right: 5%;"><button id=edit-button style="font: inherit; font-size: 120%;"> Create </button></div>'+
+          '</pre>';
+
+        var edit_name = dlgBody.getElementsByTagName('input')[0];
+        var edit_button = dlgBody.getElementsByTagName('button')[0];
+
+        var dlg = this._dialogHost.show(dlgBody);
+
+        dlgBody.onkeydown = (e) => {
+          if (!e) e = (<any>window).event;
+          enrichKeyEvent(e);
+          if (e.shellPressed.Escape) {
+            if ('cancelBubble' in e) e.cancelBubble = true;
+            if (e.preventDefault) e.preventDefault();
+            dlg.close();
+          }
+          else if (e.shellPressed.Enter) {
+            if ('cancelBubble' in e) e.cancelBubble = true;
+            if (e.preventDefault) e.preventDefault();
+            cursorPath = edit_name.value;
+            dlg.close();
+            if (cursorPath)
+            	edit();
+          }
+        };
+
+        edit_name.value = cursorPath;
+
+        edit_button.onclick = () => {
+            dlg.close();
+            cursorPath = edit_name.value;
+            if (cursorPath)
+            	edit();
+        };
+
+        setTimeout(function() {
+          edit_name.focus();
+        }, 1);
+      };
+
       if (withPrompt) {
-        cursorPath = prompt('Edit file', cursorPath);
+        showPrompt();
+        return true;
       }
 
       if (!cursorPath)
         return false;
 
-      cursorPath = this._repl.coreModules.path.resolve(cursorPath);
-
-      var posn = this._savedPosns[cursorPath];
-
-      var handlerList: shell.handlers.Handler[] = [];
-      for (var k in shell.handlers) if (shell.handlers.hasOwnProperty(k)) {
-        var ha: shell.handlers.Handler = shell.handlers[k];
-        if (typeof ha === 'object'
-          && ((ha.preferredFiles && typeof ha.preferredFiles.test === 'function')
-            || (ha.handlesFiles && typeof ha.handlesFiles.test === 'function'))) {
-          handlerList.push(ha);
-        }
-      }
-
-      var loadEditor = (ha: handlers.Handler) => {
-        if (typeof ha.edit !== 'function') return false;
-        this._editor = ha.edit(cursorPath, this._drive, this._host);
-        if (this._editor) {
-          if (posn && this._editor.setPosition)
-            this._editor.setPosition(posn);
-
-          // force relayout just in case
-          this.measure();
-          this.arrange();
-          this._editor.requestClose = () => this._closeEditor();
-          this._terminal.writeDirect('@edit ' + cursorPath);
-
-          if (posn && this._editor.setPosition)
-            this._editor.setPosition(posn);
-
-          return true;
-        }
-        return false;
-      };
-
-      for (var i = 0; i < handlerList.length; i++) { // find preferred handlers
-        var ha = handlerList[i];
-        if (ha.entryClass && ha.preferredFiles && ha.preferredFiles.test(cursorPath)) {
-          if (loadEditor(ha)) return true;
-        }
-      }
-
-      for (var i = 0; i < handlerList.length; i++) { // find fallback handlers
-        var ha = handlerList[i];
-        if (ha.entryClass && ha.handlesFiles && ha.handlesFiles.test(cursorPath)) {
-          if (loadEditor(ha)) return true;
-        }
-      }
-
-      ha = <any>handlers.text; // default
-      if (ha) {
-        if (loadEditor(ha)) return true;
-      }
-
-      return false;
+      return edit();
     }
 
     private _enhanceNoprocess(nopro: noapi.HostedProcess) {

@@ -335,7 +335,7 @@ function boot() {
       '<' + 'body></' + 'html>');
     if (ifrdoc.close) ifrdoc.close();
 
-    (<any>ifrwin).eval = 23;
+    //(<any>ifrwin).eval = 23;
 
     fitFrameList.push(iframe);
 
