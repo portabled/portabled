@@ -17,7 +17,6 @@ else {
   module.exports.createLink = createLink;
 
   (function() {
-    var eq80;
     var eq80path = '../eq80/eq80.js';
     var eq80script = module.exports.script = fs.readFileSync(eq80path);
     var eq80html = module.exports.html =
@@ -28,8 +27,7 @@ else {
         eq80script+'\n'+
         '</'+'script'+'>';
 
-    eval(eq80script);
-    eq80();
+    var eq80 = eval('(function() { '+eq80script+' \n return eq80; })()');
 
     for (var k in eq80) if (!(k in Date)) {
       module.exports[k] = eq80[k];

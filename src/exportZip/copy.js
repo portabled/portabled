@@ -48,8 +48,13 @@ function run() {
       concatChunks.push(outputFileHtml.slice(start));
 
     if (concatChunks.length===1) {
-      var lastAngleBracket = outputFileHtml.lastIndexOf('<');
-      concatChunks = [outputFileHtml.slice(0, lastAngleBracket), outputFileHtml.slice(lastAngleBracket)];
+      var matchTrail = /(<\/body>\s*)?<\/html>\s*$/.exec(outputFileHtml);
+      if (matchTrail) {
+        concatChunks = [outputFileHtml.slice(0, matchTrail.index), outputFileHtml.slice(matchTrail.indexOf)];
+      }
+      else {
+        concatChunks.push('');
+      }
     }
 
     console.log('Formatting '+allFiles.length+' as DOM file records...');
@@ -90,7 +95,7 @@ function run() {
 
     if (!eq80_script) {
       console.log('No embedded nonode recognized, using pre-existing...');
-      return require('./eq80');
+      return require('../eq80');
     }
     else {
       console.log('Extracted eq80 script['+eq80_script.length+'] '+eq80_script.split('\n').slice(0,2).join('; \\n ')+'...')
@@ -102,7 +107,7 @@ function run() {
     }
     catch (error) {
       console.log(error.message+' - using pre-existing...');
-      return require('./eq80');
+      return require('../eq80');
     }
   }
 
@@ -111,7 +116,17 @@ function run() {
     var pos = 0;
     while (true) {
       pos = htmlContent.indexOf('<!'+'--', pos);
+
       if (pos<0) break;
+
+      var headerSlice = htmlContent.slice(pos, pos+100).split('\n')[0];
+      if (!/^\<\!\-\-\s+\//.test(headerSlice)) {
+        pos += 3;
+        continue;
+      }
+
+      console.log(headerSlice);
+
       var end = htmlContent.indexOf('--'+'>', pos+4);
       if (end<0) break;
 
