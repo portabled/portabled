@@ -46,11 +46,13 @@ module shell.terminal {
       private _host: HTMLElement,
       private _repl: noapi.HostedProcess,
       private _checkInactive: () => boolean,
-      version: string) {
+      version: string,
+      getBootState: () => any) {
       this._history = <any>elem('div', { className: 'terminal-history' }, this._host);
 
       var nowTimeForBuildMessage = +new Date();
 
+      var boot = (getBootState ? getBootState() : null) || {};
       var buildMessage = shell.buildMessage;
       if (!buildMessage && typeof eq80 !== 'undefined' && eq80.ui && eq80.ui.contentWindow.build) {
         buildMessage = 'Built on '+persistence.dom.DOMTotals.formatDate(new Date(eq80.ui.contentWindow.build.timestamp))+' - '+Terminal.agoText(nowTimeForBuildMessage-eq80.ui.contentWindow.build.timestamp)+'\n'+
@@ -58,7 +60,9 @@ module shell.terminal {
 					'  *using '+(eq80.ui.contentWindow.build.platform||'').replace(/\) /g,')\n   ')+'\n'+
           (eq80.build && eq80.build.platform !== eq80.ui.contentWindow.build.platform  ? '  (eq80 using '+(eq80.build.platform||'').replace(/\) /g,')\n   ')+')\n' : '')+
           '  *taken '+((eq80.ui.contentWindow.build.taken/100)|0)/10+' s.'+
-          (eq80.build ? '\n  (eq80 '+((eq80.build.taken/100)|0)/10+' s.)' : '');
+          (eq80.build ? '\n  (eq80 '+((eq80.build.taken/100)|0)/10+' s.)' : '')+
+          (boot.storageName ? '\n  *'+boot.storageName+' cache':'')+
+          (boot.domTotalSize||boot.domLoadedSize ? '\n  *'+persistence.dom.DOMTotals.formatSize(boot.domTotalSize||boot.domLoadedSize) :'');
       }
 
       this._historyContent = <any>elem('pre', { className: 'terminal-history-content' }, this._history);
@@ -76,7 +80,21 @@ module shell.terminal {
       elem('span', { text: ' license).' }, refLine);
 
 
-      elem('div', { text: buildMessage + '\n - by Oleg Mihailik\n\nPlease be careful.' }, this._historyContent);
+      var buildMe = elem('div', { text: buildMessage + '\n - by Oleg Mihailik\n\nPlease be careful.' }, this._historyContent);
+      var storageFailureStr = [];
+      for (var fa in boot.storageLoadFailures) if (boot.storageLoadFailures.hasOwnProperty(fa)) {
+        storageFailureStr.push(fa+': '+boot.storageLoadFailures[fa]);
+      }
+      if (storageFailureStr) {
+        buildMe.title = storageFailureStr.join('\n');
+        buildMe.onclick = () => {
+          this.writeDirect(
+            storageFailureStr.length+' storage failures'+
+            (boot.storageName ? ', succeeded with '+boot.storageName:'')+
+            ':\n'+
+            storageFailureStr.join('\n'));
+        };
+      }
 
 
 
@@ -188,6 +206,19 @@ module shell.terminal {
       this._queueRearrange();
     }
 
+  	writeAsCommand(command: string) {
+      var line = elem('div', this._historyContent);
+      elem('span', { className: 'terminal-prompt-lead', text: String.fromCharCode(26410) }, line);
+      elem('span', { className: 'terminal-prompt-text', text: this._promptText.textContent || this._promptText.innerText }, line);
+      elem('span', { className: 'terminal-prompt-delim', text: '>' }, line);
+      elem('span', { className: 'terminal-echo-command', text: command }, line);
+    }
+
+  	writeSmall(text: string) {
+      elem('div', { text, opacity: 0.4, fontSize: 0.8 }, this._historyContent);
+      this._rearrangeNow();
+    }
+
     writeDirect(text: string) {
       elem('div', { text, opacity: 0.4 }, this._historyContent);
       this._rearrangeNow();
@@ -295,10 +326,7 @@ module shell.terminal {
           if (code.slice(-2) === '\r\n')
             code = code.slice(0, code.length - 2);
           this._input.value = '';
-          elem('div', {
-            text: code,
-            color: 'gray'
-          }, this._historyContent);
+          this.writeAsCommand(code);
           this._queueRearrange();
 
           setTimeout(() => this._evalAndLogResults(code), 20);

@@ -14,6 +14,17 @@ module shell.panels {
     private _leftPanel: Panel;
     private _rightPanel: Panel;
 
+  	private _internalMetrics = {
+      contentWidth: 0,
+      bottomHap: 0
+    };
+
+  	private _panelMetrics = {
+      windowMetrics: <CommanderShell.Metrics>null,
+      hostWidth: 0,
+      hostHeight: 0
+    };
+
     ondoubleclick: () => boolean = null;
 
     constructor(
@@ -101,54 +112,59 @@ module shell.panels {
       }
     }
 
-    measure() {
-    }
-
-    arrange(metrics: CommanderShell.Metrics) {
-
-      var contentWidth = 0;
+    measure(metrics: CommanderShell.Metrics) {
 
       if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {
         // flippable layout
-        contentWidth = metrics.hostWidth * 1.6;
+        var contentWidth = metrics.hostWidth * 1.6;
       }
       else {
         // full layout
-        contentWidth = metrics.hostWidth;
+        var contentWidth = metrics.hostWidth;
       }
 
       var bottomGap = Math.min(metrics.hostHeight / 3, metrics.emHeight * 5.5);
 
-      this._scrollHost.style.width = metrics.hostWidth + 'px';
-      var panelsHeight = metrics.hostHeight - bottomGap;
-      this._scrollHost.style.height = panelsHeight + 'px';
-
-      this._scrollContent.style.width = contentWidth + 'px';
-      this._scrollContent.style.height = panelsHeight + 'px';
-
+      var panelHeight = metrics.hostHeight - bottomGap;
       var panelWidth = (contentWidth / 2 - 0.5) | 0;
 
-      this._leftPanelHost.style.height = panelsHeight + 'px';
-      this._leftPanelHost.style.width = panelWidth + 'px';
+      this._internalMetrics.contentWidth = contentWidth;
+      this._internalMetrics.bottomHap = bottomGap;
+      this._panelMetrics.hostHeight = panelHeight;
+      this._panelMetrics.hostWidth = panelWidth;
+      this._panelMetrics.windowMetrics = metrics;
 
-      this._rightPanelHost.style.height = panelsHeight + 'px';
-      this._rightPanelHost.style.width = panelWidth + 'px';
+      if (this._leftPanelHost.style.display !== 'none')
+        this._leftPanel.arrange(this._panelMetrics);
 
-      if (this._leftPanelHost.style.display !== 'none') {
-        this._leftPanel.arrange({
-          windowMetrics: metrics,
-          hostWidth: panelWidth - panelHMargin * 2,
-          hostHeight: panelsHeight - panelVMargin * 2
-        });
-      }
 
-      if (this._rightPanelHost.style.display !== 'none') {
-        this._rightPanel.arrange({
-          windowMetrics: metrics,
-          hostWidth: panelWidth - panelHMargin * 2,
-          hostHeight: panelsHeight - panelVMargin * 2
-        });
-      }
+      if (this._rightPanelHost.style.display !== 'none')
+        this._rightPanel.arrange(this._panelMetrics);
+
+    }
+
+    arrange(metrics: CommanderShell.Metrics) {
+
+      this._scrollHost.style.width = this._panelMetrics.windowMetrics.hostWidth + 'px';
+      this._scrollHost.style.height = this._panelMetrics.hostHeight + 'px';
+
+      this._scrollContent.style.width = this._internalMetrics.contentWidth + 'px';
+      this._scrollContent.style.height = this._panelMetrics.hostHeight + 'px';
+
+      var hostHeightPx = this._panelMetrics.hostHeight + 'px';
+      var hostWidthPx = this._panelMetrics.hostWidth + 'px';
+      this._leftPanelHost.style.height = hostHeightPx;
+      this._leftPanelHost.style.width = hostWidthPx;
+
+      this._rightPanelHost.style.height = hostHeightPx;
+      this._rightPanelHost.style.width = hostWidthPx;
+
+      if (this._leftPanelHost.style.display !== 'none')
+        this._leftPanel.arrange(this._panelMetrics);
+
+      if (this._rightPanelHost.style.display !== 'none')
+        this._rightPanel.arrange(this._panelMetrics);
+
     }
 
     isVisible() {

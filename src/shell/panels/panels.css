@@ -11,16 +11,38 @@
   width: 0; height: 0;   overflow: hidden;
 }
 
+.panel-each-title {
+  text-align: center;
+  font: inherit;
+  height: 100%;
+  border: solid 1px rgb(19, 40, 87);
+  opacity: 0.95;
+}
+
+.panel-each-bottom {
+  padding-left: 1em;
+  font: inherit;
+}
+
+.panel-each-title-active {
+  background: rgb(19, 40, 87);
+  opacity: 0.95;
+}
+
 .panels-panel {
   width: 0; height: 0;
+  color: darkcyan;
+  cursor: default;
+}
+
+.panel-each-background {
+  background: rgb(4, 12, 64);
+  opacity: 0.95;
+}
+
+.panel-each-scrollhost {
   overflow: auto;
   overflow-x: hidden;
-  background: rgba(4, 12, 64, 0.95) !important;
-  background: navy;
-  color: darkcyan;
-  padding-top: 10px;
-  padding-bottom: 10px;
-  cursor: default;
 }
 
 .panels-panel * {
@@ -47,9 +69,20 @@
   float: left;
 }
 
+.panel-each-bottom {
+  padding-left: 10px;
+}
+
 .panels-entry {
+
+  padding-top: 1px;
+  padding-bottom: 2px;
   padding-left: 10px;
   padding-right: 10px;
+  margin: 0px;
+
+  overflow: hidden;
+  font: inherit;
 }
 
 .panels-entry-dir {
@@ -58,6 +91,23 @@
 
 .panels-panel-active .panels-entry-current {
   background: darkcyan;
+  border: solid 1px darkcyan;
+
+  padding-top: 0px;
+  padding-bottom: 2px;
+  padding-left: 9px;
+  padding-right: 9px;
+  margin: 0px;
+}
+
+.panels-panel-inactive .panels-entry-current {
+  border: solid 1px #00345B;
+
+  padding-top: 0px;
+  padding-bottom: 2px;
+  padding-left: 9px;
+  padding-right: 9px;
+  margin: 0px;
 }
 
 .panels-panel-active .panels-entry-file-current {

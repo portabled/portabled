@@ -37,7 +37,15 @@ var build = {
 <script id=shell-script>
 var eq80 = parent.eq80;
 var persistence = eq80.persistence, drive = eq80.drive;
-function require(mod) { return ({nodrive: eq80.drive, nowindow: eq80.window, resize: { on: function(callback) { eq80.on("resize", callback); } }})[mod]; }
+function require(mod) {
+  var mods = {
+    nodrive: eq80.drive,
+    nowindow: eq80.window,
+    resize: { on: function(callback) { eq80.on("resize", callback); } },
+    bootState: eq80.bootState
+  };
+  return mods[mod];
+}
 
 #shell-script#
 

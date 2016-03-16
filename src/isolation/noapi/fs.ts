@@ -247,9 +247,8 @@ namespace noapi {
 
       if (!fnode)
         throw new Error('ENOENT, no such file or directory \''+path+'\'');
-      var content = drive.read(norm_path);
       var isDir = typeof fnode === 'object';
-      var sz = isDir?0:content.length;
+      var sz = isDir?0:(drive.storedSize ? drive.storedSize(norm_path) : (drive.read(norm_path)||'').length);
 
       var tm = new Date(drive.timestamp);
 

@@ -102,9 +102,25 @@ if (parent.eq80) {
   parent.eq80.boot.style.display = 'block';
 
 
-	parent.eq80.on('progress', function(loadedSize, totalSize) {
-  	title('Loading: '+Math.round(loadedSize/1024)+' of '+Math.round(totalSize/1024)+'Kb...', loadedSize/totalSize);
+	parent.eq80.on('progress', function() {
+    var bootState = parent.eq80.bootState;
+    var lastFile =
+        bootState.newDOMFiles.length ? bootState.newDOMFiles[bootState.newDOMFiles.length-1] :
+    		bootState.newStorageFiles.length ? bootState.newStorageFiles[bootState.newStorageFiles.length-1] :
+    		null;
+    var titleStr =
+        'Loading: '+
+        Math.round((bootState.domLoadedSize|0)/1024)+
+        (bootState.domTotalSize ? ' of '+Math.round((bootState.domTotalSize)|0/1024):'')+
+        'Kb'+
+        (lastFile ? ' ...'+lastFile.replace(/^\//, '')+'...' : '...');
+
+  	title(titleStr, (bootState.domLoadedSize|0)/(bootState.domTotalSize||1));
 	});
+
+  parent.eq80.on('load', function() {
+  	title('Loading: init elements...', 0.99);
+  });
 
 }
 else {

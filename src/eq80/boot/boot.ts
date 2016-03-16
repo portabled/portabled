@@ -9,32 +9,46 @@ function boot() {
 
     if (document.title==='/:') document.title = '/:.';
     if (!eq80.timings.domStarted
-        && (continueMount.loadedSize || continueMount.totalSize))
+        && (bootDrive.domLoadedSize || bootDrive.domTotalSize))
       eq80.timings.domStarted = +new Date();
 
     removeSpyElements();
 
     sz.update();
 
-    var prevLoadedSize = continueMount.loadedSize;
-    var prevTotalSize = continueMount.totalSize;
+    var prevLoadedSize = bootDrive.domLoadedSize;
+    var prevTotalSize = bootDrive.domTotalSize;
 
-    eq80.continueMount = continueMount = continueMount.continueLoading();
+    bootDrive.continueLoading();
+    updateBootStateProps();
 
-    if (prevLoadedSize !== continueMount.loadedSize || prevTotalSize !== continueMount.totalSize) {
+    if (bootDrive.newDOMFiles.length || bootDrive.newStorageFiles.length
+        || prevLoadedSize !== bootDrive.domLoadedSize || prevTotalSize !== bootDrive.domTotalSize) {
       if (document.title==='/:' || document.title==='/:.') document.title = '//';
 
       for (var i = 0; i < progressCallbacks.length; i++) {
         var callback = progressCallbacks[i];
-        callback(continueMount.loadedSize, continueMount.totalSize);
+        callback(bootDrive);
       }
     }
 
   }
 
+  function updateBootStateProps() {
+    if (!eq80.bootState) eq80.bootState = {};
+    for (var k in bootDrive) if (k && bootDrive.hasOwnProperty(k) && k.charAt(0)!=='_') {
+      eq80.bootState[k] = bootDrive[k];
+    }
+
+    if (!eq80.bootState.read)
+    	eq80.bootState.read = function(path) { return bootDrive.read(path); };
+  }
+
   function window_onload() {
 
     function onfinishloading(drive) {
+      updateBootStateProps();
+      eq80.bootState.read = function(file) { return drive.read(file); };
       eq80.timings.driveLoaded = +new Date();
       eq80.drive = drive;
       if (loadedCallbacks && loadedCallbacks.length) {
@@ -60,7 +74,7 @@ function boot() {
 
     sz.update();
 
-    continueMount.finishLoading(onfinishloading);
+    bootDrive.finishParsing(onfinishloading);
 
   }
 
@@ -354,7 +368,17 @@ function boot() {
     if (key.slice(-1) === '/')
       key = key.slice(0, key.length - 1);
 
-    return smallHash(key) + '-' + smallHash(key.slice(1) + 'a');
+    // extract readable part
+    var colonSplit = key.split(':');
+    var readableKey = colonSplit[colonSplit.length-1].replace(/[^a-zA-Z0-9\/]/g, '').replace(/\/\//g, '/').replace(/^\//, '').replace(/\/$/, '').replace(/\.html$/, '');
+    var readableSlashPos = readableKey.indexOf('/');
+    if (readableSlashPos>0 && readableSlashPos < readableKey.length/2)
+      readableKey = readableKey.slice(readableSlashPos+1);
+    readableKey = readableKey.replace('/', '_');
+    if (!readableKey)
+      readableKey = 'po';
+
+    return readableKey+'_'+smallHash(key) + 'H' + smallHash(key.slice(1) + 'a');
 
     function smallHash(key) {
       for (var h = 0, i = 0; i < key.length; i++) {
@@ -431,7 +455,7 @@ function boot() {
 
 
   var uniqueKey = deriveUniqueKey(location);
-  var continueMount = eq80.persistence.bootMount(uniqueKey, document); // start persistence detection and loading (both DOM and HTML5)
+  var bootDrive = new eq80.persistence.BootState(document, uniqueKey);
 
   document.title = '/:';
 
@@ -445,6 +469,6 @@ function boot() {
     window.onload = window_onload;
   }
 
-  var keepLoading = setInterval(onkeeploading, 100);
+  var keepLoading = setInterval(onkeeploading, 30);
 
 }

@@ -80,6 +80,8 @@ module shell.actions {
       else if (copy_to.setSelectionRange) copy_to.setSelectionRange(0, (copy_to.value||'').length);
     }, 1);
 
+    return true;
+
     function queue_updateToLabel() {
       if ((<any>queue_updateToLabel)._timeout) return;
       (<any>queue_updateToLabel)._timeout = setTimeout(function() {
@@ -185,6 +187,7 @@ module shell.actions {
 
         for (var i = 0; i < env.sourceFiles.length; i++) {
           var sourceFilePath = env.sourceFiles[i].path;
+          if (sourceFilePath.charCodeAt(0)!==47) sourceFilePath='/'+sourceFilePath;
         	var trgFile = targetDir === '/' ?
               '/'+sourceFilePath.slice(prefix.length) :
               env.repl.coreModules.path.resolve(targetDir, sourceFilePath.slice(prefix.length));

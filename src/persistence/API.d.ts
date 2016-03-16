@@ -10,6 +10,8 @@ declare namespace persistence {
 
     write(file: string, content: string);
 
+    storedSize?(file: string): number;
+
   }
 
   export module Drive {
@@ -20,13 +22,15 @@ declare namespace persistence {
 
       write(file: string, content: string): void;
 
+      forget(file: string): void;
+
     }
 
     export interface Optional {
 
       name: string;
 
-      detect(uniqueKey: string, callback: (detached: Detached) => void): void;
+      detect(uniqueKey: string, callback: (error: string, detached: Detached) => void): void;
 
     }
 
@@ -35,7 +39,7 @@ declare namespace persistence {
       timestamp: number;
       totalSize?: number;
 
-      applyTo(mainDrive: Drive, callback: Detached.CallbackWithShadow): void;
+      applyTo(mainDrive: Detached.DOMUpdater, callback: Detached.CallbackWithShadow): void;
 
       purge(callback: Detached.CallbackWithShadow): void;
 
@@ -43,10 +47,18 @@ declare namespace persistence {
 
     export module Detached {
       export interface CallbackWithShadow {
-
         (loaded: Shadow): void;
         progress?: (current: number, total: number) => void;
       }
+
+    export interface DOMUpdater {
+
+      timestamp: number;
+
+      write(file: string, content: string): void;
+
+    }
+
     }
 
   }

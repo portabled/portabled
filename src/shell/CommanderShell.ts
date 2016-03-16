@@ -3,7 +3,7 @@ declare var unescape;
 
 namespace shell {
 
-  var version = '0.80j';
+  var version = '0.82m';
 
   export class CommanderShell {
 
@@ -22,7 +22,7 @@ namespace shell {
     private _keybar: keybar.Keybar;
   	private _dialogHost = new DialogHost();
 
-    constructor(private _topWindow: Window, private _host: HTMLElement, private _originalDrive: persistence.Drive, complete: () => string) {
+    constructor(private _topWindow: Window, private _host: HTMLElement, private _originalDrive: persistence.Drive, private _getBootState: () => any, complete: () => string) {
 
       var wrappedDrive = trackChanges(this._originalDrive);
       this._drive = wrappedDrive.drive;
@@ -47,7 +47,7 @@ namespace shell {
 
       this._metrics = new layout.MetricsCollector(window);
 
-      this._terminal = new terminal.Terminal(this._host, this._repl, () => <any>this._editor || this._dialogHost.active(), version);
+      this._terminal = new terminal.Terminal(this._host, this._repl, () => <any>this._editor || this._dialogHost.active(), version, this._getBootState);
       var panelDirService =
           // panels.driveDirectoryService(this._drive);
       		panels.fsDirectoryService(this._repl.coreModules.fs);
@@ -170,7 +170,7 @@ namespace shell {
       this._terminal.onkeydown = e => this._keydown(e);
       this._terminal.onenterdetected = () => {
         var cmd = this._terminal.getInput();
-         this._terminal.writeDirect(cmd);
+         this._terminal.writeAsCommand(cmd);
          if (!this._terminalExecute(cmd))
            this._execute(cmd, null);
       };
@@ -197,7 +197,7 @@ namespace shell {
 
     measure() {
       this._metrics.measure();
-      this._twoPanels.measure();
+      this._twoPanels.measure(this._metrics.metrics);
       this._terminal.measure();
       if (this._editor && this._editor.measure) this._editor.measure();
     }
@@ -420,7 +420,7 @@ namespace shell {
             this.measure();
             this.arrange();
             this._editor.requestClose = () => this._closeEditor();
-            this._terminal.writeDirect('@edit ' + cursorPath);
+            this._terminal.writeSmall('@edit ' + cursorPath);
 
             if (posn && this._editor.setPosition)
               this._editor.setPosition(posn);
@@ -518,6 +518,7 @@ namespace shell {
       nopro.coreModules['nodrive'] = this._drive;
       nopro.coreModules['nowindow'] = window;
       nopro.coreModules['noshell'] = this;
+      // nopro.coreModules['bootState'] = this._getBootState();  LET'S NOT EXPOSE TOO MUCH
       nopro.coreModules['nodialog'] = this._dialogHost;
     }
 
@@ -529,7 +530,7 @@ namespace shell {
       switch (firstWord) {
         case 'cd':
         case '@cd':
-          return this._cd(this._repl.coreModules.path.resolve(moreArgs));
+          return this._cd(moreArgs ? this._repl.coreModules.path.resolve(moreArgs) : null);
         case 'ls':
         case '@ls':
           return this._ls(moreArgs);
@@ -661,7 +662,7 @@ namespace shell {
 
       var text = this._drive.read(argList[0]);
       if (typeof text !== 'undefined' && text !== null) {
-        this._terminal.writeDirect('node ' + args);
+        this._terminal.writeAsCommand('node ' + args);
         var ani = this._twoPanels.temporarilyHidePanels();
 
         setTimeout(() => {
@@ -676,7 +677,7 @@ namespace shell {
             this._enhanceNoprocess(proc);
             var evalStart = +new Date();
             if (evalStart-commandStart>100)
-              this._terminal.writeDirect('...'+(((evalStart-commandStart)/100)|0)/10+'s to initialize process...');
+              this._terminal.writeSmall('...'+(((evalStart-commandStart)/100)|0)/10+'s to initialize process...');
             var result = proc.eval(text);
             if (typeof proc.exitCode == 'number')
               result = proc.exitCode;
@@ -699,7 +700,7 @@ namespace shell {
       var text = this._drive.read(tscPath);
       if (typeof text !== 'undefined' && text !== null) {
         var argList = args ? args.split(/\s+/) : [];
-        this._terminal.writeDirect('@tsc' + (args ? ' ' + args : ''));
+        this._terminal.writeAsCommand('@tsc' + (args ? ' ' + args : ''));
         var ani = this._twoPanels.temporarilyHidePanels();
         setTimeout(() => {
           try {
@@ -725,7 +726,7 @@ namespace shell {
 
             var start = +new Date();
             var result = proc.eval(text);
-            this._terminal.writeDirect('@tsc ' + (Math.round((+new Date()-start)/100) / 10) + ' sec.');
+            this._terminal.writeSmall('@tsc ' + (Math.round((+new Date()-start)/100) / 10) + ' sec.');
 
             if (typeof proc.exitCode == 'number')
               result = proc.exitCode;
@@ -819,7 +820,7 @@ namespace shell {
       }
       else {
         var ani = this._twoPanels.temporarilyHidePanels();
-        this._terminal.writeDirect('@type ' + cursorPath);
+        this._terminal.writeAsCommand('@type ' + cursorPath);
         this._terminal.writeDirect(this._drive.read(cursorPath));
         this._terminal.storeAsHistory('@type ' + cursorPath);
         ani();
@@ -829,7 +830,7 @@ namespace shell {
 
     private _window(cursorPath: string) {
 
-      this._terminal.writeDirect('@window ' + cursorPath);
+      this._terminal.writeAsCommand('@window ' + cursorPath);
       var ani = this._twoPanels.temporarilyHidePanels();
       setTimeout(() => {
 
@@ -883,8 +884,12 @@ namespace shell {
     }
 
   	private _updateWindowTitle(newPath: string) {
-      if (this._topWindow && this._topWindow.document)
-        this._topWindow.document.title = newPath==='/' ? ' '+version : newPath;
+      try {
+        if (this._topWindow && this._topWindow.document)
+          this._topWindow.document.title = newPath==='/' ? ' '+version : newPath;
+      }
+      catch (error) {
+      }
     }
 
   }
@@ -896,6 +901,8 @@ namespace shell {
       hostHeight: number;
       emWidth: number;
       emHeight: number;
+      scrollbarWidth: number;
+      scrollbarHeight: number;
     }
 
   }

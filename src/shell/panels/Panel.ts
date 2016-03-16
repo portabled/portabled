@@ -3,6 +3,11 @@ declare var webkitRequestAnimationFrame;
 module shell.panels {
 
   var panelClass = 'panels-panel-page';
+  var approxColumnWidthEms = 17;
+  var titleHeightEms = 1.2;
+  var bottomHeightEms = 1.2;
+  var bottomShadowEms = 0.4;
+  var minTitleWidth = 40;
 
   export class Panel {
 
@@ -12,8 +17,22 @@ module shell.panels {
     private _redrawRequested = 0;
 
     private _metrics: Panel.Metrics = null;
+  	private _availableHeight: number = 0;
 
+  	private _panelBackground: HTMLDivElement;
+  	private _panelBackgroundTop: HTMLDivElement;
+  	private _panelBackgroundTopShadow: HTMLDivElement;
+  	private _panelBackgroundTopLeft: HTMLDivElement;
+  	private _panelBackgroundTitleGap: HTMLDivElement;
+  	private _panelBackgroundTopRight: HTMLDivElement;
+  	private _panelBackgroundMain: HTMLDivElement;
+  	private _panelBackgroundBottomShadow: HTMLDivElement;
+
+  	private _scrollHost: HTMLDivElement;
     private _scrollContent: HTMLElementWithFlags;
+  	private _titleHost: HTMLDivElement;
+  	private _title: HTMLPreElement;
+  	private _bottom: HTMLPreElement;
 
     private _pages: Panel.PageData[] = [];
 
@@ -22,6 +41,7 @@ module shell.panels {
     private _pageInterval = 0;
     private _columnsOnPage = 0;
     private _columnWidth = 0;
+  	private _titleWidth = 0;
 
     private _scrollTop = 0;
     private _scrollTopHeight = 0;
@@ -30,23 +50,54 @@ module shell.panels {
 
     ondoubleclick: () => boolean = null;
 
+  	private _titleWidthCache: any = {};
+  	private _titleWidthMeasurement: HTMLElement = null;
+  	private _titleWidthMeasurementRequired = true;
 
     constructor(
       private _host: HTMLElement,
       private _path: string,
       private _directoryService: (path: string) => Panel.DirectoryEntry[]) {
 
-      this._scrollContent = <HTMLElementWithFlags>elem('div', this._host);
+      this._titleWidthMeasurement = elem('pre', {
+        className: 'panel-each-title-active',
+        position: 'absolute',
+        left: '-3000px',
+        top: '-3000px',
+        opacity: '0.0001'
+      }, this._host);
+
+      var topShadowOpacity = 0.8;
+      var bottomShadowOpacity = 0.7;
+
+      this._panelBackground = <HTMLDivElement>elem('div', { zoom: 1, position: 'relative', width: '100%' }, this._host);
+      this._panelBackgroundTopShadow = <HTMLDivElement>elem('div', { fontSize: '1px', innerHTML: '&nbsp;', background: 'black', opacity: topShadowOpacity }, this._panelBackground);
+      this._panelBackgroundTop = <HTMLDivElement>elem('div', { fontSize: '1px', innerHTML: '&nbsp;' }, this._panelBackground);
+      this._panelBackgroundTopLeft = <HTMLDivElement>elem('div', { className: 'panel-each-background', display: 'inline-block' }, this._panelBackgroundTop);
+      this._panelBackgroundTitleGap = <HTMLDivElement>elem('div', { background: 'black', display: 'inline-block', opacity: topShadowOpacity }, this._panelBackgroundTop);
+      this._panelBackgroundTopRight = <HTMLDivElement>elem('div', { className: 'panel-each-background', display: 'inline-block' }, this._panelBackgroundTop);
+      this._panelBackgroundMain = <HTMLDivElement>elem('div', { fontSize: '1px', innerHTML: '&nbsp;', className: 'panel-each-background' }, this._panelBackground);
+      this._panelBackgroundBottomShadow = <HTMLDivElement>elem('div', { fontSize: '1px', innerHTML: '&nbsp;', background: 'black', opacity: bottomShadowOpacity }, this._panelBackground);
+
+      this._scrollHost = <HTMLDivElement>elem('div', { className: 'panel-each-scrollhost', zoom: 1, position: 'relative', margin: '0px', padding: '0px', overflow: 'hidden', overflowY: 'auto' }, this._host);
+      this._scrollContent = <HTMLElementWithFlags>elem('div', this._scrollHost);
       this._scrollContent.isScrollContent = true;
 
-      on(this._host, 'scroll', () => this._onscroll());
+      this._bottom = <HTMLPreElement>elem('pre', { className: 'panel-each-bottom panel-each-bottom-inactive', zoom: 1, position: 'relative', margin: '0px', overflow: 'hidden' }, this._host);
+      this._titleHost = <HTMLDivElement>elem('div', { zoom: 1, position: 'relative', margin: '0px' }, this._host);
+      this._title = <HTMLPreElement>elem('pre', { className: 'panel-each-title panel-each-title-inactive', padding: '0px', margin: '0px' }, this._titleHost);
+
+      on(this._scrollHost, 'scroll', () => this._onscroll());
 
       this._queueRedraw();
     }
 
     set(paths: { currentPath?: string; cursorPath?: string }) {
-      if (paths.currentPath)
+      if (paths.currentPath) {
         this._path = paths.currentPath;
+      	setText(this._titleWidthMeasurement, this._path);
+      }
+
       if (paths.cursorPath) {
         this._cursorPath = paths.cursorPath;
         this._nextRedrawScrollToCurrent = true;
@@ -109,6 +160,7 @@ module shell.panels {
               if (this._entries[i].flags & Panel.EntryFlags.Directory) {
                 this._cursorPath = this._path;
                 this._path = this._entries[i].path; // double click (or second click) opens directory
+      					setText(this._titleWidthMeasurement, this._path);
               }
               else {
                 // double click (or second click) on  a file
@@ -139,6 +191,10 @@ module shell.panels {
       return this._cursorPath;
     }
 
+  	measure(metrics: Panel.Metrics) {
+      this._ensureTitleMeasured();
+    }
+
     arrange(metrics: Panel.Metrics) {
       this._metrics = metrics;
       this._redrawNow();
@@ -151,11 +207,15 @@ module shell.panels {
     activate() {
       this._isActive = true;
       this._scrollContent.className = 'panels-panel-active';
+      this._title.className = 'panel-each-title panel-each-title-active';
+      this._bottom.className = 'panel-each-bottom panel-each-bottom-active';
     }
 
     deactivate() {
       this._isActive = false;
       this._scrollContent.className = 'panels-panel-inactive';
+      this._title.className = 'panel-each-title panel-each-title-inactive';
+      this._bottom.className = 'panel-each-bottom panel-each-bottom-inactive';
     }
 
     cursorGo(direction: number) {
@@ -257,13 +317,34 @@ module shell.panels {
         if (entry) {
           if (entry.flags & Panel.EntryFlags.Directory) {
             this._cursorPath = this._path;
-            this._path = entry.path;
+            this._updatePath(entry.path);
             this._nextRedrawScrollToCurrent = true;
             this._queueRedraw();
             return true;
           }
         }
       }
+    }
+
+  	private _ensureTitleMeasured() {
+      if (!this._titleWidthMeasurementRequired) return;
+      this._titleWidth = this._titleWidthMeasurement.offsetWidth;
+      this._titleWidthCache[this._path] = this._titleWidth;
+      this._titleWidthMeasurementRequired = false;
+    }
+
+  	private _updatePath(path: string) {
+      if (path === this._path) return;
+      this._path = path;
+      if (this._titleWidthCache[path]) {
+        this._titleWidth = this._titleWidthCache[path];
+      	this._titleWidthMeasurementRequired = false;
+        return;
+      }
+
+      setText(this._titleWidthMeasurement, path);
+      this._titleWidthMeasurementRequired = true;
+      this._queueRedraw();
     }
 
     private _redrawNowClosure = () => this._redrawNow();
@@ -303,15 +384,61 @@ module shell.panels {
             break;
           }
 
-          this._path = this._path.slice(0, this._path.lastIndexOf('/'));
+          var tryPath = this._path.slice(0, this._path.lastIndexOf('/'));
           try {
-      		  entries = this._directoryService(this._path);
+      		  entries = this._directoryService(tryPath);
+            this._updatePath(tryPath);
             break;
           }
           catch (error) { continue; }
 
         }
       }
+
+
+
+      this._ensureTitleMeasured();
+
+      var titleHeight = titleHeightEms*this._metrics.windowMetrics.emHeight;
+      var bottomHeight = bottomHeightEms*this._metrics.windowMetrics.emHeight;
+      var bottomShadowHeight = bottomShadowEms*this._metrics.windowMetrics.emHeight;
+      this._availableHeight = this._metrics.hostHeight - titleHeight - bottomHeight - bottomShadowHeight;
+
+      var adjTitleWidth = Math.min(this._metrics.hostWidth-this._metrics.windowMetrics.emWidth*4, this._titleWidth)|0;
+      if (adjTitleWidth<minTitleWidth)
+        adjTitleWidth = Math.min(minTitleWidth, this._metrics.hostWidth)|0;
+
+      this._panelBackgroundTopShadow.style.height = ((titleHeight/2)|0)+'px';
+      var topDecorHeightStr = (titleHeight - ((titleHeight/2)|0))+'px';
+      this._panelBackgroundTop.style.height = topDecorHeightStr;
+      this._panelBackgroundTopLeft.style.width = (((this._metrics.hostWidth - adjTitleWidth)/2)|0)+'px';
+      this._panelBackgroundTopLeft.style.height = topDecorHeightStr;
+      this._panelBackgroundTitleGap.style.width = adjTitleWidth + 'px';
+      this._panelBackgroundTitleGap.style.height = topDecorHeightStr;
+      this._panelBackgroundTopRight.style.width = (this._metrics.hostWidth - adjTitleWidth - (((this._metrics.hostWidth - adjTitleWidth)/2)|0))+'px';
+      this._panelBackgroundTopRight.style.height = topDecorHeightStr;
+      this._panelBackgroundMain.style.height = (this._metrics.hostHeight-titleHeight-bottomShadowHeight)+'px';
+			this._panelBackgroundBottomShadow.style.height = bottomShadowHeight+'px';
+
+
+      this._scrollHost.style.width = this._metrics.hostWidth+'px';
+      this._scrollHost.style.height = this._availableHeight+'px';
+      this._scrollHost.style.marginTop = (-this._metrics.hostHeight+titleHeight)+'px';
+
+      this._bottom.style.width = this._metrics.hostWidth+'px';
+      this._bottom.style.height = bottomHeight+'px';
+      var bottomVAdjust = (((bottomHeight-this._metrics.windowMetrics.emHeight)/2)/2)|0;
+      this._bottom.style.paddingTop = bottomVAdjust+'px';
+      this._bottom.style.paddingBottom = bottomVAdjust+'px';
+
+      this._titleHost.style.width = this._metrics.hostWidth+'px';
+      this._titleHost.style.height = titleHeight+'px';
+      this._titleHost.style.marginTop = -(this._availableHeight+bottomHeight+titleHeight)+'px';
+      this._titleHost.style.paddingTop = ((titleHeight-this._metrics.windowMetrics.emHeight)/2)+'px';
+
+      this._title.style.marginLeft = (((this._metrics.hostWidth - adjTitleWidth)/2)|0)+'px';
+      this._title.style.width = adjTitleWidth+'px';
+      this._title.style.height = titleHeight+'px';
 
       this._entries = [];
 
@@ -330,7 +457,8 @@ module shell.panels {
         entries.unshift({
           name: '..',
           path: parentPath,
-          flags: Panel.EntryFlags.Directory
+          flags: Panel.EntryFlags.Directory,
+          size: 0
         });
       }
 
@@ -368,13 +496,28 @@ module shell.panels {
         this._cursorPath = entries.length > 0 ? entries[this._cursorEntryIndex].path : null;
       }
 
-      this._entriesInColumn = Math.max(3, ((this._metrics.hostHeight / this._metrics.windowMetrics.emHeight) | 0) - 2);
+      this._entriesInColumn = Math.max(3, ((this._availableHeight / this._metrics.windowMetrics.emHeight) | 0) - 2);
       this._pageHeight = this._entriesInColumn * this._metrics.windowMetrics.emHeight;
-      this._pageInterval = this._metrics.hostHeight - this._pageHeight - this._metrics.windowMetrics.emHeight;
+      this._pageInterval = this._availableHeight - this._pageHeight - this._metrics.windowMetrics.emHeight;
 
-      var desiredColumnWidth = 17 * this._metrics.windowMetrics.emWidth;
+      var desiredColumnWidth = approxColumnWidthEms * this._metrics.windowMetrics.emWidth;
       this._columnsOnPage = Math.max(1, Math.round(this._metrics.hostWidth / desiredColumnWidth) | 0);
-      this._columnWidth = ((this._metrics.hostWidth / this._columnsOnPage) | 0) - 1;
+
+
+      // if scrollbar will appear, decrease content width to avoid incorrect wrapping
+      var expectPageCountApprox = entries.length / (this._entriesInColumn*this._columnsOnPage);
+      if (expectPageCountApprox>(expectPageCountApprox|0)) {
+        var expectPageCount = (expectPageCountApprox|0)+1;
+      }
+      else {
+        var expectPageCount = expectPageCountApprox|0;
+      }
+
+      var contentWidth = this._metrics.hostWidth;
+      if (expectPageCount>1)
+        contentWidth -= this._metrics.windowMetrics.scrollbarWidth;
+
+      this._columnWidth = ((contentWidth / this._columnsOnPage) | 0) - 1;
 
       if (!this._pages)
         this._pages = [];
@@ -464,6 +607,10 @@ module shell.panels {
         var extraClassName = this._getExtraClass(dentry.path, handlerList);
         var entry = this._updateEntry(dentry, i, column, entryIndex, extraClassName);
 
+        if (this._cursorEntryIndex === i) {
+          var cursorEntry = entry;
+        }
+
         this._entries.push(entry);
 
       }
@@ -482,7 +629,7 @@ module shell.panels {
       if (this._nextRedrawScrollToCurrent) {
         this._nextRedrawScrollToCurrent = false;
         var maxScroll = newOffset - this._metrics.windowMetrics.emHeight * 2;
-        var minScroll = newOffset - this._metrics.hostHeight + this._metrics.windowMetrics.emHeight * 3;
+        var minScroll = newOffset - this._availableHeight + this._metrics.windowMetrics.emHeight * 3;
 
         var newScrollTop =
           this._scrollTop < minScroll ? minScroll :
@@ -491,20 +638,33 @@ module shell.panels {
 
         if (newScrollTop >= 0) {
           //console.log('redraw: scroll to current [' + newScrollTop + ']');
-          this._host.scrollTop = newScrollTop
+          this._scrollHost.scrollTop = newScrollTop
         }
       }
       else {
         var prevDistanceFromCenter = prevOffset - (this._scrollTop + this._scrollTopHeight / 2);
 
-        var newScrollTop = newOffset - prevDistanceFromCenter - this._metrics.hostHeight / 2;
+        var newScrollTop = newOffset - prevDistanceFromCenter - this._availableHeight / 2;
         //console.log({
         //  prevDistanceFromCenter, prevOffset, this_scrollTop: this._scrollTop, this_scrollTopHeight: this._scrollTopHeight,
         //  newOffset, this_metrics_hostHeight: this._metrics.hostHeight, newScrollTop
         //});
         //console.log('redraw: scroll to approximate prev. [' + newScrollTop + ']');
-        this._host.scrollTop = newScrollTop;
+        this._scrollHost.scrollTop = newScrollTop;
       }
+
+      setText(this._title, this._path);
+
+      var bottomText = this._cursorPath;
+      if (cursorEntry) {
+        if (cursorEntry.flags&Panel.EntryFlags.Directory)
+          bottomText = '[ '+bottomText+' ]';
+        else
+          bottomText = bottomText + ' ['+(cursorEntry.size?cursorEntry.size:'empty')+']';
+      }
+
+      setText(this._bottom, bottomText);
+
 
 
       this._redrawRequested = 0;
@@ -522,6 +682,8 @@ module shell.panels {
         (<any>window).__redraw.htotal += endRedraw - startRedraw;
         (<any>window).__redraw.hcount++;
       }
+
+
 
       // end of _redrawNow()
     }
@@ -552,6 +714,31 @@ module shell.panels {
       return null;
     }
 
+  	private _classConcatCache: any = {};
+
+  	private _getEntryClass(dentry: Panel.DirectoryEntry, extraClass: string, indexInDirectory: number) {
+      var index =
+          (dentry.flags & Panel.EntryFlags.Directory ? 1 : 0)
+      		| (this._cursorEntryIndex === indexInDirectory ? 2 : 0);
+      var arr = this._classConcatCache[extraClass || '#'] || (this._classConcatCache[extraClass || '#'] = ['', '', '', '']);
+      var entryClass = arr[index] || (arr[index] = this._generateEntryClassString(dentry, extraClass, indexInDirectory));
+      return entryClass;
+    }
+
+  	private _generateEntryClassString(dentry: Panel.DirectoryEntry, extraClass: string, indexInDirectory: number) {
+      var dirfileClassName = dentry.flags & Panel.EntryFlags.Directory ? ' panels-entry-dir' : ' panels-entry-file';
+
+      var entryClassName =
+        'panels-entry' +
+        dirfileClassName +
+        (this._cursorEntryIndex === indexInDirectory ? ' panels-entry-current ' + dirfileClassName + '-current' : ' panels-entry-plain ' + dirfileClassName + '-plain');
+
+      return entryClassName;
+    }
+
+  	private _heightCache: string = '0px';
+ 		private _heightCacheKey = 0;
+
     private _updateEntry(
       dentry: Panel.DirectoryEntry,
       indexInDirectory: number,
@@ -561,27 +748,30 @@ module shell.panels {
 
       var entry = column.entries[indexInColumn];
 
-      var dirfileClassName = dentry.flags & Panel.EntryFlags.Directory ? ' panels-entry-dir' : ' panels-entry-file';
+      var entryClassName = this._getEntryClass(dentry, extraClass, indexInDirectory);
 
-      var entryClassName =
-        'panels-entry' +
-        dirfileClassName +
-        (this._cursorEntryIndex === indexInDirectory ? ' panels-entry-current ' + dirfileClassName + '-current' : ' panels-entry-plain ' + dirfileClassName + '-plain');
+      var adjHeight = this._metrics.windowMetrics.emHeight+1;
 
-      if (extraClass) entryClassName += ' ' + extraClass;
+     	var heightStr = this._heightCacheKey == adjHeight ? this._heightCache :
+      	(heightStr = this._heightCache = adjHeight + 'px');
 
       if (!entry) {
+
+        var entryDIV = <HTMLElementWithFlags><HTMLElement>document.createElement('pre');
+        if ('textContent' in entryDIV) entryDIV.textContent = dentry.name;
+        else entryDIV.innerText = dentry.name;
+        entryDIV.className = entryClassName;
+        entryDIV.style.height = heightStr;
+        entryDIV.style.marginBottom = '-1px';
+        column.columnDIV.appendChild(entryDIV);
 
         entry = {
           name: dentry.name,
           path: dentry.path,
           flags: dentry.flags,
           selectionFlags: this._cursorEntryIndex === indexInDirectory ? Panel.SelectionFlags.Current : 0,
-          entryDIV: <HTMLElementWithFlags>elem('div', {
-            className: entryClassName,
-            text: dentry.name,
-            height: this._metrics.windowMetrics.emHeight + 'px'
-          }, column.columnDIV)
+          entryDIV: entryDIV,
+          size: dentry.size
         };
 
         entry.entryDIV.isEntryDIV = true;
@@ -650,7 +840,7 @@ module shell.panels {
 
     private _onscroll() {
       if (this._redrawRequested) return;
-      this._scrollTop = this._host.scrollTop;
+      this._scrollTop = this._scrollHost.scrollTop;
       this._scrollTopHeight = this._metrics.hostHeight;
       //console.log('onscroll ' + this._scrollTop);
     }
@@ -674,6 +864,7 @@ module shell.panels {
       var pageIndex = this._calcPageIndex(indexOfEntry);
       var entryIndex = this._calcEntryIndex(indexOfEntry);
       var offset =
+        this._metrics.windowMetrics.emHeight * titleHeightEms+ // title
         pageIndex * this._entriesInColumn * this._metrics.windowMetrics.emHeight + // whole pages
         Math.max(0, pageIndex - 1) * this._pageInterval + // inter-page spaces
         entryIndex * this._metrics.windowMetrics.emHeight; // distance from the top of the page
@@ -702,6 +893,7 @@ module shell.panels {
       name: string;
       path: string;
       flags: EntryFlags;
+      size: number;
     }
 
     export enum EntryFlags {

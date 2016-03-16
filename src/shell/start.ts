@@ -8,6 +8,7 @@ module shell {
   export function start(complete: () => string) {
     var drive = require('nodrive');
     var parentWin = require('nowindow');
+    var getBootState = () => require('bootState');
 
     // TODO: shouldn't try to get to top window I suspect?
     var topWindow = parentWin;
@@ -15,7 +16,7 @@ module shell {
       topWindow = topWindow.parent;
     }
 
-    var commander = new CommanderShell(topWindow, document.body, drive, complete);
+    var commander = new CommanderShell(topWindow, document.body, drive, getBootState, complete);
 
 	}
 

@@ -24,6 +24,10 @@
   color: lightgreen;
 }
 
+.terminal-echo-command {
+  color: white;
+}
+
 .terminal-key-code-echo {
   font-style: italic;
   font-size: 90%;

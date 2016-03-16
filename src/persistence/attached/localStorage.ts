@@ -1,33 +1,33 @@
-module persistence {
+namespace persistence {
 
   function getLocalStorage() {
     return typeof localStorage === 'undefined' || typeof localStorage.length !== 'number' ? null : localStorage;
   }
 
-  // is it OK&
-  export module attached.localStorage {
+
+  export namespace attached.localStorage {
 
     export var name = 'localStorage';
 
-    export function detect(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
+    export function detect(uniqueKey: string, callback: (error: string, detached: Drive.Detached) => void): void {
       try {
         detectCore(uniqueKey, callback);
       }
       catch (error) {
-        callback(null);
+        callback(error.message, null);
       }
     }
 
-    function detectCore(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
+    function detectCore(uniqueKey: string, callback: (error:string, detached: Drive.Detached) => void): void {
       var localStorageInstance = getLocalStorage();
       if (!localStorageInstance) {
-        callback(null);
+        callback('Variable localStorage is not available.', null);
         return;
       }
 
       var access = new LocalStorageAccess(localStorageInstance, uniqueKey);
       var dt = new LocalStorageDetached(access);
-      callback(dt);
+      callback(null, dt);
     }
 
     class LocalStorageAccess {
@@ -41,10 +41,20 @@ module persistence {
         var r = this._localStorage.getItem(k);
         return r;
       }
-    
+
     	set(key: string, value: string): void {
         var k = this._expandKey(key);
-        return this._localStorage.setItem(k, value);
+        try {
+        	return this._localStorage.setItem(k, value);
+        }
+        catch (error) {
+          try {
+        		this._localStorage.removeItem(k);
+        		return this._localStorage.setItem(k, value);
+          }
+          catch (furtherError) {
+          }
+        }
       }
 
       remove(key: string): void {
@@ -74,7 +84,7 @@ module persistence {
           if (!k)
             this._cache[key] = k = this._prefix + key;
         }
-        
+
         return k;
       }
   	}
@@ -95,7 +105,7 @@ module persistence {
         }
       }
 
-      applyTo(mainDrive: Drive, callback: Drive.Detached.CallbackWithShadow): void {
+      applyTo(mainDrive: { timestamp: number; write(path: string, content: any); }, callback: Drive.Detached.CallbackWithShadow): void {
         var keys = this._access.keys();
         for (var i = 0; i < keys.length; i++) {
           var k = keys[i];
@@ -104,7 +114,7 @@ module persistence {
             mainDrive.write(k, value);
           }
         }
-        
+
         var shadow = new LocalStorageShadow(this._access, mainDrive.timestamp);
         callback(shadow);
       }
@@ -123,7 +133,7 @@ module persistence {
       }
 
     }
-    
+
     class LocalStorageShadow implements Drive.Shadow {
 
       constructor(private _access: LocalStorageAccess, public timestamp: number) {
@@ -134,8 +144,12 @@ module persistence {
         this._access.set('*timestamp', <any>this.timestamp);
       }
 
+  		forget(file: string) {
+        this._access.remove(file);
+      }
+
     }
 
   }
-  
+
 }

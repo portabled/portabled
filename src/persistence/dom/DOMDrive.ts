@@ -4,6 +4,7 @@ module persistence.dom {
 
     private _byPath: { [path: string]: DOMFile; } = {};
     private _anchorNode: Node = null;
+    private _totalSize = 0;
 
     public timestamp: number;
 
@@ -12,12 +13,20 @@ module persistence.dom {
       files: DOMFile[],
       private _document: DOMDrive.DocumentSubset) {
 
-      this.timestamp = this._totals ? this._totals.timestamp : 0;
-
       for (var i = 0; i < files.length; i++) {
         this._byPath[files[i].path] = files[i];
+        this._totalSize += files[i].contentLength;
         if (!this._anchorNode) this._anchorNode = files[i].node;
       }
+
+      if (!this._totals) {
+        var comment = this._document.createComment('');
+        var parent: any = this._document.head || this._document.getElementsByTagName('head')[0] || this._document.body;
+        parent.insertBefore(comment, parent.children ? parent.children[0] : null);
+        this._totals = new DOMTotals(0, this._totalSize, comment);
+      }
+
+      this.timestamp = this._totals.timestamp;
     }
 
     files(): string[] {
@@ -46,6 +55,15 @@ module persistence.dom {
         return f.read();
     }
 
+    storedSize(file: string): number {
+      var file = normalizePath(file);
+      var f = this._byPath[file];
+      if (!f)
+        return null;
+      else
+        return f.contentLength;
+    }
+
     write(file: string, content: string) {
 
       var totalDelta = 0;
@@ -65,23 +83,17 @@ module persistence.dom {
       else {
         if (f) { // update
           var lengthBefore = f.contentLength;
-          f.write(content);
+          if (!f.write(content)) return; // no changes - no update for timestamp/totals
           totalDelta += f.contentLength - lengthBefore;
         }
         else { // addition
           var comment = document.createComment('');
           var f = new DOMFile(comment, file, null, 0, 0);
           f.write(content);
-          // try to insert at the start, so new files will be loaded first
-          var anchor = this._anchorNode;
-          if (!anchor || anchor.parentElement != this._document.body) {
-            // this happens when filesystem is empty, or nodes got removed
-            anchor = this._document.body.getElementsByTagName('script')[0];
-            if (anchor) anchor = getNextNode(anchor);
-            if (anchor) this._anchorNode = anchor;
-          }
 
-          this._document.body.insertBefore(f.node, anchor);
+          this._anchorNeeded();
+
+          this._document.body.insertBefore(f.node, this._anchorNode);
           this._anchorNode = f.node; // next time insert before this node
           this._byPath[file] = f;
           totalDelta += f.contentLength;
@@ -89,9 +101,60 @@ module persistence.dom {
       }
 
       this._totals.timestamp = this.timestamp;
+      this._totals.totalSize += totalDelta;
       this._totals.updateNode();
     }
 
+    loadProgress() {
+      return { total: this._totals ? this._totals.totalSize : this._totalSize, loaded: this._totalSize };
+    }
+
+    continueLoad(entry: DOMFile | DOMTotals) {
+
+      if (!entry) {
+        this.continueLoad = null;
+        this._totals.totalSize = this._totalSize;
+        this._totals.updateNode();
+        return;
+      }
+
+      if ((<any>entry).path) {
+        var file = <DOMFile>entry;
+        // in case of duplicates, prefer earlier, remove latter
+        if (this._byPath[file.path]) {
+          if (!file.node) return;
+          var p = file.node.parentElement || file.node.parentNode;
+          if (p) p.removeChild(file.node);
+          return;
+        }
+
+        this._byPath[file.path] = file;
+        if (!this._anchorNode) this._anchorNode = file.node;
+        this._totalSize += file.contentLength;
+      }
+      else {
+        var totals = <DOMTotals>entry;
+        // consider the values, but throw away the later totals DOM node
+        this._totals.timestamp = Math.max(this._totals.timestamp, totals.timestamp|0);
+        this._totals.totalSize = Math.max(this._totals.totalSize, totals.totalSize|0);
+        if (!totals.node) return;
+        var p = totals.node.parentElement || totals.node.parentNode;
+        if (p) p.removeChild(totals.node);
+      }
+    }
+
+    private _anchorNeeded() {
+      // try to insert at the start, so new files will be loaded first
+      var anchor = this._anchorNode;
+      if (!anchor || anchor.parentElement != this._document.body) {
+        // this happens when filesystem is empty, or nodes got removed
+        // - we try not to bubble above scripts, so prompt UI loading is attempted on slow connections
+        var scripts = this._document.body.getElementsByTagName('script');
+        anchor = scripts[scripts.length-1];
+        if (anchor) anchor = getNextNode(anchor);
+        if (anchor) this._anchorNode = anchor;
+      }
+    }
   }
 
   function getNextNode(node: Node) {
@@ -105,8 +168,11 @@ module persistence.dom {
 
     export interface DocumentSubset {
       body: HTMLBodyElementSubset;
+      head: Node;
 
       createComment(data: string): Comment;
+
+      getElementsByTagName(tag: string): { [index: number]: Node; length: number };
     }
 
     export interface HTMLBodyElementSubset {
@@ -114,6 +180,7 @@ module persistence.dom {
       insertBefore(newChild: Node, refNode?: Node);
       getElementsByTagName(tag: string): NodeList;
       firstChild: Node;
+      children: { [index: number]: Node; length: number; };
     }
   }
 }

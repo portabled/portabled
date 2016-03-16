@@ -5,6 +5,8 @@ module shell.layout {
     hostHeight: number;
     emWidth: number;
     emHeight: number;
+    scrollbarWidth: number;
+    scrollbarHeight: number;
   }
 
 }

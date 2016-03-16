@@ -53,8 +53,9 @@ if (/\/$/.test(srcLead)) srcLead = srcLead.slice(0, srcLead.length-1);
 var srcTotalSize = 0;
 for (var i = 0; i < srcFiles.length; i++) {
   var fi = new eq80.persistence.dom.DOMFile(/*node*/null, srcFiles[i].slice(srcLead.length), null, 0, 0);
-  var fiHTML = '<'+'!-- '+fi.write(fs.readFileSync(srcFiles[i])+'') + '--'+'>';
-  srcTotalSize += fiHTML.length;
+  var srcContent = fs.readFileSync(srcFiles[i])+'';
+  var fiHTML = '<'+'!-- '+fi.write(srcContent) + '--'+'>';
+  srcTotalSize += srcContent.length;
   srcFiles[i] = fiHTML;
 }
 
@@ -62,12 +63,14 @@ var miBuildDate = new Date();
 
 console.log('Encoding build date and summary: '+miBuildDate+'...');
 var totalsComment = '<'+'!-- '+ (new eq80.persistence.dom.DOMTotals(miBuildDate, srcTotalSize, /*node*/null)).updateNode() + ' --'+'>\n';
+var totalsCommentEmpty = '<'+'!-- '+ (new eq80.persistence.dom.DOMTotals(miBuildDate, 0, /*node*/null)).updateNode() + ' --'+'>\n';
 html.push(
   '<!doctype html><head><meta charset="utf-8"><title> mini shell </title>\n'+
-    '<meta http-equiv="x-ua-compatible" cpmtemt="IE=edge">'+
-    '<HTA:APPLICATION id="htaHeader" SINGLEINSTANCE="no"></HTA:APPLICATION>'+
-    totalsComment +
+  '<meta http-equiv="x-ua-compatible" cpmtemt="IE=edge">');
+html.push(totalsComment);
+html.push(
     fs.readFileSync('favicon.base64.html')+
+    '<HTA:APPLICATION id="htaHeader" SINGLEINSTANCE="no"></HTA:APPLICATION>'+
     '<style data-legit=mi> *{display:none;background:black;color:black;} html,body{display:block;background:black;color:black;margin:0;padding:0;height:100%;overflow:hidden;} </style>\n'+
     '</head><body>\n'+
     '<'+'script data-legit=mi>\n'+
@@ -116,7 +119,9 @@ html.push(
  	'//'+'# '+'sourceURL=/eq80_minishell.js\n'+
   '</'+'script>');
 
-var smallHtml = html.join('\n');
+var smallHtmlClone = html.slice(0);
+smallHtmlClone[1] = totalsCommentEmpty;
+var smallHtml = smallHtmlClone.join('\n');
 fs.writeFileSync('../../empty.html', smallHtml);
 console.log('Saved '+smallHtml.length+' characters in '+path.resolve('../../empty.html'));
 
@@ -136,9 +141,9 @@ var link = eq80.createLink('mi.html', html);
 var totalHtml = html.join('\n');
 if (typeof link==='string') {
   fs.writeFileSync('../mi.html', totalHtml);
-  console.log('Saved '+totalHtml.length+' characters in '+path.resolve('../mi.html'));
+  console.log('Saved '+totalHtml.length+' characters in '+path.resolve('../mi.html')+' /src '+srcTotalSize);
 }
 else {
-  console.log('Open built result ('+totalHtml.length+' characters) in new window: ', link);
+  console.log('Open built result ('+totalHtml.length+' characters) in new window: ', link, ' /src '+srcTotalSize);
 }
 

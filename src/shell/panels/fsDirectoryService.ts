@@ -13,14 +13,19 @@ module shell.panels {
         var name: string;
         var entryPath = pathPrefix + fi;
         try {
-        var isDirectory = fs.statSync(entryPath).isDirectory();
+        	var stat = fs.statSync(entryPath);
         }
         catch (error) {
           throw new Error('fsDir('+path+') calling statSync('+entryPath+') getting '+error.message);
         }
         name = fi;// fi.slice(pathPrefix.length);
 
-        var entry = { path: entryPath, name, flags: isDirectory ? Panel.EntryFlags.Directory : 0 };
+        var entry = {
+          path: entryPath,
+          name,
+          flags: stat.isDirectory() ? Panel.EntryFlags.Directory : 0,
+          size: stat.size
+        };
         result.push(entry);
       }
 

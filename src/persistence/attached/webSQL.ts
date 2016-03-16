@@ -1,27 +1,27 @@
-module persistence {
+namespace persistence {
 
   function getOpenDatabase() {
     return typeof openDatabase !== 'function' ? null : openDatabase;
   }
 
-  export module attached.webSQL {
+  export namespace attached.webSQL {
 
     export var name = 'webSQL';
 
-    export function detect(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
+    export function detect(uniqueKey: string, callback: (error: string, detached: Drive.Detached) => void): void {
       try {
         detectCore(uniqueKey, callback);
       }
       catch (error) {
-        callback(null);
+        callback(error.message, null);
       }
     }
 
-    function detectCore(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
+    function detectCore(uniqueKey: string, callback: (error: string, detached: Drive.Detached) => void): void {
 
       var openDatabaseInstance = getOpenDatabase();
       if (!openDatabaseInstance) {
-        callback(null);
+        callback('Variable openDatabase is not available.', null);
         return;
       }
 
@@ -57,16 +57,16 @@ module persistence {
                 }
               }
 
-              callback(new WebSQLDetached(db, editedValue || 0, true));
+              callback(null, new WebSQLDetached(db, editedValue || 0, true));
             },
             (transaction, sqlError) => {
               // no data
-              callback(new WebSQLDetached(db, 0, false));
+              callback(null, new WebSQLDetached(db, 0, false));
             });
         },
         sqlError=> {
           // failed to load
-          callback(null);
+          callback('Loading from metadata table failed: '+sqlError.message, null);
         });
 
     }
@@ -79,7 +79,7 @@ module persistence {
         private _metadataTableIsValid: boolean) {
       }
 
-      applyTo(mainDrive: Drive, callback: Drive.Detached.CallbackWithShadow): void {
+      applyTo(mainDrive: { timestamp: number; write(path: string, content: any); }, callback: Drive.Detached.CallbackWithShadow): void {
         this._db.readTransaction(
           transaction => listAllTables(
             transaction,
@@ -116,7 +116,7 @@ module persistence {
           });
       }
 
-      private _applyToWithFiles(transaction: SQLTransaction, ftab: { file: string; table: string; }[], mainDrive: Drive, callback: Drive.Detached.CallbackWithShadow): void {
+      private _applyToWithFiles(transaction: SQLTransaction, ftab: { file: string; table: string; }[], mainDrive: { timestamp: number; write(path: string, content: any); }, callback: Drive.Detached.CallbackWithShadow): void {
 
         if (!ftab.length) {
           callback(new WebSQLShadow(this._db, this.timestamp, this._metadataTableIsValid));
@@ -204,8 +204,12 @@ module persistence {
           this._updateCore(file, content);
         }
         else {
-          this._dropFileTable(file);
+          this._deleteAllFromTable(file);
         }
+      }
+
+      forget(file: string) {
+        this._dropFileTable(file);
       }
 
       private _updateCore(file: string, content: string) {
@@ -245,6 +249,23 @@ module persistence {
           },
           (transaction, sqlError) => {
             reportSQLError('Failed to create a table "' + tableName + '" for file "' + file + '".', sqlError);
+          });
+      }
+
+      private _deleteAllFromTable(file: string) {
+        var tableName = mangleDatabaseObjectName(file);
+        this._db.transaction(
+          transaction => {
+            transaction.executeSql(
+              'DELETE FROM TABLE "' + tableName + '"',
+              [],
+              this._closures.updateMetadata,
+              (transaction, sqlError) => {
+                reportSQLError('Failed to delete all from table "' + tableName + '" for file "' + file + '".', sqlError);
+              });
+          },
+          sqlError => {
+            reportSQLError('Transaction failure deleting all from table "' + tableName + '" for file "' + file + '".', sqlError);
           });
       }
 

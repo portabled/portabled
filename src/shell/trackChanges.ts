@@ -44,6 +44,8 @@ namespace shell {
       },
       onchanges: null
     };
+    if (drive.storedSize)
+      (<persistence.Drive>result.drive).storedSize = (file: string) => drive.storedSize(file);
     return result;
 
     function reportChanges() {

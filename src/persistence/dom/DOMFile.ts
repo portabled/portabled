@@ -84,7 +84,7 @@ module persistence.dom {
       return decodedText;
     }
 
-    write(content: any) {
+    write(content: any): string | boolean {
 
       var encoded = bestEncode(content);
       var protectedText = encoded.content.
@@ -103,12 +103,14 @@ module persistence.dom {
       var html = leadText + protectedText;
       if (!this.node) return html; // can be used without backing 'node' for formatting purpose
 
+      if (html===this.node.nodeValue) return false;
       this.node.nodeValue = html;
 
       this._encoding = encodings[encoded.encoding || 'LF'];
       this._contentOffset = leadText.length;
 
       this.contentLength = content.length;
+      return true;
     }
 
   }

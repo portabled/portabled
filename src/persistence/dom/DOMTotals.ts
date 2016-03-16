@@ -5,10 +5,14 @@ module persistence.dom {
 
   export class DOMTotals {
 
+    // cache after updating DOM, to avoid unneeded updates
+    private _domTimestamp: number = -1;
+    private _domTotalSize: number = -1;
+
     constructor(
     	public timestamp: number,
     	public totalSize: number,
-      private _node: Comment) {
+      public node: Comment) {
     }
 
     static tryParse(
@@ -91,17 +95,25 @@ module persistence.dom {
 
   	updateNode() {
 
+      if (this._domTimestamp===this.timestamp && this._domTotalSize===this.totalSize) return;
+
       // total 4Kb, saved 25 Apr 2015 22:52:01.231
       var newTotals =
-        'total ' + (
-          this.totalSize < 1024 * 9 ? this.totalSize + '' :
-            this.totalSize < 1024 * 1024 * 9 ? ((this.totalSize / 1024) | 0) + 'Kb' :
-              ((this.totalSize / (1024 * 1024)) | 0) + 'Mb') + ', ' +
+        'total ' + DOMTotals.formatSize(this.totalSize) + ', ' +
         'saved ' + DOMTotals.formatDate(new Date(this.timestamp));
 
-      if (!this._node) return newTotals;
+      if (!this.node) return newTotals;
 
-      this._node.nodeValue = newTotals;
+      this.node.nodeValue = newTotals;
+      this._domTimestamp = this.timestamp;
+      this._domTotalSize = this.totalSize;
+    }
+
+  	static formatSize(totalSize: number): string {
+      return (
+        totalSize < 1024 * 9 ? totalSize + '' :
+        totalSize < 1024 * 1024 * 9 ? ((totalSize / 1024) | 0) + 'Kb' :
+        ((totalSize / (1024 * 1024)) | 0) + 'Mb');
     }
 
     static formatDate(date: Date): string {

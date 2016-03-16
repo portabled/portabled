@@ -1,39 +1,34 @@
-module persistence {
+namespace persistence {
 
   function getIndexedDB() {
-    try {
-      return typeof indexedDB === 'undefined' || typeof indexedDB.open !== 'function' ? null : indexedDB;
-    }
-    catch (error) {
-      return null;
-    }
+    return typeof indexedDB === 'undefined' || typeof indexedDB.open !== 'function' ? null : indexedDB;
   }
 
-  export module attached.indexedDB {
+  export namespace attached.indexedDB {
 
     export var name = 'indexedDB';
 
-    export function detect(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
+    export function detect(uniqueKey: string, callback: (error: string, detached: Drive.Detached) => void): void {
       try {
         detectCore(uniqueKey, callback);
       }
       catch (error) {
-        callback(null);
+        callback(error.message, null);
       }
     }
 
-    function detectCore(uniqueKey: string, callback: (detached: Drive.Detached) => void): void {
+    function detectCore(uniqueKey: string, callback: (error: string, detached: Drive.Detached) => void): void {
 
       var indexedDBInstance = getIndexedDB();
       if (!indexedDBInstance) {
-        callback(null);
+        callback('Variable indexedDB is not available.', null);
         return;
       }
 
       var dbName = uniqueKey || 'portabled';
 
       var openRequest = indexedDBInstance.open(dbName, 1);
-      openRequest.onerror = (errorEvent) => callback(null);
+      openRequest.onerror = (errorEvent) => callback('Opening database error: '+getErrorMessage(errorEvent), null);
 
       openRequest.onupgradeneeded = createDBAndTables;
 
@@ -45,31 +40,31 @@ module persistence {
           // files mentioned here, but not really used to detect
           // broken multi-store transaction implementation in Safari
 
-          transaction.onerror = (errorEvent) => callback(null);
+          transaction.onerror = (errorEvent) => callback('Transaction error: '+getErrorMessage(errorEvent), null);
 
           var metadataStore = transaction.objectStore('metadata');
           var filesStore = transaction.objectStore('files');
           var editedUTCRequest = metadataStore.get('editedUTC');
         }
         catch (getStoreError) {
-          callback(null);
+          callback('Cannot open database: '+getStoreError.message, null);
           return;
         }
 
         if (!editedUTCRequest) {
-          callback(null);
+          callback('Request for editedUTC was not created.', null);
           return;
         }
 
         editedUTCRequest.onerror = (errorEvent) => {
-          var detached = new IndexedDBDetached(db, null);
-          callback(detached);
+          var detached = new IndexedDBDetached(db, transaction, null);
+          callback(null, detached);
         };
 
         editedUTCRequest.onsuccess = (event) => {
           var result: MetadataData = editedUTCRequest.result;
-          var detached = new IndexedDBDetached(db, result && typeof result.value === 'number' ? result.value : null);
-          callback(detached);
+          var detached = new IndexedDBDetached(db, transaction, result && typeof result.value === 'number' ? result.value : null);
+          callback(null, detached);
         };
       }
 
@@ -81,85 +76,129 @@ module persistence {
       }
     }
 
+    function getErrorMessage(event): string {
+      if (event.message) return event.message;
+      else if (event.target) return event.target.errorCode;
+      return event+'';
+    }
+
 
 
     class IndexedDBDetached implements Drive.Detached {
 
       constructor(
         private _db: IDBDatabase,
+        private _transaction: IDBTransaction,
         public timestamp: number) {
+
+        // ensure the same transaction is used for applyTo/purge if possible
+        // -- but not if it's completed
+        if (this._transaction) {
+          this._transaction.oncomplete = () => {
+            this._transaction = null;
+          };
+        }
       }
 
-      applyTo(mainDrive: Drive, callback: Drive.Detached.CallbackWithShadow): void {
-        var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
+      applyTo(mainDrive: Drive.Detached.DOMUpdater, callback: Drive.Detached.CallbackWithShadow): void {
+        var transaction = this._transaction || this._db.transaction(['files', 'metadata']); // try to reuse the original opening _transaction
         var metadataStore = transaction.objectStore('metadata');
         var filesStore = transaction.objectStore('files');
 
         var countRequest = filesStore.count();
         countRequest.onerror = (errorEvent) => {
-          console.error('Could not count files store.');
-          callback(null);
+          if (typeof console!=='undefined' && console && typeof console.error==='function')
+          	console.error('Could not count files store: ', errorEvent);
+          callback(new IndexedDBShadow(this._db, this.timestamp));
         };
 
         countRequest.onsuccess = (event) => {
 
-          var storeCount: number = countRequest.result;
+          try {
 
-          var cursorRequest = filesStore.openCursor();
-          cursorRequest.onerror = (errorEvent) => callback(null);
+            var storeCount: number = countRequest.result;
 
-          // to cleanup any files which content is the same on the main drive
-          var deleteList: string[] = [];
-          var anyLeft = false;
-
-          var processedCount = 0;
-
-          cursorRequest.onsuccess = (event) => {
-            var cursor: IDBCursor = cursorRequest.result;
-
-            if (!cursor) {
-
-              // cleaning up files whose content is duplicating the main drive
-              if (anyLeft) {
-                for (var i = 0; i < deleteList.length; i++) {
-                  filesStore['delete'](deleteList[i]);
-                }
-              }
-              else {
-                filesStore.clear();
-                metadataStore.clear();
-              }
-
+            var cursorRequest = filesStore.openCursor();
+            cursorRequest.onerror = (errorEvent) => {
+              if (typeof console!=='undefined' && console && typeof console.error==='function')
+                console.error('Could not open cursor: ', errorEvent);
               callback(new IndexedDBShadow(this._db, this.timestamp));
-              return;
-            }
+            };
 
-            if (callback.progress)
-              callback.progress(processedCount, storeCount);
-            processedCount++;
+            var processedCount = 0;
 
-            var result: FileData = (<any>cursor).value;
-            if (result && result.path) {
+            cursorRequest.onsuccess = (event) => {
 
-              var existingContent = mainDrive.read(result.path);
-              if (existingContent === result.content) {
-                deleteList.push(result.path);
+              try {
+                var cursor: IDBCursor = cursorRequest.result;
+
+                if (!cursor) {
+                  callback(new IndexedDBShadow(this._db, this.timestamp));
+                  return;
+                }
+
+                if (callback.progress)
+                  callback.progress(processedCount, storeCount);
+                processedCount++;
+
+                var result: FileData = (<any>cursor).value;
+                if (result && result.path) {
+                  mainDrive.timestamp = this.timestamp;
+                  mainDrive.write(result.path, result.content);
+                }
+
+                cursor['continue']();
+
               }
-              else {
-                mainDrive.timestamp = this.timestamp;
-                mainDrive.write(result.path, result.content);
-                anyLeft = true;
-              }
-            }
+              catch (cursorContinueSuccessHandlingError) {
+                var message = 'Failing to process cursor continue';
+                try {
+                  message += ' ('+processedCount+' of '+storeCount+'): ';
+                }
+                catch (ignoreDiagError) {
+                  message += ': ';
+                }
 
-            cursor['continue']();
-          }; // cursorRequest.onsuccess
+                if (typeof console!=='undefined' && console && typeof console.error==='function')
+                  console.error(message, cursorContinueSuccessHandlingError);
+                callback(new IndexedDBShadow(this._db, this.timestamp));
+              }
+
+            }; // cursorRequest.onsuccess
+
+          }
+          catch (cursorCountSuccessHandlingError) {
+
+            var message = 'Failing to process cursor count';
+                try {
+                  message += ' ('+countRequest.result+'): ';
+                }
+                catch (ignoreDiagError) {
+                  message += ': ';
+                }
+
+            if (typeof console!=='undefined' && console && typeof console.error==='function')
+              console.error(message, cursorCountSuccessHandlingError);
+            callback(new IndexedDBShadow(this._db, this.timestamp));
+          }
 
         }; // countRequest.onsuccess
 
       }
 
       purge(callback: Drive.Detached.CallbackWithShadow): void {
+        if (this._transaction) {
+          this._transaction = null;
+          setTimeout(() => { // avoid being in the original transaction
+            this._purgeCore(callback);
+          }, 1);
+        }
+        else {
+          this._purgeCore(callback);
+        }
+      }
+
+      private _purgeCore(callback: Drive.Detached.CallbackWithShadow) {
         var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
 
         var filesStore = transaction.objectStore('files');
@@ -200,6 +239,13 @@ module persistence {
         metadataStore.put(md);
 
       }
+
+      forget(file: string) {
+        var transaction = this._db.transaction(['files'], 'readwrite');
+        var filesStore = transaction.objectStore('files');
+        filesStore['delete'](file);
+      }
+
     }
 
     interface FileData {

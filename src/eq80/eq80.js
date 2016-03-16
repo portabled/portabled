@@ -1,21 +1,405 @@
 function eq80() {
 eq80.build = {
-  timestamp: 1456260855927, // Tue Feb 23 2016 20:54:15 GMT+0000 (GMT Standard Time)
-  taken: 7480,
-  platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36"
+  timestamp: 1458130504200, // Wed Mar 16 2016 12:15:04 GMT+0000 (GMT Standard Time)
+  taken: 7681,
+  platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36"
 }
 
 var persistence=eq80.persistence={};
 
 /*var persistence;*/
 (function (persistence) {
+    var BootState = (function () {
+        function BootState(_document, _uniqueKey, _optionalDrives) {
+            if (_optionalDrives === void 0) { _optionalDrives = [persistence.attached.indexedDB, persistence.attached.webSQL, persistence.attached.localStorage]; }
+            this._document = _document;
+            this._uniqueKey = _uniqueKey;
+            this._optionalDrives = _optionalDrives;
+            this.domTimestamp = null;
+            this.domTotalSize = null;
+            this.domLoadedSize = null;
+            this.loadedFileCount = null;
+            this.storageName = null;
+            this.storageTimestamp = null;
+            this.storageLoadFailures = {};
+            this.newDOMFiles = [];
+            this.newStorageFiles = [];
+            this._byPath = {};
+            this._totals = null;
+            this._completion = null;
+            this._anticipationSize = 0;
+            this._lastNode = null;
+            this._parseHead = null;
+            this._currentOptionalDriveIndex = 0;
+            this._shadowFinished = false;
+            this._detachedDrive = null; // sometimes it lingers here until DOM timestamp is ready
+            this._shadow = null;
+            this._toUpdateDOM = null;
+            this._toForgetShadow = [];
+            this._domFinished = false;
+            this._reportedFiles = {};
+            this._newDOMFileCache = {};
+            this._newStorageFileCache = {};
+            this._loadNextOptionalDrive();
+        }
+        BootState.prototype.read = function (path) {
+            if (this._toUpdateDOM && path in this._toUpdateDOM)
+                return this._toUpdateDOM[path];
+            var f = this._byPath[path];
+            if (f)
+                return f.read();
+            else
+                return null;
+        };
+        BootState.prototype.continueLoading = function () {
+            if (!this._domFinished)
+                this._continueParsingDOM(false /* toCompletion */);
+            this.newDOMFiles = [];
+            for (var k in this._newDOMFileCache) {
+                if (k && k.charCodeAt(0) == 47)
+                    this.newDOMFiles.push(k);
+            }
+            this._newDOMFileCache = {};
+            this.newStorageFiles = [];
+            for (var k in this._newStorageFileCache) {
+                if (k && k.charCodeAt(0) == 47)
+                    this.newStorageFiles.push(k);
+            }
+            this._newStorageFileCache = {};
+        };
+        BootState.prototype.finishParsing = function (completion) {
+            if (this._domFinished) {
+                try {
+                    // when debugging, break on any error will hit here too
+                    throw new Error('finishParsing should only be called once.');
+                }
+                catch (error) {
+                    if (typeof console !== 'undefined' && console && typeof console.error === 'function')
+                        console.error(error);
+                }
+            }
+            this._completion = completion;
+            this._continueParsingDOM(true /* toCompletion */);
+        };
+        BootState.prototype._processNode = function (node) {
+            var cmheader = new persistence.dom.CommentHeader(node);
+            var file = persistence.dom.DOMFile.tryParse(cmheader);
+            if (file) {
+                this._processFileNode(file);
+                return;
+            }
+            var totals = persistence.dom.DOMTotals.tryParse(cmheader);
+            if (totals) {
+                this._processTotalsNode(totals);
+                return;
+            }
+        };
+        BootState.prototype._processTotalsNode = function (totals) {
+            if (this._totals) {
+                this._removeNode(totals.node);
+            }
+            else {
+                this._totals = totals;
+                this.domTimestamp = totals.timestamp;
+                this.domTotalSize = Math.max(totals.totalSize, this.domTotalSize | 0);
+                var detached = this._detachedDrive;
+                if (detached) {
+                    this._detachedDrive = null;
+                    this._compareTimestampsAndProceed(detached);
+                }
+            }
+        };
+        BootState.prototype._processFileNode = function (file) {
+            if (this._byPath[file.path]) {
+                // prefer earlier nodes
+                this._removeNode(file.node);
+                return;
+            }
+            // no updating nodes until whole DOM loaded
+            // (looks like some browsers get confused by updating DOM during loading)
+            this._byPath[file.path] = file;
+            this._newDOMFileCache[file.path] = true;
+            this.loadedFileCount++;
+            this.domLoadedSize += file.contentLength;
+            this.domTotalSize = Math.min(this.domTotalSize, this.domLoadedSize);
+        };
+        BootState.prototype._removeNode = function (node) {
+            var parent = node.parentElement || node.parentNode;
+            if (parent)
+                parent.removeChild(node);
+        };
+        BootState.prototype._continueParsingDOM = function (toCompletion) {
+            this.domLoadedSize -= this._anticipationSize;
+            this._anticipationSize = 0;
+            if (!this._lastNode) {
+                this._parseHead = this._document.head || this._document.getElementsByTagName('head')[0];
+                if (!this._parseHead
+                    && (!this._document.body || !this._document.body.children.length))
+                    return; // expect head before body
+                this._lastNode = this._parseHead.firstChild;
+                if (!this._lastNode)
+                    return;
+            }
+            while (true) {
+                var nextNode = this._getNextNode();
+                if (!nextNode && !toCompletion) {
+                    // do not consume nodes at the very end of the document until whole document loaded
+                    if (this._lastNode.nodeType === 8) {
+                        var cmheader = new persistence.dom.CommentHeader(this._lastNode);
+                        var speculativeFile = persistence.dom.DOMFile.tryParse(cmheader);
+                        if (speculativeFile) {
+                            this._anticipationSize = speculativeFile.contentLength;
+                            this.domLoadedSize = this.domLoadedSize + this._anticipationSize;
+                            this.domTotalSize = Math.min(this.domTotalSize, this.domLoadedSize); // total should not become less that loaded
+                        }
+                    }
+                    return;
+                }
+                if (this._lastNode.nodeType === 8) {
+                    this._processNode(this._lastNode);
+                }
+                if (!nextNode) {
+                    // finish
+                    this._lastNode = null;
+                    this._processDOMFinished();
+                    return;
+                }
+                this._lastNode = nextNode;
+            }
+        };
+        BootState.prototype._processDOMFinished = function () {
+            this._domFinished = true;
+            if (this._toUpdateDOM) {
+                // these are updates from attached storage that have not been written out
+                // (because files with corresponding paths don't exist in DOM)
+                for (var path in this._toUpdateDOM) {
+                    if (!path || path.charCodeAt(0) !== 47)
+                        continue; // expect leading slash
+                    var content = this._toUpdateDOM[path];
+                    if (content === null) {
+                        var f = this._byPath[path];
+                        if (f) {
+                            delete this._byPath[path];
+                            this._removeNode(f.node);
+                        }
+                        else {
+                            if (this._shadow)
+                                this._shadow.forget(path);
+                            else
+                                this._toForgetShadow.push(path);
+                        }
+                    }
+                    else if (typeof content !== 'undefined') {
+                        var f = this._byPath[path];
+                        if (f) {
+                            var modified = f.write(content);
+                            if (!modified) {
+                                if (this._shadow)
+                                    this._shadow.forget(path);
+                                else
+                                    this._toForgetShadow.push(path);
+                            }
+                        }
+                        else {
+                            var anchor = this._findAnchor();
+                            var comment = document.createComment('');
+                            var f = new persistence.dom.DOMFile(comment, path, null, 0, 0);
+                            f.write(content);
+                            this._byPath[path] = f;
+                            this._newDOMFileCache[path] = true;
+                            this._document.body.insertBefore(f.node, anchor);
+                        }
+                    }
+                }
+            }
+            if (this._shadowFinished) {
+                this._allCompleted();
+                return;
+            }
+            var detached = this._detachedDrive;
+            if (detached) {
+                this._detachedDrive = null;
+                this._compareTimestampsAndProceed(detached);
+            }
+        };
+        BootState.prototype._finishUpdateTotals = function () {
+            if (this._totals) {
+                if (this.storageTimestamp > this.domTimestamp)
+                    this._totals.timestamp = this.domTimestamp;
+            }
+        };
+        BootState.prototype._getNextNode = function () {
+            var nextNode = this._lastNode.nextSibling;
+            if (!nextNode && this._parseHead && this._document.body && (nextNode = this._document.body.firstChild))
+                this._parseHead = null;
+            return nextNode;
+        };
+        BootState.prototype._loadNextOptionalDrive = function () {
+            var _this = this;
+            if (this._currentOptionalDriveIndex >= this._optionalDrives.length) {
+                this._finishOptionalDetection();
+                return;
+            }
+            var nextDrive = this._optionalDrives[this._currentOptionalDriveIndex];
+            nextDrive.detect(this._uniqueKey, function (error, detached) {
+                if (detached) {
+                    _this.storageName = nextDrive.name;
+                    _this._shadowDetected(detached);
+                }
+                else {
+                    _this.storageLoadFailures[nextDrive.name] = error || 'Empty return.';
+                    _this._currentOptionalDriveIndex++;
+                    _this._loadNextOptionalDrive();
+                }
+            });
+        };
+        BootState.prototype._shadowDetected = function (detached) {
+            this.storageTimestamp = detached.timestamp;
+            if (this._totals || this._domFinished)
+                this._compareTimestampsAndProceed(detached);
+            else
+                this._detachedDrive = detached;
+        };
+        BootState.prototype._compareTimestampsAndProceed = function (detached) {
+            var _this = this;
+            var domRecent;
+            if (detached.timestamp && detached.timestamp > this.domTimestamp)
+                domRecent = false;
+            else if (!detached.timestamp && !this.domTimestamp)
+                domRecent = false;
+            else
+                domRecent = true;
+            if (domRecent) {
+                detached.purge(function (shadow) {
+                    _this._shadow = shadow;
+                    _this._finishOptionalDetection();
+                });
+            }
+            else {
+                this._toUpdateDOM = {};
+                detached.applyTo({
+                    timestamp: this.domTimestamp,
+                    write: function (path, content) {
+                        _this._applyShadowToDOM(path, content);
+                    }
+                }, function (shadow) {
+                    _this._shadow = shadow;
+                    _this._finishOptionalDetection();
+                });
+            }
+        };
+        BootState.prototype._applyShadowToDOM = function (path, content) {
+            if (this._domFinished) {
+                var file = this._byPath[path];
+                if (file) {
+                    if (content === null) {
+                        this._removeNode(file.node);
+                        delete this._byPath[path];
+                    }
+                    else {
+                        var modified = file.write(content);
+                        if (!modified)
+                            this._toForgetShadow.push(path);
+                    }
+                }
+                else {
+                    if (content === null) {
+                        this._toForgetShadow.push(path);
+                    }
+                    else {
+                        var anchor = this._findAnchor();
+                        var comment = document.createComment('');
+                        var f = new persistence.dom.DOMFile(comment, path, null, 0, 0);
+                        f.write(content);
+                        this._document.body.insertBefore(f.node, anchor);
+                        this._byPath[path] = f;
+                        this._newDOMFileCache[path] = true;
+                    }
+                }
+                this._newStorageFileCache[path] = true;
+            }
+            else {
+                this._toUpdateDOM[path] = content;
+                this._newStorageFileCache[path] = true;
+            }
+        };
+        BootState.prototype._findAnchor = function () {
+            var anchor = null;
+            for (var k in this._byPath)
+                if (k && k.charCodeAt(0) === 47) {
+                    anchor = this._byPath[k].node;
+                }
+            if (!anchor) {
+                var scripts = this._document.getElementsByTagName('script');
+                anchor = scripts[scripts.length - 1];
+            }
+            return anchor;
+        };
+        BootState.prototype._finishOptionalDetection = function () {
+            if (this._shadow) {
+                for (var i = 0; i < this._toForgetShadow.length; i++) {
+                    this._shadow.forget(this._toForgetShadow[i]);
+                }
+            }
+            this._shadowFinished = true;
+            if (this._domFinished) {
+                this._allCompleted();
+            }
+        };
+        BootState.prototype._allCompleted = function () {
+            this._finishUpdateTotals();
+            // TODO: report shadow failures
+            var domFiles = [];
+            for (var path in this._byPath) {
+                if (!path || path.charCodeAt(0) !== 47)
+                    continue; // expect leading slash
+                domFiles.push(this._byPath[path]);
+            }
+            var domDrive = new persistence.dom.DOMDrive(this._totals, domFiles, this._document);
+            var mountDrive = new MountedDrive(domDrive, this._shadow);
+            this._completion(mountDrive);
+        };
+        return BootState;
+    }());
+    persistence.BootState = BootState;
+    var MountedDrive = (function () {
+        function MountedDrive(_dom, _shadow) {
+            this._dom = _dom;
+            this._shadow = _shadow;
+            this.updateTime = true;
+            this.timestamp = 0;
+            this._cachedFiles = null;
+            this.timestamp = this._dom.timestamp;
+        }
+        MountedDrive.prototype.files = function () {
+            if (!this._cachedFiles)
+                this._cachedFiles = this._dom.files();
+            return this._cachedFiles.slice(0);
+        };
+        MountedDrive.prototype.read = function (file) {
+            return this._dom.read(file);
+        };
+        MountedDrive.prototype.storedSize = function (file) {
+            return this._dom.storedSize(file);
+        };
+        MountedDrive.prototype.write = function (file, content) {
+            if (this.updateTime)
+                this.timestamp = +new Date();
+            this._cachedFiles = null;
+            this._dom.timestamp = this.timestamp;
+            this._dom.write(file, content);
+            if (this._shadow) {
+                this._shadow.timestamp = this.timestamp;
+                this._shadow.write(file, content);
+            }
+        };
+        return MountedDrive;
+    }());
+})(persistence || (persistence = {}));
+/*var persistence;*/
+(function (persistence) {
     function getIndexedDB() {
-        try {
-            return typeof indexedDB === 'undefined' || typeof indexedDB.open !== 'function' ? null : indexedDB;
-        }
-        catch (error) {
-            return null;
-        }
+        return typeof indexedDB === 'undefined' || typeof indexedDB.open !== 'function' ? null : indexedDB;
     }
     var attached;
     (function (attached) {
@@ -27,19 +411,19 @@ var persistence=eq80.persistence={};
                     detectCore(uniqueKey, callback);
                 }
                 catch (error) {
-                    callback(null);
+                    callback(error.message, null);
                 }
             }
             indexedDB.detect = detect;
             function detectCore(uniqueKey, callback) {
                 var indexedDBInstance = getIndexedDB();
                 if (!indexedDBInstance) {
-                    callback(null);
+                    callback('Variable indexedDB is not available.', null);
                     return;
                 }
                 var dbName = uniqueKey || 'portabled';
                 var openRequest = indexedDBInstance.open(dbName, 1);
-                openRequest.onerror = function (errorEvent) { return callback(null); };
+                openRequest.onerror = function (errorEvent) { return callback('Opening database error: ' + getErrorMessage(errorEvent), null); };
                 openRequest.onupgradeneeded = createDBAndTables;
                 openRequest.onsuccess = function (event) {
                     var db = openRequest.result;
@@ -47,27 +431,27 @@ var persistence=eq80.persistence={};
                         var transaction = db.transaction(['files', 'metadata']);
                         // files mentioned here, but not really used to detect
                         // broken multi-store transaction implementation in Safari
-                        transaction.onerror = function (errorEvent) { return callback(null); };
+                        transaction.onerror = function (errorEvent) { return callback('Transaction error: ' + getErrorMessage(errorEvent), null); };
                         var metadataStore = transaction.objectStore('metadata');
                         var filesStore = transaction.objectStore('files');
                         var editedUTCRequest = metadataStore.get('editedUTC');
                     }
                     catch (getStoreError) {
-                        callback(null);
+                        callback('Cannot open database: ' + getStoreError.message, null);
                         return;
                     }
                     if (!editedUTCRequest) {
-                        callback(null);
+                        callback('Request for editedUTC was not created.', null);
                         return;
                     }
                     editedUTCRequest.onerror = function (errorEvent) {
-                        var detached = new IndexedDBDetached(db, null);
-                        callback(detached);
+                        var detached = new IndexedDBDetached(db, transaction, null);
+                        callback(null, detached);
                     };
                     editedUTCRequest.onsuccess = function (event) {
                         var result = editedUTCRequest.result;
-                        var detached = new IndexedDBDetached(db, result && typeof result.value === 'number' ? result.value : null);
-                        callback(detached);
+                        var detached = new IndexedDBDetached(db, transaction, result && typeof result.value === 'number' ? result.value : null);
+                        callback(null, detached);
                     };
                 };
                 function createDBAndTables() {
@@ -76,65 +460,106 @@ var persistence=eq80.persistence={};
                     var metadataStore = db.createObjectStore('metadata', { keyPath: 'property' });
                 }
             }
+            function getErrorMessage(event) {
+                if (event.message)
+                    return event.message;
+                else if (event.target)
+                    return event.target.errorCode;
+                return event + '';
+            }
             var IndexedDBDetached = (function () {
-                function IndexedDBDetached(_db, timestamp) {
+                function IndexedDBDetached(_db, _transaction, timestamp) {
+                    var _this = this;
                     this._db = _db;
+                    this._transaction = _transaction;
                     this.timestamp = timestamp;
+                    // ensure the same transaction is used for applyTo/purge if possible
+                    // -- but not if it's completed
+                    if (this._transaction) {
+                        this._transaction.oncomplete = function () {
+                            _this._transaction = null;
+                        };
+                    }
                 }
                 IndexedDBDetached.prototype.applyTo = function (mainDrive, callback) {
                     var _this = this;
-                    var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
+                    var transaction = this._transaction || this._db.transaction(['files', 'metadata']); // try to reuse the original opening _transaction
                     var metadataStore = transaction.objectStore('metadata');
                     var filesStore = transaction.objectStore('files');
                     var countRequest = filesStore.count();
                     countRequest.onerror = function (errorEvent) {
-                        console.error('Could not count files store.');
-                        callback(null);
+                        if (typeof console !== 'undefined' && console && typeof console.error === 'function')
+                            console.error('Could not count files store: ', errorEvent);
+                        callback(new IndexedDBShadow(_this._db, _this.timestamp));
                     };
                     countRequest.onsuccess = function (event) {
-                        var storeCount = countRequest.result;
-                        var cursorRequest = filesStore.openCursor();
-                        cursorRequest.onerror = function (errorEvent) { return callback(null); };
-                        // to cleanup any files which content is the same on the main drive
-                        var deleteList = [];
-                        var anyLeft = false;
-                        var processedCount = 0;
-                        cursorRequest.onsuccess = function (event) {
-                            var cursor = cursorRequest.result;
-                            if (!cursor) {
-                                // cleaning up files whose content is duplicating the main drive
-                                if (anyLeft) {
-                                    for (var i = 0; i < deleteList.length; i++) {
-                                        filesStore['delete'](deleteList[i]);
-                                    }
-                                }
-                                else {
-                                    filesStore.clear();
-                                    metadataStore.clear();
-                                }
+                        try {
+                            var storeCount = countRequest.result;
+                            var cursorRequest = filesStore.openCursor();
+                            cursorRequest.onerror = function (errorEvent) {
+                                if (typeof console !== 'undefined' && console && typeof console.error === 'function')
+                                    console.error('Could not open cursor: ', errorEvent);
                                 callback(new IndexedDBShadow(_this._db, _this.timestamp));
-                                return;
-                            }
-                            if (callback.progress)
-                                callback.progress(processedCount, storeCount);
-                            processedCount++;
-                            var result = cursor.value;
-                            if (result && result.path) {
-                                var existingContent = mainDrive.read(result.path);
-                                if (existingContent === result.content) {
-                                    deleteList.push(result.path);
+                            };
+                            var processedCount = 0;
+                            cursorRequest.onsuccess = function (event) {
+                                try {
+                                    var cursor = cursorRequest.result;
+                                    if (!cursor) {
+                                        callback(new IndexedDBShadow(_this._db, _this.timestamp));
+                                        return;
+                                    }
+                                    if (callback.progress)
+                                        callback.progress(processedCount, storeCount);
+                                    processedCount++;
+                                    var result = cursor.value;
+                                    if (result && result.path) {
+                                        mainDrive.timestamp = _this.timestamp;
+                                        mainDrive.write(result.path, result.content);
+                                    }
+                                    cursor['continue']();
                                 }
-                                else {
-                                    mainDrive.timestamp = _this.timestamp;
-                                    mainDrive.write(result.path, result.content);
-                                    anyLeft = true;
+                                catch (cursorContinueSuccessHandlingError) {
+                                    var message = 'Failing to process cursor continue';
+                                    try {
+                                        message += ' (' + processedCount + ' of ' + storeCount + '): ';
+                                    }
+                                    catch (ignoreDiagError) {
+                                        message += ': ';
+                                    }
+                                    if (typeof console !== 'undefined' && console && typeof console.error === 'function')
+                                        console.error(message, cursorContinueSuccessHandlingError);
+                                    callback(new IndexedDBShadow(_this._db, _this.timestamp));
                                 }
+                            }; // cursorRequest.onsuccess
+                        }
+                        catch (cursorCountSuccessHandlingError) {
+                            var message = 'Failing to process cursor count';
+                            try {
+                                message += ' (' + countRequest.result + '): ';
                             }
-                            cursor['continue']();
-                        }; // cursorRequest.onsuccess
+                            catch (ignoreDiagError) {
+                                message += ': ';
+                            }
+                            if (typeof console !== 'undefined' && console && typeof console.error === 'function')
+                                console.error(message, cursorCountSuccessHandlingError);
+                            callback(new IndexedDBShadow(_this._db, _this.timestamp));
+                        }
                     }; // countRequest.onsuccess
                 };
                 IndexedDBDetached.prototype.purge = function (callback) {
+                    var _this = this;
+                    if (this._transaction) {
+                        this._transaction = null;
+                        setTimeout(function () {
+                            _this._purgeCore(callback);
+                        }, 1);
+                    }
+                    else {
+                        this._purgeCore(callback);
+                    }
+                };
+                IndexedDBDetached.prototype._purgeCore = function (callback) {
                     var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
                     var filesStore = transaction.objectStore('files');
                     filesStore.clear();
@@ -166,6 +591,11 @@ var persistence=eq80.persistence={};
                     };
                     metadataStore.put(md);
                 };
+                IndexedDBShadow.prototype.forget = function (file) {
+                    var transaction = this._db.transaction(['files'], 'readwrite');
+                    var filesStore = transaction.objectStore('files');
+                    filesStore['delete'](file);
+                };
                 return IndexedDBShadow;
             }());
         })(indexedDB = attached.indexedDB || (attached.indexedDB = {}));
@@ -176,7 +606,6 @@ var persistence=eq80.persistence={};
     function getLocalStorage() {
         return typeof localStorage === 'undefined' || typeof localStorage.length !== 'number' ? null : localStorage;
     }
-    // is it OK&
     var attached;
     (function (attached) {
         var localStorage;
@@ -187,19 +616,19 @@ var persistence=eq80.persistence={};
                     detectCore(uniqueKey, callback);
                 }
                 catch (error) {
-                    callback(null);
+                    callback(error.message, null);
                 }
             }
             localStorage.detect = detect;
             function detectCore(uniqueKey, callback) {
                 var localStorageInstance = getLocalStorage();
                 if (!localStorageInstance) {
-                    callback(null);
+                    callback('Variable localStorage is not available.', null);
                     return;
                 }
                 var access = new LocalStorageAccess(localStorageInstance, uniqueKey);
                 var dt = new LocalStorageDetached(access);
-                callback(dt);
+                callback(null, dt);
             }
             var LocalStorageAccess = (function () {
                 function LocalStorageAccess(_localStorage, _prefix) {
@@ -214,7 +643,17 @@ var persistence=eq80.persistence={};
                 };
                 LocalStorageAccess.prototype.set = function (key, value) {
                     var k = this._expandKey(key);
-                    return this._localStorage.setItem(k, value);
+                    try {
+                        return this._localStorage.setItem(k, value);
+                    }
+                    catch (error) {
+                        try {
+                            this._localStorage.removeItem(k);
+                            return this._localStorage.setItem(k, value);
+                        }
+                        catch (furtherError) {
+                        }
+                    }
                 };
                 LocalStorageAccess.prototype.remove = function (key) {
                     var k = this._expandKey(key);
@@ -291,6 +730,9 @@ var persistence=eq80.persistence={};
                     this._access.set(file, content);
                     this._access.set('*timestamp', this.timestamp);
                 };
+                LocalStorageShadow.prototype.forget = function (file) {
+                    this._access.remove(file);
+                };
                 return LocalStorageShadow;
             }());
         })(localStorage = attached.localStorage || (attached.localStorage = {}));
@@ -311,14 +753,14 @@ var persistence=eq80.persistence={};
                     detectCore(uniqueKey, callback);
                 }
                 catch (error) {
-                    callback(null);
+                    callback(error.message, null);
                 }
             }
             webSQL.detect = detect;
             function detectCore(uniqueKey, callback) {
                 var openDatabaseInstance = getOpenDatabase();
                 if (!openDatabaseInstance) {
-                    callback(null);
+                    callback('Variable openDatabase is not available.', null);
                     return;
                 }
                 var dbName = uniqueKey || 'portabled';
@@ -343,14 +785,14 @@ var persistence=eq80.persistence={};
                                 editedValue = editedValueStr;
                             }
                         }
-                        callback(new WebSQLDetached(db, editedValue || 0, true));
+                        callback(null, new WebSQLDetached(db, editedValue || 0, true));
                     }, function (transaction, sqlError) {
                         // no data
-                        callback(new WebSQLDetached(db, 0, false));
+                        callback(null, new WebSQLDetached(db, 0, false));
                     });
                 }, function (sqlError) {
                     // failed to load
-                    callback(null);
+                    callback('Loading from metadata table failed: ' + sqlError.message, null);
                 });
             }
             var WebSQLDetached = (function () {
@@ -455,8 +897,11 @@ var persistence=eq80.persistence={};
                         this._updateCore(file, content);
                     }
                     else {
-                        this._dropFileTable(file);
+                        this._deleteAllFromTable(file);
                     }
+                };
+                WebSQLShadow.prototype.forget = function (file) {
+                    this._dropFileTable(file);
                 };
                 WebSQLShadow.prototype._updateCore = function (file, content) {
                     var _this = this;
@@ -481,6 +926,17 @@ var persistence=eq80.persistence={};
                         });
                     }, function (transaction, sqlError) {
                         reportSQLError('Failed to create a table "' + tableName + '" for file "' + file + '".', sqlError);
+                    });
+                };
+                WebSQLShadow.prototype._deleteAllFromTable = function (file) {
+                    var _this = this;
+                    var tableName = mangleDatabaseObjectName(file);
+                    this._db.transaction(function (transaction) {
+                        transaction.executeSql('DELETE FROM TABLE "' + tableName + '"', [], _this._closures.updateMetadata, function (transaction, sqlError) {
+                            reportSQLError('Failed to delete all from table "' + tableName + '" for file "' + file + '".', sqlError);
+                        });
+                    }, function (sqlError) {
+                        reportSQLError('Transaction failure deleting all from table "' + tableName + '" for file "' + file + '".', sqlError);
                     });
                 };
                 WebSQLShadow.prototype._dropFileTable = function (file) {
@@ -658,48 +1114,6 @@ var persistence=eq80.persistence={};
 })(persistence || (persistence = {}));
 /*var persistence;*/
 (function (persistence) {
-    // TODO: pass in progress callback
-    function bootMount(uniqueKey, document) {
-        var continueParse;
-        var ondomdriveloaded;
-        var domDriveLoaded;
-        var storedFinishCallback;
-        persistence.mountDrive(function (callback) {
-            if (domDriveLoaded)
-                callback(domDriveLoaded);
-            else
-                ondomdriveloaded = callback;
-        }, uniqueKey, [persistence.attached.indexedDB, persistence.attached.webSQL, persistence.attached.localStorage], function (mountedDrive) {
-            storedFinishCallback(mountedDrive);
-        });
-        return continueLoading();
-        function continueLoading() {
-            continueDOMLoading();
-            // TODO: record progress
-            return {
-                continueLoading: continueLoading,
-                finishLoading: finishLoading,
-                loadedFileCount: continueParse.loadedFileCount,
-                loadedSize: continueParse.loadedSize,
-                totalSize: continueParse.totalSize
-            };
-        }
-        function finishLoading(finishCallback) {
-            storedFinishCallback = finishCallback;
-            continueDOMLoading();
-            domDriveLoaded = continueParse.finishParsing();
-            if (ondomdriveloaded) {
-                ondomdriveloaded(domDriveLoaded);
-            }
-        }
-        function continueDOMLoading() {
-            continueParse = continueParse ? continueParse.continueParsing() : persistence.dom.parseDOMStorage(document);
-        }
-    }
-    persistence.bootMount = bootMount;
-})(persistence || (persistence = {}));
-/*var persistence;*/
-(function (persistence) {
     var dom;
     (function (dom) {
         var CommentHeader = (function () {
@@ -768,12 +1182,20 @@ var persistence=eq80.persistence={};
                 this._document = _document;
                 this._byPath = {};
                 this._anchorNode = null;
-                this.timestamp = this._totals ? this._totals.timestamp : 0;
+                this._totalSize = 0;
                 for (var i = 0; i < files.length; i++) {
                     this._byPath[files[i].path] = files[i];
+                    this._totalSize += files[i].contentLength;
                     if (!this._anchorNode)
                         this._anchorNode = files[i].node;
                 }
+                if (!this._totals) {
+                    var comment = this._document.createComment('');
+                    var parent = this._document.head || this._document.getElementsByTagName('head')[0] || this._document.body;
+                    parent.insertBefore(comment, parent.children ? parent.children[0] : null);
+                    this._totals = new dom.DOMTotals(0, this._totalSize, comment);
+                }
+                this.timestamp = this._totals.timestamp;
             }
             DOMDrive.prototype.files = function () {
                 if (typeof Object.keys === 'string') {
@@ -797,6 +1219,14 @@ var persistence=eq80.persistence={};
                 else
                     return f.read();
             };
+            DOMDrive.prototype.storedSize = function (file) {
+                var file = persistence.normalizePath(file);
+                var f = this._byPath[file];
+                if (!f)
+                    return null;
+                else
+                    return f.contentLength;
+            };
             DOMDrive.prototype.write = function (file, content) {
                 var totalDelta = 0;
                 var file = persistence.normalizePath(file);
@@ -813,31 +1243,76 @@ var persistence=eq80.persistence={};
                 else {
                     if (f) {
                         var lengthBefore = f.contentLength;
-                        f.write(content);
+                        if (!f.write(content))
+                            return; // no changes - no update for timestamp/totals
                         totalDelta += f.contentLength - lengthBefore;
                     }
                     else {
                         var comment = document.createComment('');
                         var f = new dom.DOMFile(comment, file, null, 0, 0);
                         f.write(content);
-                        // try to insert at the start, so new files will be loaded first
-                        var anchor = this._anchorNode;
-                        if (!anchor || anchor.parentElement != this._document.body) {
-                            // this happens when filesystem is empty, or nodes got removed
-                            anchor = this._document.body.getElementsByTagName('script')[0];
-                            if (anchor)
-                                anchor = getNextNode(anchor);
-                            if (anchor)
-                                this._anchorNode = anchor;
-                        }
-                        this._document.body.insertBefore(f.node, anchor);
+                        this._anchorNeeded();
+                        this._document.body.insertBefore(f.node, this._anchorNode);
                         this._anchorNode = f.node; // next time insert before this node
                         this._byPath[file] = f;
                         totalDelta += f.contentLength;
                     }
                 }
                 this._totals.timestamp = this.timestamp;
+                this._totals.totalSize += totalDelta;
                 this._totals.updateNode();
+            };
+            DOMDrive.prototype.loadProgress = function () {
+                return { total: this._totals ? this._totals.totalSize : this._totalSize, loaded: this._totalSize };
+            };
+            DOMDrive.prototype.continueLoad = function (entry) {
+                if (!entry) {
+                    this.continueLoad = null;
+                    this._totals.totalSize = this._totalSize;
+                    this._totals.updateNode();
+                    return;
+                }
+                if (entry.path) {
+                    var file = entry;
+                    // in case of duplicates, prefer earlier, remove latter
+                    if (this._byPath[file.path]) {
+                        if (!file.node)
+                            return;
+                        var p = file.node.parentElement || file.node.parentNode;
+                        if (p)
+                            p.removeChild(file.node);
+                        return;
+                    }
+                    this._byPath[file.path] = file;
+                    if (!this._anchorNode)
+                        this._anchorNode = file.node;
+                    this._totalSize += file.contentLength;
+                }
+                else {
+                    var totals = entry;
+                    // consider the values, but throw away the later totals DOM node
+                    this._totals.timestamp = Math.max(this._totals.timestamp, totals.timestamp | 0);
+                    this._totals.totalSize = Math.max(this._totals.totalSize, totals.totalSize | 0);
+                    if (!totals.node)
+                        return;
+                    var p = totals.node.parentElement || totals.node.parentNode;
+                    if (p)
+                        p.removeChild(totals.node);
+                }
+            };
+            DOMDrive.prototype._anchorNeeded = function () {
+                // try to insert at the start, so new files will be loaded first
+                var anchor = this._anchorNode;
+                if (!anchor || anchor.parentElement != this._document.body) {
+                    // this happens when filesystem is empty, or nodes got removed
+                    // - we try not to bubble above scripts, so prompt UI loading is attempted on slow connections
+                    var scripts = this._document.body.getElementsByTagName('script');
+                    anchor = scripts[scripts.length - 1];
+                    if (anchor)
+                        anchor = getNextNode(anchor);
+                    if (anchor)
+                        this._anchorNode = anchor;
+                }
             };
             return DOMDrive;
         }());
@@ -933,10 +1408,13 @@ var persistence=eq80.persistence={};
                 var html = leadText + protectedText;
                 if (!this.node)
                     return html; // can be used without backing 'node' for formatting purpose
+                if (html === this.node.nodeValue)
+                    return false;
                 this.node.nodeValue = html;
                 this._encoding = persistence.encodings[encoded.encoding || 'LF'];
                 this._contentOffset = leadText.length;
                 this.contentLength = content.length;
+                return true;
             };
             return DOMFile;
         }());
@@ -950,10 +1428,13 @@ var persistence=eq80.persistence={};
         var monthsPrettyCase = ('Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec').split('|');
         var monthsUpperCase = ('Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec').toUpperCase().split('|');
         var DOMTotals = (function () {
-            function DOMTotals(timestamp, totalSize, _node) {
+            function DOMTotals(timestamp, totalSize, node) {
                 this.timestamp = timestamp;
                 this.totalSize = totalSize;
-                this._node = _node;
+                this.node = node;
+                // cache after updating DOM, to avoid unneeded updates
+                this._domTimestamp = -1;
+                this._domTotalSize = -1;
             }
             DOMTotals.tryParse = function (cmheader) {
                 // TODO: preserve unknowns when parsing
@@ -1016,14 +1497,21 @@ var persistence=eq80.persistence={};
                     return null;
             };
             DOMTotals.prototype.updateNode = function () {
+                if (this._domTimestamp === this.timestamp && this._domTotalSize === this.totalSize)
+                    return;
                 // total 4Kb, saved 25 Apr 2015 22:52:01.231
-                var newTotals = 'total ' + (this.totalSize < 1024 * 9 ? this.totalSize + '' :
-                    this.totalSize < 1024 * 1024 * 9 ? ((this.totalSize / 1024) | 0) + 'Kb' :
-                        ((this.totalSize / (1024 * 1024)) | 0) + 'Mb') + ', ' +
+                var newTotals = 'total ' + DOMTotals.formatSize(this.totalSize) + ', ' +
                     'saved ' + DOMTotals.formatDate(new Date(this.timestamp));
-                if (!this._node)
+                if (!this.node)
                     return newTotals;
-                this._node.nodeValue = newTotals;
+                this.node.nodeValue = newTotals;
+                this._domTimestamp = this.timestamp;
+                this._domTotalSize = this.totalSize;
+            };
+            DOMTotals.formatSize = function (totalSize) {
+                return (totalSize < 1024 * 9 ? totalSize + '' :
+                    totalSize < 1024 * 1024 * 9 ? ((totalSize / 1024) | 0) + 'Kb' :
+                        ((totalSize / (1024 * 1024)) | 0) + 'Mb');
             };
             DOMTotals.formatDate = function (date) {
                 var dateLocalStr = date.toString();
@@ -1053,78 +1541,6 @@ var persistence=eq80.persistence={};
             }
             return -1;
         }
-    })(dom = persistence.dom || (persistence.dom = {}));
-})(persistence || (persistence = {}));
-/*var persistence;*/
-(function (persistence) {
-    var dom;
-    (function (dom) {
-        function parseDOMStorage(document) {
-            var loadedFiles = [];
-            var loadedTotals;
-            var lastNode;
-            var loadedSize = 0;
-            return continueParsing();
-            function continueParsing() {
-                continueParsingDOM(false);
-                return {
-                    continueParsing: continueParsing,
-                    finishParsing: finishParsing,
-                    loadedSize: loadedSize,
-                    totalSize: loadedTotals ? loadedTotals.totalSize : 0,
-                    loadedFileCount: loadedFiles.length
-                };
-            }
-            function finishParsing() {
-                continueParsingDOM(true);
-                if (loadedTotals) {
-                    loadedTotals.totalSize = loadedSize;
-                    loadedTotals.updateNode();
-                }
-                var drive = new dom.DOMDrive(loadedTotals, loadedFiles, document);
-                return drive;
-            }
-            var processHead;
-            function continueParsingDOM(finish) {
-                if (!lastNode) {
-                    processHead = document.head || document.getElementsByTagName('head')[0];
-                    if (!processHead)
-                        return;
-                    lastNode = processHead.firstChild;
-                    if (!lastNode)
-                        return;
-                }
-                while (true) {
-                    var nextNode = getNextNode();
-                    if (!nextNode && !finish)
-                        return; // do not consume last node until whole document loaded
-                    if (lastNode.nodeType === 8)
-                        processNode(lastNode);
-                    if (!nextNode)
-                        return; // finish
-                    lastNode = nextNode;
-                }
-            }
-            function getNextNode() {
-                var nextNode = lastNode.nextSibling;
-                if (!nextNode && processHead && document.body && (nextNode = document.body.firstChild))
-                    processHead = null;
-                return nextNode;
-            }
-            function processNode(node) {
-                var cmheader = new dom.CommentHeader(node);
-                var file = dom.DOMFile.tryParse(cmheader);
-                if (file) {
-                    loadedFiles.push(file);
-                    loadedSize += file.contentLength;
-                    return true;
-                }
-                var totals = dom.DOMTotals.tryParse(cmheader);
-                if (totals)
-                    loadedTotals = totals;
-            }
-        }
-        dom.parseDOMStorage = parseDOMStorage;
     })(dom = persistence.dom || (persistence.dom = {}));
 })(persistence || (persistence = {}));
 /*var persistence;*/
@@ -1199,81 +1615,6 @@ var persistence=eq80.persistence={};
 })(persistence || (persistence = {}));
 /*var persistence;*/
 (function (persistence) {
-    function mountDrive(loadDOMDrive, uniqueKey, optionalModules, callback) {
-        var driveIndex = 0;
-        loadNextOptional();
-        function loadNextOptional() {
-            while (driveIndex < optionalModules.length &&
-                (!optionalModules[driveIndex] || typeof optionalModules[driveIndex].detect !== 'function')) {
-                driveIndex++;
-            }
-            if (driveIndex >= optionalModules.length) {
-                loadDOMDrive(function (dom) { return callback(new MountedDrive(dom, null)); });
-                return;
-            }
-            var op = optionalModules[driveIndex];
-            op.detect(uniqueKey, function (detached) {
-                if (!detached) {
-                    driveIndex++;
-                    loadNextOptional();
-                    return;
-                }
-                loadDOMDrive(function (dom) {
-                    if (detached.timestamp > dom.timestamp) {
-                        var callbackWithShadow = function (loadedDrive) {
-                            dom.timestamp = detached.timestamp;
-                            callback(new MountedDrive(dom, loadedDrive));
-                        };
-                        if (callback.progress)
-                            callbackWithShadow.progress = callback.progress;
-                        loadDOMDrive(function (dom) { return detached.applyTo(dom, callbackWithShadow); });
-                    }
-                    else {
-                        var callbackWithShadow = function (loadedDrive) {
-                            callback(new MountedDrive(dom, loadedDrive));
-                        };
-                        if (callback.progress)
-                            callbackWithShadow.progress = callback.progress;
-                        detached.purge(callbackWithShadow);
-                    }
-                });
-            });
-        }
-    }
-    persistence.mountDrive = mountDrive;
-    var MountedDrive = (function () {
-        function MountedDrive(_dom, _shadow) {
-            this._dom = _dom;
-            this._shadow = _shadow;
-            this.updateTime = true;
-            this.timestamp = 0;
-            this._cachedFiles = null;
-            this.timestamp = this._dom.timestamp;
-        }
-        MountedDrive.prototype.files = function () {
-            if (!this._cachedFiles)
-                this._cachedFiles = this._dom.files();
-            return this._cachedFiles.slice(0);
-        };
-        MountedDrive.prototype.read = function (file) {
-            return this._dom.read(file);
-        };
-        MountedDrive.prototype.write = function (file, content) {
-            if (this.updateTime)
-                this.timestamp = +new Date();
-            this._cachedFiles = null;
-            this._dom.timestamp = this.timestamp;
-            this._dom.write(file, content);
-            if (this._shadow) {
-                this._shadow.timestamp = this.timestamp;
-                this._shadow.write(file, content);
-            }
-        };
-        return MountedDrive;
-    }());
-})(persistence || (persistence = {}));
-/*var persistence;*/
-(function (persistence) {
     function normalizePath(path) {
         if (!path)
             return '/'; // empty paths converted to root
@@ -1296,24 +1637,38 @@ function boot() {
         if (document.title === '/:')
             document.title = '/:.';
         if (!eq80.timings.domStarted
-            && (continueMount.loadedSize || continueMount.totalSize))
+            && (bootDrive.domLoadedSize || bootDrive.domTotalSize))
             eq80.timings.domStarted = +new Date();
         removeSpyElements();
         sz.update();
-        var prevLoadedSize = continueMount.loadedSize;
-        var prevTotalSize = continueMount.totalSize;
-        eq80.continueMount = continueMount = continueMount.continueLoading();
-        if (prevLoadedSize !== continueMount.loadedSize || prevTotalSize !== continueMount.totalSize) {
+        var prevLoadedSize = bootDrive.domLoadedSize;
+        var prevTotalSize = bootDrive.domTotalSize;
+        bootDrive.continueLoading();
+        updateBootStateProps();
+        if (bootDrive.newDOMFiles.length || bootDrive.newStorageFiles.length
+            || prevLoadedSize !== bootDrive.domLoadedSize || prevTotalSize !== bootDrive.domTotalSize) {
             if (document.title === '/:' || document.title === '/:.')
                 document.title = '//';
             for (var i = 0; i < progressCallbacks.length; i++) {
                 var callback = progressCallbacks[i];
-                callback(continueMount.loadedSize, continueMount.totalSize);
+                callback(bootDrive);
             }
         }
     }
+    function updateBootStateProps() {
+        if (!eq80.bootState)
+            eq80.bootState = {};
+        for (var k in bootDrive)
+            if (k && bootDrive.hasOwnProperty(k) && k.charAt(0) !== '_') {
+                eq80.bootState[k] = bootDrive[k];
+            }
+        if (!eq80.bootState.read)
+            eq80.bootState.read = function (path) { return bootDrive.read(path); };
+    }
     function window_onload() {
         function onfinishloading(drive) {
+            updateBootStateProps();
+            eq80.bootState.read = function (file) { return drive.read(file); };
             eq80.timings.driveLoaded = +new Date();
             eq80.drive = drive;
             if (loadedCallbacks && loadedCallbacks.length) {
@@ -1336,7 +1691,7 @@ function boot() {
         removeSpyElements();
         eq80.timings.documentLoaded = +new Date();
         sz.update();
-        continueMount.finishLoading(onfinishloading);
+        bootDrive.finishParsing(onfinishloading);
     }
     function fadeToUI() {
         sz.update();
@@ -1588,7 +1943,16 @@ function boot() {
             key = key.slice(1);
         if (key.slice(-1) === '/')
             key = key.slice(0, key.length - 1);
-        return smallHash(key) + '-' + smallHash(key.slice(1) + 'a');
+        // extract readable part
+        var colonSplit = key.split(':');
+        var readableKey = colonSplit[colonSplit.length - 1].replace(/[^a-zA-Z0-9\/]/g, '').replace(/\/\//g, '/').replace(/^\//, '').replace(/\/$/, '').replace(/\.html$/, '');
+        var readableSlashPos = readableKey.indexOf('/');
+        if (readableSlashPos > 0 && readableSlashPos < readableKey.length / 2)
+            readableKey = readableKey.slice(readableSlashPos + 1);
+        readableKey = readableKey.replace('/', '_');
+        if (!readableKey)
+            readableKey = 'po';
+        return readableKey + '_' + smallHash(key) + 'H' + smallHash(key.slice(1) + 'a');
         function smallHash(key) {
             for (var h = 0, i = 0; i < key.length; i++) {
                 h = Math.pow(31, h + 31 / key.charCodeAt(i));
@@ -1644,7 +2008,7 @@ function boot() {
     var resizeCallbacks = [];
     var resizeReportCallbacks = [];
     var uniqueKey = deriveUniqueKey(location);
-    var continueMount = eq80.persistence.bootMount(uniqueKey, document); // start persistence detection and loading (both DOM and HTML5)
+    var bootDrive = new eq80.persistence.BootState(document, uniqueKey);
     document.title = '/:';
     if (window.addEventListener) {
         window.addEventListener('load', window_onload, true);
@@ -1655,7 +2019,7 @@ function boot() {
     else {
         window.onload = window_onload;
     }
-    var keepLoading = setInterval(onkeeploading, 100);
+    var keepLoading = setInterval(onkeeploading, 30);
 }
 
 
