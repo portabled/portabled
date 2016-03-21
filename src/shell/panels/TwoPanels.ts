@@ -7,6 +7,7 @@ module shell.panels {
 
     private _scrollHost: HTMLDivElement;
     private _scrollContent: HTMLDivElement;
+  	private _scrollHostLastOverflow: string = null;
 
     private _leftPanelHost: HTMLDivElement;
     private _rightPanelHost: HTMLDivElement;
@@ -25,6 +26,8 @@ module shell.panels {
       hostHeight: 0
     };
 
+  	private _flippableLayout = false;
+
     ondoubleclick: () => boolean = null;
 
     constructor(
@@ -33,7 +36,7 @@ module shell.panels {
       rightPath: string,
       private _directoryService: (path: string) => Panel.DirectoryEntry[]) {
 
-      this._scrollHost = <any>elem('div', { className: 'panels-scroll-host' }, this._host);
+      this._scrollHost = <any>elem('div', { className: 'panels-scroll-host', overflow: 'hidden' }, this._host);
       this._scrollContent = <any>elem('div', { className: 'panels-scroll-content' }, this._scrollHost);
 
       this._leftPanelHost = <any>elem('div', { className: 'panels-panel panels-left-panel' }, this._scrollContent);
@@ -115,11 +118,11 @@ module shell.panels {
     measure(metrics: CommanderShell.Metrics) {
 
       if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {
-        // flippable layout
+        this._flippableLayout = true;
         var contentWidth = metrics.hostWidth * 1.6;
       }
       else {
-        // full layout
+        this._flippableLayout = false;
         var contentWidth = metrics.hostWidth;
       }
 
@@ -135,15 +138,21 @@ module shell.panels {
       this._panelMetrics.windowMetrics = metrics;
 
       if (this._leftPanelHost.style.display !== 'none')
-        this._leftPanel.arrange(this._panelMetrics);
+        this._leftPanel.measure(this._panelMetrics);
 
 
       if (this._rightPanelHost.style.display !== 'none')
-        this._rightPanel.arrange(this._panelMetrics);
+        this._rightPanel.measure(this._panelMetrics);
 
     }
 
     arrange(metrics: CommanderShell.Metrics) {
+
+      var overflowX = this._flippableLayout ? 'auto' : 'hidden';
+      if (this._scrollHostLastOverflow!==overflowX) {
+        this._scrollHostLastOverflow = overflowX;
+      	this._scrollHost.style.overflowX = overflowX;
+      }
 
       this._scrollHost.style.width = this._panelMetrics.windowMetrics.hostWidth + 'px';
       this._scrollHost.style.height = this._panelMetrics.hostHeight + 'px';

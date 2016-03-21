@@ -1,3 +1,3 @@
-random char: ጅ
-date: Wed Mar 16 2016 22:14:45 GMT+0000 (GMT Standard Time)
+random char: ű
+date: Mon Mar 21 2016 19:17:01 GMT+0000 (GMT Standard Time)
 location: file:///D:/portabled/index.html

@@ -247,8 +247,10 @@ namespace persistence {
 
   	private _finishUpdateTotals() {
       if (this._totals) {
-        if (this.storageTimestamp > this.domTimestamp)
-        	this._totals.timestamp = this.domTimestamp;
+        if (this.storageTimestamp > this.domTimestamp) {
+        	this._totals.timestamp = this.storageTimestamp;
+          this._totals.updateNode();
+        }
       }
     }
 
@@ -381,8 +383,6 @@ namespace persistence {
 
   	private _allCompleted() {
       this._finishUpdateTotals();
-
-      // TODO: report shadow failures
 
       var domFiles: dom.DOMFile[] = [];
       for (var path in this._byPath) {

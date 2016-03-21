@@ -1,8 +1,6 @@
 .panels-scroll-host {
   position: absolute;
   left: 0; top: 0; width: 0; height: 0;
-  overflow: auto;
-  overflow-y: hidden;
   background: black;
   background: transparent;
 }
@@ -13,20 +11,24 @@
 
 .panel-each-title {
   text-align: center;
-  font: inherit;
   height: 100%;
   border: solid 1px rgb(19, 40, 87);
   opacity: 0.95;
+  font: inherit;
+  *font: Serif;
 }
 
 .panel-each-bottom {
   padding-left: 1em;
   font: inherit;
+  *font: Serif;
 }
 
 .panel-each-title-active {
   background: rgb(19, 40, 87);
   opacity: 0.95;
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=95)";
+	filter: alpha(opacity=95);
 }
 
 .panels-panel {
@@ -38,6 +40,22 @@
 .panel-each-background {
   background: rgb(4, 12, 64);
   opacity: 0.95;
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=95)";
+	filter: alpha(opacity=95);
+}
+
+.panel-top-shadow {
+  background: black;
+  opacity: 0.8;
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";
+	filter: alpha(opacity=80);
+}
+
+.panel-bottom-shadow {
+  background: black;
+  opacity: 0.7;
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=70)";
+	filter: alpha(opacity=70);
 }
 
 .panel-each-scrollhost {
@@ -83,6 +101,7 @@
 
   overflow: hidden;
   font: inherit;
+  *font: Serif;
 }
 
 .panels-entry-dir {

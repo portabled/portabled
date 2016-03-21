@@ -22,9 +22,9 @@ module shell.panels {
   	private _panelBackground: HTMLDivElement;
   	private _panelBackgroundTop: HTMLDivElement;
   	private _panelBackgroundTopShadow: HTMLDivElement;
-  	private _panelBackgroundTopLeft: HTMLDivElement;
-  	private _panelBackgroundTitleGap: HTMLDivElement;
-  	private _panelBackgroundTopRight: HTMLDivElement;
+  	private _panelBackgroundTopLeft: HTMLSpanElement;
+  	private _panelBackgroundTitleGap: HTMLSpanElement;
+  	private _panelBackgroundTopRight: HTMLSpanElement;
   	private _panelBackgroundMain: HTMLDivElement;
   	private _panelBackgroundBottomShadow: HTMLDivElement;
 
@@ -47,6 +47,8 @@ module shell.panels {
     private _scrollTopHeight = 0;
     private _isActive = false;
     private _nextRedrawScrollToCurrent = false;
+  	private _supportsInlineBlock: boolean = typeof ActiveXObject === 'undefined' ? true : null;
+  	private _inlineBlockDetector: HTMLDivElement = null;
 
     ondoubleclick: () => boolean = null;
 
@@ -67,17 +69,14 @@ module shell.panels {
         opacity: '0.0001'
       }, this._host);
 
-      var topShadowOpacity = 0.8;
-      var bottomShadowOpacity = 0.7;
-
       this._panelBackground = <HTMLDivElement>elem('div', { zoom: 1, position: 'relative', width: '100%' }, this._host);
-      this._panelBackgroundTopShadow = <HTMLDivElement>elem('div', { fontSize: '1px', innerHTML: '&nbsp;', background: 'black', opacity: topShadowOpacity }, this._panelBackground);
+      this._panelBackgroundTopShadow = <HTMLDivElement>elem('div', { className: 'panel-top-shadow', fontSize: '1px', innerHTML: '&nbsp;' }, this._panelBackground);
       this._panelBackgroundTop = <HTMLDivElement>elem('div', { fontSize: '1px', innerHTML: '&nbsp;' }, this._panelBackground);
-      this._panelBackgroundTopLeft = <HTMLDivElement>elem('div', { className: 'panel-each-background', display: 'inline-block' }, this._panelBackgroundTop);
-      this._panelBackgroundTitleGap = <HTMLDivElement>elem('div', { background: 'black', display: 'inline-block', opacity: topShadowOpacity }, this._panelBackgroundTop);
-      this._panelBackgroundTopRight = <HTMLDivElement>elem('div', { className: 'panel-each-background', display: 'inline-block' }, this._panelBackgroundTop);
+      this._panelBackgroundTopLeft = <HTMLSpanElement>elem('span', { className: 'panel-each-background', display: 'inline-block' }, this._panelBackgroundTop);
+      this._panelBackgroundTitleGap = <HTMLSpanElement>elem('span', { className: 'panel-top-shadow', display: 'inline-block' }, this._panelBackgroundTop);
+      this._panelBackgroundTopRight = <HTMLSpanElement>elem('span', { className: 'panel-each-background', display: 'inline-block' }, this._panelBackgroundTop);
       this._panelBackgroundMain = <HTMLDivElement>elem('div', { fontSize: '1px', innerHTML: '&nbsp;', className: 'panel-each-background' }, this._panelBackground);
-      this._panelBackgroundBottomShadow = <HTMLDivElement>elem('div', { fontSize: '1px', innerHTML: '&nbsp;', background: 'black', opacity: bottomShadowOpacity }, this._panelBackground);
+      this._panelBackgroundBottomShadow = <HTMLDivElement>elem('div', { className: 'panel-bottom-shadow', fontSize: '1px', innerHTML: '&nbsp;' }, this._panelBackground);
 
       this._scrollHost = <HTMLDivElement>elem('div', { className: 'panel-each-scrollhost', zoom: 1, position: 'relative', margin: '0px', padding: '0px', overflow: 'hidden', overflowY: 'auto' }, this._host);
       this._scrollContent = <HTMLElementWithFlags>elem('div', this._scrollHost);
@@ -411,6 +410,7 @@ module shell.panels {
       this._panelBackgroundTopShadow.style.height = ((titleHeight/2)|0)+'px';
       var topDecorHeightStr = (titleHeight - ((titleHeight/2)|0))+'px';
       this._panelBackgroundTop.style.height = topDecorHeightStr;
+      this._panelBackgroundTop.style.width = (this._metrics.hostWidth+1)+'px';
       this._panelBackgroundTopLeft.style.width = (((this._metrics.hostWidth - adjTitleWidth)/2)|0)+'px';
       this._panelBackgroundTopLeft.style.height = topDecorHeightStr;
       this._panelBackgroundTitleGap.style.width = adjTitleWidth + 'px';

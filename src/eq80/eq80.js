@@ -1,7 +1,7 @@
 function eq80() {
 eq80.build = {
-  timestamp: 1458130504200, // Wed Mar 16 2016 12:15:04 GMT+0000 (GMT Standard Time)
-  taken: 7681,
+  timestamp: 1458586155509, // Mon Mar 21 2016 18:49:15 GMT+0000 (GMT Standard Time)
+  taken: 8425,
   platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36"
 }
 
@@ -224,8 +224,10 @@ var persistence=eq80.persistence={};
         };
         BootState.prototype._finishUpdateTotals = function () {
             if (this._totals) {
-                if (this.storageTimestamp > this.domTimestamp)
-                    this._totals.timestamp = this.domTimestamp;
+                if (this.storageTimestamp > this.domTimestamp) {
+                    this._totals.timestamp = this.storageTimestamp;
+                    this._totals.updateNode();
+                }
             }
         };
         BootState.prototype._getNextNode = function () {
@@ -348,7 +350,6 @@ var persistence=eq80.persistence={};
         };
         BootState.prototype._allCompleted = function () {
             this._finishUpdateTotals();
-            // TODO: report shadow failures
             var domFiles = [];
             for (var path in this._byPath) {
                 if (!path || path.charCodeAt(0) !== 47)
