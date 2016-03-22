@@ -383,7 +383,7 @@ module shell.panels {
             break;
           }
 
-          var tryPath = this._path.slice(0, this._path.lastIndexOf('/'));
+          var tryPath = this._path.slice(0, this._path.lastIndexOf('/')) || '/';
           try {
       		  entries = this._directoryService(tryPath);
             this._updatePath(tryPath);
