@@ -22,7 +22,18 @@ module shell.actions {
     var delete_list = dlgBody.getElementsByTagName('pre')[1];
     var delete_button = dlgBody.getElementsByTagName('button')[0];
 
-    var filesToRemove: string[] = getDirFiles(env.drive, env.cursorPath);
+    if (!env.selected || !env.selected.length) {
+    	var filesToRemove: string[] = getDirFiles(env.drive, env.cursorPath);
+    }
+    else {
+      var filesToRemove: string[] = [];
+      for (var i = 0; i < env.selected.length; i++){
+        var list = getDirFiles(env.drive, env.selected[i]);
+        for (var j = 0; j < list.length; j++) {
+          filesToRemove.push(list[j]);
+        }
+      }
+    }
 
     if (filesToRemove.length===0) return;
 

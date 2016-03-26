@@ -70,7 +70,13 @@ namespace shell {
       127: 'Delete',
       144: 'NumLock', 145: 'Scroll',
       160: ['LeftShift','Shift'], 161: ['RightShift','Shift'], 162: ['LeftControl','Control'], 163: ['RightControl','Control'], 164: ['LeftAlt','Alt'], 165: ['RightAlt','Alt'],
-      188: ['Comma',','], 190: ['Dot','.'], 191: ['Slash','/'], 192: ['BackSlash','\\'], 222: ['Hash','#'], 223: ['BackTick','`'],
+      187: ['Plus','+','Equal','Equals','='], 189: ['Minus','-','Underscore','_'],
+      219: ['LeftSquareBracket','OpenSquareBracket','LeftSquare','OpenSquare','[','LeftCurlyBracket','OpenCurlyBracket','LeftCurly','OpenCurly','{'],
+      221: ['RightSquareBracket','CloseSquareBracket','RightSquare','CloseSquare',']','RightCurlyBracket','CloseCurlyBracket','RightCurly','CloseCurly','{'],
+      188: ['Comma',',','LeftAngleBracket','OpenAngleBracket','LeftAngle','OpenAngle','Less','<'],
+      190: ['Dot','.','RightAngleBracket','OpenAngleBracket','RightAngle','OpenAngle','Greater','>'],
+      220: ['BackSlash', '\\', 'Pipe','|'],
+      191: ['Slash','/','Question','QuestionMark','?'], 192: ['BackSlash','\\'], 222: ['Hash','#','Tilda','~'], 223: ['BackTick','`'],
       225: 'Alt',
       254: 'Clear'
     };

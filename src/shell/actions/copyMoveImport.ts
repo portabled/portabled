@@ -1,4 +1,4 @@
-module shell.actions {
+   module shell.actions {
 
   export function copyMoveImport(env: copyMoveImport.ExtendedActionContext) {
     if (!env.targetPanelPath) return false;
@@ -111,8 +111,8 @@ module shell.actions {
           hasOverlap = false;
           var overlapCount = 0;
           var pairs = generateMovePairs();
-          for (var i = 0; i < pairs.length; i++) {
-            if (env.repl.coreModules.fs.existsSync(pairs[i].target)) {
+          for (var i = 0; i < pairs.pairs.length; i++) {
+            if (env.repl.coreModules.fs.existsSync(pairs.pairs[i].target)) {
               hasOverlap = true;
               overlapCount++;
             }
@@ -122,7 +122,7 @@ module shell.actions {
             if (isDir)
               to_label_text = to_label_text.replace(
                 ')',
-                ', '+overlapCount+(overlapCount<pairs.length?' out of '+pairs.length:'')+
+                ', '+overlapCount+(overlapCount<pairs.pairs.length?' out of '+pairs.pairs.length:'')+
                 ' to overwrite existing)');
             else
               to_label_text = '(file to overwrite existing)';
@@ -171,61 +171,82 @@ module shell.actions {
         }
 
         if (env.cursorPath===target) return null;
-        return [{ source: env.sourceFiles[0], target: target }];
+        return { select: target, pairs: [{ source: env.sourceFiles[0], target: target }] };
       }
       else {
-        var prefix = env.virtualSource ? '/' : env.repl.coreModules.path.resolve(env.cursorPath, '..');
+        var prefix = env.virtualSource ? '/' : env.repl.coreModules.path.resolve(env.currentPanelPath);
         if (prefix!=='/') prefix += '/';
 
         if (!env.virtualSource && targetDir.slice(-1) !== '/') {
           // allow renaming of directories, strip the name of the source dir from the target
-          prefix = env.repl.coreModules.path.resolve(env.cursorPath);
+          var cursorPath = env.cursorPath;
+          if (env.selected && (env.selected.length>1 || env.selected[0]!==env.cursorPath))
+            cursorPath = env.currentPanelPath;
+          prefix = env.repl.coreModules.path.resolve(cursorPath);
         	if (prefix!=='/') prefix += '/';
         }
 
         var result: { source: copyMoveImport.SourceEntry; target: string }[] = [];
+        var select: string;
 
         for (var i = 0; i < env.sourceFiles.length; i++) {
           var sourceFilePath = env.sourceFiles[i].path;
           if (sourceFilePath.charCodeAt(0)!==47) sourceFilePath='/'+sourceFilePath;
+
+          if (!select) {
+            var restParts = sourceFilePath.slice(prefix.length).split('/');
+            for (var j = 0; j < restParts.length; j++) {
+              if (restParts[j]) {
+                if (targetDir==='/')
+                  select = '/'+restParts[j];
+                else
+                  select = 
+              			env.repl.coreModules.path.join(targetDir, restParts[j]);
+                break;
+              }
+            }
+          }
+
         	var trgFile = targetDir === '/' ?
-              '/'+sourceFilePath.slice(prefix.length) :
-              env.repl.coreModules.path.resolve(targetDir, sourceFilePath.slice(prefix.length));
+              sourceFilePath.slice(prefix.length) :
+              env.repl.coreModules.path.join(targetDir, sourceFilePath.slice(prefix.length));
 
           if (env.virtualSource || sourceFilePath!==trgFile)
           	result.push({ source: env.sourceFiles[i], target: trgFile });
         }
 
-        return result;
+        if (!select) select = targetDir;
+
+        return { select: select, pairs: result };
       }
     }
 
     function commit() {
 
       var pairs = generateMovePairs();
-      if (!pairs || !pairs.length) return;
+      if (!pairs || !pairs.pairs.length) return;
 
       env.drive.timestamp = +new Date();
 
       var trgFileMap: any = {};
       var anyRemove = false;
-      for (var i = 0; i < pairs.length; i++) {
-        if (move) trgFileMap[pairs[i].target] = true;
-        var content = pairs[i].source.getContent();
-        env.drive.write(pairs[i].target, content);
-        if (pairs[i].source.remove)
+      for (var i = 0; i < pairs.pairs.length; i++) {
+        if (move) trgFileMap[pairs.pairs[i].target] = true;
+        var content = pairs.pairs[i].source.getContent();
+        env.drive.write(pairs.pairs[i].target, content);
+        if (pairs.pairs[i].source.remove)
           anyRemove = true;
       }
 
       if (anyRemove) {
-        for (var i = 0; i < pairs.length; i++) {
-          if (!trgFileMap[pairs[i].source.path])
-            pairs[i].source.remove();
+        for (var i = 0; i < pairs.pairs.length; i++) {
+          if (!trgFileMap[pairs.pairs[i].source.path])
+            pairs.pairs[i].source.remove();
         }
       }
 
       env.selectFile(
-        env.dirSource ? targetDir : pairs[0].target);
+        env.dirSource ? targetDir : pairs.select);
 
     }
   }

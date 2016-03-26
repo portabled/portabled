@@ -132,3 +132,7 @@
 .panels-panel-active .panels-entry-file-current {
   color: navy;
 }
+
+.panels-entry-selected {
+  color: gold;
+}

@@ -201,10 +201,7 @@ module shell.panels {
         var foundInExisting  = this._getPanel(isLeftActive).trySelectFileInCurrentDir(file);
         if (!foundInExisting) {
         	foundInExisting = this._getPanel(!isLeftActive).trySelectFileInCurrentDir(file);
-          if (foundInExisting) {
-            this._toggleActivePanel();
-          }
-          else {
+          if (!foundInExisting) {
             if (file==='/') {
               this.setPath('/');
             }
@@ -212,10 +209,13 @@ module shell.panels {
               var lastSlash = file.lastIndexOf('/');
               if (lastSlash===file.length-1) lastSlash = file.lastIndexOf('/', lastSlash);
               var parentDir = file.slice(0, lastSlash);
-              this._getPanel(isLeftActive).set({currentPath: parentDir, cursorPath: file});
+              this._getPanel(!isLeftActive).set({currentPath: parentDir, cursorPath: file});
             }
           }
         }
+
+        this._toggleActivePanel();
+
       });
     }
 
@@ -268,6 +268,36 @@ module shell.panels {
       };
 
       return animateBack;
+    }
+
+  	Insert() {
+      if (!this.isVisible()) return;
+
+      var activePan = this._getPanel(this._leftPanel.isActive());
+
+      activePan.highlightCurrent();
+    }
+
+  	AltPlus() {
+      if (!this.isVisible()) return;
+
+      // TODO: dialog popup
+    }
+
+  	MetaPlus() {
+      return this.AltPlus();
+    }
+
+  	CtrlPlus() {
+      return this.AltPlus();
+    }
+
+  	ShiftAltPlus() {
+      return this.AltPlus();
+    }
+
+  	getHighlightedSelection() {
+      return this._getPanel(this.isLeftActive()).getHighlightedSelection();
     }
 
   	Up() { return this._selectionGo(-1); }

@@ -349,6 +349,7 @@ namespace shell {
 
       var runResult = action({
     		drive: this._drive,
+        fs: this._repl.coreModules.fs,
   			cursorPath: cursorPath,
   			currentPanelPath: this._twoPanels.currentPath(),
   			targetPanelPath: currentOppositePath,
@@ -357,6 +358,7 @@ namespace shell {
         selectFile: (file: string) => {
           this._twoPanels.selectFile(this._repl.coreModules.path.resolve(file));
         },
+        selected: this._twoPanels.getHighlightedSelection(),
         files: files
 			});
 
@@ -364,6 +366,8 @@ namespace shell {
 
       this.measure();
       this.arrange();
+
+  		this._queueRedraw();
 
       return true;
     }
@@ -377,6 +381,8 @@ namespace shell {
       this._editor = null;
       this.measure();
       this.arrange();
+
+      this._queueRedraw();
     }
 
     private _openEditor(cursorPath: string, withPrompt?: boolean) {
@@ -419,6 +425,7 @@ namespace shell {
             // force relayout just in case
             this.measure();
             this.arrange();
+      			this._queueRedraw();
             this._editor.requestClose = () => this._closeEditor();
             this._terminal.writeSmall('@edit ' + cursorPath);
 
@@ -879,8 +886,23 @@ namespace shell {
     }
 
     private _onDriveChange(changedFiles: string[]) {
-      this.arrange();
+      this._queueRedraw();
       this._repl.filesChanged(changedFiles);
+    }
+
+		private _redrawTimer = null;
+		private _redrawNowClosure = null;
+
+		private _queueRedraw() {
+      if (!this._redrawTimer) clearTimeout(this._redrawTimer);
+      if (!this._redrawNowClosure) this._redrawNowClosure = () => this._redrawNow();
+      this._redrawTimer = setTimeout(this._redrawNowClosure, 1); // TODO: animationframe etc.
+    }
+
+		private _redrawNow() {
+      this._redrawTimer = null;
+      this.measure();
+      this.arrange();
     }
 
   	private _updateWindowTitle(newPath: string) {

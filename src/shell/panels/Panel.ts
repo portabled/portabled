@@ -56,6 +56,8 @@ module shell.panels {
   	private _titleWidthMeasurement: HTMLElement = null;
   	private _titleWidthMeasurementRequired = true;
 
+  	private _highlightSelected: { [path: string]: boolean; } = null;
+
     constructor(
       private _host: HTMLElement,
       private _path: string,
@@ -91,11 +93,30 @@ module shell.panels {
       this._queueRedraw();
     }
 
-    set(paths: { currentPath?: string; cursorPath?: string }) {
-      if (paths.currentPath) {
-        this._path = paths.currentPath;
-      	setText(this._titleWidthMeasurement, this._path);
+  	getHighlightedSelection(): string[] {
+      if (!this._highlightSelected) return [];
+      if (Object.keys) return Object.keys(this._highlightSelected);
+      var result: string[] = [];
+      for (var k in this._highlightSelected) if (k && k.charCodeAt(0)===47 /* slash */ && this._highlightSelected.hasOwnProperty(k)) {
+        result.push(k);
       }
+      return result;
+    }
+
+  	highlightCurrent() {
+
+      if (this._path===this._cursorPath) return; // do not highlight '..' entry
+
+      if (!this._highlightSelected) this._highlightSelected = {};
+      this._highlightSelected[this._cursorPath] = !this._highlightSelected[this._cursorPath];
+      this.cursorGo(+1);
+
+      this._queueRedraw();
+    }
+
+    set(paths: { currentPath?: string; cursorPath?: string }) {
+      if (paths.currentPath)
+        this._updatePath(paths.currentPath);
 
       if (paths.cursorPath) {
         this._cursorPath = paths.cursorPath;
@@ -158,8 +179,7 @@ module shell.panels {
             if (this._cursorPath === this._entries[i].path) {
               if (this._entries[i].flags & Panel.EntryFlags.Directory) {
                 this._cursorPath = this._path;
-                this._path = this._entries[i].path; // double click (or second click) opens directory
-      					setText(this._titleWidthMeasurement, this._path);
+                this._updatePath(this._entries[i].path) // double click (or second click) opens directory
               }
               else {
                 // double click (or second click) on  a file
@@ -315,9 +335,10 @@ module shell.panels {
         var entry = this._entries[this._cursorEntryIndex];
         if (entry) {
           if (entry.flags & Panel.EntryFlags.Directory) {
+            // drilling down into the directory
             this._cursorPath = this._path;
-            this._updatePath(entry.path);
             this._nextRedrawScrollToCurrent = true;
+            this._updatePath(entry.path);
             this._queueRedraw();
             return true;
           }
@@ -334,16 +355,21 @@ module shell.panels {
 
   	private _updatePath(path: string) {
       if (path === this._path) return;
+
+      this._highlightSelected = null;
+      this._queueRedraw();
+
       this._path = path;
+
       if (this._titleWidthCache[path]) {
         this._titleWidth = this._titleWidthCache[path];
       	this._titleWidthMeasurementRequired = false;
         return;
       }
-
-      setText(this._titleWidthMeasurement, path);
-      this._titleWidthMeasurementRequired = true;
-      this._queueRedraw();
+      else {
+        setText(this._titleWidthMeasurement, path);
+        this._titleWidthMeasurementRequired = true;
+      }
     }
 
     private _redrawNowClosure = () => this._redrawNow();
@@ -386,7 +412,7 @@ module shell.panels {
           var tryPath = this._path.slice(0, this._path.lastIndexOf('/')) || '/';
           try {
       		  entries = this._directoryService(tryPath);
-            this._updatePath(tryPath);
+            this._updatePath(tryPath); // this will queue extra redraw
             break;
           }
           catch (error) { continue; }
@@ -717,16 +743,22 @@ module shell.panels {
   	private _classConcatCache: any = {};
 
   	private _getEntryClass(dentry: Panel.DirectoryEntry, extraClass: string, indexInDirectory: number) {
+      var isSelected = this._highlightSelected && this._highlightSelected[dentry.path];
+
       var index =
           (dentry.flags & Panel.EntryFlags.Directory ? 1 : 0)
-      		| (this._cursorEntryIndex === indexInDirectory ? 2 : 0);
+      		| (this._cursorEntryIndex === indexInDirectory ? 2 : 0)
+      		| (isSelected ? 4 : 0);
       var arr = this._classConcatCache[extraClass || '#'] || (this._classConcatCache[extraClass || '#'] = ['', '', '', '']);
-      var entryClass = arr[index] || (arr[index] = this._generateEntryClassString(dentry, extraClass, indexInDirectory));
+      var entryClass = arr[index] || (arr[index] = this._generateEntryClassString(dentry, extraClass, indexInDirectory, isSelected));
       return entryClass;
     }
 
-  	private _generateEntryClassString(dentry: Panel.DirectoryEntry, extraClass: string, indexInDirectory: number) {
-      var dirfileClassName = dentry.flags & Panel.EntryFlags.Directory ? ' panels-entry-dir' : ' panels-entry-file';
+  	private _generateEntryClassString(dentry: Panel.DirectoryEntry, extraClass: string, indexInDirectory: number, isSelected: boolean) {
+
+      var dirfileClassName = dentry.flags & Panel.EntryFlags.Directory ?
+          (isSelected ? ' panels-entry-dir panels-entry-dir-selected panels-entry-selected' : ' panels-entry-dir') :
+      		(isSelected ? ' panels-entry-file panels-entry-file-selected panels-entry-selected' : ' panels-entry-file');
 
       var entryClassName =
         'panels-entry' +
