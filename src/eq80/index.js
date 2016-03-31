@@ -17,8 +17,9 @@ else {
   module.exports.createLink = createLink;
 
   (function() {
-    var eq80path = '../eq80/eq80.js';
-    var eq80script = module.exports.script = fs.readFileSync(eq80path);
+
+    var eq80path = 'eq80.js';
+    var eq80script = module.exports.script = fs.readFileSync(path.join(__dirname, eq80path));
     var eq80html = module.exports.html =
         '<!doctype html><head><meta charset="utf-8"><title>mini shell </title>\n'+
 				'<style data-legit=mi> *{display:none;background:black;color:black;} html,body{display:block;background:black;color:black;margin:0;padding:0;height:100%;overflow:hidden;} </style>\n'+
@@ -186,7 +187,12 @@ function jsString(str) {
 
 function compile(files) {
 
-  var tscScript = path.resolve('../imports/ts/tsc.js');
+  var tscScan = ['../imports/ts', '../ts', '../imports'];
+  for (var i = 0; i <= tscScan.length; i++) {
+  	var tscScript = path.join(__dirname, tscScan[i]+'/tsc.js');
+    if (fs.existsSync(tscScript))
+      break;
+  }
 
   var process;
 

@@ -669,6 +669,21 @@ namespace shell {
 
       var text = this._drive.read(argList[0]);
       if (typeof text !== 'undefined' && text !== null) {
+
+        text = text + '';
+        if (text.charAt(0)==='#') {
+          // ignore leads
+          var posLineEnd = text.indexOf('\n');
+          if (posLineEnd>0 && posLineEnd<300) {
+            var firstLine = text.slice(0, posLineEnd);
+            if (posLineEnd===1)
+              firstLine = ' ';
+            else
+              firstLine = '//'+firstLine.slice(0, firstLine.length-2);
+            text = firstLine + text.slice(posLineEnd);
+          }
+        }
+
         this._terminal.writeAsCommand('node ' + args);
         var ani = this._twoPanels.temporarilyHidePanels();
 

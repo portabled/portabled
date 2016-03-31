@@ -38,14 +38,14 @@ module noapi {
       argv: options.argv,
       env: options.env,
 
-      addListener: evt.addListener,
-      on: evt.on,
-      once: evt.once,
-      removeListener: evt.removeListener,
-      removeAllListeners: evt.removeAllListeners,
-      setMaxListeners: evt.setMaxListeners,
-      listeners: evt.listeners,
-      emit: evt.emit
+      addListener: (e,c) => evt.addListener(e,c),
+      on: (e, c) => evt.on(e,c),
+      once: (e, c) => evt.once(e,c),
+      removeListener: (e,c) => evt.removeListener(e,c),
+      removeAllListeners: e => evt.removeAllListeners(e),
+      setMaxListeners: (n) => evt.setMaxListeners(n),
+      listeners: e => evt.listeners(e),
+      emit: (e,v) => evt.emit(e,v)
 
     };
 

@@ -167,6 +167,7 @@ module shell.actions {
         	' multiple'+
       		//' directory webkitdirectory mozdirectory msdirectory odirectory'+
         	' style="width: 95%; background: black; color: gray; border: none; font: inherit; font-size: 120%; padding: 3px; padding-left: 0.6em;">'+
+        '<div><input type=checkbox id=import_directory> directory</div>'+
         '<div style="text-align: right; margin-top: 0.5em; margin-right: 5%;"><button id=import_button style="font: inherit; font-size: 120%;"> Import </button></div>'+
         '</pre>';
 
@@ -188,6 +189,12 @@ module shell.actions {
           commit();
         }
       };
+
+      ctls.import_directory.onchange = dirCheck;
+      ctls.import_directory.onchanged = dirCheck;
+      ctls.import_directory.onvaluechange = dirCheck;
+      ctls.import_directory.onvaluechanged = dirCheck;
+      ctls.import_directory.onclick = dirCheck;
 
       ctls.import_button.onclick = commit;
 
@@ -222,6 +229,21 @@ module shell.actions {
       };
 
       return true;
+
+      function dirCheck() {
+        if ((<any>dirCheck)._timeout) clearTimeout((<any>dirCheck)._timeout);
+        (<any>dirCheck)._timeout = setTimeout(function() {
+          (<any>dirCheck)._timeout = null;
+          var isDir = !!ctls.import_directory.checked || ctls.import_directory.value==='on' || ctls.import_directory.value===true || ctls.import_directory.value==='true' || ctls.import_directory.value==='yes';
+          var propPrefixes = ['moz', 'webkit', 'ms', 'o', ''];
+          for (var i = 0; i < propPrefixes.length; i++) {
+            var prop = propPrefixes[i]+'directory';
+            if (prop in ctls.import_file) {
+              ctls.import_file[prop] = isDir;
+            }
+          }
+        }, 100);
+      }
 
       function commit() {
         importFiles(ctls.import_file.files);

@@ -17,12 +17,13 @@ module isolation {
 
     runWrapped(code: string, path: string, scope: any) {
       path = path || typeof path === 'string' ? path : createTimebasedPath();
-      var argNames: string[] = [];
-      var args = [];
+
+      var argNames: string[] = ['global'];
+      var args = ['global' in scope ? scope.global : scope];
       var emptyDefault = {};
       if (scope) {
         for (var k in scope) {
-          if (k in emptyDefault) continue;
+          if (k==='global' ||  k in emptyDefault) continue;
           argNames.push(k);
           args.push(scope[k]);
         }
@@ -30,7 +31,7 @@ module isolation {
 
     	var natives = this._natives ? this._natives : (this._natives = defineAllowedNatives());
       for (var k in this._obscureScope) {
-        if (k in scope || k in emptyDefault || k in natives) continue;
+        if (k==='global' || k in scope || k in emptyDefault || k in natives) continue;
         argNames.push(k);
       }
 
@@ -50,6 +51,7 @@ module isolation {
     runWith(code: string, path: string, scope: any) {
       path = path || typeof path === 'string' ? path : createTimebasedPath();
       this._obscureScope.global = scope || {};
+
       var decoratedCode =
         'with(window.global){with(global){   ' + code +
         '\n }}  //# sourceURL=' + path;

@@ -683,10 +683,24 @@ module shell.panels {
 
       var bottomText = this._cursorPath;
       if (cursorEntry) {
-        if (cursorEntry.flags&Panel.EntryFlags.Directory)
+        if (cursorEntry.flags&Panel.EntryFlags.Directory) {
           bottomText = '[ '+bottomText+' ]';
-        else
-          bottomText = bottomText + ' ['+(cursorEntry.size?cursorEntry.size:'empty')+']';
+        }
+        else {
+          if (cursorEntry.size) {
+            var str = cursorEntry.size+'';
+            var fmtStr = '';
+            for (var i = 0; i < str.length; i++) {
+              var ch = str.charAt(str.length-i-1);
+              if (i>0 && (i%3===0)) fmtStr = ch+','+fmtStr;
+              else fmtStr = ch + fmtStr;
+            }
+          	bottomText = bottomText + ' ['+fmtStr+']';
+          }
+          else {
+          	bottomText = bottomText + ' [empty]';
+          }
+        }
       }
 
       setText(this._bottom, bottomText);
@@ -811,6 +825,7 @@ module shell.panels {
         column.entries.push(entry);
       }
       else {
+        // TODO: update highlight flags
         var expectedSelectionFlags = this._cursorEntryIndex === indexInDirectory ? Panel.SelectionFlags.Current : 0;
 
         if (entry.name !== dentry.name) {
@@ -829,6 +844,8 @@ module shell.panels {
         if (indexInColumn === this._entriesInColumn - 1 && column.entries.length > this._entriesInColumn) {
           this._removeExcessEntries(column, this._entriesInColumn);
         }
+
+        entry.size = dentry.size;
 
       }
       return entry;

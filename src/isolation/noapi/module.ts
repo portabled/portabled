@@ -1,13 +1,14 @@
 module noapi {
 
   export function createModule(
+  	existingLoaded: any,
     id: string,
     filename: string,
     parent: any,
     requireForModule: (moduleName: string) => any): Module {
 
     var module: Module = {
-      exports: {},
+      exports: existingLoaded,
       id,
       filename,
       loaded: false,

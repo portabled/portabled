@@ -1,7 +1,7 @@
 function eq80() {
 eq80.build = {
-  timestamp: 1458586155509, // Mon Mar 21 2016 18:49:15 GMT+0000 (GMT Standard Time)
-  taken: 8425,
+  timestamp: 1459069751303, // Sun Mar 27 2016 10:09:11 GMT+0100 (GMT Daylight Time)
+  taken: 9326,
   platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36"
 }
 

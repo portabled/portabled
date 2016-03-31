@@ -5,7 +5,7 @@ module noapi {
     process: Process;
     mainModule: Module;
     global: Global;
-    coreModules: { fs: FS; path: Path; os: OS; events: any; http: any; };
+    coreModules: { fs: FS; path: Path; os: OS; events: any; http: any; child_process: any; };
 
     exitCode: number = null;
     finished = false;
@@ -19,6 +19,8 @@ module noapi {
     private _waitFor = 0;
   	private _fs_onfilesChanged: (files: string[]) => void;
 
+  	private _moduleCache: { [path: string]: any; } = {};
+
     constructor(
       private _scriptPath: string,
       private _drive: persistence.Drive,
@@ -31,7 +33,8 @@ module noapi {
         os: <OS>null,
         path: <Path>null,
         events: null,
-        http: null
+        http: null,
+        child_process: null
       };
 
       this.argv = ['/node', this._scriptPath];
@@ -39,7 +42,7 @@ module noapi {
       this.cwd = dirname(this._scriptPath);
 
       this.global.process = this.process = createProcess(this.coreModules, this);
-      this.global.module = this.mainModule = createModule('repl' /*id*/, null /*filename*/, null /*parent*/, require);
+      this.global.module = this.mainModule = createModule({}, 'repl' /*id*/, null /*filename*/, null /*parent*/, require);
 
       var noapicontext = this;
 
@@ -61,6 +64,7 @@ module noapi {
       this.coreModules.path = createPath(this.process);
       this.coreModules.http = createHTTP();
       this.coreModules.events = createEvents();
+      this.coreModules.child_process = createChildProcess(this._drive, window);
 
       this._context = new isolation.Context(window);
 
@@ -168,8 +172,41 @@ module noapi {
             var p = this.coreModules.path.resolve(tryPath, probePatterns[i]);
             if (this._drive.read(p)) return p;
           }
-          if (!tryPath || tryPath === '/') return null;
+          if (!tryPath || tryPath === '/') break;
           tryPath = this.coreModules.path.dirname(tryPath);
+        }
+
+        var dir = this.coreModules.path.normalize(modulePath);
+        while (true) {
+          var packageJsonDir = this.coreModules.path.join(dir, id);
+          var packageJsonPath = this.coreModules.path.join(packageJsonDir, 'package.json');
+          var packageJsonContent = this._drive.read(packageJsonPath);
+          if (packageJsonContent) break;
+
+          packageJsonDir = this.coreModules.path.join(dir, 'node_modules', id);
+          packageJsonPath = this.coreModules.path.join(packageJsonDir, 'package.json');
+          packageJsonContent = this._drive.read(packageJsonPath);
+          if (packageJsonContent) break;
+
+          if (!dir || dir==='/') break;
+
+          dir = this.coreModules.path.dirname(dir);
+        }
+
+        if (packageJsonContent) {
+          try {
+            // TODO: parse JSON
+            var packageObj = JSON.parse(packageJsonContent);
+            var main = packageObj.main;
+            if (typeof main==='string') {
+              var mainPath =this.coreModules.path.resolve(packageJsonDir, main);
+              var mainScript = this._drive.read(mainPath);
+              if (mainScript)
+                return mainPath;
+            }
+          }
+          catch (err) {
+          }
         }
       }
     }
@@ -181,12 +218,20 @@ module noapi {
 
       var resolvedPath = this.resolve(moduleName, parentModulePath);
       if (resolvedPath) {
+
+        var existingLoaded = this._moduleCache[resolvedPath];
+        if (resolvedPath in this._moduleCache) return existingLoaded;
+
+        existingLoaded = {};
+        this._moduleCache[resolvedPath] = existingLoaded;
+
         var content = this._drive.read(resolvedPath);
 
         if (content) {
 
           var moduleDir = dirname(resolvedPath);
           var loadedModule = createModule(
+            existingLoaded,
             moduleName,
             resolvedPath,
             parentModule,
@@ -216,11 +261,31 @@ module noapi {
             return moduleScope;
           })();
 
-          this._context.runWrapped(content, resolvedPath, moduleScope);
+          var contentScript = String(content);
+          if (contentScript.charAt(0)==='#') {
+            var posLineEnd = contentScript.indexOf('\n');
+            if (posLineEnd>0) {
+              var firstLine = contentScript.slice(0,posLineEnd);
+              if (firstLine.length>2)
+                firstLine = '//'+firstLine.slice(0, firstLine.length-2);
+              contentScript = firstLine+contentScript.slice(posLineEnd);
+            }
+          }
 
+          this._context.runWrapped(contentScript, resolvedPath, moduleScope);
+
+          if (loadedModule.exports!==existingLoaded && loadedModule.exports) {
+            for (var k in loadedModule.exports) if (typeof loadedModule.exports.hasOwnProperty==='function' && loadedModule.exports.hasOwnProperty(k)) {
+              existingLoaded[k] = loadedModule.exports[k];
+            }
+          }
+
+        	this._moduleCache[resolvedPath] = loadedModule.exports;
           return loadedModule.exports;
         }
       }
+
+      throw new Error('Cannot find module \''+moduleName+'\'');
     }
 
     filesChanged(files: string[]) {
