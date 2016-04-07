@@ -21,6 +21,7 @@ namespace shell {
 
     private _keybar: keybar.Keybar;
   	private _dialogHost = new DialogHost();
+  	private _stdLog: any;
 
     constructor(private _topWindow: Window, private _host: HTMLElement, private _originalDrive: persistence.Drive, private _getBootState: () => any, complete: () => string) {
 
@@ -119,41 +120,13 @@ namespace shell {
 
 
       var _glob = (function() { return this; })();
-      var applyConsole = (glob) => {
-        if (glob.console) {
-          var _oldLog: Function = glob.console.log;
-          var term = this._terminal;
-          console.log = function() {
-            var args = [];
-            for (var i = 0; i < arguments.length; i++) {
-              args.push(arguments[i]);
-            }
-            term.log(args);
-            if (typeof _oldLog === 'function')
-              _oldLog.apply(glob.console, args);
-          };
-          (<any>console.log)._oldLog = _oldLog;
-        }
-        else {
-          var term = this._terminal;
-          glob.console = {
-            log: function() {
-              var args = [];
-              for (var i = 0; i < arguments.length; i++) {
-                args.push(arguments[i]);
-              }
-              term.log(args);
-            }
-          };
-        }
-      };
 
       if (_glob.console && window.console && _glob.console.log && _glob.console.log!==window.console.log)
-        applyConsole(_glob);
-      applyConsole(window);
+        this._applyConsole(_glob);
+      this._applyConsole(window);
       var parent = window.parent;
       if (parent !== window.parent)
-        applyConsole(parent);
+        this._applyConsole(parent);
 
       setTimeout(() => {
         var reslt = complete();
@@ -211,6 +184,32 @@ namespace shell {
       if (this._editor && this._editor.arrange) this._editor.arrange(this._metrics.metrics);
 
       this._keybar.arrange(this._metrics.metrics);
+    }
+
+  	private _applyConsole(glob: { console: { log: Function; }; }) {
+
+      if (!this._stdLog) {
+        if (typeof console !== 'undefined' && typeof console.log === 'function')
+          this._stdLog = console.log;
+        else
+          this._stdLog = true;
+      }
+
+      var self = this;
+      var log = function() {
+        var args = [];
+        for (var i = 0; i < arguments.length; i++) {
+          args.push(arguments[i]);
+        }
+        if (self._stdLog!==true)
+          self._stdLog.apply(console, args);
+        self._terminal.log(args);
+      };
+
+      if (glob.console)
+        glob.console.log = log;
+      else
+        glob.console = { log };
     }
 
     private _twoPanels_doubleclick(): boolean {
@@ -690,7 +689,8 @@ namespace shell {
         setTimeout(() => {
           try {
             var proc = new noapi.HostedProcess(argList[0], this._drive, window);
-            proc.console.log = (...args: any[]) => { console.log.apply(console, args); };
+            this._applyConsole(proc);
+            //proc.console.log = (...args: any[]) => { console.log.apply(console, args); };
 
             proc.cwd = this._twoPanels.currentPath();
             for (var i = 1; i < argList.length; i++) {

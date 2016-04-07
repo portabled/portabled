@@ -77,14 +77,18 @@ function runWithGithubApi(Github) {
         auth: "basic"
       });
       var repo = github.getRepo(inputs.push_owner.value, inputs.push_repo.value);
-      var options = {
-        author: {name: inputs.push_full_name.value, email: inputs.push_email.value},
-        encode: true // Whether to base64 encode the file. (default: true)
-      }
       var html = '<!'+'doctype html>'+
           win.parent.document.documentElement.outerHTML;
       console.log('html ',+html.length);
-      var wr = repo.write(inputs.push_branch.value, inputs.push_file.value, html, push_commit_message.value, options, function(err) {
+      var wr = repo.write(
+        inputs.push_branch.value,
+        inputs.push_file.value,
+        html, push_commit_message.value,
+        {
+          author: { name: inputs.push_full_name.value, email: inputs.push_email.value },
+          encode: true // Whether to base64 encode the file. (default: true)
+        },
+        function(err) {
      	   console.log('write ',err);
       });
       console.log(wr);

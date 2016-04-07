@@ -1,8 +1,8 @@
 function eq80() {
 eq80.build = {
-  timestamp: 1459069751303, // Sun Mar 27 2016 10:09:11 GMT+0100 (GMT Daylight Time)
-  taken: 9326,
-  platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.87 Safari/537.36"
+  timestamp: 1460143176162, // Fri Apr 08 2016 20:19:36 GMT+0100 (GMT Daylight Time)
+  taken: 7320,
+  platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.110 Safari/537.36"
 }
 
 var persistence=eq80.persistence={};
@@ -121,7 +121,7 @@ var persistence=eq80.persistence={};
             this._newDOMFileCache[file.path] = true;
             this.loadedFileCount++;
             this.domLoadedSize += file.contentLength;
-            this.domTotalSize = Math.min(this.domTotalSize, this.domLoadedSize);
+            this.domTotalSize = Math.max(this.domTotalSize, this.domLoadedSize);
         };
         BootState.prototype._removeNode = function (node) {
             var parent = node.parentElement || node.parentNode;
@@ -150,7 +150,7 @@ var persistence=eq80.persistence={};
                         if (speculativeFile) {
                             this._anticipationSize = speculativeFile.contentLength;
                             this.domLoadedSize = this.domLoadedSize + this._anticipationSize;
-                            this.domTotalSize = Math.min(this.domTotalSize, this.domLoadedSize); // total should not become less that loaded
+                            this.domTotalSize = Math.max(this.domTotalSize, this.domLoadedSize); // total should not become less that loaded
                         }
                     }
                     return;
@@ -180,6 +180,7 @@ var persistence=eq80.persistence={};
                         var f = this._byPath[path];
                         if (f) {
                             delete this._byPath[path];
+                            this.domLoadedSize -= f.contentLength;
                             this._removeNode(f.node);
                         }
                         else {
@@ -192,6 +193,7 @@ var persistence=eq80.persistence={};
                     else if (typeof content !== 'undefined') {
                         var f = this._byPath[path];
                         if (f) {
+                            this.domLoadedSize -= f.contentLength;
                             var modified = f.write(content);
                             if (!modified) {
                                 if (this._shadow)
@@ -199,6 +201,7 @@ var persistence=eq80.persistence={};
                                 else
                                     this._toForgetShadow.push(path);
                             }
+                            this.domLoadedSize -= f.contentLength;
                         }
                         else {
                             var anchor = this._findAnchor();
@@ -208,10 +211,12 @@ var persistence=eq80.persistence={};
                             this._byPath[path] = f;
                             this._newDOMFileCache[path] = true;
                             this._document.body.insertBefore(f.node, anchor);
+                            this.domLoadedSize += f.contentLength;
                         }
                     }
                 }
             }
+            this.domTotalSize = Math.max(this.domTotalSize, this.domLoadedSize);
             if (this._shadowFinished) {
                 this._allCompleted();
                 return;
@@ -223,11 +228,18 @@ var persistence=eq80.persistence={};
             }
         };
         BootState.prototype._finishUpdateTotals = function () {
+            var updated = false;
             if (this._totals) {
                 if (this.storageTimestamp > this.domTimestamp) {
                     this._totals.timestamp = this.storageTimestamp;
-                    this._totals.updateNode();
+                    updated = true;
                 }
+                if (this._totals.totalSize !== this.domLoadedSize) {
+                    this._totals.totalSize = this.domLoadedSize;
+                    updated = true;
+                }
+                if (updated)
+                    this._totals.updateNode();
             }
         };
         BootState.prototype._getNextNode = function () {
@@ -295,13 +307,16 @@ var persistence=eq80.persistence={};
                 var file = this._byPath[path];
                 if (file) {
                     if (content === null) {
+                        this.domLoadedSize -= file.contentLength;
                         this._removeNode(file.node);
                         delete this._byPath[path];
                     }
                     else {
+                        this.domLoadedSize -= file.contentLength;
                         var modified = file.write(content);
                         if (!modified)
                             this._toForgetShadow.push(path);
+                        this.domLoadedSize += file.contentLength;
                     }
                 }
                 else {
@@ -316,6 +331,7 @@ var persistence=eq80.persistence={};
                         this._document.body.insertBefore(f.node, anchor);
                         this._byPath[path] = f;
                         this._newDOMFileCache[path] = true;
+                        this.domLoadedSize += f.contentLength;
                     }
                 }
                 this._newStorageFileCache[path] = true;
@@ -324,6 +340,7 @@ var persistence=eq80.persistence={};
                 this._toUpdateDOM[path] = content;
                 this._newStorageFileCache[path] = true;
             }
+            this.domTotalSize = Math.max(this.domTotalSize, this.domLoadedSize);
         };
         BootState.prototype._findAnchor = function () {
             var anchor = null;

@@ -170,7 +170,7 @@
           var target = targetDir==='/' ? '/'+fn : env.repl.coreModules.path.resolve(targetDir, fn);
         }
 
-        if (env.cursorPath===target) return null;
+        if (!env.virtualSource && env.cursorPath===target) return null;
         return { select: target, pairs: [{ source: env.sourceFiles[0], target: target }] };
       }
       else {
@@ -200,7 +200,7 @@
                 if (targetDir==='/')
                   select = '/'+restParts[j];
                 else
-                  select = 
+                  select =
               			env.repl.coreModules.path.join(targetDir, restParts[j]);
                 break;
               }

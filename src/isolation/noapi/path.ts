@@ -44,13 +44,21 @@ module noapi {
 
         if (parts.length) {
           var wlead = part;
-          part = part.replace(/^\/*/, '');
+          part = part.replace(/^\/+/, '');
+
           if (!part) continue;
-          if (wlead.length > part.length)
-            parts.push('');
         }
+        else {
+          part = part.replace(/^\/+/, '/'); // leading slash in first part should be preserved
+          if (part==='/') {
+            parts.push('');
+            continue;
+          }
+        }
+
         var wtrail = part;
-        part = part.replace(/\/*$/, '');
+        part = part.replace(/\/+$/, '');
+
         if (!part) continue;
         parts.push(part);
 

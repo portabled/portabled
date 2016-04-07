@@ -135,7 +135,7 @@ namespace persistence {
 
       this.loadedFileCount++;
       this.domLoadedSize += file.contentLength;
-      this.domTotalSize = Math.min(this.domTotalSize, this.domLoadedSize);
+      this.domTotalSize = Math.max(this.domTotalSize, this.domLoadedSize);
     }
 
     private _removeNode(node: Node) {
@@ -167,7 +167,7 @@ namespace persistence {
             if (speculativeFile) {
               this._anticipationSize = speculativeFile.contentLength;
           		this.domLoadedSize = this.domLoadedSize + this._anticipationSize;
-          		this.domTotalSize = Math.min(this.domTotalSize, this.domLoadedSize); // total should not become less that loaded
+          		this.domTotalSize = Math.max(this.domTotalSize, this.domLoadedSize); // total should not become less that loaded
             }
           }
           return;
@@ -204,6 +204,7 @@ namespace persistence {
             var f = this._byPath[path];
             if (f) {
               delete this._byPath[path];
+              this.domLoadedSize -= f.contentLength;
               this._removeNode(f.node);
             }
             else {
@@ -214,11 +215,13 @@ namespace persistence {
           else if (typeof content!=='undefined') {
             var f = this._byPath[path];
             if (f) {
+              this.domLoadedSize -= f.contentLength;
               var modified = f.write(content);
               if (!modified) {
                 if (this._shadow) this._shadow.forget(path);
                 else this._toForgetShadow.push(path);
               }
+              this.domLoadedSize -= f.contentLength;
             }
             else {
             	var anchor = this._findAnchor();
@@ -228,10 +231,13 @@ namespace persistence {
               this._byPath[path] = f;
               this._newDOMFileCache[path] = true;
               this._document.body.insertBefore(f.node, anchor);
+              this.domLoadedSize += f.contentLength;
             }
           }
         }
       }
+
+      this.domTotalSize = Math.max(this.domTotalSize, this.domLoadedSize);
 
       if (this._shadowFinished) {
         this._allCompleted();
@@ -246,11 +252,21 @@ namespace persistence {
     }
 
   	private _finishUpdateTotals() {
+      var updated = false;
       if (this._totals) {
+
         if (this.storageTimestamp > this.domTimestamp) {
         	this._totals.timestamp = this.storageTimestamp;
-          this._totals.updateNode();
+          updated = true;
         }
+
+        if (this._totals.totalSize !== this.domLoadedSize) {
+          this._totals.totalSize = this.domLoadedSize;
+          updated = true;
+        }
+
+        if (updated)
+          this._totals.updateNode();
       }
     }
 
@@ -323,13 +339,16 @@ namespace persistence {
         var file = this._byPath[path];
         if (file) {
           if (content===null) {
+            this.domLoadedSize -= file.contentLength;
             this._removeNode(file.node);
             delete this._byPath[path];
           }
           else {
+            this.domLoadedSize -= file.contentLength;
             var modified = file.write(content);
             if (!modified)
               this._toForgetShadow.push(path);
+            this.domLoadedSize += file.contentLength;
           }
         }
         else {
@@ -344,6 +363,7 @@ namespace persistence {
             this._document.body.insertBefore(f.node, anchor);
             this._byPath[path] = f;
             this._newDOMFileCache[path] = true;
+            this.domLoadedSize += f.contentLength;
           }
         }
         this._newStorageFileCache[path] = true;
@@ -352,6 +372,8 @@ namespace persistence {
         this._toUpdateDOM[path] = content;
         this._newStorageFileCache[path] = true;
       }
+
+      this.domTotalSize = Math.max(this.domTotalSize, this.domLoadedSize);
     }
 
   	private _findAnchor() {

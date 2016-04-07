@@ -111,7 +111,7 @@ if (parent.eq80) {
     var titleStr =
         'Loading: '+
         Math.round((bootState.domLoadedSize|0)/1024)+
-        (bootState.domTotalSize ? ' of '+Math.round((bootState.domTotalSize)|0/1024):'')+
+        (bootState.domTotalSize ? ' of  '+Math.round((bootState.domTotalSize|0)/1024):'')+
         'Kb'+
         (lastFile ? ' ...'+lastFile.replace(/^\//, '')+'...' : '...');
 

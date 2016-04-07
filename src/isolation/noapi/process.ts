@@ -6,6 +6,7 @@ module noapi {
       argv: string[];
       cwd: string;
       env: any;
+     	console: any;
     }): Process {
 
     var evt = new EventEmitter();
@@ -119,7 +120,7 @@ module noapi {
     function load_stdout() {
       return <WritableStream>{
         write(msg) {
-          console.log(msg);
+          options.console.log(msg);
         }
       };
     }

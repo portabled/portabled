@@ -157,56 +157,59 @@ module noapi {
       }
     }
 
+  	private _tryResolveModuleFromDir(resolveDir: string) {
+      var packageFile = this.coreModules.path.join(resolveDir, 'package.json');
+      if (this.coreModules.fs.existsSync(packageFile) && this.coreModules.fs.statSync(packageFile).isFile()) {
+        var packageJson = this.coreModules.fs.readFileSync(packageFile)+'';
+        try {
+          var packageObj = JSON.parse(packageJson);
+          var mainFile = this.coreModules.path.resolve(resolveDir, packageObj.main);
+          if (this.coreModules.fs.existsSync(mainFile) && this.coreModules.fs.statSync(mainFile).isFile()) return mainFile;
+          else return null;
+        }
+        catch (packageJsonError) { }
+      }
+
+      var indexFile = this.coreModules.path.join(resolveDir, 'index.js');
+      if (this.coreModules.fs.existsSync(indexFile) && this.coreModules.fs.statSync(indexFile).isFile()) return indexFile;
+      else return null;
+    }
+
     resolve(id: string, modulePath: string) {
-      if (id.charAt(0) === '/') {
-        return id;
+      var tryPath = id.charAt(0)==='/' ? this.coreModules.path.resolve(id) : this.coreModules.path.resolve(modulePath, id);
+
+      if (id.charAt(0) === '/' || id.charAt(0) === '.') {
+        if (!this.coreModules.fs.existsSync(tryPath)) return null;
+        else if (this.coreModules.fs.statSync(tryPath).isFile()) return tryPath;
+        else return this._tryResolveModuleFromDir(tryPath);
       }
       else {
-        var tryPath = this.coreModules.path.normalize(modulePath);
-        var probePatterns = [
-          id, id + '.js', id + '/index.js',
-          'node_modules/' + id + '/index.js'];
+        var firstSlash = id.indexOf('/', 1); // definitely not pick on leading character
+
+        var moduleDir = firstSlash>=0 ? id.slice(0, firstSlash) : id;
+        var moduleFileExact = firstSlash>=0 ? id.slice(firstSlash+1) : null;
+
+        tryPath = this.coreModules.path.resolve(modulePath);
 
         while (true) {
-          for (var i = 0; i < probePatterns.length; i++) {
-            var p = this.coreModules.path.resolve(tryPath, probePatterns[i]);
-            if (this._drive.read(p)) return p;
-          }
-          if (!tryPath || tryPath === '/') break;
-          tryPath = this.coreModules.path.dirname(tryPath);
-        }
+          var resolveDir = this.coreModules.path.join(tryPath, 'node_modules', moduleDir);
 
-        var dir = this.coreModules.path.normalize(modulePath);
-        while (true) {
-          var packageJsonDir = this.coreModules.path.join(dir, id);
-          var packageJsonPath = this.coreModules.path.join(packageJsonDir, 'package.json');
-          var packageJsonContent = this._drive.read(packageJsonPath);
-          if (packageJsonContent) break;
-
-          packageJsonDir = this.coreModules.path.join(dir, 'node_modules', id);
-          packageJsonPath = this.coreModules.path.join(packageJsonDir, 'package.json');
-          packageJsonContent = this._drive.read(packageJsonPath);
-          if (packageJsonContent) break;
-
-          if (!dir || dir==='/') break;
-
-          dir = this.coreModules.path.dirname(dir);
-        }
-
-        if (packageJsonContent) {
-          try {
-            // TODO: parse JSON
-            var packageObj = JSON.parse(packageJsonContent);
-            var main = packageObj.main;
-            if (typeof main==='string') {
-              var mainPath =this.coreModules.path.resolve(packageJsonDir, main);
-              var mainScript = this._drive.read(mainPath);
-              if (mainScript)
-                return mainPath;
+          if (this.coreModules.fs.existsSync(resolveDir)) {
+            if (moduleFileExact) {
+              var resolvedFile = this.coreModules.path.join(resolveDir, moduleFileExact);
+              if (this.coreModules.fs.existsSync(resolvedFile) && this.coreModules.fs.statSync(resolvedFile).isFile())
+                return resolvedFile;
+            }
+            else {
+              var resolved = this._tryResolveModuleFromDir(resolveDir);
+              if (resolved) return resolved;
             }
           }
-          catch (err) {
-          }
+
+          if (!tryPath || tryPath === '/') break;
+          var newTryPath = this.coreModules.path.dirname(tryPath);
+          if (newTryPath===tryPath || !newTryPath) break;
+          tryPath = newTryPath;
         }
       }
     }
@@ -225,7 +228,7 @@ module noapi {
         existingLoaded = {};
         this._moduleCache[resolvedPath] = existingLoaded;
 
-        var content = this._drive.read(resolvedPath);
+        var content = this.coreModules.fs.readFileSync(resolvedPath);
 
         if (content) {
 
@@ -252,9 +255,10 @@ module noapi {
 
             moduleScope.global.__filename = resolvedPath;
             moduleScope.global.__dirname = dirname(resolvedPath);
-            if (this.console)
+            if (this.console) {
               this.global.console = this.console;
-
+              moduleScope.console = this.console;
+            }
 
             moduleScope.module = loadedModule;
 

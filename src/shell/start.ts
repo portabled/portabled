@@ -18,6 +18,7 @@ module shell {
 
     var commander = new CommanderShell(topWindow, document.body, drive, getBootState, complete);
 
+    serveFS(topWindow, drive);
 	}
 
 }

@@ -10,10 +10,12 @@ function run() {
     return;
   }
 
+
+	var eq80;
   console.log('Loading '+file+'...');
   var fullHtml = fs.readFileSync(file)+'';
 
-  var eq80 = extractEQ80();
+  eq80 = extractEQ80();
 
   console.log('Extracting files...');
   var allFiles = findFiles(fullHtml);
