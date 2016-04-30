@@ -12,6 +12,9 @@ else {
 
   var ui = document.createElement('div');
   ui.innerHTML = '<h2> Tests for persistence... </h2>';
+  window.onload = function() {
+    runTests(tests.generateTests());
+  };
 
 }
 
@@ -19,8 +22,8 @@ else {
 function persistence(document, uniqueKey, optionalDrives) {
 
 	persistence.build = {
-    timestamp: 1461955186777, // Fri Apr 29 2016 19:39:46 GMT+0100 (GMT Daylight Time)
-    taken: 12971,
+    timestamp: 1462004696031, // Sat Apr 30 2016 09:24:56 GMT+0100 (GMT Daylight Time)
+    taken: 13442,
     platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"
 }
 
@@ -913,6 +916,7 @@ var attached;
         }
         webSQL.detect = detect;
         function detectCore(uniqueKey, callback) {
+            var _this = this;
             var openDatabaseInstance = getOpenDatabase();
             if (!openDatabaseInstance) {
                 callback('Variable openDatabase is not available.', null);
@@ -924,6 +928,8 @@ var attached;
             'Portabled virtual filesystem data', // displayName
             1024 * 1024); // size
             // upgradeCallback?
+            var repeatingFailures_unexpected = 0; // protect against multiple transaction errors causing one another
+            var finished = false; // protect against reporting results multiple times
             db.readTransaction(function (transaction) {
                 transaction.executeSql('SELECT value from "*metadata" WHERE name=\'editedUTC\'', [], function (transaction, result) {
                     var editedValue = null;
@@ -940,14 +946,36 @@ var attached;
                             editedValue = editedValueStr;
                         }
                     }
+                    finished = true;
                     callback(null, new WebSQLDetached(db, editedValue || 0, true));
                 }, function (transaction, sqlError) {
+                    if (finished)
+                        return;
+                    else
+                        finished = true;
                     // no data
                     callback(null, new WebSQLDetached(db, 0, false));
                 });
             }, function (sqlError) {
-                // failed to load
-                callback('Loading from metadata table failed: ' + sqlError.message, null);
+                if (finished)
+                    return;
+                else
+                    finished = true;
+                repeatingFailures_unexpected++;
+                if (repeatingFailures_unexpected > 5) {
+                    callback('Loading from metadata table failed, generating multiple failures ' + sqlError.message, null);
+                }
+                _this._createMetadataTable(function (sqlError_creation) {
+                    if (finished)
+                        return;
+                    else
+                        finished = true;
+                    if (sqlError)
+                        callback('Loading from metadata table failed: ' + sqlError.message + ' and creation metadata table failed: ' + sqlError_creation.message, null);
+                    else
+                        // original metadata access failed, but create table succeeded
+                        callback(null, new WebSQLDetached(db, 0, false));
+                });
             });
         }
         var WebSQLDetached = (function () {
@@ -1044,7 +1072,11 @@ var attached;
                 this._metadataTableIsValid = _metadataTableIsValid;
                 this._cachedUpdateStatementsByFile = {};
                 this._closures = {
-                    updateMetadata: function (transaction) { return _this._updateMetadata(transaction); }
+                    noop: function () {
+                        // nothing to do
+                    },
+                    updateMetadata: function (transaction) { return _this._updateMetadata(transaction); },
+                    updateMetdata_noMetadataCase: function (transaction) { return _this._updateMetdata_noMetadataCase(transaction); }
                 };
             }
             WebSQLShadow.prototype.write = function (file, content) {
@@ -1065,10 +1097,38 @@ var attached;
                     var tableName = mangleDatabaseObjectName(file);
                     updateSQL = this._createUpdateStatement(file, tableName);
                 }
+                var repeatingTransactionErrorCount_unexpected = 0;
                 this._db.transaction(function (transaction) {
-                    transaction.executeSql(updateSQL, ['content', content], _this._closures.updateMetadata, function (transaction, sqlError) { return _this._createTableAndUpdate(transaction, file, tableName, updateSQL, content); });
+                    transaction.executeSql(updateSQL, ['content', content], _this._closures.updateMetadata, function (transaction, sqlError) {
+                        _this._createTableAndUpdate(transaction, file, tableName, updateSQL, content);
+                    });
                 }, function (sqlError) {
-                    reportSQLError('Transaction failure updating file "' + file + '".', sqlError);
+                    repeatingTransactionErrorCount_unexpected++;
+                    if (repeatingTransactionErrorCount_unexpected > 5) {
+                        reportSQLError('Transaction failures (' + repeatingTransactionErrorCount_unexpected + ') updating file "' + file + '".', sqlError);
+                        return;
+                    }
+                    // failure might have been due to table absence?
+                    // -- redo with a new transaction
+                    _this._db.transaction(function (transaction) {
+                        _this._createTableAndUpdate(transaction, file, tableName, updateSQL, content);
+                    }, function (sqlError_inner) {
+                        // failure might have been due to *metadata table ansence
+                        // -- redo with a new transaction (last attempt)
+                        _this._db.transaction(function (transaction) {
+                            _this._updateMetdata_noMetadataCase(transaction);
+                            // OK, once again for extremely confused browsers like Opera
+                            transaction.executeSql(updateSQL, ['content', content], _this._closures.updateMetadata, function (transaction, sqlError) {
+                                _this._createTableAndUpdate(transaction, file, tableName, updateSQL, content);
+                            });
+                        }, function (sqlError_ever_inner) {
+                            reportSQLError('Transaction failure updating file "' + file + '" ' +
+                                '(after ' +
+                                (repeatingTransactionErrorCount_unexpected > 1 ? repeatingTransactionErrorCount_unexpected : '') +
+                                ' errors like ' + sqlError_inner.message + ' and ' + sqlError_ever_inner.message +
+                                ').', sqlError);
+                        });
+                    });
                 });
             };
             WebSQLShadow.prototype._createTableAndUpdate = function (transaction, file, tableName, updateSQL, content) {
@@ -1106,19 +1166,28 @@ var attached;
                 });
             };
             WebSQLShadow.prototype._updateMetadata = function (transaction) {
+                transaction.executeSql('INSERT OR REPLACE INTO "*metadata" VALUES (?,?)', ['editedUTC', this.timestamp], this._closures.noop, // TODO: generate closure statically
+                this._closures.updateMetdata_noMetadataCase);
+            };
+            WebSQLShadow.prototype._updateMetdata_noMetadataCase = function (transaction) {
                 var _this = this;
-                var updateMetadataSQL = 'INSERT OR REPLACE INTO "*metadata" VALUES (?,?)';
-                transaction.executeSql(updateMetadataSQL, ['editedUTC', this.timestamp], function (transaction, result) { }, // TODO: generate closure statically
-                function (transaction, error) {
-                    transaction.executeSql('CREATE TABLE "*metadata" (name PRIMARY KEY, value)', [], function (transaction, result) {
-                        transaction.executeSql(updateMetadataSQL, ['editedUTC', _this.timestamp], function (tr, result) {
-                            // OK
-                        }, function (tr, sqlerr) {
-                            reportSQLError('Failed to update metadata table after creation.', sqlerr);
-                        });
-                    }, function (transaction, sqlError) {
-                        reportSQLError('Failed to update meatadata, subsequently failed to create metadata table after creation.', sqlError);
+                this._createMetadataTable(transaction, function (sqlerr) {
+                    if (sqlerr) {
+                        reportSQLError('Failed create metadata table.', sqlerr);
+                        return;
+                    }
+                    transaction.executeSql('INSERT OR REPLACE INTO "*metadata" VALUES (?,?)', ['editedUTC', _this.timestamp], function (tr, result) {
+                        // OK
+                    }, function (tr, sqlerr) {
+                        reportSQLError('Failed to update metadata table after creation.', sqlerr);
                     });
+                });
+            };
+            WebSQLShadow.prototype._createMetadataTable = function (transaction, callback) {
+                transaction.executeSql('CREATE TABLE "*metadata" (name PRIMARY KEY, value)', [], function (transaction, result) {
+                    return callback(null);
+                }, function (transaction, sqlError) {
+                    return callback(sqlError);
                 });
             };
             WebSQLShadow.prototype._createUpdateStatement = function (file, tableName) {
@@ -1820,7 +1889,7 @@ var tests;
                                     else
                                         callback(null);
                                 });
-                            }, 10);
+                            }, 200);
                         });
                     });
                 },
@@ -1891,7 +1960,7 @@ var tests;
                                         }
                                     });
                                 });
-                            }, 10);
+                            }, 200);
                         });
                     });
                 }
@@ -1924,7 +1993,7 @@ var tests;
                                     }
                                 });
                             });
-                        }, 1);
+                        }, 200);
                     });
                 });
             }
@@ -2220,6 +2289,5 @@ function runTests(tests) {
   }
 }
 
-runTests(tests.generateTests());
 
 // </script>
