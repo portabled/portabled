@@ -1,29 +1,13 @@
+
+
 // <script>document.body.innerHTML = '' </script> <script id=persistence>
-
-persistence();
-
-if (typeof module!=='undefined' && module && module.exports) {
-  // running with require, i.e. invoked from another module for script or functionality
-  persistence.script = /^[^\{]*\{([\s\S]*)\}[^\{]*$/.exec(persistence+'')[1]+'\n'+persistence;
-  module.exports = persistence;
-}
-else {
-  // running tests from HTML page
-
-  var ui = document.createElement('div');
-  ui.innerHTML = '<h2> Tests for persistence... </h2>';
-  window.onload = function() {
-    runTests(tests.generateTests());
-  };
-
-}
 
 
 function persistence(document, uniqueKey, optionalDrives) {
 
 	persistence.build = {
-    timestamp: 1462004696031, // Sat Apr 30 2016 09:24:56 GMT+0100 (GMT Daylight Time)
-    taken: 13442,
+    timestamp: 1462109964385, // Sun May 01 2016 14:39:24 GMT+0100 (GMT Daylight Time)
+    taken: 13071,
     platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"
 }
 
@@ -1716,6 +1700,7 @@ var encodings;
 })(encodings || (encodings = {}));
 
 
+
   persistence.formatTotalsInner = formatTotalsInner;
   persistence.formatDate = DOMTotals.formatDate;
   persistence.formatSize = DOMTotals.formatSize;
@@ -1726,117 +1711,30 @@ var encodings;
   persistence.attached = attached;
   if (document) return new BootState(document, uniqueKey, optionalDrives); else return persistence;
 }
-//</script>
-/* <style>
-.prepared {
-  opacity: 0.5;
-}
-.success {
- opacity: 1;
-}
-.fail {
-  opacity: 1;
-  color: tomato;
-}
-.fail pre {
-  font-size: 70%;
-  margin: 0px; margin-left: 1em;
-  padding: 0px;
-}
-</style><script id=tests> /* */
 
+
+if (typeof module!=='undefined' && module && module.exports) {
+
+  persistence();
+module.persistence = persistence;
+
+}
+else {
+  document.body.style.color = 'white';
+
+  persistence();
 var tests;
 (function (tests) {
     tests.buildMetadata = {
-        'not null': function () { return tests.assert(persistence.build); },
-        'timestamp>=1461014284236': function () { return tests.assert(persistence.build.timestamp >= 1461014284236); },
-        '60000>taken>10': function () { return tests.assert(persistence.build.taken > 10 && persistence.build.taken < 60000); },
-        'platform is string': function () { return tests.assert.equal('string', typeof persistence.build.platform); }
+        'not null': function () { return assert(persistence.build); },
+        'timestamp>=1461014284236': function () { return assert(persistence.build.timestamp >= 1461014284236); },
+        '60000>taken>10': function () { return assert(persistence.build.taken > 10 && persistence.build.taken < 60000); },
+        'platform is string': function () { return assert.equal('string', typeof persistence.build.platform); }
     };
 })(tests || (tests = {}));
 ;
 /// <reference path="../src/API.d.ts"/>
 /// <reference path="../src/webSQL.d.ts"/>
-var tests;
-(function (tests) {
-    function assert(condition, message) {
-        if (!condition)
-            throw new Error(message || 'Failure ' + condition);
-    }
-    tests.assert = assert;
-    var assert;
-    (function (assert) {
-        function equal(expected, actual, message) {
-            if (expected != actual)
-                throw new Error(message || 'Unmatch: ' + expected + ' != ' + actual);
-        }
-        assert.equal = equal;
-    })(assert = tests.assert || (tests.assert = {}));
-    function generateTests() {
-        var allTests = [];
-        var _dummy = {};
-        for (var k in tests)
-            if (!(k in _dummy) && tests[k] && /^[a-z]/.test(k)) {
-                collectTests(k, tests[k]);
-            }
-        return allTests;
-        function collectTests(prefix, obj) {
-            if (!obj)
-                return;
-            for (var k in obj)
-                if (!(k in _dummy) && obj[k]) {
-                    if (/^[A-Z]/.test(k) && typeof obj[k] === 'function') {
-                    }
-                    else if (/^[a-z]/.test(k)) {
-                        if (typeof obj[k] === 'function') {
-                            if (k === 'generateTests') {
-                                var moreTests = obj.generateTests();
-                                collectTests(prefix, moreTests);
-                            }
-                            else {
-                                addTest(prefix + '.' + k, obj, k);
-                            }
-                        }
-                        else if (typeof obj[k] === 'object' && /^[a-z]/.test(k)) {
-                            collectTests(prefix + '.' + k, obj[k]);
-                        }
-                    }
-                }
-        }
-        function addTest(fullname, thisObj, key) {
-            var args = /^[^\(]*\(([^\)]*)\)/.exec(thisObj[key] + '');
-            if (args && /callback/.test(args[1])) {
-                allTests.push({
-                    name: fullname,
-                    run: function (callback) {
-                        try {
-                            thisObj[key](callback);
-                        }
-                        catch (error) {
-                            callback(error);
-                        }
-                    }
-                });
-            }
-            else {
-                allTests.push({
-                    name: fullname,
-                    run: function (callback) {
-                        try {
-                            thisObj[key]();
-                        }
-                        catch (error) {
-                            callback(error);
-                            return;
-                        }
-                        callback(null);
-                    }
-                });
-            }
-        }
-    }
-    tests.generateTests = generateTests;
-})(tests || (tests = {}));
 var tests;
 (function (tests) {
     var attached;
@@ -1889,7 +1787,7 @@ var tests;
                                     else
                                         callback(null);
                                 });
-                            }, 200);
+                            }, 5);
                         });
                     });
                 },
@@ -1960,7 +1858,7 @@ var tests;
                                         }
                                     });
                                 });
-                            }, 200);
+                            }, 5);
                         });
                     });
                 }
@@ -1993,7 +1891,7 @@ var tests;
                                     }
                                 });
                             });
-                        }, 200);
+                        }, 5);
                     });
                 });
             }
@@ -2086,7 +1984,7 @@ var tests;
                     indexedDBTests.browser = attached._generateAttachedStorageTests(persistence.attached.indexedDB);
             }
             catch (error) {
-                indexedDBTests.browser = function () { return tests.assert(false, 'Failure accessing indexedDB ' + error.message); };
+                indexedDBTests.browser = function () { return assert(false, 'Failure accessing indexedDB ' + error.message); };
             }
         })(indexedDBTests = attached.indexedDBTests || (attached.indexedDBTests = {}));
     })(attached = tests.attached || (tests.attached = {}));
@@ -2102,7 +2000,7 @@ var tests;
                     localStorageTests.browser = attached._generateAttachedStorageTests(persistence.attached.localStorage);
             }
             catch (error) {
-                localStorageTests.browser = function () { return tests.assert(false, 'Failure accessing localStorage ' + error.message); };
+                localStorageTests.browser = function () { return assert(false, 'Failure accessing localStorage ' + error.message); };
             }
         })(localStorageTests = attached.localStorageTests || (attached.localStorageTests = {}));
     })(attached = tests.attached || (tests.attached = {}));
@@ -2118,7 +2016,7 @@ var tests;
                     webSQLTests.browser = attached._generateAttachedStorageTests(persistence.attached.webSQL);
             }
             catch (error) {
-                webSQLTests.browser = function () { return tests.assert(false, 'Failure accessing webSQL ' + error.message); };
+                webSQLTests.browser = function () { return assert(false, 'Failure accessing webSQL ' + error.message); };
             }
         })(webSQLTests = attached.webSQLTests || (attached.webSQLTests = {}));
     })(attached = tests.attached || (tests.attached = {}));
@@ -2166,12 +2064,12 @@ var tests;
                     tests[name] = test_formatFileInner;
                     tests[name + '_parse'] = test_parseFileInner;
                     function test_formatFileInner() {
-                        tests_1.assert.equal(data.formatted, persistence.formatFileInner(data.path, data.text));
+                        assert.equal(data.formatted, persistence.formatFileInner(data.path, data.text));
                     }
                     function test_parseFileInner() {
                         var fi = persistence.parseFileInner(data.formatted);
-                        tests_1.assert.equal(data.path, fi.path);
-                        tests_1.assert.equal(data.text, fi.read());
+                        assert.equal(data.path, fi.path);
+                        assert.equal(data.text, fi.read());
                     }
                 }
             }
@@ -2196,11 +2094,11 @@ var tests;
                             'Abc-->' +
                             '</body>' +
                             '</html>');
-                        tests_2.assert.equal(1024 * 1024 * 12, dt.totalSize);
-                        tests_2.assert.equal(1459724400000, dt.timestamp);
-                        tests_2.assert.equal(1, dt.files.length);
-                        tests_2.assert.equal('/myfile', dt.files[0].path);
-                        tests_2.assert.equal('Abc', dt.files[0].content);
+                        assert.equal(1024 * 1024 * 12, dt.totalSize);
+                        assert.equal(1459724400000, dt.timestamp);
+                        assert.equal(1, dt.files.length);
+                        assert.equal('/myfile', dt.files[0].path);
+                        assert.equal('Abc', dt.files[0].content);
                     },
                     parseHTML_timestamp_Date_with_time: function () {
                         var dt = persistence.parseHTML('<!doctype html>' +
@@ -2211,11 +2109,11 @@ var tests;
                             'Abc-->' +
                             '</body>' +
                             '</html>');
-                        tests_2.assert.equal(1024 * 1024 * 12, dt.totalSize);
-                        tests_2.assert.equal(1459805161000, dt.timestamp);
-                        tests_2.assert.equal(1, dt.files.length);
-                        tests_2.assert.equal('/myfile', dt.files[0].path);
-                        tests_2.assert.equal('Abc', dt.files[0].content);
+                        assert.equal(1024 * 1024 * 12, dt.totalSize);
+                        assert.equal(1459805161000, dt.timestamp);
+                        assert.equal(1, dt.files.length);
+                        assert.equal('/myfile', dt.files[0].path);
+                        assert.equal('Abc', dt.files[0].content);
                     }
                 };
                 return tests;
@@ -2226,9 +2124,40 @@ var tests;
 })(tests || (tests = {}));
 
 
+  // running tests from HTML page
+  var ui = document.createElement('div');
+  ui.style.color = 'black';
+  ui.innerHTML = '<h2> Tests for persistence... </h2>';
+  window.onload = function() {
+    runTests(generateTests());
+  };
+
+}
+
+//</script>
+/* <style>
+.prepared {
+  opacity: 0.5;
+}
+.success {
+ opacity: 1;
+}
+.fail {
+  opacity: 1;
+  color: tomato;
+}
+.fail pre {
+  font-size: 70%;
+  margin: 0px; margin-left: 1em;
+  padding: 0px;
+}
+</style><script id=tests> /* */
+
+undefined
 
 function runTests(tests) {
   var summary = document.createElement('h2');
+  summary.style.color = 'black';
 
   if ('textContent' in summary) summary.textContent = 'Tests (total '+tests.length+'):';
   else summary.innerText = tests.length+'Tests (total '+tests.length+'):';
@@ -2237,6 +2166,7 @@ function runTests(tests) {
   document.body.appendChild(summary);
 
   var testList = document.createElement('div');
+  testList.style.color = 'black';
   var runIndex = 0;
   for (var i = 0; i < tests.length; i++) {
     addTestRow(i);
@@ -2286,6 +2216,206 @@ function runTests(tests) {
     else testEntry.innerText = t.name;
     t.testEntry = testEntry;
     testList.appendChild(testEntry);
+  }
+}
+
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message||'Failure '+condition);
+}
+
+assert.equal = (function(){
+  function equal(expected, actual, message) {
+    if (expected!=actual) throw new Error(message||'Unmatch: '+expected+' != '+actual);
+  }
+  return equal;
+})();
+
+function generateTests() {
+
+  var allTests = [];
+  var _dummy = {};
+
+  for (var k in tests) if (!(k in _dummy) && tests[k] && /^[a-z]/.test(k)) {
+    collectTests(k, tests[k]);
+  }
+
+  return allTests;
+
+
+  function collectTests(prefix, obj) {
+    if (!obj) return;
+    for (var k in obj) if (!(k in _dummy) && obj[k]) {
+      if (/^[A-Z]/.test(k) && typeof obj[k] === 'function') {
+        // TODO: should we construct here?
+      }
+      else if (/^[a-z]/.test(k)) {
+        if (typeof obj[k]==='function') {
+          if (k==='generateTests') {
+            var moreTests = obj.generateTests();
+            collectTests(prefix, moreTests);
+          }
+          else {
+            addTest(prefix+'.'+k, obj, k);
+          }
+        }
+        else if (typeof obj[k]==='object' && /^[a-z]/.test(k)) {
+          collectTests(prefix+'.'+k, obj[k]);
+        }
+      }
+    }
+  }
+
+  function addTest(fullname, thisObj, key) {
+    var args = functionArgs(thisObj[key]);
+    if (args && /callback/.test(args)) {
+      allTests.push({
+        name: fullname,
+        run: function(callback) {
+          try {
+            thisObj[key](callback);
+          }
+          catch (error) {
+            callback(error);
+          }
+        }
+      });
+    }
+    else {
+      allTests.push({
+        name: fullname,
+        run: function(callback) {
+          try {
+            thisObj[key]();
+          }
+          catch (error) {
+            callback(error);
+            return;
+          }
+
+          callback(null);
+        }
+      });
+    }
+  }
+
+}
+
+function functionBody(fn, replacements) {
+  // first skip until (
+  // then skip until )
+  // then skip until {
+  // then take everything until the last }
+  var match =
+      /^[^\(]*\([^\)]*\)[^\{]*\{([\s\S]*)\}[^\}]*$/.exec(fn+'');
+      // /^[^\(]*\([^\)]*\)[^\{]*\{([ \t]*\n)([\s\S]*)([ \t]*\n[ \t]*)\}[^\}]*$/.exec(fn+'');
+  if (!match) return null;
+
+  var bodyText = match[1];
+  if (!replacements) return bodyText;
+
+  if (typeof replacements==='function') {
+    var update = bodyText.replace(
+      /\"\#([\S]+)\#\"/g,
+      function(str, token) {
+        return replacements(token);
+      });
+  }
+  else {
+    var update = bodyText.replace(
+      /\"\#([\S]+)\#\"/g,
+      function(str, token) {
+        var r = replacements[token];
+        if (typeof r==='function') return r();
+        else return r;
+      });
+  }
+
+  return update;
+}
+function functionArgs(fn) {
+  var match = /^[^\(]*\(\s*([^\)]*)\s*\)/.exec(fn+'');
+  return match?match[1]:null;
+}
+function jsString(str) {
+  var hasNewlines = false && str.indexOf('\n')>=0;
+  var _JSON = typeof JSON!=='undefined'? JSON : typeof window === 'undefined' ? null : window.JSON;
+  if (_JSON && typeof _JSON.stringify === 'function')
+    return hasNewlines ? ('[\n  '+_JSON.stringify(str).replace(/\</g, '<"+"').replace(/([^\\])\\n/g, '$1",\n  "')+'\n  ].join("\\n")') : _JSON.stringify(str).replace(/\<\/script\>/gi, '<"+"/script>');
+  else
+  	return (hasNewlines ? '[\n  "' : '"') + str.replace(/[\"\s\\\<]/g, function(ch) {
+      if (ch==' ') return ch;
+      else if (ch==='\n') return hasNewlines ? '",\n  "' : '\\n';
+      else if (ch==='\r') return '\\r';
+      else if (ch==='\\') return '\\\\';
+      else if (ch==='<' || ch === '>') return ch+'"+"';
+      else return '\\u'+(0x10000 + ch.charCodeAt(0)).toString(16).slice(1);
+  	}) + (hasNewlines ? '"].join("\\n")' : '"');
+}
+function jsStringLong(str) {
+  var wordCounts = {};
+  var wordArray = [];
+  str.replace(/[a-zA-Z0-9_]+/g, function(w) {
+    var key = '*'+w;
+    if (wordCounts[key]) {
+      wordCounts[key]++;
+    }
+    else {
+    	wordCounts[key] = 1;
+      wordArray.push(w);
+    }
+  });
+  wordArray.sort(function(w1, w2) {
+    var n1 = wordCounts['*'+w1];
+    var n2 = wordCounts['*'+w2];
+    return n1 > n2 ? -1 : n2 > 1 ? +1 : 0;
+  });
+  var replaceTable = {};
+  for (var i = 0; i < wordArray.length; i++) {
+    replaceTable['*'+wordArray[i]] = toLetterNumber(i);
+  }
+
+  var compressed = str.replace(/(\s+)|([a-zA-Z0-9_]+)/g, function(match, whitespace, word) {
+    if (word) return replaceTable['*'+word];
+    return whitespace.
+    	replace(/ +/g, function(spaces) {
+      	if(spaces.length<2) return spaces;
+        else return 'Z'+spaces.length;
+      }).
+    	replace(/\n/g, 'Z');
+  });
+
+  return [
+    '(function(d,c,s,r,m,nn,n) { var k = 0;',
+    'return c.replace(/([a-zA-Y]+)|(Z[0-9]*)/g, function(x,t,w) {',
+      'if (w=="Z") return "\\n";',
+      'else if (w&&w.charCodeAt(0)=='+('Z').charCodeAt(0)+') return s[m=parseInt(w.slice(1))] || (s[m] = Array(m+1).join(" "));',
+    	'if (r.hasOwnProperty(w)) return r[w];',
+      'nn=0,m=1;',
+      'for(var i=0;i<t.length;i++){',
+        'var n=t.charCodeAt(i);',
+        'nn+=m*(n-(n>'+(('a').charCodeAt(0)-1)+' ? '+('a').charCodeAt(0)+':'+(('A').charCodeAt(0)-26)+'));',
+        'm*='+(25+26)+';',
+      '}',
+    	'if (nn<100 && !r[nn]) return r[nn] = d[nn];', // cache word lookups for 100 most frequent words
+    	'else return d[nn];',
+    '});\n',
+    '}("'+wordArray.join(',')+'".split(","),"'+compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r')+'",[],{}))'
+  ].join('\n');
+
+  function toLetterNumber(num) {
+    if (!num) return 'a';
+    var base = 26+25; // a-z A-Y (leave out uppercase Z)
+    var result = [];
+    while (num) {
+      var n = num % base;
+      if (n<26)
+        result.push(String.fromCharCode('a'.charCodeAt(0)+n));
+      else
+        result.push(String.fromCharCode('A'.charCodeAt(0)+n-26));
+      num = (num / base)|0;
+    }
+    return result.join('');
   }
 }
 
