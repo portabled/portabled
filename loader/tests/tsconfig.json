@@ -1,0 +1,6 @@
+{
+    "compilerOptions": {
+        "out": "../../lib/loader-tests.js",
+        "sourceMap": false
+    }
+}

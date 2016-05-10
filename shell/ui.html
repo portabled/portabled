@@ -1,0 +1,69 @@
+<!doctype html>
+<html style="margin: 0px; padding: 0px; overflow: hidden;"><head>
+<meta charset="utf-8">
+<!-- shell UI -->
+<style>
+*,*:before,*:after{box-sizing:inherit;}
+html{box-sizing:border-box;}
+</style>
+</head>
+<body bgcolor=black style="background: black; overflow: hidden; margin: 0px; padding: 0px;">
+
+<script id=shell-script>
+var build = "#stats#";
+
+"#on_error#"
+//# sourceURL=/on-error.js
+</script>
+
+
+<style id=cm-style>
+"#cm_style#"
+</style>
+
+<script id=cm-script>
+"#cm_script#"
+//# sourceURL=/cm-script.js
+</script>
+
+
+
+<style id=shell-style>
+"#shell_style#"
+</style>
+
+<script id=shell-script>
+
+function require(mod) {
+  var mods = {
+    nodrive: drive,
+    nowindow: parent,
+    resize: { on: function(callback) { loader.on("resize", callback); } },
+    bootState: loader.bootState
+  };
+  return mods[mod];
+}
+
+"#shell_script#"
+
+var loader = parent.loader;
+var drive;
+build.loader = loader.build;
+build.isolation = isolation.build;
+build.persistence = parent.persistence.build;
+var persistence = parent.persistence;
+
+loader.on('load', function(loadedDrive) {
+  drive = loadedDrive;
+  try {
+		start(function() {
+    	loader.fadeToUI();
+  	});
+  }
+  catch (startError) {
+    alert('start:\n'+startError.message+'\n\n'+startError+'\n\n'+startError.stack);
+  }
+});
+
+//# sourceURL=/shell-script.js
+</script>
