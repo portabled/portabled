@@ -36,7 +36,7 @@ declare namespace persistence {
 
 	export function parseTotalsInner(content: string): { timestamp: number; totalSize: number; };
 	export function parseFileInner(content: string): { path: string; read(): string; };
-	export function parseHTML(html: string): { files: { path: string; content: string; }[]; totalSize?: number; timestamp?: number; };
+	export function parseHTML(html: string): { files: { path: string; content: string; start: number; end: number; }[]; totals: {size?: number; timestamp?: number; start: number; end: number;}; };
 
 
 

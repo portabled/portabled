@@ -109,7 +109,8 @@ function runWithGithubApi(Github) {
 
 function loadGithubApi(callback) {
   var scr = win.document.createElement('script');
-  scr.src = 'https://rawgit.com/michael/github/master/dist/github.bundle.min.js';
+  // old Github.js API at  bc6b263 2 Mar 2016 (ES3-compatible)
+  scr.src = 'https://cdn.rawgit.com/michael/github/bc6b2635f1002e2c166a4b1933c492bb5da441e7/dist/github.bundle.min.js';
   scr.onload = function() { setTimeout(function() { callback(null, win.Github); }, 1); };
   scr.onerror = function(err) { callback(err); };
   win.document.body.appendChild(scr);

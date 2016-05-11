@@ -2,7 +2,23 @@ var fs = require('fs');
 var path = require('path');
 
 if (require.main===module) {
-  console.log('TODO: build all of it!');
+  console.log('Building all of it:');
+  console.log('\n');
+  console.log('PERSISTENCE');
+  console.log('=======');
+  require('./persistence/build.js');
+  console.log('\n');
+  console.log('LOADER');
+  console.log('=======');
+  require('./loader/build.js');
+  console.log('\n');
+  console.log('ISOLATION');
+  console.log('=======');
+  require('./isolation/build.js');
+  console.log('\n');
+  console.log('SHELL');
+  console.log('=======');
+  require('./shell/build.js');
 }
 else {
   module.exports = {

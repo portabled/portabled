@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "out": "../../lib/persistence-tests.js",
+        "out": "persistence-tests.js",
         "sourceMap": false
     }
 }

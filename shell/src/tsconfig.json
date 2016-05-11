@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "out": "../lib/shell.js",
+        "out": "shell.js",
         "sourceMap": false
     }
 }

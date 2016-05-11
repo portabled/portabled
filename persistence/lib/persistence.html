@@ -6,8 +6,8 @@
 function persistence(document, uniqueKey, optionalDrives) {
 
 	persistence.build = {
-    timestamp: 1462912066557, // Tue May 10 2016 21:27:46 GMT+0100 (GMT Daylight Time)
-    taken: 15798,
+    timestamp: 1462950553916, // Wed May 11 2016 08:09:13 GMT+0100 (GMT Daylight Time)
+    taken: 17504,
     platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.94 Safari/537.36"
 }
 
@@ -505,6 +505,8 @@ function parseFileInner(content) {
 function parseHTML(html) {
     var files = [];
     var totals = null;
+    var totalsCommentStart;
+    var totalsCommentEnd;
     var scriptOrCommentStart = /\<(script[\s\>])|(\-\-)/gi;
     var scriptEnd = /\<\/script\s*\>/gi;
     var commentEnd = /\-\-\>/g;
@@ -523,26 +525,30 @@ function parseHTML(html) {
             pos = next.index + next[0].length;
             continue; // skipped script
         }
+        var commentStartOffset = next.index;
         var start = pos;
-        pos = next.index + next[0].length;
         commentEnd.lastIndex = pos;
         next = commentEnd.exec(html);
         if (!next)
             break; // no end of comment
         var end = next.index;
+        var commentEndOffset = next.index + next[0].length;
         var inner = html.slice(start, end);
         pos = next.index + next[0].length;
         if (!totals) {
             totals = parseTotalsInner(inner);
-            if (totals)
+            if (totals) {
+                totalsCommentStart = commentStartOffset;
+                totalsCommentEnd = commentEndOffset;
                 continue;
+            }
         }
         var fi = parseFileInner(inner);
         if (fi)
-            files.push({ path: fi.path, content: fi.read() });
+            files.push({ path: fi.path, content: fi.read(), start: commentStartOffset, end: commentEndOffset });
     }
     if (totals)
-        return { files: files, timestamp: totals.timestamp, totalSize: totals.totalSize };
+        return { files: files, totals: { size: totals.totalSize, timestamp: totals.timestamp, start: totalsCommentStart, end: totalsCommentEnd } };
     else
         return { files: files };
 }
@@ -2094,13 +2100,13 @@ var tests;
                             'Abc-->' +
                             '</body>' +
                             '</html>');
-                        assert.equal(1024 * 1024 * 12, dt.totalSize);
-                        assert.equal(1459724400000, dt.timestamp);
+                        assert.equal(1024 * 1024 * 12, dt.totals.size);
+                        assert.equal(1459724400000, dt.totals.timestamp);
                         assert.equal(1, dt.files.length);
                         assert.equal('/myfile', dt.files[0].path);
                         assert.equal('Abc', dt.files[0].content);
                     },
-                    parseHTML_timestamp_Date_with_time: function () {
+                    parseHTML_timestamp_Date_with_time_222601: function () {
                         var dt = persistence.parseHTML('<!doctype html>' +
                             '<html><head><title>Dummy page</title></head>' +
                             '<body>' +
@@ -2109,11 +2115,49 @@ var tests;
                             'Abc-->' +
                             '</body>' +
                             '</html>');
-                        assert.equal(1024 * 1024 * 12, dt.totalSize);
-                        assert.equal(1459805161000, dt.timestamp);
+                        assert.equal(1024 * 1024 * 12, dt.totals.size);
+                        assert.equal(1459805161000, dt.totals.timestamp);
                         assert.equal(1, dt.files.length);
                         assert.equal('/myfile', dt.files[0].path);
                         assert.equal('Abc', dt.files[0].content);
+                    },
+                    parseHTML_timestamp_Date_with_time_080109: function () {
+                        var dt = persistence.parseHTML('<!doctype html>' +
+                            '<html><head><title>Dummy page</title></head>' +
+                            '<body>' +
+                            '<!-- total 12Mb, saved 4 Apr 2016 08:01:09 -->' +
+                            '<!-- /myfile\n' +
+                            'Abc-->' +
+                            '</body>' +
+                            '</html>');
+                        assert.equal(1024 * 1024 * 12, dt.totals.size);
+                        assert.equal(1459753269000, dt.totals.timestamp);
+                        assert.equal(1, dt.files.length);
+                        assert.equal('/myfile', dt.files[0].path);
+                        assert.equal('Abc', dt.files[0].content);
+                    },
+                    parseHTML_offsets_removeChunks: function () {
+                        var origHTML = '<!doctype html>' +
+                            '<html><head><title>Dummy page</title></head>' +
+                            '<body>' +
+                            '<!-- total 12Mb, saved 4 Apr 2016 08:01:09 -->' +
+                            '<!-- /myfile\n' +
+                            'Abc-->' +
+                            '</body>' +
+                            '</html>';
+                        var dt = persistence.parseHTML(origHTML);
+                        var removeChunksHTML = origHTML.slice(0, dt.totals.start) +
+                            'TOTALS' +
+                            origHTML.slice(dt.totals.end, dt.files[0].start) +
+                            'FILE' +
+                            origHTML.slice(dt.files[0].end);
+                        var expectedRemoveChunksHTML = '<!doctype html>' +
+                            '<html><head><title>Dummy page</title></head>' +
+                            '<body>' +
+                            'TOTALS' +
+                            'FILE' +
+                            '</body>' +
+                            '</html>';
                     }
                 };
                 return tests;

@@ -1,76 +1,116 @@
 var fs = require('fs');
 var path = require('path');
+var persistence = require('../persistence/lib/persistence.html');
 
 run();
 
 function run() {
   var file = process.argv[2];
   if (!file) {
-    console.log('copy.js  nonode-file  [output-nonode-file]');
+    console.log('copy.js  nonode-file|directory  [output-nonode-file|directory]');
+    return;
+  }
+  if (!fs.existsSync(file)) {
+    console.log('File not found: '+file);
     return;
   }
 
+  var isInputDir = fs.statSync(file).isDirectory();
+  if (!isInputDir) {
+    console.log('Loading '+file+'...');
+    var fullHtml = fs.readFileSync(file)+'';
 
-	var eq80;
-  console.log('Loading '+file+'...');
-  var fullHtml = fs.readFileSync(file)+'';
+    console.log('Extracting files...');
+    var parsedHTML = persistence.parseHTML(fullHtml);
+    var allFiles = parsedHTML.files;
+  }
+  else {
+    console.log('Searching for files in '+file+'...');
+    var allFiles = [];
+    var scanDirs = [file];
+    while (scanDirs.length) {
+      var dir = scanDirs.pop();
+      var dirFileList = fs.readdirSync(dir);
+      for (var i = 0; i < dirFileList.length; i++) {
+        if (dirFileList[i]==='.'||dirFileList[i]==='..') continue;
+        var dirFile = path.join(dir, dirFileList[i]);
+        if (fs.statSync(dirFile).isFile()) allFiles.push({path:dirFile.slice(file.length), content: fs.readFileSync(dirFile)+''});
+        if (fs.statSync(dirFile).isDirectory()) scanDirs.push(dirFile);
+      }
+    }
+  }
 
-  eq80 = extractEQ80();
+  console.log((allFiles.length||'none')+' found.');
 
-  console.log('Extracting files...');
-  var allFiles = findFiles(fullHtml);
-  console.log((allFiles.length||'no')+' found.');
 
-  var outputFile = process.argv[3];
-  if (!outputFile) {
-    console.log('Writing at '+path.resolve('.')+'...')
+  var outputFile = process.argv[3] || path.basename(file)+'-files';
+  var isOutputDir = fs.existsSync(outputFile) ? fs.statSync(outputFile).isDirectory() : !isInputDir;
+
+  if (isOutputDir) {
+    console.log('Writing at '+path.resolve(outputFile)+'...')
     for (var i = 0; i < allFiles.length; i++) {
       //console.log("fs.writeFileSync("+'.'+allFiles[i].path+", "+allFiles[i].content.length+");");
       var writeDir = path.resolve('.'+allFiles[i].path, '..');
       createDirRecursive(writeDir);
-      fs.writeFileSync('.'+allFiles[i].path, allFiles[i].content);
+      fs.writeFileSync(path.join(file,allFiles[i].path), allFiles[i].content);
     }
     console.log('All '+allFiles.length+'saved.');
   }
   else {
-    console.log('Retrieving '+outputFile+'...');
-    var outputFileHtml = fs.readFileSync(outputFile)+'';
-    var existingOutputFiles = findFiles(outputFileHtml);
-    console.log((existingOutputFiles.length||'no')+' found.');
+    if (fs.existsSync(outputFile)) {
+      console.log('Retrieving '+outputFile+'...');
+      var outputFileHtml = fs.readFileSync(outputFile)+'';
+      var existingOutputFiles = findFiles(outputFileHtml);
+      console.log((existingOutputFiles.length||'no')+' found.');
 
-    var concatChunks = [];
-    var start = 0;
-    for (var i = 0; i < existingOutputFiles.length; i++) {
-      var exChunk = existingOutputFiles[i];
-      if (exChunk.start===start) continue;
-      concatChunks.push(outputFileHtml.slice(start, exChunk.start));
-      start = exChunk.end;
-    }
-    if (start < outputFileHtml.length-1)
-      concatChunks.push(outputFileHtml.slice(start));
-
-    if (concatChunks.length===1) {
-      var matchTrail = /(<\/body>\s*)?<\/html>\s*$/.exec(outputFileHtml);
-      if (matchTrail) {
-        concatChunks = [outputFileHtml.slice(0, matchTrail.index), outputFileHtml.slice(matchTrail.indexOf)];
+      var concatChunks = [];
+      var start = 0;
+      for (var i = 0; i < existingOutputFiles.length; i++) {
+        var exChunk = existingOutputFiles[i];
+        if (exChunk.start===start) continue;
+        concatChunks.push(outputFileHtml.slice(start, exChunk.start));
+        start = exChunk.end;
       }
-      else {
-        concatChunks.push('');
+      if (start < outputFileHtml.length-1)
+        concatChunks.push(outputFileHtml.slice(start));
+
+      if (concatChunks.length===1) {
+        var matchTrail = /(<\/body>\s*)?<\/html>\s*$/.exec(outputFileHtml);
+        if (matchTrail) {
+          concatChunks = [outputFileHtml.slice(0, matchTrail.index), outputFileHtml.slice(matchTrail.indexOf)];
+        }
+        else {
+          concatChunks.push('');
+        }
       }
-    }
 
-    console.log('Formatting '+allFiles.length+' as DOM file records...');
-    var inject = [];
-    for (var i = 0; i < allFiles.length; i++) {
-      var fi = new eq80.persistence.dom.DOMFile(/*node*/null, allFiles[i].path, null, 0, 0);
-      var fiHTML = '<'+'!-- '+fi.write(allFiles[i].content) + '--'+'>';
-      inject.push(fiHTML);
-    }
+      console.log('Formatting '+allFiles.length+' as DOM file records...');
+      var inject = [];
+      for (var i = 0; i < allFiles.length; i++) {
+        var fiHTML = '<'+'!-- '+new persistence.formatFileInner(allFiles[i].path, allFiles[i].content) + '--'+'>';
+        inject.push(fiHTML);
+      }
 
-    var preparedOutputParts = [concatChunks[0]].concat(inject).concat(concatChunks.slice(1));
-    var preparedOutputHTML = preparedOutputParts.join('');
-    console.log('Saving ['+preparedOutputHTML.length+']...');
-    fs.writeFileSync(outputFile+'.updated', preparedOutputHTML);
+      var preparedOutputParts = [concatChunks[0]].concat(inject).concat(concatChunks.slice(1));
+      var preparedOutputHTML = preparedOutputParts.join('');
+      console.log('Saving ['+preparedOutputHTML.length+']...');
+      fs.writeFileSync(outputFile+'.updated', preparedOutputHTML);
+    }
+    else {
+      var totalSize= 0;
+      var manufacturedHTML = '';
+      for (var i = 0; i < allFiles.length; i++) {
+        totalSize += allFiles[i].content.length;
+        manufacturedHTML+='<!--'+persistence.formatFileInner(allFiles[i].path, allFiles[i].content)+'-->\n';
+      }
+      manufacturedHTML =
+        '<!doctype html><html><head><meta charset="utf-8"><title>'+file+' EXPORT</title>\n'+
+        '<!--'+persistence.formatTotalsInner(+new Date(), totalSize)+'-->\n'+
+        '</head><body>\n'+
+        manufacturedHTML+
+        '</body></html>';
+      fs.writeFileSync(outputFile, manufacturedHTML);
+    }
   }
 
   function createDirRecursive(dir) {
@@ -86,68 +126,6 @@ function run() {
     }
     catch (error) { }
   }
-
-  function extractEQ80() {
-    var eq80_script = findScript(fullHtml, function(js) {
-      return js.indexOf('indexedDB')>=0 &&
-        js.indexOf('openDatabase')>=0 &&
-        js.indexOf('localStorage')>=0 &&
-        js.indexOf('persistence')>=0;
-    });
-
-    if (!eq80_script) {
-      console.log('No embedded nonode recognized, using pre-existing...');
-      return require('../eq80');
-    }
-    else {
-      console.log('Extracted eq80 script['+eq80_script.length+'] '+eq80_script.split('\n').slice(0,2).join('; \\n ')+'...')
-    }
-
-    console.log('Initializing eq80 script...');
-    try {
-      return (0,eval)('(function() { var noui = true, window = { eval: eval }, location = "dummy"; '+eq80_script+' \n return eq80; })() //'+'# '+'sourceURL=' + file); // TODO: inject necessary LFs to align line numbers
-    }
-    catch (error) {
-      console.log(error.message+' - using pre-existing...');
-      return require('../eq80');
-    }
-  }
-
-  function findFiles(htmlContent) {
-    var importedFiles = [];
-    var pos = 0;
-    while (true) {
-      pos = htmlContent.indexOf('<!'+'--', pos);
-
-      if (pos<0) break;
-
-      var headerSlice = htmlContent.slice(pos, pos+100).split('\n')[0];
-      if (!/^\<\!\-\-\s+\//.test(headerSlice)) {
-        pos += 3;
-        continue;
-      }
-
-      console.log(headerSlice);
-
-      var end = htmlContent.indexOf('--'+'>', pos+4);
-      if (end<0) break;
-
-      var cmnt = new eq80.persistence.dom.CommentHeader({ nodeValue: htmlContent.slice(pos+4, end) });
-      var domFile = eq80.persistence.dom.DOMFile.tryParse(cmnt);
-      if (domFile) {
-        importedFiles.push({
-          path: domFile.path,
-          content: domFile.read(),
-          start:pos,
-          end:end+3
-        });
-      }
-
-      pos = end+3;
-    }
-    return importedFiles;
-  }
-
 
   function findScript(html, filter) {
     var pos = 0;

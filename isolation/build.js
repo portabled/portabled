@@ -4,14 +4,14 @@ var path = require('path');
 var build = require('../build.js');
 var buildStats = build.buildStats();
 
-var outputPath = path.resolve('lib/isolation.html')
+var outputPath = path.resolve(__dirname, 'lib/isolation.html');
 
 console.log('Building isolation TypeScript...');
-var builtContent = build.compileTS('--project', 'src/tsconfig.json', '--pretty')['../lib/isolation.js'];
+var builtContent = build.compileTS('--project', path.join(__dirname, 'src/tsconfig.json'), '--pretty')['isolation.js'];
 console.log(builtContent.length+' chars');
 
 console.log('Building tests TypeScript...');
-var builtTests = build.compileTS('--project', 'tests/tsconfig.json', '--pretty')['../../lib/isolation-tests.js'];
+var builtTests = build.compileTS('--project', path.join(__dirname, 'tests/tsconfig.json'), '--pretty')['isolation-tests.js'];
 console.log(builtTests.length+' chars');
 
 var buildStats = buildStats();

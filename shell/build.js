@@ -7,17 +7,17 @@ var buildStats = build.buildStats();
 var collectFileCount = 0;
 
 console.log('Building shell TypeScript...');
-var builtContent = build.compileTS('--project', 'src/tsconfig.json', '--pretty')['../lib/shell.js'];
+var builtContent = build.compileTS('--project', path.join(__dirname, 'src/tsconfig.json'), '--pretty')['shell.js'];
 console.log('  '+builtContent.length+' chars');
 
 console.log('Processing boot/ui templates...');
-var boot_html = fs.readFileSync('boot.html')+'';
-var ui_template = fs.readFileSync('ui.html')+'';
+var boot_html = readLocal('boot.html')+'';
+var ui_template = readLocal('ui.html')+'';
 
 var concatCSS = getCSS();
-var collectFiles = getFiles();
-var cm_style = fs.readFileSync('imports/cm/cm.css');
-var cm_script = fs.readFileSync('imports/cm/cm.js');
+var collectedFiles = getFiles();
+var cm_style = readLocal('imports/cm/cm.css');
+var cm_script = readLocal('imports/cm/cm.js');
 var shell_script = ''+
     require('../isolation/lib/isolation.html')+'\n'+
     'isolation();\n\n'+
@@ -37,27 +37,46 @@ var shell_html = build.substitute(ui_template, {
 });
 console.log('  '+shell_html.length+' chars');
 
-console.log('Combining HTML...');
+console.log('Combining full HTML...');
 var html = build.wrapEQ80({
   boot_html: boot_html,
   shell_html: shell_html,
-  files: collectFiles,
-  favicon: fs.readFileSync('favicon.base64.html')
+  files: collectedFiles,
+  favicon: readLocal('favicon.base64.html')
 });
-console.log('  '+html.length+' chars, taken '+((buildStats.taken)/1000)+' sec.');
 
 var link = build.createLink('mi.html', html);
 if (typeof link==='string') {
-  fs.writeFileSync('../mi.html', html);
-  console.log('Saved in '+path.resolve('../mi.html'));
+  fs.writeFileSync(path.join(__dirname, '../mi.html'), html);
+  console.log('Built  '+html.length+' chars, taken '+((buildStats.taken)/1000)+' sec. into: '+path.resolve(__dirname, '../mi.html'));
 }
 else {
-  console.log('Open built result in new window: ', link);
+  console.log('Built  '+html.length+' chars, taken '+((buildStats.taken)/1000)+' sec. into: ', link);
 }
+
+
+console.log('Combining empty HTML...');
+var html_empty = build.wrapEQ80({
+  boot_html: boot_html,
+  shell_html: shell_html,
+  files: { "/readme.md": readLocal('readme.md') },
+  favicon: readLocal('favicon.base64.html')
+});
+
+var link = build.createLink('empty.html', html_empty);
+if (typeof link==='string') {
+  fs.writeFileSync(path.join(__dirname, '../empty.html'), html_empty);
+  console.log('Built  '+html_empty.length+' chars into: '+path.resolve(__dirname, '../empty.html'));
+}
+else {
+  console.log('Built  '+html_empty.length+' chars into: ', link);
+}
+
+
 
 
 function getCSS() {
-  var toAdd = [path.resolve('src')];
+  var toAdd = [path.resolve(__dirname, 'src')];
   var css = '';
   while (toAdd.length) {
     var dir = toAdd.pop();
@@ -79,4 +98,9 @@ function getCSS() {
 
 function getFiles() {
   return ['/'];
+}
+
+function readLocal(f) {
+  // to work in require(build) manner
+  return fs.readFileSync(path.join(__dirname, f));
 }

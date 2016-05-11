@@ -6,14 +6,14 @@ var buildStats = build.buildStats();
 
 // fs.unlinkSync('lib/persistence.js');
 
-var outputPath = path.resolve('lib/persistence.html')
+var outputPath = path.resolve(__dirname, 'lib/persistence.html')
 
 console.log('Building persistence TypeScript...');
-var builtContent = build.compileTS('--project', 'src/tsconfig.json', '--pretty')['../lib/persistence.js'];
+var builtContent = build.compileTS('--project', path.join(__dirname, 'src/tsconfig.json'), '--pretty')['persistence.js'];
 console.log(builtContent.length+' chars');
 
 console.log('Building tests TypeScript...');
-var builtTests = build.compileTS('--project', 'tests/tsconfig.json', '--pretty')['../../lib/persistence-tests.js'];
+var builtTests = build.compileTS('--project', path.join(__dirname, 'tests/tsconfig.json'), '--pretty')['persistence-tests.js'];
 console.log(builtTests.length+' chars');
 
 var buildStats = buildStats();

@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "out": "../lib/isolation.js",
+        "out": "isolation.js",
         "sourceMap": false
     }
 }

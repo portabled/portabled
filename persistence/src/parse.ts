@@ -15,10 +15,12 @@ function parseFileInner(content: string): { path: string; read(): string; } {
 
 }
 
-function parseHTML(html: string): { files: { path: string; content: string; }[]; totalSize?: number; timestamp?: number; } {
+function parseHTML(html: string): { files: { path: string; content: string; start: number; end: number; }[]; totals?: { size: number; timestamp: number; start: number; end: number; }; } {
 
-  var files: { path: string; content: string; }[] = [];
+  var files: { path: string; content: string; start: number; end: number; }[] = [];
   var totals: { timestamp: number; totalSize: number} = null;
+  var totalsCommentStart: number;
+  var totalsCommentEnd: number;
 
   var scriptOrCommentStart = /\<(script[\s\>])|(\-\-)/gi;
   var scriptEnd = /\<\/script\s*\>/gi;
@@ -39,27 +41,33 @@ function parseHTML(html: string): { files: { path: string; content: string; }[];
       continue; // skipped script
     }
 
+    var commentStartOffset = next.index;
     var start = pos;
-    pos = next.index + next[0].length;
 
     commentEnd.lastIndex = pos;
     next = commentEnd.exec(html);
     if (!next) break; // no end of comment
 
     var end = next.index;
+    var commentEndOffset = next.index+next[0].length;
+
     var inner = html.slice(start,end);
 
     pos = next.index + next[0].length;
 
     if (!totals) {
       totals = parseTotalsInner(inner);
-      if (totals) continue;
+      if (totals) {
+        totalsCommentStart = commentStartOffset;
+        totalsCommentEnd = commentEndOffset;
+        continue;
+      }
     }
 
     var fi = parseFileInner(inner);
-    if (fi) files.push({path: fi.path, content: fi.read()});
+    if (fi) files.push({path: fi.path, content: fi.read(), start: commentStartOffset, end: commentEndOffset});
   }
 
-  if (totals) return { files, timestamp: totals.timestamp, totalSize: totals.totalSize };
+  if (totals) return { files, totals: { size:totals.totalSize, timestamp: totals.timestamp, start: totalsCommentStart, end: totalsCommentEnd } };
   else return { files };
 }

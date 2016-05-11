@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "out": "../lib/loader.js",
+        "out": "loader.js",
         "sourceMap": false
     }
 }

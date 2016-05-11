@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "out": "../lib/persistence.js",
+        "out": "persistence.js",
         "sourceMap": false
     }
 }
