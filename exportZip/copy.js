@@ -20,18 +20,22 @@ function run() {
   if (isOutputDir) {
     console.log('Writing at '+path.resolve(outputFile)+'...')
     for (var i = 0; i < allFiles.length; i++) {
-      //console.log("fs.writeFileSync("+'.'+allFiles[i].path+", "+allFiles[i].content.length+");");
       var writeDir = path.resolve('.'+allFiles[i].path, '..');
       createDirRecursive(writeDir);
-      fs.writeFileSync(path.join(file,allFiles[i].path), allFiles[i].content);
+      var content = allFiles[i].content;
+      if (!content || typeof content !== 'string') content = fs.readFileSync(allFiles[i].contentPath)+'';
+      fs.writeFileSync(path.join(file,allFiles[i].path), content);
+      if ((i+1)%500===0) {
+        console.log('  '+i+'. '+allFiles[i].path);
+      }
     }
     console.log('All '+allFiles.length+'saved.');
   }
   else {
     if (fs.existsSync(outputFile)) {
       console.log('Extracting EQ80 files from '+outputFile+'...');
-      var outputFileHtml = fs.readFileSync(outputFile)+'';
-      var parsedOutputFile = persistence.parseHTML(outputFileHtml);
+      var outputFileHTML = fs.readFileSync(outputFile)+'';
+      var parsedOutputFile = persistence.parseHTML(outputFileHTML);
       console.log((parsedOutputFile.files.length||'none')+' found.');
 
       // map to find matchings
@@ -49,43 +53,73 @@ function run() {
         }
       }
 
-      var resultHTML = outputFileHtml;
+      var writtenFiles = 0;
+
+      var resultBuf = [];
 
       // now go backwards through existing files, and patch them
-      for (var i = parsedOutputFile.files.length-1; i >=0; i--) {
+      var offset = 0;
+      for (var i = 0; i < parsedOutputFile.files.length; i++) {
         var parsedFi = parsedOutputFile.files[i];
         if (parsedFi.matchingSourceFile) {
-          resultHTML =
-            resultHTML.slice(0, parsedFi.start)+
+
+          resultBuf.push(outputFileHTML.slice(offset, parsedFi.start));
+
+          var content = parsedFi.matchingSourceFile.content;
+          if (!content && typeof content!=='string') content = fs.readFileSync(parsedFi.matchingSourceFile.contentPath)+'';
+          resultBuf.push(
             '<!--'+
-            persistence.formatFileInner(parsedFi.matchingSourceFile.path, parsedFi.matchingSourceFile.content)+
-            '-->' +
-            resultHTML.slice(parsedFi.end);
+            persistence.formatFileInner(parsedFi.matchingSourceFile.path, content)+
+            '-->');
+
+          offset = parsedFi.end;
+
+          writtenFiles++;
+          if (writtenFiles%500===0) {
+            console.log('  '+writtenFiles+'. '+parsedFi.matchingSourceFile.path+' (overwrite)');
+          }
         }
       }
 
-      var newFileInsertionOffset = resultHTML.lastIndexOf('-->');
-      if (newFileInsertionOffset>=0) {
-        newFileInsertionOffset += 3; // the length of end-comment
-      }
-      else {
-        newFileInsertionOffset = resultHTML.lastIndexOf('</body');
-        if (newFileInsertionOffset<0) {
-        	newFileInsertionOffset = resultHTML.lastIndexOf('<');
-          if (newFileInsertionOffset<0)
-            newFileInsertionOffset = resultHTML.length;
+      var newFileInsertionOffset = offset;
+      if (newFileInsertionOffset===0) {
+        newFileInsertionOffset = outputFileHTML.lastIndexOf('-->');
+        if (newFileInsertionOffset>=0) {
+          newFileInsertionOffset += 3; // the length of end-comment
         }
+        else {
+          newFileInsertionOffset = outputFileHTML.lastIndexOf('</body');
+          if (newFileInsertionOffset<0) {
+              newFileInsertionOffset = outputFileHTML.lastIndexOf('<');
+            if (newFileInsertionOffset<0)
+              newFileInsertionOffset = outputFileHTML.length;
+          }
+        }
+        resultBuf.push(outputFileHTML.slice(offset, newFileInsertionOffset));
       }
 
       // now add new files
       for (var i = 0; i < allFiles.length; i++) {
         var newFile = allFiles[i];
         if (newFile.matchingParsedFile) continue; // that's already taken care of
-        var insertChunk = '\n<!--'+persistence.formatFileInner(newFile.path, newFile.content)+'-->';
-        resultHTML = resultHTML.slice(0, newFileInsertionOffset)+insertChunk+resultHTML.slice(newFileInsertionOffset);
-        newFileInsertionOffset+=insertChunk.length;
+
+        var content = newFile.content;
+        if (!content && typeof content!=='string') content = fs.readFileSync(newFile.contentPath)+'';
+
+        var insertChunk = '\n<!--'+persistence.formatFileInner(newFile.path, content)+'-->';
+        resultBuf.push(insertChunk);
+
+        writtenFiles++;
+        if (writtenFiles%500===0) {
+          console.log('  '+writtenFiles+'. '+newFile.path+' (new)');
+        }
       }
 
+      if (newFileInsertionOffset<outputFileHTML.length) {
+        resultBuf.push(outputFileHTML.slice(newFileInsertionOffset));
+      }
+
+      var resultHTML = resultBuf.join('');
 
       console.log('Saving ['+resultHTML.length+']...');
       fs.writeFileSync(outputFile+'.updated.html', resultHTML);
@@ -94,8 +128,10 @@ function run() {
       var totalSize= 0;
       var manufacturedHTML = '';
       for (var i = 0; i < allFiles.length; i++) {
-        totalSize += allFiles[i].content.length;
-        manufacturedHTML+='<!--'+persistence.formatFileInner(allFiles[i].path, allFiles[i].content)+'-->\n';
+        var content = allFiles[i].content;
+        if (!content && typeof content!=='string') content = fs.readFileSync(allFiles[i].contentPath)+'';
+        totalSize += content.length;
+        manufacturedHTML+='<!--'+persistence.formatFileInner(allFiles[i].path, content)+'-->\n';
       }
       manufacturedHTML =
         '<!doctype html><html><head><meta charset="utf-8"><title>'+file+' EXPORT</title>\n'+
@@ -177,8 +213,12 @@ function collectInput() {
         if (dirFileList[i]==='.'||dirFileList[i]==='..') continue;
         var dirFile = path.join(dir, dirFileList[i]);
         if (fs.statSync(dirFile).isFile()) {
-          allFiles.push({path:dirFile.slice(file.length), content: fs.readFileSync(dirFile)+''});
-          if (allFiles.length%100===0) {
+
+          var addPath = dirFile.slice(file.length).replace(/\\/g, '/');
+          if (addPath.charCodeAt(0)!==47) addPath = '/'+addPath;
+          allFiles.push({path:addPath, contentPath: dirFile}); // don't try to read it all in, too much data
+
+          if (allFiles.length%500===0) {
             console.log('  ...'+allFiles.length+'. '+allFiles[allFiles.length-1].path+' in '+scannedDirCount+' directories');
           }
         }
