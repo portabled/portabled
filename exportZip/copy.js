@@ -5,42 +5,13 @@ var persistence = require('../persistence/lib/persistence.html');
 run();
 
 function run() {
-  var file = process.argv[2];
-  if (!file) {
-    console.log('copy.js  nonode-file|directory  [output-nonode-file|directory]');
-    return;
-  }
-  if (!fs.existsSync(file)) {
-    console.log('File not found: '+file);
-    return;
-  }
 
-  var isInputDir = fs.statSync(file).isDirectory();
-  if (!isInputDir) {
-    console.log('Loading '+file+'...');
-    var fullHtml = fs.readFileSync(file)+'';
+  var input = collectInput();
+  if (!input) return;
 
-    console.log('Extracting files...');
-    var parsedHTML = persistence.parseHTML(fullHtml);
-    var allFiles = parsedHTML.files;
-  }
-  else {
-    console.log('Searching for files in '+file+'...');
-    var allFiles = [];
-    var scanDirs = [file];
-    while (scanDirs.length) {
-      var dir = scanDirs.pop();
-      var dirFileList = fs.readdirSync(dir);
-      for (var i = 0; i < dirFileList.length; i++) {
-        if (dirFileList[i]==='.'||dirFileList[i]==='..') continue;
-        var dirFile = path.join(dir, dirFileList[i]);
-        if (fs.statSync(dirFile).isFile()) allFiles.push({path:dirFile.slice(file.length), content: fs.readFileSync(dirFile)+''});
-        if (fs.statSync(dirFile).isDirectory()) scanDirs.push(dirFile);
-      }
-    }
-  }
-
-  console.log((allFiles.length||'none')+' found.');
+  var file = input.file;
+  var allFiles = input.allFiles;
+  var isInputDir = input.isInputDir;
 
 
   var outputFile = process.argv[3] || path.basename(file)+'-files';
@@ -58,43 +29,66 @@ function run() {
   }
   else {
     if (fs.existsSync(outputFile)) {
-      console.log('Retrieving '+outputFile+'...');
+      console.log('Extracting EQ80 files from '+outputFile+'...');
       var outputFileHtml = fs.readFileSync(outputFile)+'';
-      var existingOutputFiles = findFiles(outputFileHtml);
-      console.log((existingOutputFiles.length||'no')+' found.');
+      var parsedOutputFile = persistence.parseHTML(outputFileHtml);
+      console.log((parsedOutputFile.files.length||'none')+' found.');
 
-      var concatChunks = [];
-      var start = 0;
-      for (var i = 0; i < existingOutputFiles.length; i++) {
-        var exChunk = existingOutputFiles[i];
-        if (exChunk.start===start) continue;
-        concatChunks.push(outputFileHtml.slice(start, exChunk.start));
-        start = exChunk.end;
-      }
-      if (start < outputFileHtml.length-1)
-        concatChunks.push(outputFileHtml.slice(start));
-
-      if (concatChunks.length===1) {
-        var matchTrail = /(<\/body>\s*)?<\/html>\s*$/.exec(outputFileHtml);
-        if (matchTrail) {
-          concatChunks = [outputFileHtml.slice(0, matchTrail.index), outputFileHtml.slice(matchTrail.indexOf)];
-        }
-        else {
-          concatChunks.push('');
-        }
+      // map to find matchings
+      var parsedMap = {};
+      for (var i = 0; i < parsedOutputFile.files.length; i++) {
+        parsedMap[parsedOutputFile.files[i].path] = parsedOutputFile.files[i];
       }
 
-      console.log('Formatting '+allFiles.length+' as DOM file records...');
-      var inject = [];
+      // find matchings
       for (var i = 0; i < allFiles.length; i++) {
-        var fiHTML = '<'+'!-- '+new persistence.formatFileInner(allFiles[i].path, allFiles[i].content) + '--'+'>';
-        inject.push(fiHTML);
+        var matchingParsedFile = parsedMap[allFiles[i].path];
+        if (matchingParsedFile) {
+          allFiles[i].matchingParsedFile = matchingParsedFile;
+          matchingParsedFile.matchingSourceFile = allFiles[i];
+        }
       }
 
-      var preparedOutputParts = [concatChunks[0]].concat(inject).concat(concatChunks.slice(1));
-      var preparedOutputHTML = preparedOutputParts.join('');
-      console.log('Saving ['+preparedOutputHTML.length+']...');
-      fs.writeFileSync(outputFile+'.updated', preparedOutputHTML);
+      var resultHTML = outputFileHtml;
+
+      // now go backwards through existing files, and patch them
+      for (var i = parsedOutputFile.files.length-1; i >=0; i--) {
+        var parsedFi = parsedOutputFile.files[i];
+        if (parsedFi.matchingSourceFile) {
+          resultHTML =
+            resultHTML.slice(0, parsedFi.start)+
+            '<!--'+
+            persistence.formatFileInner(parsedFi.matchingSourceFile.path, parsedFi.matchingSourceFile.content)+
+            '-->' +
+            resultHTML.slice(parsedFi.end);
+        }
+      }
+
+      var newFileInsertionOffset = resultHTML.lastIndexOf('-->');
+      if (newFileInsertionOffset>=0) {
+        newFileInsertionOffset += 3; // the length of end-comment
+      }
+      else {
+        newFileInsertionOffset = resultHTML.lastIndexOf('</body');
+        if (newFileInsertionOffset<0) {
+        	newFileInsertionOffset = resultHTML.lastIndexOf('<');
+          if (newFileInsertionOffset<0)
+            newFileInsertionOffset = resultHTML.length;
+        }
+      }
+
+      // now add new files
+      for (var i = 0; i < allFiles.length; i++) {
+        var newFile = allFiles[i];
+        if (newFile.matchingParsedFile) continue; // that's already taken care of
+        var insertChunk = '\n<!--'+persistence.formatFileInner(newFile.path, newFile.content)+'-->';
+        resultHTML = resultHTML.slice(0, newFileInsertionOffset)+insertChunk+resultHTML.slice(newFileInsertionOffset);
+        newFileInsertionOffset+=insertChunk.length;
+      }
+
+
+      console.log('Saving ['+resultHTML.length+']...');
+      fs.writeFileSync(outputFile+'.updated.html', resultHTML);
     }
     else {
       var totalSize= 0;
@@ -147,4 +141,54 @@ function run() {
       if (pass) return jsText;
     }
   }
+}
+
+
+function collectInput() {
+  var file = process.argv[2];
+  if (!file) {
+    console.log('copy.js  nonode-file|directory  [output-nonode-file|directory]');
+    return;
+  }
+  if (!fs.existsSync(file)) {
+    console.log('File not found: '+file);
+    return;
+  }
+
+  var isInputDir = fs.statSync(file).isDirectory();
+  if (!isInputDir) {
+    console.log('Loading '+file+'...');
+    var fullHtml = fs.readFileSync(file)+'';
+
+    console.log('Extracting files...');
+    var parsedHTML = persistence.parseHTML(fullHtml);
+    var allFiles = parsedHTML.files;
+  }
+  else {
+    console.log('Searching for files in '+file+'...');
+    var allFiles = [];
+    var scanDirs = [file];
+    var scannedDirCount = 0;
+    while (scanDirs.length) {
+      var dir = scanDirs.pop();
+      var dirFileList = fs.readdirSync(dir);
+      scannedDirCount++;
+      for (var i = 0; i < dirFileList.length; i++) {
+        if (dirFileList[i]==='.'||dirFileList[i]==='..') continue;
+        var dirFile = path.join(dir, dirFileList[i]);
+        if (fs.statSync(dirFile).isFile()) {
+          allFiles.push({path:dirFile.slice(file.length), content: fs.readFileSync(dirFile)+''});
+          if (allFiles.length%100===0) {
+            console.log('  ...'+allFiles.length+'. '+allFiles[allFiles.length-1].path+' in '+scannedDirCount+' directories');
+          }
+        }
+
+        if (fs.statSync(dirFile).isDirectory()) scanDirs.push(dirFile);
+      }
+    }
+  }
+
+  console.log((allFiles.length||'none')+' found.');
+
+  return { file: file, allFiles: allFiles, isInputDir: isInputDir };
 }
