@@ -1,0 +1,1181 @@
+
+
+  // <script>document.body.innerHTML = '' </script> <script id=submodule_script>
+
+  
+
+function isolation() {
+
+	isolation.build = {
+    timestamp: 1464722043795, // Tue May 31 2016 20:14:03 GMT+0100 (GMT Daylight Time)
+    taken: 17765,
+    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36"
+};
+
+var createContextHost = (function () {
+    createContextHost.worker = createWebWorkerHost;
+    createContextHost.iframe = createIFrameHost;
+    return createContextHost;
+    function createContextHost(callback) {
+        var tryUseWebWorker = detectWebWorkerHint();
+        if (tryUseWebWorker) {
+            try {
+                createWebWorkerHost(callback);
+            }
+            catch (webWorkerBarredError) {
+                createIFrameHost(callback);
+            }
+        }
+        else {
+            createIFrameHost(callback);
+        }
+    }
+    function detectWebWorkerHint() {
+        try {
+            return typeof Worker === 'function';
+        }
+        catch (webWorkerBarredError) {
+            return false;
+        }
+    }
+    function createWebWorkerHost(callback) {
+        var webWorker = createWebWorker();
+        var diagTimeStart = +new Date();
+        var requests = { count: 0 };
+        webWorker.onmessage = webworker_onmessage;
+        webWorker.postMessage({ init_worker_connect: true });
+        var hst = {
+            type: null,
+            remoteEval: remoteEval_webworker,
+            terminate: terminate_webworker,
+            onerror: null,
+            onmessage: null
+        };
+        var fs;
+        function completeIsolatedProcess(type) {
+            hst.type = type;
+            callback(hst);
+        }
+        function webworker_onmessage(e) {
+            if (e.data.requestInitSync) {
+                handleRequestInitSync(e.data.requestInitSync);
+            }
+            else if (e.data.requestInitSync_completed) {
+                handleRequestInitSync_completed(e.data.requestInitSync_completed);
+            }
+            else if (e.data.requestInitAsync) {
+                handleRequestInitAsync(e.data.requestInitAsync);
+            }
+            else if (e.data.invokeSync) {
+                handleInvokeSync(e.data.invokeSync);
+            }
+            else if (e.data.invokeAsync) {
+                handleInvokeAsync(e.data.invokeAsync);
+            }
+            else if (e.data.remoteResponse) {
+                handleRemoteResponse(e.data.remoteResponse);
+            }
+            else if (e.data.remoteErrorResponse) {
+                handleRemoteErrorResponse(e.data.remoteErrorResponse);
+            }
+            else if (e.data.key) {
+                var req = requests[e.data.key];
+                if (!req)
+                    return;
+                delete requests[e.data.key];
+                req(e.data.error, e.data.result);
+            }
+        }
+        function handleRequestInitAsync(requestInitAsync) {
+            webWorker.postMessage({ initAsync_response: 'done' });
+            completeIsolatedProcess('worker-async');
+        }
+        function handleRequestInitSync_completed(requestInitSync_completed) {
+            completeIsolatedProcess('worker-sync');
+        }
+        function handleRequestInitSync(requestInitSync) {
+            createFS(tryReplyOK_waitForInitSyncOK);
+            function tryReplyOK_waitForInitSyncOK(error, createdFS) {
+                fs = createdFS;
+                try {
+                    writeFS(requestInitSync, 'OK', function (error) {
+                        if (error)
+                            webWorker.postMessage({ requestInitSync_reject: true });
+                        // if succeeds, they see the file and know already
+                    });
+                }
+                catch (error) {
+                    // TODO: fallback to async
+                    webWorker.postMessage({ requestInitSync_reject: true });
+                }
+            }
+        }
+        function handleInvokeSync(invokeSync) {
+            if (!hst.onmessage)
+                return;
+            hst.onmessage(invokeSync, /*syncReply*/ true, function (error, response) {
+                if (invokeSync.key) {
+                    var responseStr = error ? JSON.stringify(error) : JSON.stringify(response);
+                    writeFS(invokeSync.key, responseStr);
+                }
+            });
+        }
+        function handleInvokeAsync(invokeAsync) {
+            if (!hst.onmessage)
+                return;
+            hst.onmessage(invokeAsync.msg, /*syncReply*/ false, function (error, response) {
+                webWorker.postMessage({ asyncResponse: { key: invokeAsync.key, error: error, response: response } });
+            });
+        }
+        function handleRemoteResponse(remoteResponse) {
+            var req = requests[remoteResponse.key];
+            if (!req)
+                return;
+            delete requests[remoteResponse.key];
+            req(null, remoteResponse.result);
+        }
+        function handleRemoteErrorResponse(remoteErrorResponse) {
+            var req = requests[remoteErrorResponse.key];
+            if (!req)
+                return;
+            delete requests[remoteErrorResponse.key];
+            req(remoteErrorResponse.error);
+        }
+        function createFS(callback) {
+            try {
+                if (typeof requestFileSystem === 'function') {
+                    var reqFS = requestFileSystem;
+                    var reqFS_name = 'requestFileSystem';
+                }
+                else if (typeof webkitRequestFileSystem === 'function') {
+                    var reqFS = webkitRequestFileSystem;
+                    var reqFS_name = 'webkitRequestFileSystem';
+                }
+                else if (typeof mozRequestFileSystem === 'function') {
+                    var reqFS = mozRequestFileSystem;
+                    var reqFS_name = 'mozRequestFileSystem';
+                }
+                else if (typeof oRequestFileSystem === 'function') {
+                    var reqFS = oRequestFileSystem;
+                    var reqFS_name = 'oRequestFileSystem';
+                }
+                else if (typeof msRequestFileSystem === 'function') {
+                    var reqFS = msRequestFileSystem;
+                    var reqFS_name = 'msRequestFileSystem';
+                }
+                else {
+                    callback(new Error('filesystem cannot be found'));
+                    return;
+                }
+                var timeoutReqFS = setTimeout(function () {
+                    clearTimeout(timeoutReqFS);
+                    timeoutReqFS = 0;
+                    callback(new Error('Waiting for ' + reqFS_name + ' timed out.'));
+                }, 1000);
+                reqFS('TEMPORARY', 1024, function (fs) {
+                    if (timeoutReqFS) {
+                        clearTimeout(timeoutReqFS);
+                    }
+                    else {
+                        return; // timeout already fired, it's too late
+                    }
+                    callback(null, fs);
+                });
+            }
+            catch (error) {
+                callback(error);
+            }
+        }
+        function writeFS(name, content, callback) {
+            try {
+                fs.root.getFile(name, { create: true }, getFile_handler, callback);
+            }
+            catch (error) {
+                if (callback)
+                    callback(error);
+            }
+            function getFile_handler(fileEntry) {
+                try {
+                    fileEntry.createWriter(createWriter_handler, callback);
+                }
+                catch (error) {
+                    if (callback)
+                        callback(error);
+                }
+            }
+            function createWriter_handler(fileWriter) {
+                try {
+                    if (callback) {
+                        fileWriter.onwriteend = fileWriter_onwriteend;
+                        fileWriter.onerror = callback;
+                    }
+                    var bb = new Blob([content]);
+                    fileWriter.write(bb);
+                }
+                catch (error) {
+                    if (callback)
+                        callback(error);
+                }
+            }
+            function fileWriter_onwriteend(e) { callback(); }
+        }
+        function remoteEval_webworker(fnScript, arg, callback) {
+            var key = (requests.count++).toString();
+            // generate a bit of timestamp for the benefit of easier debugging
+            if (Date.now)
+                key += '-' + (Date.now() - diagTimeStart) + 'ms';
+            else
+                key += '-' + (+new Date() - diagTimeStart) + 'ms';
+            requests[key] = function (error, result) {
+                callback(error, result);
+            };
+            webWorker.postMessage({ remoteEval: { script: fnScript, arg: arg, key: key } });
+        }
+        function terminate_webworker() {
+            webWorker.terminate();
+        }
+        function createWebWorker() {
+            var worker_body = getWorkerAgentScript();
+            if (typeof Blob === 'function') {
+                try {
+                    return webWorkerFromBlob();
+                }
+                catch (errWebWorkerBlob) {
+                    return webWorkerFromDataURI();
+                }
+            }
+            else {
+                try {
+                    return webWorkerFromDataURI();
+                }
+                catch (errWorkerDataURI) {
+                    return webWorkerFromBlob();
+                }
+            }
+            function webWorkerFromDataURI() {
+                var worker = new Worker('data:application/javascript,' + encodeURIComponent(worker_body));
+                return worker;
+            }
+            function webWorkerFromBlob() {
+                var blob = new Blob([worker_body], { type: 'text/javascript' });
+                var url = URL.createObjectURL(blob);
+                var worker = new Worker(url);
+                return worker;
+            }
+        }
+    }
+    function createIFrameHost(callback) {
+        var frm = createIFrame();
+        var hst = {
+            type: 'iframe',
+            remoteEval: remoteEval_iframe,
+            terminate: terminate_iframe,
+            onerror: null,
+            onmessage: null
+        };
+        callback(hst);
+        function remoteEval_iframe(fnScript, arg, callback) {
+            var fn = (0, frm.evalFN)('(function(){' + fnScript + '\n})');
+            try {
+                var result = fn(arg);
+            }
+            catch (error) {
+                callback(error);
+                return;
+            }
+            callback(null, result);
+        }
+        function terminate_iframe() {
+            if (frm && frm.ifr.parentElement) {
+                frm.ifr.parentElement.removeChild(frm.ifr);
+                frm = null;
+            }
+        }
+        function createIFrame() {
+            var ifr = document.createElement('iframe');
+            ifr.src = 'about:blank'; // TODO: explore loading from Blob/data URI directly
+            ifr.style.cssText = 'display: none; position: absolute; left: -50px; top: -50px; width: 0px; height: 0px;';
+            document.body.appendChild(ifr);
+            var ifrwin = ifr.contentWindow || ifr.window;
+            ifrwin.document.write('<' + 'script>window[" "] = (function(ev){ return function(){ return ev(arguments[0]); }; })(eval);</' + 'script>');
+            var evalFN = ifrwin[" "];
+            evalFN('window[" "]=void 0; (function(){arguments[0][0].parentElement.removeChild(arguments[0][0]);})(document.getElementsByTagName("script"));');
+            ifrwin.connection_to_parent = {
+                invokeAsync: function (msg, callback) {
+                    try {
+                        hst.onmessage(msg, /*syncReply*/ true, callback);
+                    }
+                    catch (error) {
+                        callback(error, null);
+                    }
+                } // no invokeSync: we can't wait synchronously (nor busy-wait in this direct call case) on general things
+            };
+            return { ifr: ifr, evalFN: evalFN };
+        }
+        ;
+    }
+    function getWorkerAgentScript() {
+        return "var evalFN = eval;\n"+
+  "if (typeof connection_to_parent === 'undefined') {\n"+
+  "    self.onmessage = waitForInit_onmessage;\n"+
+  "    function waitForInit_onmessage(e) {\n"+
+  "        if (!e.data.init_worker_connect)\n"+
+  "            return;\n"+
+  "        self.onmessage = null;\n"+
+  "        setupWebWorkerAgent(function (cnn) {\n"+
+  "            connection_to_parent = cnn;\n"+
+  "        });\n"+
+  "    }\n"+
+  "}\n"+
+  "/// <reference path=\"../../persistence/src/API.d.ts\"/>\n"+
+  "function setupWebWorkerAgent(callback) {\n"+
+  "    var _self = self;\n"+
+  "    var _setInterval = setInterval;\n"+
+  "    var _clearInterval = clearInterval;\n"+
+  "    var _postMessage = postMessage;\n"+
+  "    var _Function = Function;\n"+
+  "    var requests = { count: 0 };\n"+
+  "    var diagTimeStart = +new Date();\n"+
+  "    var fs_orReason = detectSyncFS_orReason();\n"+
+  "    if (typeof fs_orReason === 'string' || !fs_orReason) {\n"+
+  "        setupFullyAsyncAgent(fs_orReason || 'synchronous filesystem not found');\n"+
+  "    }\n"+
+  "    else {\n"+
+  "        trySetupSyncFSAidedAgent(fs_orReason);\n"+
+  "    }\n"+
+  "    function detectSyncFS_orReason() {\n"+
+  "        var reqFS;\n"+
+  "        var reqFS_variant_name;\n"+
+  "        try {\n"+
+  "            if (typeof requestFileSystemSync === 'function') {\n"+
+  "                reqFS_variant_name = 'requestFileSystemSync';\n"+
+  "                reqFS = requestFileSystemSync;\n"+
+  "            }\n"+
+  "            else if (typeof webkitRequestFileSystemSync === 'function') {\n"+
+  "                reqFS_variant_name = 'webkitRequestFileSystemSync';\n"+
+  "                reqFS = webkitRequestFileSystemSync;\n"+
+  "            }\n"+
+  "            else if (typeof mozRequestFileSystemSync === 'function') {\n"+
+  "                reqFS_variant_name = 'mozRequestFileSystemSync';\n"+
+  "                reqFS = mozRequestFileSystemSync;\n"+
+  "            }\n"+
+  "            else if (typeof oRequestFileSystemSync === 'function') {\n"+
+  "                reqFS_variant_name = 'oRequestFileSystemSync';\n"+
+  "                reqFS = oRequestFileSystemSync;\n"+
+  "            }\n"+
+  "            else if (typeof msRequestFileSystemSync === 'function') {\n"+
+  "                reqFS_variant_name = 'msRequestFileSystemSync';\n"+
+  "                reqFS = msRequestFileSystemSync;\n"+
+  "            }\n"+
+  "            else {\n"+
+  "                return 'requestFileSystemSync and its prefixed variants are unavailable';\n"+
+  "            }\n"+
+  "        }\n"+
+  "        catch (error) {\n"+
+  "            return error.message + ' - accessing requestFileSync';\n"+
+  "        }\n"+
+  "        try {\n"+
+  "            var fs = reqFS('TEMPORARY', 1024);\n"+
+  "            return fs;\n"+
+  "        }\n"+
+  "        catch (error) {\n"+
+  "            return error.message + ' - invoking ' + reqFS_variant_name;\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function trySetupSyncFSAidedAgent(fs) {\n"+
+  "        var initSyncFS_response_name = 'initSyncFS_response_' + Math.abs((((+new Date()) * Math.random()) | 0));\n"+
+  "        _self.onmessage = requestInitSync_onmessage;\n"+
+  "        _postMessage({ requestInitSync: initSyncFS_response_name });\n"+
+  "        // TODO: remove init file\n"+
+  "        var timeoutAfter = +new Date() + 1000;\n"+
+  "        var pollFS = _setInterval(function () {\n"+
+  "            var response = getFileSync(initSyncFS_response_name);\n"+
+  "            if (response === 'OK') {\n"+
+  "                _clearInterval(pollFS);\n"+
+  "                // TODO: delete file\n"+
+  "                createFSAidedAgent();\n"+
+  "                return;\n"+
+  "            }\n"+
+  "            var now = Date.now ? Date.now() : +new Date();\n"+
+  "            if (now > timeoutAfter) {\n"+
+  "                _clearInterval(pollFS);\n"+
+  "                setupFullyAsyncAgent('synchronous channel timed out');\n"+
+  "            }\n"+
+  "        }, 5);\n"+
+  "        function requestInitSync_onmessage(e) {\n"+
+  "            if (e.data.requestInitSync_reject) {\n"+
+  "                _clearInterval(pollFS);\n"+
+  "                _self.onmessage = null;\n"+
+  "                setupFullyAsyncAgent('synchronous channel timed out');\n"+
+  "            }\n"+
+  "        }\n"+
+  "        function createFSAidedAgent() {\n"+
+  "            var cnn = {\n"+
+  "                invokeSync: invokeSync,\n"+
+  "                invokeAsync: invokeAsync\n"+
+  "            };\n"+
+  "            callback(cnn);\n"+
+  "            _self.onmessage = webworker_onmessage;\n"+
+  "            _postMessage({ requestInitSync_completed: true });\n"+
+  "            function invokeSync(msg) {\n"+
+  "                var key = generateKey();\n"+
+  "                var pollCount = 0;\n"+
+  "                _postMessage({ invokeSync: { key: key, msg: msg } });\n"+
+  "                while (true) {\n"+
+  "                    var content = getFileSync(key);\n"+
+  "                    if (content) {\n"+
+  "                        var responseMsg = JSON.parse(content);\n"+
+  "                        return responseMsg;\n"+
+  "                    }\n"+
+  "                    pollCount++;\n"+
+  "                    try {\n"+
+  "                        throw new Error('THISBECAUGHT');\n"+
+  "                    }\n"+
+  "                    catch (error) { }\n"+
+  "                }\n"+
+  "            }\n"+
+  "        }\n"+
+  "        function getFileSync(fname) {\n"+
+  "            try {\n"+
+  "                var fentry = fs.root.getFile(fname, { create: false });\n"+
+  "                var file = fentry.file();\n"+
+  "                var reader = new FileReaderSync();\n"+
+  "                var text = reader.readAsText(file);\n"+
+  "                return text;\n"+
+  "            }\n"+
+  "            catch (err) {\n"+
+  "            }\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function setupFullyAsyncAgent(reason) {\n"+
+  "        _self.onmessage = webworker_onmessage;\n"+
+  "        _postMessage({ requestInitAsync: reason || 'default' });\n"+
+  "    }\n"+
+  "    function webworker_onmessage(e) {\n"+
+  "        if (e.data.initAsync_response) {\n"+
+  "            handleInitAsync_response();\n"+
+  "        }\n"+
+  "        else if (e.data.asyncResponse) {\n"+
+  "            handleAsyncResponse(e.data.asyncResponse);\n"+
+  "        }\n"+
+  "        else if (e.data.remoteEval) {\n"+
+  "            handleRemoteEval(e.data.remoteEval);\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function handleAsyncResponse(asyncResponse) {\n"+
+  "        if (!asyncResponse.key)\n"+
+  "            return;\n"+
+  "        var callback = requests[asyncResponse.key];\n"+
+  "        if (!callback)\n"+
+  "            return;\n"+
+  "        delete requests[asyncResponse.key];\n"+
+  "        if (asyncResponse.error) {\n"+
+  "            var error = deserializeError(asyncResponse.error);\n"+
+  "            callback(error, asyncResponse.result);\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            callback(asyncResponse.error, asyncResponse.result);\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function handleInitAsync_response() {\n"+
+  "        var cnn = { invokeAsync: invokeAsync };\n"+
+  "        callback(cnn);\n"+
+  "    }\n"+
+  "    function generateKey() {\n"+
+  "        var key = (requests.count++).toString();\n"+
+  "        // generate a bit of timestamp for the benefit of easier debugging\n"+
+  "        if (Date.now)\n"+
+  "            key += '-' + (Date.now() - diagTimeStart) + 'ms';\n"+
+  "        else\n"+
+  "            key += '-' + (+new Date() - diagTimeStart) + 'ms';\n"+
+  "        return key;\n"+
+  "    }\n"+
+  "    function invokeAsync(msg, callback) {\n"+
+  "        if (callback) {\n"+
+  "            var key = generateKey();\n"+
+  "            requests[key] = callback;\n"+
+  "            _postMessage({ invokeAsync: { key: key, msg: msg } });\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            _postMessage({ invokeAsync: { msg: msg } });\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function handleRemoteEval(remoteEval) {\n"+
+  "        try {\n"+
+  "            var script = remoteEval.script;\n"+
+  "            var arg = remoteEval.arg;\n"+
+  "            var result = (new _Function(script))(arg);\n"+
+  "            var remoteResponse = {\n"+
+  "                key: remoteEval.key,\n"+
+  "                result: result\n"+
+  "            };\n"+
+  "            _postMessage({ remoteResponse: remoteResponse });\n"+
+  "        }\n"+
+  "        catch (error) {\n"+
+  "            var remoteErrorResponse = {\n"+
+  "                key: remoteEval.key,\n"+
+  "                error: serializeError(error)\n"+
+  "            };\n"+
+  "            _postMessage({ remoteErrorResponse: remoteResponse });\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function serializeError(error) {\n"+
+  "        return {\n"+
+  "            ctor: error.constructor.name,\n"+
+  "            to_string: error + '',\n"+
+  "            message: error.message,\n"+
+  "            stack: error.stack || null\n"+
+  "        };\n"+
+  "    }\n"+
+  "    function deserializeError(packedError) {\n"+
+  "        return packedError;\n"+
+  "    }\n"+
+  "}\n";
+    }
+})();
+
+
+	isolation.createContextHost = createContextHost;
+
+}
+
+
+
+  if (typeof module!=='undefined' && module && module.exports) {
+
+    isolation();
+module.exports = isolation;
+
+  }
+  else {
+    document.body.style.color = 'white';
+
+    isolation();
+var tests;
+(function (tests) {
+    tests.buildMetadata = {
+        'not null': function () { return assert(isolation.build); },
+        'timestamp>=1462227529476': function () { return assert(isolation.build.timestamp >= 1462227529476); },
+        '60000>taken>10': function () { return assert(isolation.build.taken > 10 && isolation.build.taken < 60000); },
+        'platform is string': function () { return assert.equal('string', typeof isolation.build.platform); }
+    };
+})(tests || (tests = {}));
+;
+var tests;
+(function (tests) {
+    tests['createContextHost'] = createTestsWith_createContextHost(isolation);
+    tests['createContextHost_iframe'] = createTestsWith_createContextHost({ createContextHost: isolation.createContextHost.iframe });
+    tests['createContextHost_worker'] = createTestsWith_createContextHost({ createContextHost: isolation.createContextHost.worker });
+    function createTestsWith_createContextHost(isolation) {
+        return {
+            createContextHost_succeeds: function (callback) {
+                isolation.createContextHost(function (host) {
+                    callback();
+                    try {
+                        if (host)
+                            host.terminate();
+                    }
+                    catch (error) { }
+                });
+            },
+            createContextHost_terminate: function (callback) {
+                isolation.createContextHost(function (host) {
+                    try {
+                        host.terminate();
+                    }
+                    catch (error) {
+                        callback(error);
+                        return;
+                    }
+                    callback();
+                });
+            },
+            remoteEval_withoutReturn: function (callback) {
+                isolation.createContextHost(function (host) {
+                    host.remoteEval('2+2', 0, function (error, result) {
+                        try {
+                            assert(!error, 'error ' + error);
+                            var _undef;
+                            assert.equal(_undef, result, 'no return no result');
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                    function close_clean() {
+                        try {
+                            if (host)
+                                host.terminate();
+                        }
+                        catch (error) { }
+                    }
+                });
+            },
+            remoteEval_returns: function (callback) {
+                isolation.createContextHost(function (host) {
+                    host.remoteEval('return 2+2', 0, function (error, result) {
+                        try {
+                            assert(!error, 'error ' + error);
+                            assert.equal(4, result, '2+2 result');
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                    function close_clean() {
+                        try {
+                            if (host)
+                                host.terminate();
+                        }
+                        catch (error) { }
+                    }
+                });
+            },
+            remoteEval_terminate: function (callback) {
+                isolation.createContextHost(function (host) {
+                    host.remoteEval('return 2+2', 0, function (error, result) {
+                        try {
+                            host.terminate();
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                    });
+                });
+            },
+            remoteEval_simpleIN: function (callback) {
+                var host = isolation.createContextHost(function (host) {
+                    host.remoteEval('return arguments[0]', 56, function (error, result) {
+                        try {
+                            assert(!error, 'error ' + error);
+                            assert.equal(56, result);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                    function close_clean() {
+                        try {
+                            if (host)
+                                host.terminate();
+                        }
+                        catch (error) { }
+                    }
+                });
+            },
+            remoteEval_complexIN: function (callback) {
+                isolation.createContextHost(function (host) {
+                    host.remoteEval('return arguments[0].value', { value: 97 }, function (error, result) {
+                        try {
+                            assert(!error, 'error ' + error);
+                            assert.equal(97, result);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                    function close_clean() {
+                        try {
+                            if (host)
+                                host.terminate();
+                        }
+                        catch (error) { }
+                    }
+                });
+            },
+            remoteEval_complexOUT: function (callback) {
+                isolation.createContextHost(function (host) {
+                    host.remoteEval('return { value: 23 }', null, function (error, result) {
+                        try {
+                            assert(!error, 'error ' + error);
+                            assert.equal(23, result.value);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                    function close_clean() {
+                        try {
+                            if (host)
+                                host.terminate();
+                        }
+                        catch (error) { }
+                    }
+                });
+            },
+            remoteEval_complexIN_OUT: function (callback) {
+                isolation.createContextHost(function (host) {
+                    host.remoteEval('return { value: arguments[0].x+arguments[0].y }', { x: 2, y: 2 }, function (error, result) {
+                        try {
+                            assert(!error, 'error ' + error);
+                            assert.equal(4, result.value);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                    function close_clean() {
+                        try {
+                            if (host)
+                                host.terminate();
+                        }
+                        catch (error) { }
+                    }
+                });
+            },
+            connection_to_parent: {
+                invokeAsync_hits_onmessage: function (callback) {
+                    isolation.createContextHost(function (host) {
+                        var key = 'TEST-connection_to_parent_invokeAsync-' + (+new Date()) + '-' + Math.random();
+                        host.onmessage = function () {
+                            callback();
+                            close_clean();
+                        };
+                        host.remoteEval('connection_to_parent.invokeAsync({TEST_key: "' + key + '"})', null, function () {
+                            // nothing
+                        });
+                        function close_clean() {
+                            try {
+                                if (host)
+                                    host.terminate();
+                            }
+                            catch (error) { }
+                        }
+                    });
+                },
+                invokeAsync_passes_right_message: function (callback) {
+                    isolation.createContextHost(function (host) {
+                        var key = 'TEST-connection_to_parent_invokeAsync-' + (+new Date()) + '-' + Math.random();
+                        host.onmessage = function (msg) {
+                            try {
+                                assert.equal(key, msg.TEST_key);
+                            }
+                            catch (error) {
+                                callback(error);
+                                close_clean();
+                                return;
+                            }
+                            callback();
+                            close_clean();
+                        };
+                        host.remoteEval('connection_to_parent.invokeAsync({TEST_key: "' + key + '"})', null, function () {
+                            // nothing
+                        });
+                        function close_clean() {
+                            try {
+                                if (host)
+                                    host.terminate();
+                            }
+                            catch (error) { }
+                        }
+                    });
+                },
+                invokeAsync_passes_return_bounce: function (callback) {
+                    isolation.createContextHost(function (host) {
+                        var key = 'TEST-connection_to_parent_invokeAsync-' + (+new Date()) + '-' + Math.random();
+                        host.onmessage = function (msg, sync, response_callback) {
+                            if (msg.TEST_response_after_invoke) {
+                                try {
+                                    assert.equal(key, msg.TEST_response_after_invoke);
+                                }
+                                catch (error) {
+                                    callback(error);
+                                    close_clean();
+                                    return;
+                                }
+                                callback();
+                                close_clean();
+                            }
+                            else if (msg.TEST_key_original_message) {
+                                try {
+                                    assert.equal(key, msg.TEST_key_original_message);
+                                    response_callback({ TEST_key_response: key });
+                                }
+                                catch (error) {
+                                    callback(error);
+                                    close_clean();
+                                    return;
+                                }
+                            }
+                        };
+                        host.remoteEval('connection_to_parent.invokeAsync(\n' +
+                            '  {TEST_key_original_message: "' + key + '"},\n' +
+                            '  function (error, result) {\n' +
+                            ' 	 connection_to_parent.invokeAsync({TEST_response_after_invoke: "' + key + '"});\n' +
+                            '  })', null, function () {
+                            // this execution returns nothing, all conversation is through invokeAsync
+                        });
+                        function close_clean() {
+                            try {
+                                if (host)
+                                    host.terminate();
+                            }
+                            catch (error) { }
+                        }
+                    });
+                }
+            }
+        };
+    }
+})(tests || (tests = {}));
+/// <reference path="../../persistence/src/API.d.ts"/>
+
+
+    // running tests from HTML page
+    var ui = document.createElement('div');
+    ui.style.color = 'black';
+    ui.innerHTML = '<h2> Tests for submodule... </h2>';
+    window.onload = function() {
+      runTests(generateTests());
+    };
+
+  }
+
+  //</script>
+  /* <style>
+  .prepared {
+    opacity: 0.5;
+  }
+  .success {
+   opacity: 1;
+  }
+  .fail {
+    opacity: 1;
+    color: tomato;
+  }
+  .fail pre {
+    font-size: 70%;
+    margin: 0px; margin-left: 1em;
+    padding: 0px;
+  }
+  </style><script id=tests_scripts> /* */
+
+  
+
+  function runTests(tests) {
+
+    var testFilter = location.hash;
+    if (testFilter && testFilter.charAt(0)==='#') testFilter = testFilter.slice(1);
+
+    var summary = document.createElement('h2');
+    summary.style.color = 'black';
+
+    if ('textContent' in summary) summary.textContent = 'Tests (total '+tests.length+'):';
+    else summary.innerText = tests.length+'Tests (total '+tests.length+'):';
+    var successCount = 0;
+    var failCount = 0;
+    document.body.appendChild(summary);
+
+    var testList = document.createElement('div');
+    testList.style.color = 'black';
+
+    var disabledTestList = document.createElement('div');
+    disabledTestList.style.color = 'gold';
+
+    var runIndex = 0;
+    var testsToRun = [];
+    for (var i = 0; i < tests.length; i++) {
+      addTestRow(i);
+    }
+
+    document.body.appendChild(testList);
+    document.body.appendChild(disabledTestList);
+
+    setTimeout(function() {
+      continueRunTests();
+    }, 10);
+
+    function continueRunTests() {
+      if (runIndex === testsToRun.length) return;
+      var t = testsToRun[runIndex];
+      runIndex++;
+
+      if (t.disabled) {
+        setTimeout(continueRunTests, 1);
+        return;
+      }
+
+      var start = +new Date();
+      t.run(function(error) {
+        var finish = +new Date();
+        var tm = document.createElement('span');
+        if ('textContent' in tm) tm.textContent = ' '+(finish-start)+'ms';
+        else tm.innerText = ' '+(finish-start)+'ms';
+        tm.style.fontSize = '80%';
+        t.testEntry.appendChild(tm);
+        if (!error) {
+          t.testEntry.className = 'success';
+          successCount++;
+        }
+        else {
+          t.testEntry.className = 'fail';
+          var errorOutput = document.createElement('pre');
+          if ('textContent' in errorOutput) errorOutput.textContent = error;
+          else errorOutput.innerText = error;
+          t.testEntry.appendChild(errorOutput);
+          failCount++;
+        }
+
+        var summaryText =
+            'Tests ('+
+            (failCount?'failed '+failCount:'no fails')+
+            ', succeeded '+successCount+
+            (testsToRun.length>failCount+successCount?', '+(testsToRun.length-failCount-successCount)+' to finish':'')+'):';
+
+        if ('textContent' in summary) summary.textContent = summaryText;
+        else summary.innerText = summaryText;
+
+        setTimeout(continueRunTests, 5);
+      });
+    }
+
+    function addTestRow(i) {
+      var t = tests[i];
+      var testEntry = document.createElement('div');
+      if (testFilter && t.name.toLowerCase().indexOf(testFilter.toLowerCase())<0) {
+      	testEntry.className = 'disabled';
+        t.disabled = true;
+        disabledTestList.appendChild(testEntry);
+      }
+      else{
+      	testEntry.className = 'prepared';
+        testsToRun.push(t);
+      	testList.appendChild(testEntry);
+      }
+
+      if ('textContent' in testEntry) testEntry.textContent = t.name;
+      else testEntry.innerText = t.name;
+      t.testEntry = testEntry;
+    }
+  }
+
+
+  function assert(condition, message) {
+    if (!condition) throw new Error(message||'Failure '+condition);
+  }
+
+  assert.equal = (function(){
+    function equal(expected, actual, message) {
+      if (expected!=actual) throw new Error(message||'Unmatch: '+expected+' != '+actual);
+    }
+    return equal;
+  })();
+
+  function generateTests() {
+
+    var allTests = [];
+    var _dummy = {};
+
+    for (var k in tests) if (!(k in _dummy) && tests[k] && /^[a-z]/.test(k)) {
+      collectTests(k, tests[k]);
+    }
+
+    return allTests;
+
+
+    function collectTests(prefix, obj) {
+      if (!obj) return;
+      for (var k in obj) if (!(k in _dummy) && obj[k]) {
+        if (/^[A-Z]/.test(k) && typeof obj[k] === 'function') {
+          // TODO: should we construct here?
+        }
+        else if (/^[a-z]/.test(k)) {
+          if (typeof obj[k]==='function') {
+            if (k==='generateTests') {
+              var moreTests = obj.generateTests();
+              collectTests(prefix, moreTests);
+            }
+            else {
+              addTest(prefix+'.'+k, obj, k);
+            }
+          }
+          else if (typeof obj[k]==='object' && /^[a-z]/.test(k)) {
+            collectTests(prefix+'.'+k, obj[k]);
+          }
+        }
+      }
+    }
+
+    function addTest(fullname, thisObj, key) {
+      var args = functionArgs(thisObj[key]);
+      if (args && /callback/.test(args)) {
+        allTests.push({
+          name: fullname,
+          run: function(callback) {
+            try {
+              thisObj[key](callback);
+            }
+            catch (error) {
+              callback(error);
+            }
+          }
+        });
+      }
+      else {
+        allTests.push({
+          name: fullname,
+          run: function(callback) {
+            try {
+              thisObj[key]();
+            }
+            catch (error) {
+              callback(error);
+              return;
+            }
+
+            callback(null);
+          }
+        });
+      }
+    }
+
+  }
+
+  function functionBody(fn, replacements) {
+    // first skip until (
+    // then skip until )
+    // then skip until {
+    // then take everything until the last }
+    var match =
+        /^[^\(]*\([^\)]*\)[^\{]*\{([\s\S]*)\}[^\}]*$/.exec(fn+'');
+        // /^[^\(]*\([^\)]*\)[^\{]*\{([ \t]*\n)([\s\S]*)([ \t]*\n[ \t]*)\}[^\}]*$/.exec(fn+'');
+    if (!match) return null;
+
+    var bodyText = match[1];
+    if (!replacements) return bodyText;
+    else return substitute(bodyText, replacements);
+  }
+function functionArgs(fn) {
+    var match = /^[^\(]*\(\s*([^\)]*)\s*\)/.exec(fn+'');
+    return match?match[1]:null;
+  }
+function jsString(str) {
+    if (!str) {
+      if (typeof str==='string') return '""';
+      else if (typeof str==='undefined') return 'undefined';
+      else return 'null';
+    }
+
+    var _JSON = typeof JSON!=='undefined'? JSON : typeof window === 'undefined' ? null : window.JSON;
+    var result = '"';
+    var stretchStart = 0;
+    for (var i = 0; i < str.length; i++) {
+      var code = str.charCodeAt(i);
+      var fix;
+      switch (code) {
+        case 10: fix = i==str.length-1 ? '\\n' : '\\n"+\n  "'; break;
+        case 13: fix = '\\r'; break;
+        case 92: fix = '\\\\'; break;
+        case 34: fix = '\\\"'; break;
+        case 9: fix = '\\t'; break;
+        default:
+          if (code < 32 || // transcribe control codes
+              ((code&0xFF00)===0xFD00) || ((code&0xFF00)==0xFF00)) { // transcribe potentially corrupt Unicode
+            fix = '\\u'+(0x10000 + code).toString(16).slice(1);
+            break;
+          }
+          continue;
+      }
+
+      if (stretchStart!==i) {
+      	result += str.slice(stretchStart, i) + fix;
+      }
+      else {
+        result += fix;
+      }
+
+      stretchStart = i+1;
+    }
+
+    if (stretchStart)
+      result += str.slice(stretchStart)+'"';
+    else
+      result = '"'+str+'"';
+
+    return result;
+  }
+function jsStringLong(str) {
+    if (str===null) return 'null';
+    else if (typeof str==='undefined') return 'undefined';
+    var wordCounts = {};
+    var wordArray = [];
+    str.replace(/[a-zA-Z0-9_]+/g, function(w) {
+      var key = '*'+w;
+      if (wordCounts[key]) {
+        wordCounts[key]++;
+      }
+      else {
+        wordCounts[key] = 1;
+        wordArray.push(w);
+      }
+    });
+    wordArray.sort(function(w1, w2) {
+      var n1 = wordCounts['*'+w1];
+      var n2 = wordCounts['*'+w2];
+      return n1 > n2 ? -1 : n2 > 1 ? +1 : 0;
+    });
+    var replaceTable = {};
+    for (var i = 0; i < wordArray.length; i++) {
+      replaceTable['*'+wordArray[i]] = toLetterNumber(i);
+    }
+
+    var compressed = str.replace(/(\s+)|([a-zA-Z0-9_]+)/g, function(match, whitespace, word) {
+      if (word) return replaceTable['*'+word];
+      return whitespace.
+        replace(/ +/g, function(spaces) {
+          if(spaces.length<2) return spaces;
+          else return 'Z'+spaces.length;
+        }).
+        replace(/\n/g, 'Z');
+    });
+
+    return [
+      '(function(d,c,s,r,m,nn,n) { var k = 0;',
+      'return c.replace(/([a-zA-Y]+)|(Z[0-9]*)/g, function(x,t,w) {',
+        'if (w=="Z") return "\\n";',
+        'else if (w&&w.charCodeAt(0)=='+('Z').charCodeAt(0)+') return s[m=parseInt(w.slice(1))] || (s[m] = Array(m+1).join(" "));',
+        'if (r.hasOwnProperty(w)) return r[w];',
+        'nn=0,m=1;',
+        'for(var i=0;i<t.length;i++){',
+          'var n=t.charCodeAt(i);',
+          'nn+=m*(n-(n>'+(('a').charCodeAt(0)-1)+' ? '+('a').charCodeAt(0)+':'+(('A').charCodeAt(0)-26)+'));',
+          'm*='+(25+26)+';',
+        '}',
+        'if (nn<100 && !r[nn]) return r[nn] = d[nn];', // cache word lookups for 100 most frequent words
+        'else return d[nn];',
+      '});\n',
+      '}("'+wordArray.join(',')+'".split(","),"'+compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r')+'",[],{}))'
+    ].join('\n');
+
+    function toLetterNumber(num) {
+      if (!num) return 'a';
+      var base = 26+25; // a-z A-Y (leave out uppercase Z)
+      var result = [];
+      while (num) {
+        var n = num % base;
+        if (n<26)
+          result.push(String.fromCharCode('a'.charCodeAt(0)+n));
+        else
+          result.push(String.fromCharCode('A'.charCodeAt(0)+n-26));
+        num = (num / base)|0;
+      }
+      return result.join('');
+    }
+  }
+
+
+  // </script>
+  
