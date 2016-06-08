@@ -1,33 +1,32 @@
-
-
-  // <script>document.body.innerHTML = '' </script> <script id=submodule_script>
+// <script>document.body.innerHTML = '' </script> <script id=submodule_script>
 
   
 
 function isolation() {
 
 	isolation.build = {
-    timestamp: 1464722043795, // Tue May 31 2016 20:14:03 GMT+0100 (GMT Daylight Time)
-    taken: 17765,
+    timestamp: 1465366247781, // Wed Jun 08 2016 07:10:47 GMT+0100 (GMT Daylight Time)
+    taken: 18888,
     platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36"
 };
 
 var createContextHost = (function () {
+    var errorSer = createErrorSerializer();
     createContextHost.worker = createWebWorkerHost;
     createContextHost.iframe = createIFrameHost;
     return createContextHost;
-    function createContextHost(callback) {
+    function createContextHost(drive, callback) {
         var tryUseWebWorker = detectWebWorkerHint();
         if (tryUseWebWorker) {
             try {
-                createWebWorkerHost(callback);
+                createWebWorkerHost(drive, callback);
             }
             catch (webWorkerBarredError) {
-                createIFrameHost(callback);
+                createIFrameHost(drive, callback);
             }
         }
         else {
-            createIFrameHost(callback);
+            createIFrameHost(drive, callback);
         }
     }
     function detectWebWorkerHint() {
@@ -38,7 +37,7 @@ var createContextHost = (function () {
             return false;
         }
     }
-    function createWebWorkerHost(callback) {
+    function createWebWorkerHost(drive, callback) {
         var webWorker = createWebWorker();
         var diagTimeStart = +new Date();
         var requests = { count: 0 };
@@ -47,6 +46,7 @@ var createContextHost = (function () {
         var hst = {
             type: null,
             remoteEval: remoteEval_webworker,
+            pushMessage: pushMessage_webworker,
             terminate: terminate_webworker,
             onerror: null,
             onmessage: null
@@ -78,6 +78,18 @@ var createContextHost = (function () {
             else if (e.data.remoteErrorResponse) {
                 handleRemoteErrorResponse(e.data.remoteErrorResponse);
             }
+            else if (e.data.driveUpdates) {
+                handleDriveUpdates(e.data);
+            }
+            else if (e.data.driveRequest_files) {
+                handleDriveRequest_files(e.data.driveRequest_files);
+            }
+            else if (e.data.driveRequest_read) {
+                handleDriveRequest_read(e.data.driveRequest_read);
+            }
+            else if (e.data.driveRequest_storedSize) {
+                handleDriveRequest_storedSize(e.data.driveRequest_storedSize);
+            }
             else if (e.data.key) {
                 var req = requests[e.data.key];
                 if (!req)
@@ -85,37 +97,46 @@ var createContextHost = (function () {
                 delete requests[e.data.key];
                 req(e.data.error, e.data.result);
             }
+            else {
+                if (typeof console !== 'undefined' && console && typeof console.log === 'function') {
+                    console.log('host: unknown message from webworker: ', e.data);
+                }
+            }
         }
         function handleRequestInitAsync(requestInitAsync) {
-            webWorker.postMessage({ initAsync_response: 'done' });
+            var driveSnapshot = createDriveSnapshot();
+            webWorker.postMessage({ driveSnapshot: driveSnapshot });
             completeIsolatedProcess('worker-async');
-        }
-        function handleRequestInitSync_completed(requestInitSync_completed) {
-            completeIsolatedProcess('worker-sync');
         }
         function handleRequestInitSync(requestInitSync) {
             createFS(tryReplyOK_waitForInitSyncOK);
             function tryReplyOK_waitForInitSyncOK(error, createdFS) {
                 fs = createdFS;
                 try {
-                    writeFS(requestInitSync, 'OK', function (error) {
-                        if (error)
-                            webWorker.postMessage({ requestInitSync_reject: true });
+                    writeFS(requestInitSync, '{ "driveTimestamp": ' + (drive.timestamp | 0) + ' }', function (error) {
+                        if (error) {
+                            var driveSnapshot = createDriveSnapshot();
+                            webWorker.postMessage({ requestInitSync_reject: driveSnapshot });
+                        }
                         // if succeeds, they see the file and know already
                     });
                 }
                 catch (error) {
-                    // TODO: fallback to async
-                    webWorker.postMessage({ requestInitSync_reject: true });
+                    var driveSnapshot = createDriveSnapshot();
+                    webWorker.postMessage({ requestInitSync_reject: driveSnapshot });
                 }
             }
         }
         function handleInvokeSync(invokeSync) {
             if (!hst.onmessage)
                 return;
-            hst.onmessage(invokeSync, /*syncReply*/ true, function (error, response) {
+            hst.onmessage(invokeSync.msg, /*syncReply*/ true, function (error, response) {
                 if (invokeSync.key) {
-                    var responseStr = error ? JSON.stringify(error) : JSON.stringify(response);
+                    var responseMsg = {
+                        error: error,
+                        response: response
+                    };
+                    var responseStr = JSON.stringify(responseMsg);
                     writeFS(invokeSync.key, responseStr);
                 }
             });
@@ -124,7 +145,8 @@ var createContextHost = (function () {
             if (!hst.onmessage)
                 return;
             hst.onmessage(invokeAsync.msg, /*syncReply*/ false, function (error, response) {
-                webWorker.postMessage({ asyncResponse: { key: invokeAsync.key, error: error, response: response } });
+                var error_serialized = errorSer.serialize(error);
+                webWorker.postMessage({ asyncResponse: { key: invokeAsync.key, error: error_serialized, response: response } });
             });
         }
         function handleRemoteResponse(remoteResponse) {
@@ -139,7 +161,36 @@ var createContextHost = (function () {
             if (!req)
                 return;
             delete requests[remoteErrorResponse.key];
-            req(remoteErrorResponse.error);
+            var error_deserialized = errorSer.deserialize(remoteErrorResponse);
+            req(error_deserialized);
+        }
+        function handleDriveUpdates(driveUpdates) {
+            driveApplyUpdates(drive, driveUpdates);
+        }
+        function handleDriveRequest_files(cookie) {
+            writeFS(cookie, JSON.stringify(drive.files()));
+        }
+        function handleDriveRequest_read(msg) {
+            writeFS(msg.key, JSON.stringify(drive.read(msg.file)));
+        }
+        function handleDriveRequest_storedSize(msg) {
+            var size;
+            if (drive.storedSize)
+                size = drive.storedSize(msg.file);
+            else
+                size = (drive.read(msg.file) || '').length;
+            writeFS(msg.key, '' + size);
+        }
+        function createDriveSnapshot() {
+            var driveSnapshot = { timestamp: drive.timestamp };
+            var driveFiles = drive.files();
+            for (var i = 0; i < driveFiles.length; i++) {
+                driveSnapshot[driveFiles[i]] = drive.read(driveFiles[i]);
+            }
+            return driveSnapshot;
+        }
+        function handleRequestInitSync_completed(requestInitSync_completed) {
+            completeIsolatedProcess('worker-sync');
         }
         function createFS(callback) {
             try {
@@ -188,7 +239,7 @@ var createContextHost = (function () {
         }
         function writeFS(name, content, callback) {
             try {
-                fs.root.getFile(name, { create: true }, getFile_handler, callback);
+                fs.root.getFile('/isolation-syncfs-aided--' + name, { create: true }, getFile_handler, callback);
             }
             catch (error) {
                 if (callback)
@@ -231,11 +282,15 @@ var createContextHost = (function () {
             };
             webWorker.postMessage({ remoteEval: { script: fnScript, arg: arg, key: key } });
         }
+        function pushMessage_webworker(msg) {
+            webWorker.postMessage({ pushMessage: msg });
+        }
         function terminate_webworker() {
             webWorker.terminate();
         }
         function createWebWorker() {
             var worker_body = getWorkerAgentScript();
+            worker_body += '\n//# ' + 'sourceURL=/isolation_worker_body.js';
             if (typeof Blob === 'function') {
                 try {
                     return webWorkerFromBlob();
@@ -264,15 +319,18 @@ var createContextHost = (function () {
             }
         }
     }
-    function createIFrameHost(callback) {
+    function createIFrameHost(drive, callback) {
         var frm = createIFrame();
         var hst = {
             type: 'iframe',
             remoteEval: remoteEval_iframe,
+            pushMessage: pushMessage_iframe,
             terminate: terminate_iframe,
             onerror: null,
             onmessage: null
         };
+        var registeredPushMessageCallbacks = [];
+        var registeredPushMessageCallbacks_length = 0;
         callback(hst);
         function remoteEval_iframe(fnScript, arg, callback) {
             var fn = (0, frm.evalFN)('(function(){' + fnScript + '\n})');
@@ -285,10 +343,36 @@ var createContextHost = (function () {
             }
             callback(null, result);
         }
+        function pushMessage_iframe(msg) {
+            for (var i = 0; i < registeredPushMessageCallbacks_length; i++) {
+                var cb = registeredPushMessageCallbacks[i];
+                if (cb)
+                    cb(msg);
+            }
+        }
         function terminate_iframe() {
             if (frm && frm.ifr.parentElement) {
                 frm.ifr.parentElement.removeChild(frm.ifr);
                 frm = null;
+            }
+        }
+        function onPushMessage(registerCallback) {
+            var index = registeredPushMessageCallbacks_length;
+            registeredPushMessageCallbacks.push(registerCallback);
+            registeredPushMessageCallbacks_length++;
+            return unregister_pushMessageCallback;
+            function unregister_pushMessageCallback() {
+                if (index < 0)
+                    return;
+                delete registeredPushMessageCallbacks[index];
+                index = -1;
+                // adjust the tail (removal of callbacks may run out of order)
+                var newLength = registeredPushMessageCallbacks_length;
+                while (!registeredPushMessageCallbacks[newLength] && newLength >= 0) {
+                    newLength--;
+                }
+                if (newLength !== registeredPushMessageCallbacks_length)
+                    registeredPushMessageCallbacks_length = newLength;
             }
         }
         function createIFrame() {
@@ -300,7 +384,8 @@ var createContextHost = (function () {
             ifrwin.document.write('<' + 'script>window[" "] = (function(ev){ return function(){ return ev(arguments[0]); }; })(eval);</' + 'script>');
             var evalFN = ifrwin[" "];
             evalFN('window[" "]=void 0; (function(){arguments[0][0].parentElement.removeChild(arguments[0][0]);})(document.getElementsByTagName("script"));');
-            ifrwin.connection_to_parent = {
+            var connection_to_parent = {
+                drive: drive,
                 invokeAsync: function (msg, callback) {
                     try {
                         hst.onmessage(msg, /*syncReply*/ true, callback);
@@ -308,178 +393,528 @@ var createContextHost = (function () {
                     catch (error) {
                         callback(error, null);
                     }
-                } // no invokeSync: we can't wait synchronously (nor busy-wait in this direct call case) on general things
+                },
+                invokeSync: function (msg) {
+                    var reply;
+                    hst.onmessage(msg, /*syncReply*/ true, function (reply_passed) { return reply = reply_passed; });
+                    return reply;
+                },
+                onPushMessage: onPushMessage
             };
-            return { ifr: ifr, evalFN: evalFN };
+            ifrwin.connection_to_parent = connection_to_parent;
+            return { ifr: ifr, evalFN: evalFN, connection_to_parent: connection_to_parent };
         }
         ;
     }
     function getWorkerAgentScript() {
-        return "var evalFN = eval;\n"+
-  "if (typeof connection_to_parent === 'undefined') {\n"+
-  "    self.onmessage = waitForInit_onmessage;\n"+
-  "    function waitForInit_onmessage(e) {\n"+
-  "        if (!e.data.init_worker_connect)\n"+
+        return "function RUN_ASYNC_CHANNEL(driveSnapshot) {\n"+
+  "    self_onmessage = ASYNC_CHANNEL_webworker_onmessage;\n"+
+  "    var pushMessageDispatcher = createPushMessageDispatcher();\n"+
+  "    var requestResponseDispatcher = createRequestResponseDispatcher();\n"+
+  "    var drive = {\n"+
+  "        timestamp: driveSnapshot.timestamp,\n"+
+  "        files: files_ASYNC_CHANNEL,\n"+
+  "        read: read_ASYNC_CHANNEL,\n"+
+  "        write: write_ASYNC_CHANNEL,\n"+
+  "        storedSize: storedSize_ASYNC_CHANNEL\n"+
+  "    };\n"+
+  "    var tmDrive = {\n"+
+  "        timestamp: driveSnapshot.timestamp,\n"+
+  "        write: driveUpdate_write_ASYNC_CHANNEL\n"+
+  "    };\n"+
+  "    connection_to_parent = {\n"+
+  "        drive: drive,\n"+
+  "        onPushMessage: pushMessageDispatcher.onPushMessage,\n"+
+  "        invokeAsync: invokeAsync_ASYNC_CHANNEL\n"+
+  "    };\n"+
+  "    function invokeAsync_ASYNC_CHANNEL(msg, callback) {\n"+
+  "        if (callback) {\n"+
+  "            var key = requestResponseDispatcher.pushCallback(callback);\n"+
+  "            postMessageToHost({ invokeAsync: { key: key, msg: msg } });\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            postMessageToHost({ invokeAsync: { msg: msg } });\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function ASYNC_CHANNEL_webworker_onmessage(e) {\n"+
+  "        if (e.data.asyncResponse) {\n"+
+  "            handleAsyncResponse_ASYNC_CHANNEL(e.data.asyncResponse);\n"+
+  "        }\n"+
+  "        else if (e.data.remoteEval) {\n"+
+  "            handleRemoteEval_EITHER_CHANNEL(e.data.remoteEval);\n"+
+  "        }\n"+
+  "        else if (e.data.pushMessage) {\n"+
+  "            pushMessageDispatcher.handlePushMessage(e.data.pushMessage);\n"+
+  "        }\n"+
+  "        else if (e.data.driveUpdates) {\n"+
+  "            handleDriveUpdates_ASYNC_CHANNEL(e.data.driveUpdates);\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            reportUnknownMessage_ASYNC_CHANNEL(e);\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function handleAsyncResponse_ASYNC_CHANNEL(asyncResponse) {\n"+
+  "        if (!asyncResponse.key) {\n"+
+  "            reportKeylessResponse(asyncResponse);\n"+
   "            return;\n"+
-  "        self.onmessage = null;\n"+
-  "        setupWebWorkerAgent(function (cnn) {\n"+
-  "            connection_to_parent = cnn;\n"+
-  "        });\n"+
+  "        }\n"+
+  "        var callback = requestResponseDispatcher.popCallback(asyncResponse.key);\n"+
+  "        callback(asyncResponse.error && errorSer.serialize(asyncResponse.error), asyncResponse.result);\n"+
+  "    }\n"+
+  "    function handleDriveUpdates_ASYNC_CHANNEL(driveUpdates) {\n"+
+  "        driveSnapshot.timestamp = Math.max(driveSnapshot.timestamp, driveUpdates.timestamp);\n"+
+  "        driveApplyUpdates(tmDrive, driveUpdates);\n"+
+  "    }\n"+
+  "    function reportUnknownMessage_ASYNC_CHANNEL(e) {\n"+
+  "        if (_console_log)\n"+
+  "            _console_log('onmessage: unknown in ASYNC_CHANNEL: ', e.data, e);\n"+
+  "    }\n"+
+  "    function driveUpdate_write_ASYNC_CHANNEL(file, content) {\n"+
+  "        if (content || typeof content === 'string')\n"+
+  "            driveSnapshot[file] = content;\n"+
+  "        else\n"+
+  "            delete driveSnapshot[file];\n"+
+  "    }\n"+
+  "    function reportKeylessResponse(asyncResponse) {\n"+
+  "        if (_console_log)\n"+
+  "            _console_log('onmessage: asyncResponse with no key: ', asyncResponse);\n"+
+  "    }\n"+
+  "    function createDriveFromSnapshot(snapshot) {\n"+
+  "        var tmDrive = {\n"+
+  "            timestamp: drive.timestamp,\n"+
+  "            write: function (file, content) {\n"+
+  "                drive.timestamp = Math.max(drive.timestamp, tmDrive.timestamp);\n"+
+  "                if (content || typeof content === 'string')\n"+
+  "                    driveSnapshot[file] = content;\n"+
+  "                else\n"+
+  "                    delete driveSnapshot[file];\n"+
+  "            }\n"+
+  "        };\n"+
+  "        return drive;\n"+
+  "    }\n"+
+  "    function files_ASYNC_CHANNEL() {\n"+
+  "        var result = [];\n"+
+  "        for (var k in driveSnapshot) {\n"+
+  "            if (k && k.charCodeAt(0) === 47)\n"+
+  "                result.push(k);\n"+
+  "        }\n"+
+  "        return result;\n"+
+  "    }\n"+
+  "    function read_ASYNC_CHANNEL(file) {\n"+
+  "        var result = driveSnapshot[file];\n"+
+  "        if (result || typeof result !== 'undefined')\n"+
+  "            return result;\n"+
+  "        else\n"+
+  "            return null;\n"+
+  "    }\n"+
+  "    function write_ASYNC_CHANNEL(file, content) {\n"+
+  "        var msg;\n"+
+  "        if (!content && (content === null || typeof content === 'undefined')) {\n"+
+  "            delete driveSnapshot[file];\n"+
+  "            msg = { driveUpdates: [{ deleteFile: file }], timestamp: drive.timestamp };\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            driveSnapshot[file] = content;\n"+
+  "            msg = { driveUpdates: [{ updateFile: file, content: content }], timestamp: drive.timestamp };\n"+
+  "        }\n"+
+  "        postMessageToHost(msg);\n"+
+  "    }\n"+
+  "    function storedSize_ASYNC_CHANNEL(file) {\n"+
+  "        var file = read_ASYNC_CHANNEL(file);\n"+
+  "        if (file)\n"+
+  "            return file.length;\n"+
+  "        else\n"+
+  "            return 0;\n"+
   "    }\n"+
   "}\n"+
-  "/// <reference path=\"../../persistence/src/API.d.ts\"/>\n"+
-  "function setupWebWorkerAgent(callback) {\n"+
-  "    var _self = self;\n"+
-  "    var _setInterval = setInterval;\n"+
-  "    var _clearInterval = clearInterval;\n"+
-  "    var _postMessage = postMessage;\n"+
-  "    var _Function = Function;\n"+
-  "    var requests = { count: 0 };\n"+
-  "    var diagTimeStart = +new Date();\n"+
-  "    var fs_orReason = detectSyncFS_orReason();\n"+
-  "    if (typeof fs_orReason === 'string' || !fs_orReason) {\n"+
-  "        setupFullyAsyncAgent(fs_orReason || 'synchronous filesystem not found');\n"+
+  "function RUN_SYNCFS_AIDED_CHANNEL(fs, msg) {\n"+
+  "    var cookieBaseDate = +new Date();\n"+
+  "    self_onmessage = SYNCFS_AIDED_CHANNEL_webworker_onmessage;\n"+
+  "    var pushMessageDispatcher = createPushMessageDispatcher();\n"+
+  "    var requestResponseDispatcher = createRequestResponseDispatcher();\n"+
+  "    var drive = {\n"+
+  "        timestamp: msg.driveTimestamp,\n"+
+  "        files: files_SYNCFS_AIDED_CHANNEL,\n"+
+  "        read: read_SYNCFS_AIDED_CHANNEL,\n"+
+  "        write: write_SYNCFS_AIDED_CHANNEL,\n"+
+  "        storedSize: storedSize_SYNCFS_AIDED_CHANNEL\n"+
+  "    };\n"+
+  "    connection_to_parent = {\n"+
+  "        drive: drive,\n"+
+  "        onPushMessage: pushMessageDispatcher.onPushMessage,\n"+
+  "        invokeAsync: invokeAsync_SYNCFS_AIDED_CHANNEL,\n"+
+  "        invokeSync: invokeSync_SYNCFS_AIDED_CHANNEL\n"+
+  "    };\n"+
+  "    function SYNCFS_AIDED_CHANNEL_webworker_onmessage(e) {\n"+
+  "        if (e.data.asyncResponse) {\n"+
+  "            handleAsyncResponse_SYNCFS_AIDED_CHANNEL(e.data.asyncResponse);\n"+
+  "        }\n"+
+  "        else if (e.data.remoteEval) {\n"+
+  "            handleRemoteEval_EITHER_CHANNEL(e.data.remoteEval);\n"+
+  "        }\n"+
+  "        else if (e.data.pushMessage) {\n"+
+  "            pushMessageDispatcher.handlePushMessage(e.data.pushMessage);\n"+
+  "        }\n"+
+  "        else if (e.data.driveUpdates) {\n"+
+  "            handleDriveUpdates_SYNCFS_AIDED_CHANNEL(e.data.driveUpdates);\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            reportUnknownMessage_SYNCFS_AIDED_CHANNEL(e);\n"+
+  "        }\n"+
   "    }\n"+
-  "    else {\n"+
-  "        trySetupSyncFSAidedAgent(fs_orReason);\n"+
+  "    function handleAsyncResponse_SYNCFS_AIDED_CHANNEL(asyncResponse) {\n"+
+  "        if (!asyncResponse.key) {\n"+
+  "            reportKeylessResponse(asyncResponse);\n"+
+  "            return;\n"+
+  "        }\n"+
+  "        var callback = requestResponseDispatcher.popCallback(asyncResponse.key);\n"+
+  "        callback(asyncResponse.error && errorSer.serialize(asyncResponse.error), asyncResponse.result);\n"+
   "    }\n"+
-  "    function detectSyncFS_orReason() {\n"+
-  "        var reqFS;\n"+
-  "        var reqFS_variant_name;\n"+
-  "        try {\n"+
-  "            if (typeof requestFileSystemSync === 'function') {\n"+
-  "                reqFS_variant_name = 'requestFileSystemSync';\n"+
-  "                reqFS = requestFileSystemSync;\n"+
+  "    function handleDriveUpdates_SYNCFS_AIDED_CHANNEL(driveUpdates) {\n"+
+  "        // TODO: support drive watch\n"+
+  "    }\n"+
+  "    function reportUnknownMessage_SYNCFS_AIDED_CHANNEL(e) {\n"+
+  "        if (_console_log)\n"+
+  "            _console_log('onmessage: unknown in SYNCFS_AIDED_CHANNEL: ', e.data, e);\n"+
+  "    }\n"+
+  "    function files_SYNCFS_AIDED_CHANNEL() {\n"+
+  "        var cookieFilename = generateCookieFilename('drive_files_');\n"+
+  "        var files_response = postMessageWaitForResponse({ driveRequest_files: cookieFilename }, cookieFilename, 'drive.files_');\n"+
+  "        return files_response;\n"+
+  "    }\n"+
+  "    function read_SYNCFS_AIDED_CHANNEL(file) {\n"+
+  "        var cookieFilename = generateCookieFilename('drive_read_');\n"+
+  "        var read_response = postMessageWaitForResponse({ driveRequest_read: { key: cookieFilename, file: file } }, cookieFilename, 'drive.read_');\n"+
+  "        return read_response;\n"+
+  "    }\n"+
+  "    function write_SYNCFS_AIDED_CHANNEL(file, content) {\n"+
+  "        var msg;\n"+
+  "        if (!content && (content === null || typeof content === 'undefined')) {\n"+
+  "            msg = { driveUpdates: [{ deleteFile: file }], timestamp: drive.timestamp };\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            msg = { driveUpdates: [{ updateFile: file, content: content }], timestamp: drive.timestamp };\n"+
+  "        }\n"+
+  "        postMessageToHost(msg);\n"+
+  "    }\n"+
+  "    function storedSize_SYNCFS_AIDED_CHANNEL(file) {\n"+
+  "        var cookieFilename = generateCookieFilename('drive_storedSize_');\n"+
+  "        var storedSize_response = postMessageWaitForResponse({ driveRequest_storedSize: { key: cookieFilename, file: file } }, cookieFilename, 'drive.storedSize_');\n"+
+  "        return storedSize_response;\n"+
+  "    }\n"+
+  "    function reportKeylessResponse(asyncResponse) {\n"+
+  "        if (_console_log)\n"+
+  "            _console_log('onmessage: asyncResponse with no key: ', asyncResponse);\n"+
+  "    }\n"+
+  "    function invokeAsync_SYNCFS_AIDED_CHANNEL(msg, callback) {\n"+
+  "        if (callback) {\n"+
+  "            var key = requestResponseDispatcher.pushCallback(callback);\n"+
+  "            postMessageToHost({ invokeAsync: { key: key, msg: msg } });\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            postMessageToHost({ invokeAsync: { msg: msg } });\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function invokeSync_SYNCFS_AIDED_CHANNEL(msg) {\n"+
+  "        var cookieFilename = generateCookieFilename('invokeSync_');\n"+
+  "        var invokeSync_response = postMessageWaitForResponse({ invokeSync: { key: cookieFilename, msg: msg } }, cookieFilename, 'invokeSync_');\n"+
+  "        if (invokeSync_response.error) {\n"+
+  "            var toThrow = errorSer.deserialize(invokeSync_response.error);\n"+
+  "            throw toThrow;\n"+
+  "        }\n"+
+  "        return invokeSync_response.response;\n"+
+  "    }\n"+
+  "    function postMessageWaitForResponse(msg, cookieFile, idle_sping_reason) {\n"+
+  "        postMessageToHost(msg);\n"+
+  "        while (true) {\n"+
+  "            var content = getFileSync(fs, cookieFile);\n"+
+  "            if (content) {\n"+
+  "                var result = _JSON_parse(content);\n"+
+  "                return result;\n"+
   "            }\n"+
-  "            else if (typeof webkitRequestFileSystemSync === 'function') {\n"+
-  "                reqFS_variant_name = 'webkitRequestFileSystemSync';\n"+
+  "            SYNCFS_idle_spin(idle_sping_reason);\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function generateCookieFilename(hint) {\n"+
+  "        var fn = hint + 'T' + ((+new Date()) - cookieBaseDate) + 'R' + Math.random().toString().replace(/\\./g, '');\n"+
+  "        return fn;\n"+
+  "    }\n"+
+  "}\n"+
+  "function SYNCFS_idle_spin(reason) {\n"+
+  "}\n"+
+  "var _addEventListener;\n"+
+  "var _setInterval;\n"+
+  "var _clearInterval;\n"+
+  "var _postMessage;\n"+
+  "var _Function;\n"+
+  "var _FileReaderSync;\n"+
+  "var _eval;\n"+
+  "var _console_log;\n"+
+  "var _JSON_parse;\n"+
+  "function captureGlobalScopeVariables_atStart() {\n"+
+  "    _addEventListener = addEventListener;\n"+
+  "    _setInterval = setInterval;\n"+
+  "    _clearInterval = clearInterval;\n"+
+  "    _postMessage = postMessage;\n"+
+  "    _Function = Function;\n"+
+  "    _FileReaderSync = FileReaderSync;\n"+
+  "    _eval = eval;\n"+
+  "    if (typeof console !== 'undefined' && console && typeof console.log === 'function') {\n"+
+  "        if (console.log.bind)\n"+
+  "            _console_log = console.log.bind(console);\n"+
+  "    }\n"+
+  "    if (typeof JSON !== 'undefined' && JSON && typeof JSON.parse === 'function') {\n"+
+  "        if (JSON.parse.bind) {\n"+
+  "            _JSON_parse = JSON.parse.bind(JSON);\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            var _JSON = JSON;\n"+
+  "            var _parse = JSON.parse;\n"+
+  "            _JSON_parse = function (txt) { return _parse.apply(_JSON, [txt]); };\n"+
+  "        }\n"+
+  "    }\n"+
+  "}\n"+
+  "function postMessageToHost(msg) {\n"+
+  "    _postMessage(msg);\n"+
+  "}\n"+
+  "var errorSer = createErrorSerializer();\n"+
+  "captureGlobalScopeVariables_atStart();\n"+
+  "addMessageEventListener();\n"+
+  "expectMessage_init_worker_connect(function () {\n"+
+  "    var fs = detectSyncFSAvailable_or_reason();\n"+
+  "    if (typeof fs === 'string')\n"+
+  "        return requestAsyncMode(fs);\n"+
+  "    try {\n"+
+  "        trySetupSyncMode(fs);\n"+
+  "    }\n"+
+  "    catch (error) {\n"+
+  "        requestAsyncMode(error.message);\n"+
+  "    }\n"+
+  "});\n"+
+  "function detectSyncFSAvailable_or_reason() {\n"+
+  "    var reqFS;\n"+
+  "    var reqFS_variant_name;\n"+
+  "    try {\n"+
+  "        reqFS_variant_name = 'requestFileSystemSync';\n"+
+  "        if (typeof requestFileSystemSync === 'function')\n"+
+  "            reqFS = requestFileSystemSync;\n"+
+  "        else {\n"+
+  "            reqFS_variant_name = 'webkitRequestFileSystemSync';\n"+
+  "            if (typeof webkitRequestFileSystemSync === 'function')\n"+
   "                reqFS = webkitRequestFileSystemSync;\n"+
-  "            }\n"+
-  "            else if (typeof mozRequestFileSystemSync === 'function') {\n"+
-  "                reqFS_variant_name = 'mozRequestFileSystemSync';\n"+
-  "                reqFS = mozRequestFileSystemSync;\n"+
-  "            }\n"+
-  "            else if (typeof oRequestFileSystemSync === 'function') {\n"+
-  "                reqFS_variant_name = 'oRequestFileSystemSync';\n"+
-  "                reqFS = oRequestFileSystemSync;\n"+
-  "            }\n"+
-  "            else if (typeof msRequestFileSystemSync === 'function') {\n"+
-  "                reqFS_variant_name = 'msRequestFileSystemSync';\n"+
-  "                reqFS = msRequestFileSystemSync;\n"+
-  "            }\n"+
   "            else {\n"+
-  "                return 'requestFileSystemSync and its prefixed variants are unavailable';\n"+
-  "            }\n"+
-  "        }\n"+
-  "        catch (error) {\n"+
-  "            return error.message + ' - accessing requestFileSync';\n"+
-  "        }\n"+
-  "        try {\n"+
-  "            var fs = reqFS('TEMPORARY', 1024);\n"+
-  "            return fs;\n"+
-  "        }\n"+
-  "        catch (error) {\n"+
-  "            return error.message + ' - invoking ' + reqFS_variant_name;\n"+
-  "        }\n"+
-  "    }\n"+
-  "    function trySetupSyncFSAidedAgent(fs) {\n"+
-  "        var initSyncFS_response_name = 'initSyncFS_response_' + Math.abs((((+new Date()) * Math.random()) | 0));\n"+
-  "        _self.onmessage = requestInitSync_onmessage;\n"+
-  "        _postMessage({ requestInitSync: initSyncFS_response_name });\n"+
-  "        // TODO: remove init file\n"+
-  "        var timeoutAfter = +new Date() + 1000;\n"+
-  "        var pollFS = _setInterval(function () {\n"+
-  "            var response = getFileSync(initSyncFS_response_name);\n"+
-  "            if (response === 'OK') {\n"+
-  "                _clearInterval(pollFS);\n"+
-  "                // TODO: delete file\n"+
-  "                createFSAidedAgent();\n"+
-  "                return;\n"+
-  "            }\n"+
-  "            var now = Date.now ? Date.now() : +new Date();\n"+
-  "            if (now > timeoutAfter) {\n"+
-  "                _clearInterval(pollFS);\n"+
-  "                setupFullyAsyncAgent('synchronous channel timed out');\n"+
-  "            }\n"+
-  "        }, 5);\n"+
-  "        function requestInitSync_onmessage(e) {\n"+
-  "            if (e.data.requestInitSync_reject) {\n"+
-  "                _clearInterval(pollFS);\n"+
-  "                _self.onmessage = null;\n"+
-  "                setupFullyAsyncAgent('synchronous channel timed out');\n"+
-  "            }\n"+
-  "        }\n"+
-  "        function createFSAidedAgent() {\n"+
-  "            var cnn = {\n"+
-  "                invokeSync: invokeSync,\n"+
-  "                invokeAsync: invokeAsync\n"+
-  "            };\n"+
-  "            callback(cnn);\n"+
-  "            _self.onmessage = webworker_onmessage;\n"+
-  "            _postMessage({ requestInitSync_completed: true });\n"+
-  "            function invokeSync(msg) {\n"+
-  "                var key = generateKey();\n"+
-  "                var pollCount = 0;\n"+
-  "                _postMessage({ invokeSync: { key: key, msg: msg } });\n"+
-  "                while (true) {\n"+
-  "                    var content = getFileSync(key);\n"+
-  "                    if (content) {\n"+
-  "                        var responseMsg = JSON.parse(content);\n"+
-  "                        return responseMsg;\n"+
+  "                reqFS_variant_name = 'mozRequestFileSystemSync';\n"+
+  "                if (typeof mozRequestFileSystemSync === 'function')\n"+
+  "                    reqFS = mozRequestFileSystemSync;\n"+
+  "                else {\n"+
+  "                    reqFS_variant_name = 'oRequestFileSystemSync';\n"+
+  "                    if (typeof oRequestFileSystemSync === 'function')\n"+
+  "                        reqFS = oRequestFileSystemSync;\n"+
+  "                    else {\n"+
+  "                        reqFS_variant_name = 'msRequestFileSystemSync';\n"+
+  "                        if (typeof msRequestFileSystemSync === 'function')\n"+
+  "                            reqFS = msRequestFileSystemSync;\n"+
+  "                        else\n"+
+  "                            return 'requestFileSystemSync and its prefixed variants are unavailable';\n"+
   "                    }\n"+
-  "                    pollCount++;\n"+
-  "                    try {\n"+
-  "                        throw new Error('THISBECAUGHT');\n"+
-  "                    }\n"+
-  "                    catch (error) { }\n"+
   "                }\n"+
   "            }\n"+
   "        }\n"+
-  "        function getFileSync(fname) {\n"+
-  "            try {\n"+
-  "                var fentry = fs.root.getFile(fname, { create: false });\n"+
-  "                var file = fentry.file();\n"+
-  "                var reader = new FileReaderSync();\n"+
-  "                var text = reader.readAsText(file);\n"+
-  "                return text;\n"+
-  "            }\n"+
-  "            catch (err) {\n"+
-  "            }\n"+
-  "        }\n"+
   "    }\n"+
-  "    function setupFullyAsyncAgent(reason) {\n"+
-  "        _self.onmessage = webworker_onmessage;\n"+
-  "        _postMessage({ requestInitAsync: reason || 'default' });\n"+
+  "    catch (error) {\n"+
+  "        return error.message + ' - probing typeof ' + reqFS_variant_name;\n"+
   "    }\n"+
-  "    function webworker_onmessage(e) {\n"+
-  "        if (e.data.initAsync_response) {\n"+
-  "            handleInitAsync_response();\n"+
-  "        }\n"+
-  "        else if (e.data.asyncResponse) {\n"+
-  "            handleAsyncResponse(e.data.asyncResponse);\n"+
-  "        }\n"+
-  "        else if (e.data.remoteEval) {\n"+
-  "            handleRemoteEval(e.data.remoteEval);\n"+
-  "        }\n"+
+  "    try {\n"+
+  "        var fs = reqFS('TEMPORARY', 1024);\n"+
+  "        return fs;\n"+
   "    }\n"+
-  "    function handleAsyncResponse(asyncResponse) {\n"+
-  "        if (!asyncResponse.key)\n"+
-  "            return;\n"+
-  "        var callback = requests[asyncResponse.key];\n"+
-  "        if (!callback)\n"+
-  "            return;\n"+
-  "        delete requests[asyncResponse.key];\n"+
-  "        if (asyncResponse.error) {\n"+
-  "            var error = deserializeError(asyncResponse.error);\n"+
-  "            callback(error, asyncResponse.result);\n"+
+  "    catch (error) {\n"+
+  "        return error.message + ' - invoking ' + reqFS_variant_name;\n"+
+  "    }\n"+
+  "}\n"+
+  "function expectMessage_init_worker_connect(callback) {\n"+
+  "    self_onmessage = function (e) {\n"+
+  "        if (e.data.init_worker_connect) {\n"+
+  "            self_onmessage = null;\n"+
+  "            callback();\n"+
   "        }\n"+
   "        else {\n"+
-  "            callback(asyncResponse.error, asyncResponse.result);\n"+
+  "            reportUnknownMessage_expecting_init_worker_connect(e);\n"+
   "        }\n"+
+  "    };\n"+
+  "    function reportUnknownMessage_expecting_init_worker_connect(e) {\n"+
+  "        if (_console_log)\n"+
+  "            _console_log('onmessage: unknown expecting init_worker_connect: ', e.data, e);\n"+
   "    }\n"+
-  "    function handleInitAsync_response() {\n"+
-  "        var cnn = { invokeAsync: invokeAsync };\n"+
-  "        callback(cnn);\n"+
+  "}\n"+
+  "function handleRemoteEval_EITHER_CHANNEL(remoteEval) {\n"+
+  "    try {\n"+
+  "        var script = remoteEval.script;\n"+
+  "        var arg = remoteEval.arg;\n"+
+  "        var result = (new _Function(script))(arg);\n"+
+  "        if (!remoteEval.key) {\n"+
+  "            if (_console_log)\n"+
+  "                _console_log('remoteEval: succeeded while no key was passed: ', result, remoteEval);\n"+
+  "            return;\n"+
+  "        }\n"+
+  "        var remoteResponse = {\n"+
+  "            key: remoteEval.key,\n"+
+  "            result: result\n"+
+  "        };\n"+
+  "        postMessageToHost({ remoteResponse: remoteResponse });\n"+
+  "    }\n"+
+  "    catch (error) {\n"+
+  "        if (!remoteEval.key) {\n"+
+  "            if (_console_log)\n"+
+  "                _console_log('remoteEval: error while no key was passed: ', error, remoteEval);\n"+
+  "            return;\n"+
+  "        }\n"+
+  "        var remoteErrorResponse = {\n"+
+  "            key: remoteEval.key,\n"+
+  "            error: errorSer.serialize(error)\n"+
+  "        };\n"+
+  "        postMessageToHost({ remoteErrorResponse: remoteErrorResponse });\n"+
+  "    }\n"+
+  "}\n"+
+  "/// <reference path=\"../../persistence/src/API.d.ts\"/>\n"+
+  "function createErrorSerializer() {\n"+
+  "    var dummyError = new Error();\n"+
+  "    var knownProps = [\n"+
+  "        'message', 'name',\n"+
+  "        'stack',\n"+
+  "        'fileName', 'lineNumber', 'columnNumber',\n"+
+  "        'description', 'number', 'stackTraceLimit'\n"+
+  "    ];\n"+
+  "    var deserializedCtorCache = {};\n"+
+  "    return {\n"+
+  "        serialize: serialize_error,\n"+
+  "        deserialize: deserialize_error\n"+
+  "    };\n"+
+  "    function serialize_error(error) {\n"+
+  "        if (!error)\n"+
+  "            return error;\n"+
+  "        var result = {};\n"+
+  "        if (typeof error.prototype.constructor === 'function') {\n"+
+  "            if (error.constructor.name) {\n"+
+  "                result['@constructor'] = error.constructor.name;\n"+
+  "            }\n"+
+  "            else {\n"+
+  "                var nameMatch = /function ([^\\(]*)/.exec(error.constructor + '');\n"+
+  "                if (nameMatch && nameMatch[1] && nameMatch[1].length < 200) {\n"+
+  "                    var ctorName = nameMatch[1].replace(/[\\s]+/g, ''); // additionally eliminate possible spaces\n"+
+  "                    result['@constructor'] = ctorName;\n"+
+  "                }\n"+
+  "            }\n"+
+  "        }\n"+
+  "        for (var i = 0; i < knownProps.length; i++) {\n"+
+  "            var p = knownProps[i];\n"+
+  "            if (error[p] !== null && typeof error[p] !== 'undefined' && typeof error[p] !== 'function')\n"+
+  "                result[p] = error[p];\n"+
+  "        }\n"+
+  "        for (var p in error) {\n"+
+  "            if (p in result)\n"+
+  "                continue;\n"+
+  "            // this skips those weird upper-case constants from Error\n"+
+  "            if (p in dummyError && error[p] === dummyError[p] && p.match(/^[A-Z][A-Z0-9_]+$/))\n"+
+  "                continue;\n"+
+  "            if (typeof error[p] === 'function')\n"+
+  "                continue;\n"+
+  "            result[p] = error[p];\n"+
+  "        }\n"+
+  "        if (error.prototype) {\n"+
+  "            for (var p in error.prototype) {\n"+
+  "                if (p in result)\n"+
+  "                    continue;\n"+
+  "                // this skips those weird upper-case constants from Error\n"+
+  "                if (p in dummyError && error[p] === dummyError[p] && p.match(/^[A-Z][A-Z0-9_]+$/))\n"+
+  "                    continue;\n"+
+  "                if (typeof error[p] === 'function')\n"+
+  "                    continue;\n"+
+  "                result[p] = error[p];\n"+
+  "            }\n"+
+  "        }\n"+
+  "        return result;\n"+
+  "    }\n"+
+  "    function deserialize_error(err) {\n"+
+  "        if (!err)\n"+
+  "            return err;\n"+
+  "        var result;\n"+
+  "        var ctorName = err['@constructor'];\n"+
+  "        if (deserializedCtorCache.hasOwnProperty(ctorName)) {\n"+
+  "            result = new deserializedCtorCache[ctorName];\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            result = createErrorInstance_uncachedCtorName(ctorName);\n"+
+  "        }\n"+
+  "        for (var k in err) {\n"+
+  "            if (!result[k])\n"+
+  "                result[k] = err[k];\n"+
+  "        }\n"+
+  "        return result;\n"+
+  "    }\n"+
+  "    function createErrorInstance_uncachedCtorName(ctorName) {\n"+
+  "        var result;\n"+
+  "        ctorName = validateCtorName(ctorName);\n"+
+  "        if (ctorName) {\n"+
+  "            try {\n"+
+  "                var getFromGlobal = new Function('return typeof ' + ctorName + '===\"undefined\"?null:' + ctorName);\n"+
+  "                var ctor = getFromGlobal();\n"+
+  "                if (ctor) {\n"+
+  "                    result = new ctor();\n"+
+  "                    deserializedCtorCache[ctorName] = ctor;\n"+
+  "                }\n"+
+  "            }\n"+
+  "            catch (error) {\n"+
+  "            }\n"+
+  "            if (!result) {\n"+
+  "                var getCtor = new Function('return ' + ctorName + '; function ' + ctorName + '(){}');\n"+
+  "                ctor = getCtor();\n"+
+  "                deserializedCtorCache[ctorName] = ctor;\n"+
+  "                result = new ctor();\n"+
+  "            }\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            result = {};\n"+
+  "        }\n"+
+  "        return result;\n"+
+  "    }\n"+
+  "    function validateCtorName(ctorName) {\n"+
+  "        if (ctorName) {\n"+
+  "            if (!/^A-Za-z0-9_$/.test(ctorName)) {\n"+
+  "                for (var i = 0; i < ctorName.length; i++) {\n"+
+  "                    var ctorChar = ctorName.charAt(i);\n"+
+  "                    if (/^A-Za-z0-9_$/.test(ctorChar))\n"+
+  "                        continue;\n"+
+  "                    else if (ctorChar.toLowerCase() !== ctorChar.toUpperCase())\n"+
+  "                        continue;\n"+
+  "                    // no, this is definitely a wrong character for identifier\n"+
+  "                    ctorName = null;\n"+
+  "                    break;\n"+
+  "                }\n"+
+  "            }\n"+
+  "        }\n"+
+  "        return ctorName;\n"+
+  "    }\n"+
+  "}\n"+
+  "function createRequestResponseDispatcher() {\n"+
+  "    var diagTimeStart = +new Date();\n"+
+  "    var requests = { count: 0 };\n"+
+  "    return {\n"+
+  "        pushCallback: pushCallback_reqResDispatcher,\n"+
+  "        popCallback: popCallback_reqResDispatcher\n"+
+  "    };\n"+
+  "    function pushCallback_reqResDispatcher(callback) {\n"+
+  "        var key = generateKey();\n"+
+  "        requests[key] = callback;\n"+
+  "        return key;\n"+
+  "    }\n"+
+  "    function popCallback_reqResDispatcher(key) {\n"+
+  "        if (key) {\n"+
+  "            var callback = requests[key];\n"+
+  "            if (callback)\n"+
+  "                delete requests[key];\n"+
+  "        }\n"+
+  "        return callback;\n"+
   "    }\n"+
   "    function generateKey() {\n"+
   "        var key = (requests.count++).toString();\n"+
@@ -490,49 +925,380 @@ var createContextHost = (function () {
   "            key += '-' + (+new Date() - diagTimeStart) + 'ms';\n"+
   "        return key;\n"+
   "    }\n"+
-  "    function invokeAsync(msg, callback) {\n"+
-  "        if (callback) {\n"+
-  "            var key = generateKey();\n"+
-  "            requests[key] = callback;\n"+
-  "            _postMessage({ invokeAsync: { key: key, msg: msg } });\n"+
+  "}\n"+
+  "function createPushMessageDispatcher() {\n"+
+  "    var registeredPushMessageCallbacks = [];\n"+
+  "    var registeredPushMessageCallbacks_length = 0;\n"+
+  "    return {\n"+
+  "        handlePushMessage: handlePushMessage_pushMessageDispatcher,\n"+
+  "        onPushMessage: onPushMessage_pushMessageDispatcher\n"+
+  "    };\n"+
+  "    function handlePushMessage_pushMessageDispatcher(pushMessage) {\n"+
+  "        for (var i = 0; i < registeredPushMessageCallbacks_length; i++) {\n"+
+  "            var cb = registeredPushMessageCallbacks[i];\n"+
+  "            if (cb)\n"+
+  "                cb(pushMessage);\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function onPushMessage_pushMessageDispatcher(callback) {\n"+
+  "        var index = registeredPushMessageCallbacks_length;\n"+
+  "        registeredPushMessageCallbacks.push(callback);\n"+
+  "        registeredPushMessageCallbacks_length++;\n"+
+  "        return unregister_pushMessageCallback;\n"+
+  "        function unregister_pushMessageCallback() {\n"+
+  "            if (index < 0)\n"+
+  "                return;\n"+
+  "            delete registeredPushMessageCallbacks[index];\n"+
+  "            index = -1;\n"+
+  "            // adjust the tail (removal of callbacks may run out of order)\n"+
+  "            var newLength = registeredPushMessageCallbacks_length;\n"+
+  "            while (!registeredPushMessageCallbacks[newLength] && newLength >= 0) {\n"+
+  "                newLength--;\n"+
+  "            }\n"+
+  "            if (newLength !== registeredPushMessageCallbacks_length)\n"+
+  "                registeredPushMessageCallbacks_length = newLength;\n"+
+  "        }\n"+
+  "    }\n"+
+  "}\n"+
+  "function driveApplyUpdates(tmDrive, msg) {\n"+
+  "    tmDrive.timestamp = Math.max(tmDrive.timestamp, msg.timestamp);\n"+
+  "    for (var i = 0; i < msg.driveUpdates.length; i++) {\n"+
+  "        var up = msg.driveUpdates[i];\n"+
+  "        if (up.deleteFile) {\n"+
+  "            tmDrive.write(up.deleteFile, null);\n"+
+  "        }\n"+
+  "        else if (up.updateFile) {\n"+
+  "            tmDrive.write(up.updateFile, up.content);\n"+
+  "        }\n"+
+  "    }\n"+
+  "}\n"+
+  "/// <reference path=\"ref.ts\"/>\n"+
+  "/// <reference path=\"createErrorSerializer.ts\"/>\n"+
+  "/// <reference path=\"createRequestResponseDispatcher.ts\"/>\n"+
+  "/// <reference path=\"createPushMessageDispatcher.ts\"/>\n"+
+  "/// <reference path=\"driveApplyUpdates.ts\"/>\n"+
+  "/// <reference path=\"../shared/all.ts\"/>\n"+
+  "function requestAsyncMode(fs_reason) {\n"+
+  "    self_onmessage = expect_driveSnapshot_thenStart_ASYNC_CHANNEL;\n"+
+  "    postMessageToHost({ requestInitAsync: fs_reason });\n"+
+  "    function expect_driveSnapshot_thenStart_ASYNC_CHANNEL(e) {\n"+
+  "        if (e.data.driveSnapshot) {\n"+
+  "            RUN_ASYNC_CHANNEL(e.data.driveSnapshot);\n"+
   "        }\n"+
   "        else {\n"+
-  "            _postMessage({ invokeAsync: { msg: msg } });\n"+
+  "            report_unexpectedMessage_whenExpecting_driveSnapshot(e);\n"+
   "        }\n"+
   "    }\n"+
-  "    function handleRemoteEval(remoteEval) {\n"+
+  "    function report_unexpectedMessage_whenExpecting_driveSnapshot(e) {\n"+
+  "        if (_console_log)\n"+
+  "            _console_log('onmessage: unknown expecting driveSnapshot for ASYNC_CHANNEL: ', e.data, e);\n"+
+  "    }\n"+
+  "}\n"+
+  "var self_onmessage;\n"+
+  "function addMessageEventListener() {\n"+
+  "    _addEventListener('message', function (e) {\n"+
+  "        if (!self_onmessage) {\n"+
+  "            if (_console_log)\n"+
+  "                _console_log('onmessage: self_onmessage is null: ', e.data, e); // but let it throw too\n"+
+  "        }\n"+
+  "        self_onmessage(e);\n"+
+  "    }, true);\n"+
+  "}\n"+
+  "function trySetupSyncMode(fs) {\n"+
+  "    var cookieFilename = generateCookieFilename();\n"+
+  "    pollForFile_or_expectMessage_requestInitSync_reject({\n"+
+  "        file: cookieFilename,\n"+
+  "        when_OK: function (msg) {\n"+
+  "            postMessageToHost({ requestInitSync_completed: 'done' });\n"+
+  "            return RUN_SYNCFS_AIDED_CHANNEL(fs, msg);\n"+
+  "        },\n"+
+  "        when_requestInitSync_reject: function (driveSnapshot) {\n"+
+  "            return RUN_ASYNC_CHANNEL(driveSnapshot);\n"+
+  "        },\n"+
+  "        when_timeout: function () {\n"+
+  "            return requestAsyncMode('wait for cookie file timed out: ' + cookieFilename);\n"+
+  "        }\n"+
+  "    });\n"+
+  "    function generateCookieFilename() {\n"+
+  "        var fn = 'T' + (+new Date()) + 'R' + Math.random().toString().replace(/\\./g, '');\n"+
+  "        return fn;\n"+
+  "    }\n"+
+  "    function pollForFile_or_expectMessage_requestInitSync_reject(opts) {\n"+
+  "        var cookieFilename = opts.file;\n"+
+  "        var timeoutAfter = +new Date() + 1000 * 88888; // TODO: DEBUGDEBUG\n"+
+  "        self_onmessage = requestInitSync_onmessage;\n"+
+  "        var pollFS = _setInterval(setInterval_pollFS, 5);\n"+
+  "        postMessageToHost({ requestInitSync: opts.file });\n"+
+  "        function setInterval_pollFS() {\n"+
+  "            var response = getFileSync(fs, cookieFilename);\n"+
+  "            if (response) {\n"+
+  "                var response_msg = _JSON_parse(response);\n"+
+  "                _clearInterval(pollFS);\n"+
+  "                opts.when_OK(response_msg);\n"+
+  "                return;\n"+
+  "            }\n"+
+  "            var now = Date.now ? Date.now() : +new Date();\n"+
+  "            if (now > timeoutAfter) {\n"+
+  "                _clearInterval(pollFS);\n"+
+  "                opts.when_timeout();\n"+
+  "                return;\n"+
+  "            }\n"+
+  "        }\n"+
+  "        function requestInitSync_onmessage(e) {\n"+
+  "            if (e.data.requestInitSync_reject) {\n"+
+  "                _clearInterval(pollFS);\n"+
+  "                self_onmessage = null;\n"+
+  "                var driveSnapshot = e.data.requestInitSync_reject;\n"+
+  "                opts.when_requestInitSync_reject(driveSnapshot);\n"+
+  "            }\n"+
+  "            else {\n"+
+  "                reportUnexpectedMessage_whenPolling_syncFS(e);\n"+
+  "            }\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function reportUnexpectedMessage_whenPolling_syncFS(e) {\n"+
+  "        if (_console_log)\n"+
+  "            _console_log('onmessage: unknown when polling for SYNCFS_AIDED_CHANNEL: ', e.data, e);\n"+
+  "    }\n"+
+  "}\n"+
+  "function getFileSync(fs, fname) {\n"+
+  "    try {\n"+
+  "        /*\n"+
+  "        var found = true;\n"+
+  "        var entries = fs.root.createReader().readEntries();\n"+
+  "        for (var i = 0; i < entries.length; i++) {\n"+
+  "          if (entries[i].name===fname) {\n"+
+  "            found = true;\n"+
+  "            break;\n"+
+  "          }\n"+
+  "        }\n"+
+  "        if (!found) return;\n"+
+  "        */\n"+
+  "        var fentry = fs.root.getFile('/isolation-syncfs-aided--' + fname, { create: false });\n"+
+  "        var file = fentry.file();\n"+
+  "        var reader = new _FileReaderSync();\n"+
+  "        var text = reader.readAsText(file);\n"+
+  "        if (!text) {\n"+
+  "            return null;\n"+
+  "        }\n"+
   "        try {\n"+
-  "            var script = remoteEval.script;\n"+
-  "            var arg = remoteEval.arg;\n"+
-  "            var result = (new _Function(script))(arg);\n"+
-  "            var remoteResponse = {\n"+
-  "                key: remoteEval.key,\n"+
-  "                result: result\n"+
-  "            };\n"+
-  "            _postMessage({ remoteResponse: remoteResponse });\n"+
+  "            // MDN and W3C are ambiguous?\n"+
+  "            if (typeof fentry.remove === 'function')\n"+
+  "                fentry.remove();\n"+
+  "            else if (typeof file.remove === 'function')\n"+
+  "                file.remove();\n"+
   "        }\n"+
   "        catch (error) {\n"+
-  "            var remoteErrorResponse = {\n"+
-  "                key: remoteEval.key,\n"+
-  "                error: serializeError(error)\n"+
-  "            };\n"+
-  "            _postMessage({ remoteErrorResponse: remoteResponse });\n"+
   "        }\n"+
+  "        return text;\n"+
   "    }\n"+
-  "    function serializeError(error) {\n"+
-  "        return {\n"+
-  "            ctor: error.constructor.name,\n"+
-  "            to_string: error + '',\n"+
-  "            message: error.message,\n"+
-  "            stack: error.stack || null\n"+
-  "        };\n"+
-  "    }\n"+
-  "    function deserializeError(packedError) {\n"+
-  "        return packedError;\n"+
+  "    catch (err) {\n"+
   "    }\n"+
   "}\n";
     }
 })();
+/// <reference path="../../persistence/src/API.d.ts"/>
+function createErrorSerializer() {
+    var dummyError = new Error();
+    var knownProps = [
+        'message', 'name',
+        'stack',
+        'fileName', 'lineNumber', 'columnNumber',
+        'description', 'number', 'stackTraceLimit'
+    ];
+    var deserializedCtorCache = {};
+    return {
+        serialize: serialize_error,
+        deserialize: deserialize_error
+    };
+    function serialize_error(error) {
+        if (!error)
+            return error;
+        var result = {};
+        if (typeof error.prototype.constructor === 'function') {
+            if (error.constructor.name) {
+                result['@constructor'] = error.constructor.name;
+            }
+            else {
+                var nameMatch = /function ([^\(]*)/.exec(error.constructor + '');
+                if (nameMatch && nameMatch[1] && nameMatch[1].length < 200) {
+                    var ctorName = nameMatch[1].replace(/[\s]+/g, ''); // additionally eliminate possible spaces
+                    result['@constructor'] = ctorName;
+                }
+            }
+        }
+        for (var i = 0; i < knownProps.length; i++) {
+            var p = knownProps[i];
+            if (error[p] !== null && typeof error[p] !== 'undefined' && typeof error[p] !== 'function')
+                result[p] = error[p];
+        }
+        for (var p in error) {
+            if (p in result)
+                continue;
+            // this skips those weird upper-case constants from Error
+            if (p in dummyError && error[p] === dummyError[p] && p.match(/^[A-Z][A-Z0-9_]+$/))
+                continue;
+            if (typeof error[p] === 'function')
+                continue;
+            result[p] = error[p];
+        }
+        if (error.prototype) {
+            for (var p in error.prototype) {
+                if (p in result)
+                    continue;
+                // this skips those weird upper-case constants from Error
+                if (p in dummyError && error[p] === dummyError[p] && p.match(/^[A-Z][A-Z0-9_]+$/))
+                    continue;
+                if (typeof error[p] === 'function')
+                    continue;
+                result[p] = error[p];
+            }
+        }
+        return result;
+    }
+    function deserialize_error(err) {
+        if (!err)
+            return err;
+        var result;
+        var ctorName = err['@constructor'];
+        if (deserializedCtorCache.hasOwnProperty(ctorName)) {
+            result = new deserializedCtorCache[ctorName];
+        }
+        else {
+            result = createErrorInstance_uncachedCtorName(ctorName);
+        }
+        for (var k in err) {
+            if (!result[k])
+                result[k] = err[k];
+        }
+        return result;
+    }
+    function createErrorInstance_uncachedCtorName(ctorName) {
+        var result;
+        ctorName = validateCtorName(ctorName);
+        if (ctorName) {
+            try {
+                var getFromGlobal = new Function('return typeof ' + ctorName + '==="undefined"?null:' + ctorName);
+                var ctor = getFromGlobal();
+                if (ctor) {
+                    result = new ctor();
+                    deserializedCtorCache[ctorName] = ctor;
+                }
+            }
+            catch (error) {
+            }
+            if (!result) {
+                var getCtor = new Function('return ' + ctorName + '; function ' + ctorName + '(){}');
+                ctor = getCtor();
+                deserializedCtorCache[ctorName] = ctor;
+                result = new ctor();
+            }
+        }
+        else {
+            result = {};
+        }
+        return result;
+    }
+    function validateCtorName(ctorName) {
+        if (ctorName) {
+            if (!/^A-Za-z0-9_$/.test(ctorName)) {
+                for (var i = 0; i < ctorName.length; i++) {
+                    var ctorChar = ctorName.charAt(i);
+                    if (/^A-Za-z0-9_$/.test(ctorChar))
+                        continue;
+                    else if (ctorChar.toLowerCase() !== ctorChar.toUpperCase())
+                        continue;
+                    // no, this is definitely a wrong character for identifier
+                    ctorName = null;
+                    break;
+                }
+            }
+        }
+        return ctorName;
+    }
+}
+function createRequestResponseDispatcher() {
+    var diagTimeStart = +new Date();
+    var requests = { count: 0 };
+    return {
+        pushCallback: pushCallback_reqResDispatcher,
+        popCallback: popCallback_reqResDispatcher
+    };
+    function pushCallback_reqResDispatcher(callback) {
+        var key = generateKey();
+        requests[key] = callback;
+        return key;
+    }
+    function popCallback_reqResDispatcher(key) {
+        if (key) {
+            var callback = requests[key];
+            if (callback)
+                delete requests[key];
+        }
+        return callback;
+    }
+    function generateKey() {
+        var key = (requests.count++).toString();
+        // generate a bit of timestamp for the benefit of easier debugging
+        if (Date.now)
+            key += '-' + (Date.now() - diagTimeStart) + 'ms';
+        else
+            key += '-' + (+new Date() - diagTimeStart) + 'ms';
+        return key;
+    }
+}
+function createPushMessageDispatcher() {
+    var registeredPushMessageCallbacks = [];
+    var registeredPushMessageCallbacks_length = 0;
+    return {
+        handlePushMessage: handlePushMessage_pushMessageDispatcher,
+        onPushMessage: onPushMessage_pushMessageDispatcher
+    };
+    function handlePushMessage_pushMessageDispatcher(pushMessage) {
+        for (var i = 0; i < registeredPushMessageCallbacks_length; i++) {
+            var cb = registeredPushMessageCallbacks[i];
+            if (cb)
+                cb(pushMessage);
+        }
+    }
+    function onPushMessage_pushMessageDispatcher(callback) {
+        var index = registeredPushMessageCallbacks_length;
+        registeredPushMessageCallbacks.push(callback);
+        registeredPushMessageCallbacks_length++;
+        return unregister_pushMessageCallback;
+        function unregister_pushMessageCallback() {
+            if (index < 0)
+                return;
+            delete registeredPushMessageCallbacks[index];
+            index = -1;
+            // adjust the tail (removal of callbacks may run out of order)
+            var newLength = registeredPushMessageCallbacks_length;
+            while (!registeredPushMessageCallbacks[newLength] && newLength >= 0) {
+                newLength--;
+            }
+            if (newLength !== registeredPushMessageCallbacks_length)
+                registeredPushMessageCallbacks_length = newLength;
+        }
+    }
+}
+function driveApplyUpdates(tmDrive, msg) {
+    tmDrive.timestamp = Math.max(tmDrive.timestamp, msg.timestamp);
+    for (var i = 0; i < msg.driveUpdates.length; i++) {
+        var up = msg.driveUpdates[i];
+        if (up.deleteFile) {
+            tmDrive.write(up.deleteFile, null);
+        }
+        else if (up.updateFile) {
+            tmDrive.write(up.updateFile, up.content);
+        }
+    }
+}
+/// <reference path="ref.ts"/>
+/// <reference path="createErrorSerializer.ts"/>
+/// <reference path="createRequestResponseDispatcher.ts"/>
+/// <reference path="createPushMessageDispatcher.ts"/>
+/// <reference path="driveApplyUpdates.ts"/>
+/// <reference path="../shared/all.ts"/>
 
 
 	isolation.createContextHost = createContextHost;
@@ -563,13 +1329,38 @@ var tests;
 ;
 var tests;
 (function (tests) {
+    function driveAs(snapshot) {
+        if (!snapshot.timestamp)
+            snapshot.timestamp = 1465249756308;
+        snapshot.files = function () {
+            var result = [];
+            for (var k in snapshot)
+                if (k && k.charCodeAt(0) === 47)
+                    result.push(k);
+            return result;
+        };
+        snapshot.read = function (f) {
+            var dt = snapshot[f];
+            if (dt || typeof dt === 'string')
+                return dt;
+            else
+                return null;
+        };
+        snapshot.write = function (f, txt) {
+            if (txt || typeof txt === 'string')
+                snapshot[f] = txt;
+            else
+                delete snapshot[f];
+        };
+        return snapshot;
+    }
     tests['createContextHost'] = createTestsWith_createContextHost(isolation);
     tests['createContextHost_iframe'] = createTestsWith_createContextHost({ createContextHost: isolation.createContextHost.iframe });
     tests['createContextHost_worker'] = createTestsWith_createContextHost({ createContextHost: isolation.createContextHost.worker });
     function createTestsWith_createContextHost(isolation) {
         return {
             createContextHost_succeeds: function (callback) {
-                isolation.createContextHost(function (host) {
+                isolation.createContextHost(driveAs({}), function (host) {
                     callback();
                     try {
                         if (host)
@@ -579,7 +1370,7 @@ var tests;
                 });
             },
             createContextHost_terminate: function (callback) {
-                isolation.createContextHost(function (host) {
+                isolation.createContextHost(driveAs({}), function (host) {
                     try {
                         host.terminate();
                     }
@@ -591,7 +1382,7 @@ var tests;
                 });
             },
             remoteEval_withoutReturn: function (callback) {
-                isolation.createContextHost(function (host) {
+                isolation.createContextHost(driveAs({}), function (host) {
                     host.remoteEval('2+2', 0, function (error, result) {
                         try {
                             assert(!error, 'error ' + error);
@@ -614,7 +1405,7 @@ var tests;
                 });
             },
             remoteEval_returns: function (callback) {
-                isolation.createContextHost(function (host) {
+                isolation.createContextHost(driveAs({}), function (host) {
                     host.remoteEval('return 2+2', 0, function (error, result) {
                         try {
                             assert(!error, 'error ' + error);
@@ -636,7 +1427,7 @@ var tests;
                 });
             },
             remoteEval_terminate: function (callback) {
-                isolation.createContextHost(function (host) {
+                isolation.createContextHost(driveAs({}), function (host) {
                     host.remoteEval('return 2+2', 0, function (error, result) {
                         try {
                             host.terminate();
@@ -649,7 +1440,7 @@ var tests;
                 });
             },
             remoteEval_simpleIN: function (callback) {
-                var host = isolation.createContextHost(function (host) {
+                var host = isolation.createContextHost(driveAs({}), function (host) {
                     host.remoteEval('return arguments[0]', 56, function (error, result) {
                         try {
                             assert(!error, 'error ' + error);
@@ -671,7 +1462,7 @@ var tests;
                 });
             },
             remoteEval_complexIN: function (callback) {
-                isolation.createContextHost(function (host) {
+                isolation.createContextHost(driveAs({}), function (host) {
                     host.remoteEval('return arguments[0].value', { value: 97 }, function (error, result) {
                         try {
                             assert(!error, 'error ' + error);
@@ -693,7 +1484,7 @@ var tests;
                 });
             },
             remoteEval_complexOUT: function (callback) {
-                isolation.createContextHost(function (host) {
+                isolation.createContextHost(driveAs({}), function (host) {
                     host.remoteEval('return { value: 23 }', null, function (error, result) {
                         try {
                             assert(!error, 'error ' + error);
@@ -715,7 +1506,7 @@ var tests;
                 });
             },
             remoteEval_complexIN_OUT: function (callback) {
-                isolation.createContextHost(function (host) {
+                isolation.createContextHost(driveAs({}), function (host) {
                     host.remoteEval('return { value: arguments[0].x+arguments[0].y }', { x: 2, y: 2 }, function (error, result) {
                         try {
                             assert(!error, 'error ' + error);
@@ -738,7 +1529,7 @@ var tests;
             },
             connection_to_parent: {
                 invokeAsync_hits_onmessage: function (callback) {
-                    isolation.createContextHost(function (host) {
+                    isolation.createContextHost(driveAs({}), function (host) {
                         var key = 'TEST-connection_to_parent_invokeAsync-' + (+new Date()) + '-' + Math.random();
                         host.onmessage = function () {
                             callback();
@@ -757,7 +1548,7 @@ var tests;
                     });
                 },
                 invokeAsync_passes_right_message: function (callback) {
-                    isolation.createContextHost(function (host) {
+                    isolation.createContextHost(driveAs({}), function (host) {
                         var key = 'TEST-connection_to_parent_invokeAsync-' + (+new Date()) + '-' + Math.random();
                         host.onmessage = function (msg) {
                             try {
@@ -784,7 +1575,7 @@ var tests;
                     });
                 },
                 invokeAsync_passes_return_bounce: function (callback) {
-                    isolation.createContextHost(function (host) {
+                    isolation.createContextHost(driveAs({}), function (host) {
                         var key = 'TEST-connection_to_parent_invokeAsync-' + (+new Date()) + '-' + Math.random();
                         host.onmessage = function (msg, sync, response_callback) {
                             if (msg.TEST_response_after_invoke) {
@@ -802,7 +1593,7 @@ var tests;
                             else if (msg.TEST_key_original_message) {
                                 try {
                                     assert.equal(key, msg.TEST_key_original_message);
-                                    response_callback({ TEST_key_response: key });
+                                    response_callback(null, { TEST_key_response: key });
                                 }
                                 catch (error) {
                                     callback(error);
@@ -826,12 +1617,187 @@ var tests;
                             catch (error) { }
                         }
                     });
+                },
+                pushMessage_reply_with_invokeAsync: function (callback) {
+                    isolation.createContextHost(driveAs({}), function (host) {
+                        var key = 'TEST-connection_to_parent_invokeAsync-' + (+new Date()) + '-' + Math.random();
+                        host.onmessage = function (msg) {
+                            try {
+                                assert.equal(key + '123', msg.TEST_key);
+                            }
+                            catch (error) {
+                                callback(error);
+                                close_clean();
+                                return;
+                            }
+                            callback();
+                            close_clean();
+                        };
+                        host.remoteEval('var unsub = connection_to_parent.onPushMessage(function(msg) { connection_to_parent.invokeAsync({TEST_key: msg.key+"123"}); unsub(); }); ', null, function () {
+                            // nothing
+                        });
+                        host.pushMessage({ key: key });
+                        function close_clean() {
+                            try {
+                                if (host)
+                                    host.terminate();
+                            }
+                            catch (error) { }
+                        }
+                    });
+                },
+                drive_empty_files_none: function (callback) {
+                    isolation.createContextHost(driveAs({}), function (host) {
+                        host.remoteEval('return connection_to_parent.drive.files()', null, function (error, result) {
+                            close_clean();
+                            if (error)
+                                return callback(error);
+                            try {
+                                assert.equal(0, result.length);
+                            }
+                            catch (error) {
+                                return callback(error);
+                            }
+                            callback();
+                        });
+                        function close_clean() {
+                            try {
+                                if (host)
+                                    host.terminate();
+                            }
+                            catch (error) { }
+                        }
+                    });
+                },
+                drive_empty_read_null: function (callback) {
+                    isolation.createContextHost(driveAs({}), function (host) {
+                        host.remoteEval('return connection_to_parent.drive.read("/temp")', null, function (error, result) {
+                            close_clean();
+                            if (error)
+                                return callback(error);
+                            try {
+                                assert.equal(null, result);
+                            }
+                            catch (error) {
+                                return callback(error);
+                            }
+                            callback();
+                        });
+                        function close_clean() {
+                            try {
+                                if (host)
+                                    host.terminate();
+                            }
+                            catch (error) { }
+                        }
+                    });
+                },
+                drive_withFile_files: function (callback) {
+                    isolation.createContextHost(driveAs({ '/mytext': 'mytext12514' }), function (host) {
+                        host.remoteEval('return connection_to_parent.drive.files()', null, function (error, result) {
+                            close_clean();
+                            if (error)
+                                return callback(error);
+                            try {
+                                assert.equal(1, result.length);
+                                assert.equal('/mytext', result[0]);
+                            }
+                            catch (error) {
+                                return callback(error);
+                            }
+                            callback();
+                        });
+                        function close_clean() {
+                            try {
+                                if (host)
+                                    host.terminate();
+                            }
+                            catch (error) { }
+                        }
+                    });
+                },
+                drive_withFile_read_text06053: function (callback) {
+                    isolation.createContextHost(driveAs({ '/textfile': 'text06053' }), function (host) {
+                        host.remoteEval('return connection_to_parent.drive.read("/textfile")', null, function (error, result) {
+                            close_clean();
+                            if (error)
+                                return callback(error);
+                            try {
+                                assert.equal('text06053', result);
+                            }
+                            catch (error) {
+                                return callback(error);
+                            }
+                            callback();
+                        });
+                        function close_clean() {
+                            try {
+                                if (host)
+                                    host.terminate();
+                            }
+                            catch (error) { }
+                        }
+                    });
+                },
+                drive_write_read_immediately: function (callback) {
+                    isolation.createContextHost(driveAs({}), function (host) {
+                        host.remoteEval('connection_to_parent.drive.write("/mytext", "ui4345"); return connection_to_parent.drive.read("/mytext")', null, function (error, result) {
+                            close_clean();
+                            if (error)
+                                return callback(error);
+                            try {
+                                assert.equal('ui4345', result);
+                            }
+                            catch (error) {
+                                return callback(error);
+                            }
+                            callback();
+                        });
+                        function close_clean() {
+                            try {
+                                if (host)
+                                    host.terminate();
+                            }
+                            catch (error) { }
+                        }
+                    });
+                },
+                drive_write_spinCycle_affectsDrive: function (callback) {
+                    var drive = driveAs({});
+                    isolation.createContextHost(drive, function (host) {
+                        host.remoteEval('connection_to_parent.drive.write("/mytext", "rlrjo45")', null, function (error, result) {
+                            if (error) {
+                                close_clean();
+                                return callback(error);
+                            }
+                            host.remoteEval('null', null, function (error, result) {
+                                close_clean();
+                                if (error)
+                                    return callback(error);
+                                try {
+                                    assert.equal('rlrjo45', drive['/mytext']);
+                                }
+                                catch (error) {
+                                    return callback(error);
+                                }
+                                callback();
+                            });
+                        });
+                        function close_clean() {
+                            try {
+                                if (host)
+                                    host.terminate();
+                            }
+                            catch (error) { }
+                        }
+                    });
                 }
             }
         };
     }
 })(tests || (tests = {}));
 /// <reference path="../../persistence/src/API.d.ts"/>
+/// <reference path="../host/API.d.ts"/>
 
 
     // running tests from HTML page
@@ -844,10 +1810,15 @@ var tests;
 
   }
 
-  //</script>
+  // # sourceURL=/submodule_script.js </script>
   /* <style>
   .prepared {
     opacity: 0.5;
+  }
+  .running {
+    opacity: 1;
+    color: cornflowerblue;
+    font-weight: bold;
   }
   .success {
    opacity: 1;
@@ -909,6 +1880,7 @@ var tests;
       }
 
       var start = +new Date();
+      t.testEntry.className = 'running';
       t.run(function(error) {
         var finish = +new Date();
         var tm = document.createElement('span');
@@ -1177,5 +2149,4 @@ function jsStringLong(str) {
   }
 
 
-  // </script>
-  
+  // # sourceURL=/tests_scripts.js </script>
