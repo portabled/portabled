@@ -5,17 +5,19 @@
 function isolation() {
 
 	isolation.build = {
-    timestamp: 1465366247781, // Wed Jun 08 2016 07:10:47 GMT+0100 (GMT Daylight Time)
-    taken: 18888,
-    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36"
+    timestamp: 1465851590514, // Mon Jun 13 2016 21:59:50 GMT+0100 (GMT Daylight Time)
+    taken: 26545,
+    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.84 Safari/537.36"
 };
 
-var createContextHost = (function () {
+(function (module) {
     var errorSer = createErrorSerializer();
-    createContextHost.worker = createWebWorkerHost;
-    createContextHost.iframe = createIFrameHost;
-    return createContextHost;
-    function createContextHost(drive, callback) {
+    module.createIsolateHost = createIsolateHost;
+    module.createIsolateHost.worker = createWebWorkerHost;
+    module.createIsolateHost.iframe = createIFrameHost;
+    module.createApiHost = createApiHost;
+    return createIsolateHost;
+    function createIsolateHost(drive, callback) {
         var tryUseWebWorker = detectWebWorkerHint();
         if (tryUseWebWorker) {
             try {
@@ -49,9 +51,12 @@ var createContextHost = (function () {
             pushMessage: pushMessage_webworker,
             terminate: terminate_webworker,
             onerror: null,
-            onmessage: null
+            onmessage: null,
+            onconsole: null,
+            serializeError: errorSer.serialize
         };
         var fs;
+        var cmpSer = createComplexSerializer();
         function completeIsolatedProcess(type) {
             hst.type = type;
             callback(hst);
@@ -89,6 +94,9 @@ var createContextHost = (function () {
             }
             else if (e.data.driveRequest_storedSize) {
                 handleDriveRequest_storedSize(e.data.driveRequest_storedSize);
+            }
+            else if (e.data.console_echo) {
+                handleConsoleEcho(e.data.console_echo);
             }
             else if (e.data.key) {
                 var req = requests[e.data.key];
@@ -161,7 +169,7 @@ var createContextHost = (function () {
             if (!req)
                 return;
             delete requests[remoteErrorResponse.key];
-            var error_deserialized = errorSer.deserialize(remoteErrorResponse);
+            var error_deserialized = errorSer.deserialize(remoteErrorResponse.error);
             req(error_deserialized);
         }
         function handleDriveUpdates(driveUpdates) {
@@ -180,6 +188,17 @@ var createContextHost = (function () {
             else
                 size = (drive.read(msg.file) || '').length;
             writeFS(msg.key, '' + size);
+        }
+        function handleConsoleEcho(console_echo) {
+            var deser = cmpSer.deserialize(console_echo.args);
+            if (hst.onconsole) {
+                var onconsole = hst.onconsole;
+                onconsole(console_echo.level, deser);
+            }
+            else {
+                var levelFn = console[console_echo.level];
+                levelFn.apply(console, deser);
+            }
         }
         function createDriveSnapshot() {
             var driveSnapshot = { timestamp: drive.timestamp };
@@ -270,7 +289,7 @@ var createContextHost = (function () {
             }
             function fileWriter_onwriteend(e) { callback(); }
         }
-        function remoteEval_webworker(fnScript, arg, callback) {
+        function remoteEval_webworker(fnScript, arg, path, callback) {
             var key = (requests.count++).toString();
             // generate a bit of timestamp for the benefit of easier debugging
             if (Date.now)
@@ -280,7 +299,7 @@ var createContextHost = (function () {
             requests[key] = function (error, result) {
                 callback(error, result);
             };
-            webWorker.postMessage({ remoteEval: { script: fnScript, arg: arg, key: key } });
+            webWorker.postMessage({ remoteEval: { script: fnScript, arg: arg, path: path, key: key } });
         }
         function pushMessage_webworker(msg) {
             webWorker.postMessage({ pushMessage: msg });
@@ -290,7 +309,6 @@ var createContextHost = (function () {
         }
         function createWebWorker() {
             var worker_body = getWorkerAgentScript();
-            worker_body += '\n//# ' + 'sourceURL=/isolation_worker_body.js';
             if (typeof Blob === 'function') {
                 try {
                     return webWorkerFromBlob();
@@ -327,13 +345,15 @@ var createContextHost = (function () {
             pushMessage: pushMessage_iframe,
             terminate: terminate_iframe,
             onerror: null,
-            onmessage: null
+            onmessage: null,
+            onconsole: null,
+            serializeError: errorSer.serialize
         };
         var registeredPushMessageCallbacks = [];
         var registeredPushMessageCallbacks_length = 0;
         callback(hst);
-        function remoteEval_iframe(fnScript, arg, callback) {
-            var fn = (0, frm.evalFN)('(function(){' + fnScript + '\n})');
+        function remoteEval_iframe(fnScript, arg, path, callback) {
+            var fn = (0, frm.evalFN)('(function(){' + fnScript + '\n})' + (path ? '//# ' + 'sourceURL=' + path : ''));
             try {
                 var result = fn(arg);
             }
@@ -376,6 +396,7 @@ var createContextHost = (function () {
             }
         }
         function createIFrame() {
+            var cmpSer = createComplexSerializer();
             var ifr = document.createElement('iframe');
             ifr.src = 'about:blank'; // TODO: explore loading from Blob/data URI directly
             ifr.style.cssText = 'display: none; position: absolute; left: -50px; top: -50px; width: 0px; height: 0px;';
@@ -401,13 +422,128 @@ var createContextHost = (function () {
                 },
                 onPushMessage: onPushMessage
             };
+            if (ifrwin.console) {
+                ConsoleRedirect.prototype = ifrwin.console;
+            }
+            var console_redirect = new ConsoleRedirect();
+            console_redirect.log = log_redirect;
+            console_redirect.warn = warn_redirect;
+            console_redirect.debug = debug_redirect;
+            console_redirect.trace = trace_redirect;
+            console_redirect.error = error_redirect;
+            ifrwin.console = console_redirect;
             ifrwin.connection_to_parent = connection_to_parent;
             return { ifr: ifr, evalFN: evalFN, connection_to_parent: connection_to_parent };
+            function ConsoleRedirect() { }
+            function log_redirect() {
+                var args = [];
+                for (var i = 0; i < arguments.length; i++) {
+                    args.push(arguments[i]);
+                }
+                console_level_redirect('log', args);
+            }
+            function warn_redirect() {
+                var args = [];
+                for (var i = 0; i < arguments.length; i++) {
+                    args.push(arguments[i]);
+                }
+                console_level_redirect('warn', args);
+            }
+            function debug_redirect() {
+                var args = [];
+                for (var i = 0; i < arguments.length; i++) {
+                    args.push(arguments[i]);
+                }
+                console_level_redirect('debug', args);
+            }
+            function trace_redirect() {
+                var args = [];
+                for (var i = 0; i < arguments.length; i++) {
+                    args.push(arguments[i]);
+                }
+                console_level_redirect('trace', args);
+            }
+            function error_redirect() {
+                var args = [];
+                for (var i = 0; i < arguments.length; i++) {
+                    args.push(arguments[i]);
+                }
+                console_level_redirect('error', args);
+            }
+            function console_level_redirect(level, args) {
+                var serdeser = cmpSer.deserialize(cmpSer.serialize(args));
+                if (hst.onconsole) {
+                    hst.onconsole(level, serdeser);
+                }
+                else {
+                    if (typeof console !== 'undefined') {
+                        var levelFn = console[level] || console.log;
+                        levelFn.apply(console, serdeser);
+                    }
+                }
+            }
         }
         ;
     }
+    function createApiHost(drive, options, callback) {
+        isolation.createIsolateHost(drive, function (host) {
+            var noapiSetupScript = getApiScript() + '\n\n\n\n' +
+                'initApiContext(arguments[0]);';
+            host.remoteEval(noapiSetupScript, options, '/isolation_noapi.js', function (error) {
+                if (error) {
+                    // TODO: console.log??
+                    callback(null);
+                    return;
+                }
+                var api_host = host;
+                api_host.runGlobal = api_remote_runGlobal;
+                api_host.onmessage = api_remote_onmessage;
+                api_host.ondispose = null;
+                var reqResDispatcher = createRequestResponseDispatcher();
+                callback(api_host);
+                function api_remote_runGlobal(script, path, callback) {
+                    var key = reqResDispatcher.pushCallback(callback);
+                    api_host.pushMessage({ noapi_runGlobal: { script: script, path: path, key: key } });
+                }
+                function api_remote_onmessage(msg) {
+                    if (msg.noapi_ondispose) {
+                        var api_host_ondispose = api_host.ondispose;
+                        if (api_host_ondispose)
+                            api_host_ondispose();
+                    }
+                    else if (msg.noapi_runGlobal_error) {
+                        var key = msg.noapi_runGlobal_error.key;
+                        if (!key) {
+                            // TODO: console.log??
+                            return;
+                        }
+                        var callback = reqResDispatcher.popCallback(key);
+                        if (!callback) {
+                            // TODO: console.log??
+                            return;
+                        }
+                        var err = errorSer.deserialize(msg.noapi_runGlobal_error.error);
+                        callback(err);
+                    }
+                    else if (msg.noapi_runGlobal_response) {
+                        var key = msg.noapi_runGlobal_response.key;
+                        if (!key) {
+                            // TODO: console.log??
+                            return;
+                        }
+                        var callback = reqResDispatcher.popCallback(key);
+                        if (!callback) {
+                            // TODO: console.log??
+                            return;
+                        }
+                        callback(null, msg.noapi_runGlobal_response.response);
+                    }
+                }
+            });
+        });
+    }
     function getWorkerAgentScript() {
-        return "function RUN_ASYNC_CHANNEL(driveSnapshot) {\n"+
+        var worker_body = "function RUN_ASYNC_CHANNEL(driveSnapshot) {\n"+
   "    self_onmessage = ASYNC_CHANNEL_webworker_onmessage;\n"+
   "    var pushMessageDispatcher = createPushMessageDispatcher();\n"+
   "    var requestResponseDispatcher = createRequestResponseDispatcher();\n"+
@@ -425,8 +561,11 @@ var createContextHost = (function () {
   "    connection_to_parent = {\n"+
   "        drive: drive,\n"+
   "        onPushMessage: pushMessageDispatcher.onPushMessage,\n"+
-  "        invokeAsync: invokeAsync_ASYNC_CHANNEL\n"+
+  "        invokeAsync: invokeAsync_ASYNC_CHANNEL,\n"+
+  "        serializeError: errorSer.serialize\n"+
   "    };\n"+
+  "    var cmpSer = createComplexSerializer();\n"+
+  "    install_console_redirect(postMessageToHost, cmpSer.serialize);\n"+
   "    function invokeAsync_ASYNC_CHANNEL(msg, callback) {\n"+
   "        if (callback) {\n"+
   "            var key = requestResponseDispatcher.pushCallback(callback);\n"+
@@ -543,8 +682,11 @@ var createContextHost = (function () {
   "        drive: drive,\n"+
   "        onPushMessage: pushMessageDispatcher.onPushMessage,\n"+
   "        invokeAsync: invokeAsync_SYNCFS_AIDED_CHANNEL,\n"+
-  "        invokeSync: invokeSync_SYNCFS_AIDED_CHANNEL\n"+
+  "        invokeSync: invokeSync_SYNCFS_AIDED_CHANNEL,\n"+
+  "        serializeError: errorSer.serialize\n"+
   "    };\n"+
+  "    var cmpSer = createComplexSerializer();\n"+
+  "    install_console_redirect(postMessageToHost, cmpSer.serialize);\n"+
   "    function SYNCFS_AIDED_CHANNEL_webworker_onmessage(e) {\n"+
   "        if (e.data.asyncResponse) {\n"+
   "            handleAsyncResponse_SYNCFS_AIDED_CHANNEL(e.data.asyncResponse);\n"+
@@ -750,8 +892,12 @@ var createContextHost = (function () {
   "function handleRemoteEval_EITHER_CHANNEL(remoteEval) {\n"+
   "    try {\n"+
   "        var script = remoteEval.script;\n"+
+  "        if (remoteEval.path) {\n"+
+  "            script += '//# ' + 'sourceURL=' + remoteEval.path;\n"+
+  "        }\n"+
   "        var arg = remoteEval.arg;\n"+
-  "        var result = (new _Function(script))(arg);\n"+
+  "        var fn = new _Function(script);\n"+
+  "        var result = fn(arg);\n"+
   "        if (!remoteEval.key) {\n"+
   "            if (_console_log)\n"+
   "                _console_log('remoteEval: succeeded while no key was passed: ', result, remoteEval);\n"+
@@ -776,6 +922,57 @@ var createContextHost = (function () {
   "        postMessageToHost({ remoteErrorResponse: remoteErrorResponse });\n"+
   "    }\n"+
   "}\n"+
+  "function install_console_redirect(postMessageToHost, serialize) {\n"+
+  "    if (typeof console !== 'undefined' && console) {\n"+
+  "        ConsoleRedirect.prototype = console;\n"+
+  "    }\n"+
+  "    var console_redirect = new ConsoleRedirect();\n"+
+  "    console_redirect.log = log_redirect;\n"+
+  "    console_redirect.warn = warn_redirect;\n"+
+  "    console_redirect.debug = debug_redirect;\n"+
+  "    console_redirect.trace = trace_redirect;\n"+
+  "    console_redirect.error = error_redirect;\n"+
+  "    console = console_redirect;\n"+
+  "    function ConsoleRedirect() { }\n"+
+  "    function log_redirect() {\n"+
+  "        var args = [];\n"+
+  "        for (var i = 0; i < arguments.length; i++) {\n"+
+  "            args.push(arguments[i]);\n"+
+  "        }\n"+
+  "        console_level_redirect('log', args);\n"+
+  "    }\n"+
+  "    function warn_redirect() {\n"+
+  "        var args = [];\n"+
+  "        for (var i = 0; i < arguments.length; i++) {\n"+
+  "            args.push(arguments[i]);\n"+
+  "        }\n"+
+  "        console_level_redirect('warn', args);\n"+
+  "    }\n"+
+  "    function debug_redirect() {\n"+
+  "        var args = [];\n"+
+  "        for (var i = 0; i < arguments.length; i++) {\n"+
+  "            args.push(arguments[i]);\n"+
+  "        }\n"+
+  "        console_level_redirect('debug', args);\n"+
+  "    }\n"+
+  "    function trace_redirect() {\n"+
+  "        var args = [];\n"+
+  "        for (var i = 0; i < arguments.length; i++) {\n"+
+  "            args.push(arguments[i]);\n"+
+  "        }\n"+
+  "        console_level_redirect('trace', args);\n"+
+  "    }\n"+
+  "    function error_redirect() {\n"+
+  "        var args = [];\n"+
+  "        for (var i = 0; i < arguments.length; i++) {\n"+
+  "            args.push(arguments[i]);\n"+
+  "        }\n"+
+  "        console_level_redirect('error', args);\n"+
+  "    }\n"+
+  "    function console_level_redirect(level, args) {\n"+
+  "        postMessageToHost({ console_echo: { level: level, args: serialize(args) } });\n"+
+  "    }\n"+
+  "}\n"+
   "/// <reference path=\"../../persistence/src/API.d.ts\"/>\n"+
   "function createErrorSerializer() {\n"+
   "    var dummyError = new Error();\n"+
@@ -794,7 +991,7 @@ var createContextHost = (function () {
   "        if (!error)\n"+
   "            return error;\n"+
   "        var result = {};\n"+
-  "        if (typeof error.prototype.constructor === 'function') {\n"+
+  "        if (typeof error.constructor === 'function') {\n"+
   "            if (error.constructor.name) {\n"+
   "                result['@constructor'] = error.constructor.name;\n"+
   "            }\n"+
@@ -896,6 +1093,69 @@ var createContextHost = (function () {
   "        return ctorName;\n"+
   "    }\n"+
   "}\n"+
+  "function createComplexSerializer() {\n"+
+  "    var maxDepth = 3;\n"+
+  "    var dummy = {};\n"+
+  "    return {\n"+
+  "        serialize: serialize,\n"+
+  "        deserialize: deserialize\n"+
+  "    };\n"+
+  "    function serialize(obj) {\n"+
+  "        return serializeDepth(obj, 0);\n"+
+  "    }\n"+
+  "    function serializeDepth(obj, depth) {\n"+
+  "        switch (typeof obj) {\n"+
+  "            case 'function':\n"+
+  "                return serializeFunction(obj);\n"+
+  "            case 'object':\n"+
+  "                if (!obj)\n"+
+  "                    return 'null';\n"+
+  "                if ((Array.isArray && Array.isArray(obj)) || obj instanceof Array)\n"+
+  "                    return serializeArrayDepth(obj, depth);\n"+
+  "                return serializeObjectDepth(obj, depth);\n"+
+  "            default:\n"+
+  "                return obj;\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function serializeFunction(obj) {\n"+
+  "        return obj.name ? { '@function': 'function ' + obj.name + '() { /*...*/ }' } : { '@function': 'function() { /*...*/ }' };\n"+
+  "    }\n"+
+  "    function serializeObjectDepth(obj, depth) {\n"+
+  "        var srz = {};\n"+
+  "        if (obj.constructor && obj.constructor.name && obj.constructor.name) {\n"+
+  "            srz['@constructor'] = obj.constructor.name;\n"+
+  "        }\n"+
+  "        var propCount = 0;\n"+
+  "        for (var k in obj)\n"+
+  "            if (!(k in dummy)) {\n"+
+  "                if (depth > maxDepth) {\n"+
+  "                    propCount++;\n"+
+  "                    continue;\n"+
+  "                }\n"+
+  "                srz[k] = serializeDepth(obj[k], depth + 1);\n"+
+  "            }\n"+
+  "        if (depth > maxDepth && propCount) {\n"+
+  "            srz['...'] = propCount;\n"+
+  "        }\n"+
+  "        return srz;\n"+
+  "    }\n"+
+  "    function serializeArrayDepth(arr, depth) {\n"+
+  "        if (depth > maxDepth && arr.length) {\n"+
+  "            return ['...'];\n"+
+  "        }\n"+
+  "        var result = [];\n"+
+  "        for (var i = 0; i < arr.length; i++) {\n"+
+  "            var srz = serializeDepth(arr[i], depth + 1);\n"+
+  "            if (typeof srz === 'undefined')\n"+
+  "                continue;\n"+
+  "            result[i] = srz;\n"+
+  "        }\n"+
+  "        return result;\n"+
+  "    }\n"+
+  "    function deserialize(obj) {\n"+
+  "        return obj;\n"+
+  "    }\n"+
+  "}\n"+
   "function createRequestResponseDispatcher() {\n"+
   "    var diagTimeStart = +new Date();\n"+
   "    var requests = { count: 0 };\n"+
@@ -974,6 +1234,7 @@ var createContextHost = (function () {
   "}\n"+
   "/// <reference path=\"ref.ts\"/>\n"+
   "/// <reference path=\"createErrorSerializer.ts\"/>\n"+
+  "/// <reference path=\"createComplexSerializer.ts\"/>\n"+
   "/// <reference path=\"createRequestResponseDispatcher.ts\"/>\n"+
   "/// <reference path=\"createPushMessageDispatcher.ts\"/>\n"+
   "/// <reference path=\"driveApplyUpdates.ts\"/>\n"+
@@ -1095,8 +1356,1484 @@ var createContextHost = (function () {
   "    catch (err) {\n"+
   "    }\n"+
   "}\n";
+        worker_body = '(function() {    ' + worker_body + '\n\n\n})() //# ' + 'sourceURL=/isolation_worker_body.js';
+        return worker_body;
     }
-})();
+    function getApiScript() {
+        var script = "var __extends = (this && this.__extends) || function (d, b) {\n"+
+  "    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];\n"+
+  "    function __() { this.constructor = d; }\n"+
+  "    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());\n"+
+  "};\n"+
+  "function initApiContext(options) {\n"+
+  "    var _this = this;\n"+
+  "    var _connection_to_parent = connection_to_parent;\n"+
+  "    var _setTimeout = setTimeout;\n"+
+  "    var _setInterval = setInterval;\n"+
+  "    var _clearTimeout = clearTimeout;\n"+
+  "    var _clearInterval = clearInterval;\n"+
+  "    var _eval = eval;\n"+
+  "    var _self = self;\n"+
+  "    var _nativeObjects = getNativeObjects();\n"+
+  "    var _waitFor = 0;\n"+
+  "    var _fs_onfilesChanged;\n"+
+  "    var _moduleCache = {};\n"+
+  "    options.dispose = dispose;\n"+
+  "    options.keepAlive = keepAlive;\n"+
+  "    options.runGlobal = runGlobal;\n"+
+  "    if (!options.global)\n"+
+  "        options.global = {};\n"+
+  "    if (!options.coreModules)\n"+
+  "        options.coreModules = {\n"+
+  "            fs: null,\n"+
+  "            os: null,\n"+
+  "            path: null,\n"+
+  "            events: null,\n"+
+  "            http: null,\n"+
+  "            child_process: null\n"+
+  "        };\n"+
+  "    if (!options.scriptPath)\n"+
+  "        options.scriptPath = '/repl.js';\n"+
+  "    if (!options.argv)\n"+
+  "        options.argv = ['/node', options.scriptPath];\n"+
+  "    if (!options.cwd)\n"+
+  "        options.cwd = dirname(options.scriptPath);\n"+
+  "    options.global.process = options.process = createProcess(options.coreModules, options);\n"+
+  "    options.global.module = options.mainModule = createModule({}, 'repl' /*id*/, null /*filename*/, null /*parent*/, require);\n"+
+  "    options.requireModule = requireModule;\n"+
+  "    function require(moduleName) {\n"+
+  "        return options.requireModule(moduleName, dirname(options.scriptPath), null);\n"+
+  "    }\n"+
+  "    options.global.require = (function (moduleName) { return require(moduleName); });\n"+
+  "    options.global.require.resolve = function (id) { return options.resolve(id, options.cwd); };\n"+
+  "    options.global.require.main = options.mainModule;\n"+
+  "    options.global.__filename = options.scriptPath;\n"+
+  "    options.global.__dirname = dirname(options.scriptPath);\n"+
+  "    //options.global.console = this.console;\n"+
+  "    var fsTuple = createFS(options.drive, options.coreModules);\n"+
+  "    var _fs_onfilesChanged = fsTuple.filesChanged;\n"+
+  "    options.coreModules.fs = fsTuple.fs;\n"+
+  "    options.coreModules.os = createOS(options.global);\n"+
+  "    options.coreModules.path = createPath(options.process);\n"+
+  "    options.coreModules.http = createHTTP();\n"+
+  "    options.coreModules.events = createEvents();\n"+
+  "    var enhChild = function (proc) {\n"+
+  "        if (options.enhanceChildProcess)\n"+
+  "            options.enhanceChildProcess(proc);\n"+
+  "        proc.enhanceChildProcess = enhChild;\n"+
+  "    };\n"+
+  "    options.coreModules.child_process = createChildProcess(_connection_to_parent, {\n"+
+  "        fs: options.coreModules.fs,\n"+
+  "        path: options.coreModules.path,\n"+
+  "        process: options.global.process,\n"+
+  "        enhanceProcess: enhChild\n"+
+  "    });\n"+
+  "    options.process.exit = function (code) {\n"+
+  "        options.finished = true;\n"+
+  "        options.exitCode = code || 0;\n"+
+  "        dispose();\n"+
+  "    };\n"+
+  "    options.process.abort = function () {\n"+
+  "        options.finished = true;\n"+
+  "        dispose();\n"+
+  "    };\n"+
+  "    var timeouts = [];\n"+
+  "    options.global.setTimeout = function (fun, time) {\n"+
+  "        var args = [];\n"+
+  "        for (var _i = 2; _i < arguments.length; _i++) {\n"+
+  "            args[_i - 2] = arguments[_i];\n"+
+  "        }\n"+
+  "        if (options.finished)\n"+
+  "            return 0;\n"+
+  "        var wait = keepAlive();\n"+
+  "        var complete = function () {\n"+
+  "            delete timeouts[result];\n"+
+  "            wait();\n"+
+  "            fun();\n"+
+  "        };\n"+
+  "        var passArgs = [];\n"+
+  "        passArgs.push(complete);\n"+
+  "        passArgs.push(time);\n"+
+  "        for (var i = 0; i < args.length; i++) {\n"+
+  "            passArgs.push(args[i]);\n"+
+  "        }\n"+
+  "        var result = _setTimeout.apply(window, passArgs);\n"+
+  "        timeouts[result] = wait;\n"+
+  "        return result;\n"+
+  "    };\n"+
+  "    options.global.clearTimeout = function (tout) {\n"+
+  "        var wait = timeouts[tout];\n"+
+  "        if (wait)\n"+
+  "            wait();\n"+
+  "        delete timeouts[tout];\n"+
+  "        _clearTimeout(tout);\n"+
+  "    };\n"+
+  "    var intervals = [];\n"+
+  "    options.global.setInterval = function (fun, time) {\n"+
+  "        var args = [];\n"+
+  "        for (var _i = 2; _i < arguments.length; _i++) {\n"+
+  "            args[_i - 2] = arguments[_i];\n"+
+  "        }\n"+
+  "        if (options.finished)\n"+
+  "            return 0;\n"+
+  "        var wait = keepAlive();\n"+
+  "        var passArgs = [];\n"+
+  "        passArgs.push(fun);\n"+
+  "        passArgs.push(time);\n"+
+  "        for (var i = 0; i < args.length; i++) {\n"+
+  "            passArgs.push(args[i]);\n"+
+  "        }\n"+
+  "        var result = _setInterval.apply(window, passArgs);\n"+
+  "        intervals[result] = wait;\n"+
+  "        return result;\n"+
+  "    };\n"+
+  "    options.global.clearInterval = function (intv) {\n"+
+  "        var wait = intervals[intv];\n"+
+  "        if (wait)\n"+
+  "            wait();\n"+
+  "        delete intervals[intv];\n"+
+  "        _clearInterval(intv);\n"+
+  "    };\n"+
+  "    options.process.nextTick = function (fun) {\n"+
+  "        var wait = _this.keepAlive();\n"+
+  "        _setTimeout(function () {\n"+
+  "            wait();\n"+
+  "            fun();\n"+
+  "        }, 1);\n"+
+  "    };\n"+
+  "    _connection_to_parent.onPushMessage(noapi_context_onPushMessage);\n"+
+  "    function dispose() {\n"+
+  "        //this._context.dispose();\n"+
+  "        if (typeof options.ondispose === 'function')\n"+
+  "            options.ondispose();\n"+
+  "        _connection_to_parent.invokeAsync({ noapi_ondispose: 'disposed' });\n"+
+  "    }\n"+
+  "    function keepAlive() {\n"+
+  "        _waitFor++;\n"+
+  "        return function () {\n"+
+  "            _waitFor--;\n"+
+  "            if (_waitFor <= 0) {\n"+
+  "                _setTimeout(function () {\n"+
+  "                    if (_waitFor <= 0)\n"+
+  "                        dispose();\n"+
+  "                }, 150);\n"+
+  "            }\n"+
+  "        };\n"+
+  "    }\n"+
+  "    function resolve(id, modulePath) {\n"+
+  "        var tryPath = id.charAt(0) === '/' ? options.coreModules.path.resolve(id) : options.coreModules.path.resolve(modulePath, id);\n"+
+  "        if (id.charAt(0) === '/' || id.charAt(0) === '.') {\n"+
+  "            if (!options.coreModules.fs.existsSync(tryPath))\n"+
+  "                return null;\n"+
+  "            else if (options.coreModules.fs.statSync(tryPath).isFile())\n"+
+  "                return tryPath;\n"+
+  "            else\n"+
+  "                return _tryResolveModuleFromDir(tryPath);\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            var firstSlash = id.indexOf('/', 1); // definitely not pick on leading character\n"+
+  "            var moduleDir = firstSlash >= 0 ? id.slice(0, firstSlash) : id;\n"+
+  "            var moduleFileExact = firstSlash >= 0 ? id.slice(firstSlash + 1) : null;\n"+
+  "            tryPath = options.coreModules.path.resolve(modulePath);\n"+
+  "            while (true) {\n"+
+  "                var resolveDir = options.coreModules.path.join(tryPath, 'node_modules', moduleDir);\n"+
+  "                if (options.coreModules.fs.existsSync(resolveDir)) {\n"+
+  "                    if (moduleFileExact) {\n"+
+  "                        var resolvedFile = options.coreModules.path.join(resolveDir, moduleFileExact);\n"+
+  "                        if (options.coreModules.fs.existsSync(resolvedFile) && options.coreModules.fs.statSync(resolvedFile).isFile())\n"+
+  "                            return resolvedFile;\n"+
+  "                    }\n"+
+  "                    else {\n"+
+  "                        var resolved = _tryResolveModuleFromDir(resolveDir);\n"+
+  "                        if (resolved)\n"+
+  "                            return resolved;\n"+
+  "                    }\n"+
+  "                }\n"+
+  "                if (!tryPath || tryPath === '/')\n"+
+  "                    break;\n"+
+  "                var newTryPath = options.coreModules.path.dirname(tryPath);\n"+
+  "                if (newTryPath === tryPath || !newTryPath)\n"+
+  "                    break;\n"+
+  "                tryPath = newTryPath;\n"+
+  "            }\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function requireModule(moduleName, parentModulePath, parentModule) {\n"+
+  "        if (options.coreModules.hasOwnProperty(moduleName))\n"+
+  "            return options.coreModules[moduleName];\n"+
+  "        var resolvedPath = resolve(moduleName, parentModulePath);\n"+
+  "        if (resolvedPath) {\n"+
+  "            var existingLoaded = _moduleCache[resolvedPath];\n"+
+  "            if (resolvedPath in _moduleCache)\n"+
+  "                return existingLoaded;\n"+
+  "            existingLoaded = {};\n"+
+  "            _moduleCache[resolvedPath] = existingLoaded;\n"+
+  "            var content = options.coreModules.fs.readFileSync(resolvedPath);\n"+
+  "            if (content) {\n"+
+  "                var moduleDir = dirname(resolvedPath);\n"+
+  "                var loadedModule = createModule(existingLoaded, moduleName, resolvedPath, parentModule, function (moduleName) { return requireModule(moduleName, moduleDir, loadedModule); });\n"+
+  "                var moduleScope = (function () {\n"+
+  "                    var ModuleContext = function () { };\n"+
+  "                    ModuleContext.prototype = options.global;\n"+
+  "                    var moduleScope = new ModuleContext();\n"+
+  "                    moduleScope.global = moduleScope;\n"+
+  "                    moduleScope.require = function (moduleName) { return loadedModule.require(moduleName); };\n"+
+  "                    moduleScope.require.resolve = function (id) { return resolve(id, moduleDir); };\n"+
+  "                    moduleScope.require.main = options.mainModule;\n"+
+  "                    moduleScope.exports = loadedModule.exports;\n"+
+  "                    moduleScope.global.__filename = resolvedPath;\n"+
+  "                    moduleScope.global.__dirname = dirname(resolvedPath);\n"+
+  "                    if (options.console) {\n"+
+  "                        options.global.console = options.console;\n"+
+  "                        moduleScope.console = options.console;\n"+
+  "                    }\n"+
+  "                    moduleScope.module = loadedModule;\n"+
+  "                    return moduleScope;\n"+
+  "                })();\n"+
+  "                var contentScript = String(content);\n"+
+  "                if (contentScript.charAt(0) === '#') {\n"+
+  "                    var posLineEnd = contentScript.indexOf('\\n');\n"+
+  "                    if (posLineEnd > 0) {\n"+
+  "                        var firstLine = contentScript.slice(0, posLineEnd);\n"+
+  "                        if (firstLine.length > 2)\n"+
+  "                            firstLine = '//' + firstLine.slice(0, firstLine.length - 2);\n"+
+  "                        contentScript = firstLine + contentScript.slice(posLineEnd);\n"+
+  "                    }\n"+
+  "                }\n"+
+  "                // TODO: implement old runClosure\n"+
+  "                runScope(contentScript, resolvedPath, moduleScope, _self, _eval);\n"+
+  "                if (loadedModule.exports !== existingLoaded && loadedModule.exports) {\n"+
+  "                    for (var k in loadedModule.exports)\n"+
+  "                        if (typeof loadedModule.exports.hasOwnProperty === 'function' && loadedModule.exports.hasOwnProperty(k)) {\n"+
+  "                            existingLoaded[k] = loadedModule.exports[k];\n"+
+  "                        }\n"+
+  "                }\n"+
+  "                _moduleCache[resolvedPath] = loadedModule.exports;\n"+
+  "                return loadedModule.exports;\n"+
+  "            }\n"+
+  "        }\n"+
+  "        throw new Error('Cannot find module \\'' + moduleName + '\\'');\n"+
+  "    }\n"+
+  "    function _tryResolveModuleFromDir(resolveDir) {\n"+
+  "        var packageFile = options.coreModules.path.join(resolveDir, 'package.json');\n"+
+  "        if (options.coreModules.fs.existsSync(packageFile) && options.coreModules.fs.statSync(packageFile).isFile()) {\n"+
+  "            var packageJson = options.coreModules.fs.readFileSync(packageFile) + '';\n"+
+  "            try {\n"+
+  "                var packageObj = JSON.parse(packageJson);\n"+
+  "                var mainFile = options.coreModules.path.resolve(resolveDir, packageObj.main);\n"+
+  "                if (options.coreModules.fs.existsSync(mainFile) && options.coreModules.fs.statSync(mainFile).isFile())\n"+
+  "                    return mainFile;\n"+
+  "                else\n"+
+  "                    return null;\n"+
+  "            }\n"+
+  "            catch (packageJsonError) { }\n"+
+  "        }\n"+
+  "        var indexFile = options.coreModules.path.join(resolveDir, 'index.js');\n"+
+  "        if (options.coreModules.fs.existsSync(indexFile) && options.coreModules.fs.statSync(indexFile).isFile())\n"+
+  "            return indexFile;\n"+
+  "        else\n"+
+  "            return null;\n"+
+  "    }\n"+
+  "    function getNativeObjects() {\n"+
+  "        return {\n"+
+  "            setTimeout: 1, setInterval: 1, clearTimeout: 1, clearInterval: 1,\n"+
+  "            eval: 1,\n"+
+  "            console: 1,\n"+
+  "            undefined: 1,\n"+
+  "            Object: 1, Array: 1, Date: 1, Function: 1, String: 1, Boolean: 1, Number: 1,\n"+
+  "            Infinity: 1, NaN: 1, isNaN: 1, isFinite: 1, parseInt: 1, parseFloat: 1,\n"+
+  "            escape: 1, unescape: 1,\n"+
+  "            Int32Array: 1, Int8Array: 1, Int16Array: 1,\n"+
+  "            Uint32Array: 1, Uint8Array: 1, Uint8ClampedArray: 1, Uint16Array: 1,\n"+
+  "            Float32Array: 1, Float64Array: 1, ArrayBuffer: 1, DataView: 1,\n"+
+  "            Math: 1, JSON: 1, RegExp: 1,\n"+
+  "            Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,\n"+
+  "            toString: 1, toJSON: 1, toValue: 1,\n"+
+  "            Map: 1, Promise: 1\n"+
+  "        };\n"+
+  "    }\n"+
+  "    function runScope(code, path, scope, globalScope, eval) {\n"+
+  "        var argNames = [];\n"+
+  "        var argValues = [];\n"+
+  "        for (var k in scope)\n"+
+  "            if (scope.hasOwnProperty(k)) {\n"+
+  "                argNames.push(k);\n"+
+  "                argValues.push(scope[k]);\n"+
+  "            }\n"+
+  "        var obscureNameCache = {};\n"+
+  "        for (var k in globalScope) {\n"+
+  "            try {\n"+
+  "                if (typeof globalScope[k] === 'undefined')\n"+
+  "                    continue;\n"+
+  "            }\n"+
+  "            catch (error) {\n"+
+  "            }\n"+
+  "            if (k in scope || _nativeObjects[k] || obscureNameCache[k])\n"+
+  "                continue;\n"+
+  "            argNames.push(k);\n"+
+  "            obscureNameCache[k] = true;\n"+
+  "        }\n"+
+  "        if (typeof Object.getOwnPropertyNames === 'function') {\n"+
+  "            var allProps = Object.getOwnPropertyNames(globalScope);\n"+
+  "            for (var i = 0; i < allProps.length; i++) {\n"+
+  "                var k = allProps[i];\n"+
+  "                try {\n"+
+  "                    if (typeof globalScope[k] === 'undefined')\n"+
+  "                        continue;\n"+
+  "                }\n"+
+  "                catch (error) {\n"+
+  "                }\n"+
+  "                if (k in scope || _nativeObjects[k] || obscureNameCache[k])\n"+
+  "                    continue;\n"+
+  "                argNames.push(k);\n"+
+  "                obscureNameCache[k] = true;\n"+
+  "            }\n"+
+  "        }\n"+
+  "        var extendedCode = '(function(' + argNames.join(',') + '){    ' + code + '\\n}) //# ' + 'sourceURL=' + path;\n"+
+  "        var fn = eval(extendedCode);\n"+
+  "        return fn.apply(this, argValues);\n"+
+  "    }\n"+
+  "    function runGlobal(script, path) {\n"+
+  "        sanitizeGlobalScope(_self);\n"+
+  "        if (path) {\n"+
+  "            options.scriptPath = path;\n"+
+  "            options.global.__filename = path;\n"+
+  "            options.global.__dirname = dirname(path);\n"+
+  "        }\n"+
+  "        // impose global\n"+
+  "        for (var k in options.global)\n"+
+  "            if (options.hasOwnProperty(k)) {\n"+
+  "                try {\n"+
+  "                    _self[k] = options.global[k];\n"+
+  "                }\n"+
+  "                catch (error) {\n"+
+  "                }\n"+
+  "            }\n"+
+  "        var scriptWrapped = path ?\n"+
+  "            script + '\\n//# ' + 'sourceURL=' + path :\n"+
+  "            script;\n"+
+  "        return (0, _eval)(scriptWrapped);\n"+
+  "    }\n"+
+  "    function sanitizeGlobalScope(globalScope) {\n"+
+  "        var obscureNames = [];\n"+
+  "        var obscureNameCache = {};\n"+
+  "        for (var k in globalScope) {\n"+
+  "            try {\n"+
+  "                if (typeof globalScope[k] === 'undefined')\n"+
+  "                    continue;\n"+
+  "            }\n"+
+  "            catch (error) {\n"+
+  "            }\n"+
+  "            if (k in obscureNameCache || _nativeObjects[k])\n"+
+  "                continue;\n"+
+  "            obscureNames.push(k);\n"+
+  "            obscureNameCache[k] = true;\n"+
+  "        }\n"+
+  "        if (typeof Object.getOwnPropertyNames === 'function') {\n"+
+  "            var allProps = Object.getOwnPropertyNames(globalScope);\n"+
+  "            for (var i = 0; i < allProps.length; i++) {\n"+
+  "                var k = allProps[i];\n"+
+  "                try {\n"+
+  "                    if (typeof globalScope[k] === 'undefined')\n"+
+  "                        continue;\n"+
+  "                }\n"+
+  "                catch (error) {\n"+
+  "                }\n"+
+  "                if (k in obscureNameCache || _nativeObjects[k])\n"+
+  "                    continue;\n"+
+  "                obscureNames.push(k);\n"+
+  "                obscureNameCache[k] = true;\n"+
+  "            }\n"+
+  "        }\n"+
+  "        for (var i = 0; i < obscureNames.length; i++) {\n"+
+  "            var _undef;\n"+
+  "            var k = obscureNames[i];\n"+
+  "            try {\n"+
+  "                globalScope[k] = _undef;\n"+
+  "            }\n"+
+  "            catch (error) {\n"+
+  "            }\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function noapi_context_onPushMessage(msg) {\n"+
+  "        if (msg.noapi_runGlobal) {\n"+
+  "            handlePushMessage(msg.noapi_runGlobal);\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function handlePushMessage(noapi_runGlobal) {\n"+
+  "        try {\n"+
+  "            var keepa = keepAlive();\n"+
+  "            var result = runGlobal(noapi_runGlobal.script, noapi_runGlobal.path);\n"+
+  "        }\n"+
+  "        catch (error) {\n"+
+  "            _connection_to_parent.invokeAsync({ noapi_runGlobal_error: _connection_to_parent.serializeError(error), key: noapi_runGlobal.key });\n"+
+  "            keepa();\n"+
+  "            return;\n"+
+  "        }\n"+
+  "        _connection_to_parent.invokeAsync({ noapi_runGlobal_response: result, key: noapi_runGlobal.key });\n"+
+  "        keepa();\n"+
+  "    }\n"+
+  "}\n"+
+  "function nextTick(callback) {\n"+
+  "    function fire() {\n"+
+  "        if (fired)\n"+
+  "            return;\n"+
+  "        fired = true;\n"+
+  "        callback();\n"+
+  "    }\n"+
+  "    var fired = false;\n"+
+  "    setTimeout(fire, 0);\n"+
+  "    if (typeof requestAnimationFrame !== 'undefined') {\n"+
+  "        requestAnimationFrame(fire);\n"+
+  "    }\n"+
+  "    else if (typeof msRequestAnimationFrame !== 'undefined') {\n"+
+  "        msRequestAnimationFrame(fire);\n"+
+  "    }\n"+
+  "}\n"+
+  "function wrapAsync(fn) {\n"+
+  "    return function () {\n"+
+  "        var args = [];\n"+
+  "        for (var i = 0; i < arguments.length - 1; i++) {\n"+
+  "            args.push(arguments[i]);\n"+
+  "        }\n"+
+  "        var callback = arguments[arguments.length - 1];\n"+
+  "        nextTick(function () {\n"+
+  "            try {\n"+
+  "                var result = fn.apply(null, args);\n"+
+  "            }\n"+
+  "            catch (error) {\n"+
+  "                callback(error);\n"+
+  "            }\n"+
+  "            callback(null, result);\n"+
+  "        });\n"+
+  "    };\n"+
+  "}\n"+
+  "function wrapAsyncNoError(fn) {\n"+
+  "    return function () {\n"+
+  "        var args = [];\n"+
+  "        for (var i = 0; i < arguments.length - 1; i++) {\n"+
+  "            args.push(arguments[i]);\n"+
+  "        }\n"+
+  "        var callback = arguments[arguments.length - 1];\n"+
+  "        nextTick(function () {\n"+
+  "            try {\n"+
+  "                var result = fn.apply(null, args);\n"+
+  "            }\n"+
+  "            catch (error) {\n"+
+  "                callback(error);\n"+
+  "            }\n"+
+  "            callback(result);\n"+
+  "        });\n"+
+  "    };\n"+
+  "}\n"+
+  "function createChildProcess(connection_to_parent, statics) {\n"+
+  "    var pidCounter = 827;\n"+
+  "    return {\n"+
+  "        spawn: spawn\n"+
+  "    };\n"+
+  "    function spawn() {\n"+
+  "        // TODO: invokeAsync-based implementation\n"+
+  "    }\n"+
+  "}\n"+
+  "function createEvents() {\n"+
+  "    return {\n"+
+  "        EventEmitter: EventEmitter\n"+
+  "    };\n"+
+  "}\n"+
+  "var EventEmitter = (function () {\n"+
+  "    function EventEmitter() {\n"+
+  "        this._listeners = {};\n"+
+  "    }\n"+
+  "    EventEmitter.prototype.addListener = function (event, listener) {\n"+
+  "        var key = '*' + event;\n"+
+  "        var list = this._listeners[key] || (this._listeners[key] = []);\n"+
+  "        list.push({ callback: listener });\n"+
+  "        return this;\n"+
+  "    };\n"+
+  "    EventEmitter.prototype.removeListener = function (event, listener) {\n"+
+  "        var key = '*' + event;\n"+
+  "        var list = this._listeners[key];\n"+
+  "        if (list) {\n"+
+  "            for (var i = 0; i < list.length; i++) {\n"+
+  "                if (list[i].callback === listener) {\n"+
+  "                    list.splice(i, 1);\n"+
+  "                    break;\n"+
+  "                }\n"+
+  "            }\n"+
+  "        }\n"+
+  "        return this;\n"+
+  "    };\n"+
+  "    EventEmitter.prototype.removeAllListeners = function (event) {\n"+
+  "        var key = '*' + event;\n"+
+  "        delete this._listeners[key];\n"+
+  "        return this;\n"+
+  "    };\n"+
+  "    EventEmitter.prototype.setMaxListeners = function (n) {\n"+
+  "        // too complicated for now, ignore\n"+
+  "    };\n"+
+  "    EventEmitter.prototype.listeners = function (event) {\n"+
+  "        var key = '*' + event;\n"+
+  "        var list = this._listeners[key];\n"+
+  "        if (!list)\n"+
+  "            return [];\n"+
+  "        var result = [];\n"+
+  "        for (var i = 0; i < list.length; i++)\n"+
+  "            result.push(list[i].callback);\n"+
+  "        return result;\n"+
+  "    };\n"+
+  "    EventEmitter.prototype.emit = function (event) {\n"+
+  "        var args = [];\n"+
+  "        for (var _i = 1; _i < arguments.length; _i++) {\n"+
+  "            args[_i - 1] = arguments[_i];\n"+
+  "        }\n"+
+  "        var key = '*' + event;\n"+
+  "        var list = this._listeners[key];\n"+
+  "        if (!list)\n"+
+  "            return false;\n"+
+  "        for (var i = 0; i < list.length; i++) {\n"+
+  "            var item = list[i];\n"+
+  "            if (args.length) {\n"+
+  "                item.callback.apply(null, args);\n"+
+  "            }\n"+
+  "            else {\n"+
+  "                var cb = item.callback;\n"+
+  "                cb(); // direct calling can be quicker\n"+
+  "            }\n"+
+  "            if (item.once) {\n"+
+  "                list.splice(i, 1);\n"+
+  "                i--;\n"+
+  "            }\n"+
+  "        }\n"+
+  "        return true;\n"+
+  "    };\n"+
+  "    EventEmitter.prototype.on = function (event, listener) {\n"+
+  "        return this.addListener(event, listener);\n"+
+  "    };\n"+
+  "    EventEmitter.prototype.once = function (event, listener) {\n"+
+  "        var key = '*' + event;\n"+
+  "        var list = this._listeners[key] || (this._listeners[key] = []);\n"+
+  "        list.push({ callback: listener, once: true });\n"+
+  "        return this;\n"+
+  "    };\n"+
+  "    return EventEmitter;\n"+
+  "}());\n"+
+  "var fs_cache;\n"+
+  "(function (fs_cache) {\n"+
+  "    function fs_cache_structure(files) {\n"+
+  "        var all = {};\n"+
+  "        var root = { name: '/', files: null };\n"+
+  "        files.sort();\n"+
+  "        for (var i = 0; i < files.length; i++) {\n"+
+  "            var fi = files[i];\n"+
+  "            pushFile(fi, all, root);\n"+
+  "        }\n"+
+  "        return { all: all, root: root };\n"+
+  "    }\n"+
+  "    fs_cache.fs_cache_structure = fs_cache_structure;\n"+
+  "    function pushFile(fi, all, root) {\n"+
+  "        var parent = root;\n"+
+  "        var parentSlash = 0;\n"+
+  "        if (fi.charCodeAt(0) !== 47)\n"+
+  "            fi = '/' + fi;\n"+
+  "        while (true) {\n"+
+  "            var nextSlash = fi.indexOf('/', parentSlash + 1);\n"+
+  "            if (nextSlash < 0) {\n"+
+  "                if (parentSlash < fi.length - 1)\n"+
+  "                    all[fi] = parent[fi] = fi.slice(parentSlash + 1);\n"+
+  "                return;\n"+
+  "            }\n"+
+  "            var dirPath = fi.slice(0, nextSlash);\n"+
+  "            if (typeof parent[dirPath] !== 'object')\n"+
+  "                parent[dirPath] = { name: fi.slice(parentSlash + 1, nextSlash), files: null };\n"+
+  "            parent = all[dirPath] = parent[dirPath];\n"+
+  "            parentSlash = nextSlash;\n"+
+  "        }\n"+
+  "    }\n"+
+  "})(fs_cache || (fs_cache = {}));\n"+
+  "function createFS(drive, modules) {\n"+
+  "    var fs = {\n"+
+  "        renameSync: renameSync,\n"+
+  "        rename: wrapAsync(renameSync),\n"+
+  "        statSync: statSync,\n"+
+  "        lstatSync: statSync,\n"+
+  "        stat: wrapAsync(statSync),\n"+
+  "        lstat: wrapAsync(statSync),\n"+
+  "        fstat: null, fstatSync: null,\n"+
+  "        existsSync: existsSync,\n"+
+  "        exists: wrapAsyncNoError(existsSync),\n"+
+  "        openSync: openSync,\n"+
+  "        open: wrapAsync(openSync),\n"+
+  "        close: null, closeSync: function () { },\n"+
+  "        fsync: null, fsyncSync: null,\n"+
+  "        readFileSync: readFileSync,\n"+
+  "        readFile: wrapAsync(readFileSync),\n"+
+  "        createReadStream: null,\n"+
+  "        writeFileSync: writeFileSync,\n"+
+  "        writeFile: wrapAsync(writeFileSync),\n"+
+  "        appendFile: null, appendFileSync: null,\n"+
+  "        createWriteStream: null,\n"+
+  "        readSync: readSync,\n"+
+  "        read: wrapAsync(readSync),\n"+
+  "        writeSync: writeSync,\n"+
+  "        write: wrapAsync(writeSync),\n"+
+  "        truncate: null, truncateSync: null,\n"+
+  "        ftruncate: null, ftruncateSync: null,\n"+
+  "        chown: null, chownSync: null,\n"+
+  "        fchown: null, fchownSync: null,\n"+
+  "        lchown: null, lchownSync: null,\n"+
+  "        chmod: null, chmodSync: null,\n"+
+  "        fchmod: null, fchmodSync: null,\n"+
+  "        lchmod: null, lchmodSync: null,\n"+
+  "        link: null, linkSync: null,\n"+
+  "        readlink: null, readlinkSync: null,\n"+
+  "        symlink: null, symlinkSync: null,\n"+
+  "        unlink: null, unlinkSync: null,\n"+
+  "        realpath: null, realpathSync: null,\n"+
+  "        mkdir: wrapAsync(mkdirSync), mkdirSync: mkdirSync,\n"+
+  "        rmdir: null, rmdirSync: null,\n"+
+  "        readdir: wrapAsync(readdirSync), readdirSync: readdirSync,\n"+
+  "        utimes: null, utimesSync: null,\n"+
+  "        futimes: null, futimesSync: null,\n"+
+  "        watch: watch, watchFile: watchFile, unwatchFile: unwatchFile\n"+
+  "    };\n"+
+  "    return { fs: fs, filesChanged: onfilesChanged };\n"+
+  "    var _cache;\n"+
+  "    var _cache_timestamp;\n"+
+  "    function get_cache() {\n"+
+  "        if (!_cache || _cache_timestamp !== drive.timestamp) {\n"+
+  "            _cache = fs_cache.fs_cache_structure(drive.files());\n"+
+  "            _cache_timestamp = drive.timestamp;\n"+
+  "        }\n"+
+  "        return _cache;\n"+
+  "    }\n"+
+  "    function readdirSync(path) {\n"+
+  "        var fullPath = modules.path.resolve(path);\n"+
+  "        var fsch = get_cache();\n"+
+  "        var fno;\n"+
+  "        if (fullPath === '/') {\n"+
+  "            fno = fsch.root;\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            var fullPathDirName = fullPath;\n"+
+  "            if (/.\\/$/.test(fullPath))\n"+
+  "                fullPathDirName = fullPath.slice(0, fullPath.length - 1);\n"+
+  "            else\n"+
+  "                fullPath += '/';\n"+
+  "            fno = fsch.all[fullPathDirName];\n"+
+  "        }\n"+
+  "        if (!fno)\n"+
+  "            throw new Error('ENOENT: no such file or directory, scandir \\'' + path + '\\'');\n"+
+  "        if (typeof fno === 'string')\n"+
+  "            throw new Error('ENOTDIR: not a directory, scandir \\'' + path + '\\'');\n"+
+  "        var result = fno.files; // cached file list (from previous calls of this function\n"+
+  "        if (result)\n"+
+  "            return result.slice(0);\n"+
+  "        result = [];\n"+
+  "        for (var k in fno)\n"+
+  "            if (fno.hasOwnProperty(k)) {\n"+
+  "                if (k.charCodeAt(0) !== 47)\n"+
+  "                    continue; // not slash = not a fnode entry in the map\n"+
+  "                var chno = fno[k];\n"+
+  "                if (typeof chno === 'string')\n"+
+  "                    result.push(chno);\n"+
+  "                else\n"+
+  "                    result.push(chno.name);\n"+
+  "            }\n"+
+  "        fno.files = result;\n"+
+  "        return result.slice(0);\n"+
+  "    }\n"+
+  "    function readdirSync_old(path) {\n"+
+  "        var fullPath = modules.path.resolve(path);\n"+
+  "        var plusSlash = fullPath.charCodeAt(fullPath.length - 1) === 47 ? 0 : 1; // 47 is forwardslash\n"+
+  "        var result = [];\n"+
+  "        var files = drive.files();\n"+
+  "        var resultMap = [];\n"+
+  "        for (var i = 0; i < files.length; i++) {\n"+
+  "            var fname = files[i];\n"+
+  "            if (fname.length <= path.length\n"+
+  "                || (fullPath.length > 1 && fname.charCodeAt(1) !== fullPath.charCodeAt(1)) // first letter doesn't match (where more than 1 letter)\n"+
+  "                || fname.charCodeAt(fullPath.length + plusSlash - 1) !== 47\n"+
+  "                || fname.slice(0, fullPath.length) !== fullPath)\n"+
+  "                continue;\n"+
+  "            var nextSlash = fname.indexOf('/', fullPath.length + plusSlash);\n"+
+  "            if (nextSlash > 0)\n"+
+  "                fname = fname.slice(0, nextSlash);\n"+
+  "            fname = fname.slice(fullPath.length + plusSlash);\n"+
+  "            if (resultMap[fname])\n"+
+  "                continue;\n"+
+  "            resultMap[fname] = 1;\n"+
+  "            result.push(fname);\n"+
+  "        }\n"+
+  "        return result;\n"+
+  "    }\n"+
+  "    function onfilesChanged(files) {\n"+
+  "        _cache = null;\n"+
+  "        // TODO: fire watches!\n"+
+  "    }\n"+
+  "    function existsSync(file) {\n"+
+  "        var fileFull = modules.path.resolve(file);\n"+
+  "        return !!fileOrDir(fileFull);\n"+
+  "    }\n"+
+  "    function fileOrDir(file) {\n"+
+  "        var content = drive.read(file);\n"+
+  "        if (content || (content !== null && typeof content === 'undefined'))\n"+
+  "            return 1;\n"+
+  "        var files = drive.files();\n"+
+  "        var normPath = modules.path.normalize(file);\n"+
+  "        if (normPath.slice(-1) !== '/')\n"+
+  "            normPath += '/';\n"+
+  "        var leadMatch = getStartMatcher(file);\n"+
+  "        for (var i = 0; i < files.length; i++) {\n"+
+  "            if (leadMatch(files[i]))\n"+
+  "                return 2; // directory exists\n"+
+  "        }\n"+
+  "        return 0;\n"+
+  "    }\n"+
+  "    function mkdirSync(path, mode) {\n"+
+  "        var normPath = modules.path.resolve(path);\n"+
+  "        if (normPath.slice(-1) !== '/')\n"+
+  "            normPath += '/';\n"+
+  "        if (existsSync(path))\n"+
+  "            throw new Error('Directory \\'' + path + '\\'');\n"+
+  "        setDriveTimestamp();\n"+
+  "        drive.write(normPath, '');\n"+
+  "    }\n"+
+  "    function renameSync(oldPath, newPath) {\n"+
+  "        var norm_oldPath = modules.path.resolve(oldPath);\n"+
+  "        var norm_newPath = modules.path.resolve(newPath);\n"+
+  "        var oldContent = drive.read(norm_oldPath);\n"+
+  "        if (oldContent !== null) {\n"+
+  "            // TODO: check if directory is in the way\n"+
+  "            // if (nofs\n"+
+  "            setDriveTimestamp();\n"+
+  "            drive.write(norm_newPath, oldContent);\n"+
+  "            drive.write(norm_oldPath, null);\n"+
+  "            return;\n"+
+  "        }\n"+
+  "        if (drive.read(norm_newPath) !== null) {\n"+
+  "            // node actually reports oldPath here, but let's be reasonable\n"+
+  "            throw new Error('ENOTDIR, not a directory \\'' + newPath + '\\'');\n"+
+  "        }\n"+
+  "        if (norm_oldPath === '/')\n"+
+  "            throw new Error('EBUSY, resource busy or locked \\'/\\'');\n"+
+  "        else\n"+
+  "            norm_oldPath += '/';\n"+
+  "        if (norm_newPath === '/')\n"+
+  "            throw new Error('EBUSY, resource busy or locked \\'/\\'');\n"+
+  "        else\n"+
+  "            norm_newPath += '/';\n"+
+  "        var files = drive.files();\n"+
+  "        var startAsOld = getStartMatcher(norm_oldPath);\n"+
+  "        for (var i = 0; i < files.length; i++) {\n"+
+  "            var fi = files[i];\n"+
+  "            if (startAsOld(fi)) {\n"+
+  "                var oldContent = drive.read(fi);\n"+
+  "                var restPath = fi.slice(norm_newPath.length);\n"+
+  "                var newFiPath = norm_newPath + restPath;\n"+
+  "                setDriveTimestamp();\n"+
+  "                drive.write(newFiPath, oldContent);\n"+
+  "                drive.write(newFiPath, null);\n"+
+  "            }\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function statSync(path) {\n"+
+  "        var norm_path = modules.path.resolve(path);\n"+
+  "        if (/.\\/$/.test(norm_path))\n"+
+  "            norm_path = norm_path.slice(0, norm_path.length - 1);\n"+
+  "        var cache = get_cache();\n"+
+  "        var fnode = cache.all[norm_path];\n"+
+  "        if (!fnode)\n"+
+  "            throw new Error('ENOENT, no such file or directory \\'' + path + '\\'');\n"+
+  "        var isDir = typeof fnode === 'object';\n"+
+  "        var sz = isDir ? 0 : (drive.storedSize ? drive.storedSize(norm_path) : (drive.read(norm_path) || '').length);\n"+
+  "        var tm = new Date(drive.timestamp);\n"+
+  "        var st = {\n"+
+  "            isFile: function () { return !isDir; },\n"+
+  "            isDirectory: function () { return isDir; },\n"+
+  "            isBlockDevice: function () { return false; },\n"+
+  "            isCharacterDevice: function () { return true; },\n"+
+  "            isSymbolicLink: function () { return false; },\n"+
+  "            isFIFO: function () { return false; },\n"+
+  "            isSocket: function () { return false; },\n"+
+  "            dev: 234245,\n"+
+  "            ino: 938450,\n"+
+  "            mode: 0,\n"+
+  "            nlink: 1,\n"+
+  "            uid: 430534953,\n"+
+  "            gid: 348274,\n"+
+  "            rdev: 50953455,\n"+
+  "            size: sz,\n"+
+  "            blksize: -1,\n"+
+  "            blocks: -1,\n"+
+  "            atime: tm,\n"+
+  "            mtime: tm,\n"+
+  "            ctime: tm\n"+
+  "        };\n"+
+  "        return st;\n"+
+  "    }\n"+
+  "    /*\n"+
+  "        stat(path: string, callback?: (err: no_ErrnoError, stats: nofs_Stats) => any): void;\n"+
+  "        lstat(path: string, callback?: (err: no_ErrnoError, stats: nofs_Stats) => any): void;\n"+
+  "        fstat(fd: number, callback?: (err: no_ErrnoError, stats: nofs_Stats) => any): void;\n"+
+  "        statSync(path: string): nofs_Stats;\n"+
+  "        lstatSync(path: string): nofs_Stats;\n"+
+  "        fstatSync(fd: number): nofs_Stats;\n"+
+  "      */\n"+
+  "    function readFileSync(filename, options) {\n"+
+  "        // TODO: handle encoding and other\n"+
+  "        var result = drive.read(modules.path.resolve(filename));\n"+
+  "        if (result || typeof result === 'string')\n"+
+  "            return result;\n"+
+  "        else\n"+
+  "            throw new Error('ENOENT: no such file or directory, open \\'' + filename + '\\'');\n"+
+  "    }\n"+
+  "    function readSync(fd, buffer, offset, length, position) {\n"+
+  "        // TODO: consider also std handles\n"+
+  "        //var path = nofs_fdtable()[fd];\n"+
+  "        throw new Error('Buffer-aware API fs.readSync is not implemented.');\n"+
+  "    }\n"+
+  "    function setDriveTimestamp() {\n"+
+  "        drive.timestamp = Date.now ? Date.now() : +new Date();\n"+
+  "    }\n"+
+  "    function writeFileSync(filename, content) {\n"+
+  "        setDriveTimestamp();\n"+
+  "        drive.write(modules.path.resolve(filename), content);\n"+
+  "    }\n"+
+  "    function writeSync(fd, buffer, offset, length, position) {\n"+
+  "        if (fd === 1) {\n"+
+  "            if (typeof console !== 'undefined')\n"+
+  "                console.log(buffer);\n"+
+  "            return length;\n"+
+  "        }\n"+
+  "        var path = get_fdtable()[fd];\n"+
+  "        writeFileSync(path, buffer);\n"+
+  "    }\n"+
+  "    function openSync(path, flags, mode) {\n"+
+  "        var fdtable = get_fdtable();\n"+
+  "        for (var fd in fdtable) {\n"+
+  "            var fpath = fdtable[fd];\n"+
+  "            if (fpath === path) {\n"+
+  "                return Number(fd);\n"+
+  "            }\n"+
+  "        }\n"+
+  "        var newFD = _fdbase_++;\n"+
+  "        fdtable[newFD] = path;\n"+
+  "        return newFD;\n"+
+  "    }\n"+
+  "    var _fdbase_;\n"+
+  "    var _fdtable_;\n"+
+  "    function get_fdtable() {\n"+
+  "        if (!_fdtable_) {\n"+
+  "            _fdtable_ = [];\n"+
+  "            _fdbase_ = 34957346;\n"+
+  "        }\n"+
+  "        return _fdtable_;\n"+
+  "    }\n"+
+  "}\n"+
+  "function getStartMatcher(oldPath) {\n"+
+  "    if (!oldPath)\n"+
+  "        return function (txt) { return !txt; };\n"+
+  "    return function (txt) {\n"+
+  "        if (!txt)\n"+
+  "            return false;\n"+
+  "        if (txt.length < oldPath.length)\n"+
+  "            return false;\n"+
+  "        return txt.slice(0, oldPath.length) === oldPath;\n"+
+  "    };\n"+
+  "}\n"+
+  "var _watchFileListener;\n"+
+  "function watchFile(filename, arg1, arg2) {\n"+
+  "    throw new Error('not implemented');\n"+
+  "}\n"+
+  "function unwatchFile(filename, listener) {\n"+
+  "    throw new Error('not implemented');\n"+
+  "}\n"+
+  "function watch(filename, arg1, arg2) {\n"+
+  "    throw new Error('not implemented');\n"+
+  "}\n"+
+  "function createHTTP() {\n"+
+  "    var ClientRequest = (function (_super) {\n"+
+  "        __extends(ClientRequest, _super);\n"+
+  "        function ClientRequest(options, callback) {\n"+
+  "            _super.call(this);\n"+
+  "            this._finished = false;\n"+
+  "            if (typeof options === 'string') {\n"+
+  "                this._url = options;\n"+
+  "                this._options = {};\n"+
+  "            }\n"+
+  "            else {\n"+
+  "                this._url =\n"+
+  "                    (options.protocol || 'http') + '://' +\n"+
+  "                        (options.host || options.hostname || 'localhost') +\n"+
+  "                        (options.port ? ':' + options.port : '') +\n"+
+  "                        (options.path || '/');\n"+
+  "                this._options = options;\n"+
+  "            }\n"+
+  "            this._method = options.method || 'GET';\n"+
+  "            this._callback = callback || options.callback;\n"+
+  "        }\n"+
+  "        ClientRequest.prototype.end = function () {\n"+
+  "            var _this = this;\n"+
+  "            var req_callback = function (status, headers, data) {\n"+
+  "                // TODO: report result\n"+
+  "            };\n"+
+  "            xhr_request(// normal XHR\n"+
+  "            this._url, this._method, \n"+
+  "            /*headers*/ null, /*body*/ null, req_callback, function () {\n"+
+  "                corsProxy_request(_this._url, _this._method, \n"+
+  "                /*headers*/ null, /*body*/ null, req_callback, function () {\n"+
+  "                    jsonpProxy_request(_this._url, _this._method, \n"+
+  "                    /*headers*/ null, /*body*/ null, req_callback, function () {\n"+
+  "                        yqlProxy_request(_this._url, _this._method, \n"+
+  "                        /*headers*/ null, /*body*/ null, req_callback, \n"+
+  "                        /*fallback*/ null);\n"+
+  "                    });\n"+
+  "                });\n"+
+  "            });\n"+
+  "        };\n"+
+  "        return ClientRequest;\n"+
+  "    }(EventEmitter));\n"+
+  "    var IncomingMessage = (function (_super) {\n"+
+  "        __extends(IncomingMessage, _super);\n"+
+  "        function IncomingMessage(xhr, req) {\n"+
+  "            _super.call(this);\n"+
+  "            this._xhr = xhr;\n"+
+  "            if (this._xhr.status == 200) {\n"+
+  "            }\n"+
+  "            else {\n"+
+  "            }\n"+
+  "        }\n"+
+  "        return IncomingMessage;\n"+
+  "    }(EventEmitter));\n"+
+  "    return {\n"+
+  "        request: function (options, callback) { return new ClientRequest(options, callback); },\n"+
+  "        get: function (options, callback) {\n"+
+  "            var req = new ClientRequest(options, callback);\n"+
+  "            req._method = 'GET';\n"+
+  "            req.end();\n"+
+  "            return req;\n"+
+  "        },\n"+
+  "        METHODS: [\n"+
+  "            'ACL',\n"+
+  "            'BIND',\n"+
+  "            'CHECKOUT',\n"+
+  "            'CONNECT',\n"+
+  "            'COPY',\n"+
+  "            'DELETE',\n"+
+  "            'GET',\n"+
+  "            'HEAD',\n"+
+  "            'LINK',\n"+
+  "            'LOCK',\n"+
+  "            'M-SEARCH',\n"+
+  "            'MERGE',\n"+
+  "            'MKACTIVITY',\n"+
+  "            'MKCALENDAR',\n"+
+  "            'MKCOL',\n"+
+  "            'MOVE',\n"+
+  "            'NOTIFY',\n"+
+  "            'OPTIONS',\n"+
+  "            'PATCH',\n"+
+  "            'POST',\n"+
+  "            'PROPFIND',\n"+
+  "            'PROPPATCH',\n"+
+  "            'PURGE',\n"+
+  "            'PUT',\n"+
+  "            'REBIND',\n"+
+  "            'REPORT',\n"+
+  "            'SEARCH',\n"+
+  "            'SUBSCRIBE',\n"+
+  "            'TRACE',\n"+
+  "            'UNBIND',\n"+
+  "            'UNLINK',\n"+
+  "            'UNLOCK',\n"+
+  "            'UNSUBSCRIBE'],\n"+
+  "        STATUS_CODES: {\n"+
+  "            '100': 'Continue',\n"+
+  "            '101': 'Switching Protocols',\n"+
+  "            '102': 'Processing',\n"+
+  "            '200': 'OK',\n"+
+  "            '201': 'Created',\n"+
+  "            '202': 'Accepted',\n"+
+  "            '203': 'Non-Authoritative Information',\n"+
+  "            '204': 'No Content',\n"+
+  "            '205': 'Reset Content',\n"+
+  "            '206': 'Partial Content',\n"+
+  "            '207': 'Multi-Status',\n"+
+  "            '208': 'Already Reported',\n"+
+  "            '226': 'IM Used',\n"+
+  "            '300': 'Multiple Choices',\n"+
+  "            '301': 'Moved Permanently',\n"+
+  "            '302': 'Found',\n"+
+  "            '303': 'See Other',\n"+
+  "            '304': 'Not Modified',\n"+
+  "            '305': 'Use Proxy',\n"+
+  "            '307': 'Temporary Redirect',\n"+
+  "            '308': 'Permanent Redirect',\n"+
+  "            '400': 'Bad Request',\n"+
+  "            '401': 'Unauthorized',\n"+
+  "            '402': 'Payment Required',\n"+
+  "            '403': 'Forbidden',\n"+
+  "            '404': 'Not Found',\n"+
+  "            '405': 'Method Not Allowed',\n"+
+  "            '406': 'Not Acceptable',\n"+
+  "            '407': 'Proxy Authentication Required',\n"+
+  "            '408': 'Request Timeout',\n"+
+  "            '409': 'Conflict',\n"+
+  "            '410': 'Gone',\n"+
+  "            '411': 'Length Required',\n"+
+  "            '412': 'Precondition Failed',\n"+
+  "            '413': 'Payload Too Large',\n"+
+  "            '414': 'URI Too Long',\n"+
+  "            '415': 'Unsupported Media Type',\n"+
+  "            '416': 'Range Not Satisfiable',\n"+
+  "            '417': 'Expectation Failed',\n"+
+  "            '418': 'I\\'m a teapot',\n"+
+  "            '421': 'Misdirected Request',\n"+
+  "            '422': 'Unprocessable Entity',\n"+
+  "            '423': 'Locked',\n"+
+  "            '424': 'Failed Dependency',\n"+
+  "            '425': 'Unordered Collection',\n"+
+  "            '426': 'Upgrade Required',\n"+
+  "            '428': 'Precondition Required',\n"+
+  "            '429': 'Too Many Requests',\n"+
+  "            '431': 'Request Header Fields Too Large',\n"+
+  "            '451': 'Unavailable For Legal Reasons',\n"+
+  "            '500': 'Internal Server Error',\n"+
+  "            '501': 'Not Implemented',\n"+
+  "            '502': 'Bad Gateway',\n"+
+  "            '503': 'Service Unavailable',\n"+
+  "            '504': 'Gateway Timeout',\n"+
+  "            '505': 'HTTP Version Not Supported',\n"+
+  "            '506': 'Variant Also Negotiates',\n"+
+  "            '507': 'Insufficient Storage',\n"+
+  "            '508': 'Loop Detected',\n"+
+  "            '509': 'Bandwidth Limit Exceeded',\n"+
+  "            '510': 'Not Extended',\n"+
+  "            '511': 'Network Authentication Required' },\n"+
+  "        createClient: function (port, host) {\n"+
+  "            var req = new ClientRequest({ port: port, host: host }, null);\n"+
+  "            return req;\n"+
+  "        },\n"+
+  "        createServer: function () {\n"+
+  "            throw new Error('HTTP server is not emulated.');\n"+
+  "        }\n"+
+  "    };\n"+
+  "}\n"+
+  "function xhr_request(url, method, headers, body, callback, fallback) {\n"+
+  "    var xhr = createXHR();\n"+
+  "    xhr.onreadystatechange = xhr_onreadystatechange;\n"+
+  "    xhr.open(this._url, this._method, true);\n"+
+  "    if (headers) {\n"+
+  "        for (var k in headers)\n"+
+  "            if (headers.hasOwnProperty(k)) {\n"+
+  "                xhr.setRequestHeader(k, headers[k]);\n"+
+  "            }\n"+
+  "    }\n"+
+  "    // TODO: set body\n"+
+  "    xhr.send();\n"+
+  "    function xhr_onreadystatechange() {\n"+
+  "        if (xhr.readyState !== 4)\n"+
+  "            return;\n"+
+  "        if (!xhr.status)\n"+
+  "            return fallback();\n"+
+  "        if (xhr.status === 200) {\n"+
+  "            callback(xhr.status, /*headers*/ {}, xhr.response);\n"+
+  "        }\n"+
+  "    }\n"+
+  "    ;\n"+
+  "}\n"+
+  "function corsProxy_request(url, method, headers, body, callback, fallback) {\n"+
+  "    // TODO: implement CORS proxy request\n"+
+  "}\n"+
+  "function jsonpProxy_request(url, method, headers, body, callback, fallback) {\n"+
+  "    // TODO: implement JSONP proxy request\n"+
+  "}\n"+
+  "function yqlProxy_request(url, method, headers, body, callback, fallback) {\n"+
+  "    // TODO: implement YQL proxy request\n"+
+  "}\n"+
+  "function createXHR() {\n"+
+  "    if (typeof XDomainRequest !== 'undefined') {\n"+
+  "        var xdreq = new XDomainRequest();\n"+
+  "        return xdreq;\n"+
+  "    }\n"+
+  "    else if (typeof ActiveXObject !== 'undefined') {\n"+
+  "        var axreq = new ActiveXObject('Microsoft.XMLHTTP');\n"+
+  "        return axreq;\n"+
+  "    }\n"+
+  "    else if (typeof XMLHttpRequest !== 'undefined') {\n"+
+  "        var xhr = new XMLHttpRequest();\n"+
+  "        xhr.withCredentials = true; // is it right?\n"+
+  "        return xhr;\n"+
+  "    }\n"+
+  "}\n"+
+  "function createModule(existingLoaded, id, filename, parent, requireForModule) {\n"+
+  "    var module = {\n"+
+  "        exports: existingLoaded,\n"+
+  "        id: id,\n"+
+  "        filename: filename,\n"+
+  "        loaded: false,\n"+
+  "        parent: parent,\n"+
+  "        children: [],\n"+
+  "        require: require\n"+
+  "    };\n"+
+  "    return module;\n"+
+  "    var _moduleCache;\n"+
+  "    var _resolveCache;\n"+
+  "    function require(moduleName) {\n"+
+  "        var key = '*' + moduleName;\n"+
+  "        if (_moduleCache && key in _moduleCache)\n"+
+  "            return _moduleCache[key];\n"+
+  "        var mod = requireForModule(moduleName);\n"+
+  "        (_moduleCache || (_moduleCache = {}))[key] = mod;\n"+
+  "        return mod;\n"+
+  "    }\n"+
+  "}\n"+
+  "function createOS(global) {\n"+
+  "    return {\n"+
+  "        EOL: '\\n',\n"+
+  "        tmpdir: function () { return '/.tmp'; },\n"+
+  "        hostname: function () { return 'localhost'; },\n"+
+  "        type: function () { return 'Linux'; },\n"+
+  "        arch: function () { return global.process.arch; },\n"+
+  "        platform: function () { return global.process.platform; },\n"+
+  "        release: function () { return '3.16.0-38-generic'; },\n"+
+  "        uptime: function () { return global.process.uptime(); },\n"+
+  "        loadavg: function () { return [0.7275390625, 0.65576171875, 0.4658203125]; },\n"+
+  "        totalmem: function () { return 3680739328 + ((Math.random() * 1000) | 0); },\n"+
+  "        freemem: function () { return 2344873984 - ((Math.random() * 1000) | 0); },\n"+
+  "        cpus: function () { return [\n"+
+  "            { model: 'AMD A4-1250 APU with Radeon(TM) HD Graphics', speed: 800, times: { user: 8058000, nice: 29600, sys: 1079400, idle: 128185400, irq: 0 } },\n"+
+  "            { model: 'AMD A4-1250 APU with Radeon(TM) HD Graphics', speed: 800, times: { user: 7779400, nice: 33000, sys: 1069200, idle: 127970900, irq: 0 } }\n"+
+  "        ]; },\n"+
+  "        networkInterfaces: function () {\n"+
+  "            return {\n"+
+  "                lo: [\n"+
+  "                    { address: '127.0.0.1', family: 'IPv4', internal: true },\n"+
+  "                    { address: '::1', family: 'IPv6', internal: true }\n"+
+  "                ],\n"+
+  "                wlan0: [\n"+
+  "                    { address: '192.168.1.3', family: 'IPv4', internal: false },\n"+
+  "                    { address: 'fe80::8256:f2ff:fe04:3d29', family: 'IPv6', internal: false }\n"+
+  "                ]\n"+
+  "            };\n"+
+  "        }\n"+
+  "    };\n"+
+  "}\n"+
+  "function createPath(process) {\n"+
+  "    var result = {\n"+
+  "        basename: basename, extname: extname,\n"+
+  "        dirname: dirname,\n"+
+  "        isAbsolute: isAbsolute,\n"+
+  "        normalize: normalize,\n"+
+  "        join: join,\n"+
+  "        relative: relative, resolve: resolve,\n"+
+  "        sep: '/',\n"+
+  "        delimiter: ':'\n"+
+  "    };\n"+
+  "    return result;\n"+
+  "    function isAbsolute(p) {\n"+
+  "        return /^\\//.test(p);\n"+
+  "    }\n"+
+  "    function extname(p) {\n"+
+  "        var base = basename(p);\n"+
+  "        var lastDot = base.lastIndexOf('.');\n"+
+  "        if (lastDot >= 0)\n"+
+  "            return base.slice(lastDot);\n"+
+  "        else\n"+
+  "            return '';\n"+
+  "    }\n"+
+  "    function join() {\n"+
+  "        var paths = [];\n"+
+  "        for (var _i = 0; _i < arguments.length; _i++) {\n"+
+  "            paths[_i - 0] = arguments[_i];\n"+
+  "        }\n"+
+  "        return join_core(paths);\n"+
+  "    }\n"+
+  "    function join_core(paths) {\n"+
+  "        if (paths.length === 1)\n"+
+  "            return paths[0];\n"+
+  "        var parts = [];\n"+
+  "        var trailSlash = false;\n"+
+  "        for (var i = 0; i < paths.length; i++) {\n"+
+  "            var part = paths[i];\n"+
+  "            if (!part)\n"+
+  "                continue;\n"+
+  "            if (parts.length) {\n"+
+  "                var wlead = part;\n"+
+  "                part = part.replace(/^\\/+/, '');\n"+
+  "                if (!part)\n"+
+  "                    continue;\n"+
+  "            }\n"+
+  "            else {\n"+
+  "                part = part.replace(/^\\/+/, '/'); // leading slash in first part should be preserved\n"+
+  "                if (part === '/') {\n"+
+  "                    parts.push('');\n"+
+  "                    continue;\n"+
+  "                }\n"+
+  "            }\n"+
+  "            var wtrail = part;\n"+
+  "            part = part.replace(/\\/+$/, '');\n"+
+  "            if (!part)\n"+
+  "                continue;\n"+
+  "            parts.push(part);\n"+
+  "            trailSlash = wtrail.length > part.length;\n"+
+  "        }\n"+
+  "        if (trailSlash)\n"+
+  "            parts.push('');\n"+
+  "        return parts.join('/');\n"+
+  "    }\n"+
+  "    function relative(from, to) {\n"+
+  "        throw new Error('path/relative is not implemented');\n"+
+  "    }\n"+
+  "    function resolve() {\n"+
+  "        var pathSegments = [];\n"+
+  "        for (var _i = 0; _i < arguments.length; _i++) {\n"+
+  "            pathSegments[_i - 0] = arguments[_i];\n"+
+  "        }\n"+
+  "        var path = join_core(pathSegments);\n"+
+  "        if (typeof path !== 'string')\n"+
+  "            throw new Error('Path must be a string. Received ' + typeof path);\n"+
+  "        if (!path || path === '.' || path === './')\n"+
+  "            return process.cwd();\n"+
+  "        if (path === '/')\n"+
+  "            return '/';\n"+
+  "        if (/^\\.\\//.test(path))\n"+
+  "            path = path.replace(/^\\.\\//, '');\n"+
+  "        if (path.charCodeAt(0) !== 47) {\n"+
+  "            var cwd = process.cwd();\n"+
+  "            if (cwd.slice(-1) === '/')\n"+
+  "                path = cwd + path;\n"+
+  "            else\n"+
+  "                path = cwd + '/' + path;\n"+
+  "        }\n"+
+  "        if (!/^\\.+$/.test(path) && !/^\\.+\\//.test(path) && !/\\/\\.+\\//.test(path) && !/\\/\\.+$/.test(path))\n"+
+  "            return path; // has no dot-directories such as . or ..  ?\n"+
+  "        var trailingSlash = path.length && path.charCodeAt(path.length - 1) === 47;\n"+
+  "        var parts = path.split('/');\n"+
+  "        var newParts = [];\n"+
+  "        for (var i = 0; i < parts.length; i++) {\n"+
+  "            if (!parts[i])\n"+
+  "                continue;\n"+
+  "            if (parts[i] === '.')\n"+
+  "                continue;\n"+
+  "            if (parts[i] === '..') {\n"+
+  "                if (newParts.length)\n"+
+  "                    newParts.pop(); // going up beyond root returns root\n"+
+  "            }\n"+
+  "            else {\n"+
+  "                newParts.push(parts[i]);\n"+
+  "            }\n"+
+  "        }\n"+
+  "        return '/' + newParts.join('/') + (trailingSlash ? '/' : '');\n"+
+  "    }\n"+
+  "}\n"+
+  "function basename(p, ext) {\n"+
+  "    p = normalize(p);\n"+
+  "    if (p === '/')\n"+
+  "        return '';\n"+
+  "    var result;\n"+
+  "    var lastSlash = p.lastIndexOf('/');\n"+
+  "    if (lastSlash === p.length - 1) {\n"+
+  "        var prevSlash = p.lastIndexOf('/', lastSlash - 1);\n"+
+  "        if (prevSlash < 0)\n"+
+  "            prevSlash = 0;\n"+
+  "        result = p.slice(prevSlash + 1, lastSlash);\n"+
+  "    }\n"+
+  "    else {\n"+
+  "        result = p.slice(lastSlash + 1);\n"+
+  "    }\n"+
+  "    if (ext && result.length >= ext.length && result.slice(-ext.length) === ext)\n"+
+  "        result = result.slice(0, result.length - ext.length);\n"+
+  "    return result;\n"+
+  "}\n"+
+  "function dirname(p) {\n"+
+  "    var p = normalize(p);\n"+
+  "    if (p === '/')\n"+
+  "        return '/';\n"+
+  "    var lastSlash = p.lastIndexOf('/');\n"+
+  "    if (lastSlash === p.length - 1)\n"+
+  "        lastSlash = p.lastIndexOf('/', lastSlash - 1);\n"+
+  "    return p.slice(0, lastSlash + 1);\n"+
+  "}\n"+
+  "function normalize(p) {\n"+
+  "    return p;\n"+
+  "}\n"+
+  "function createProcess(modules, options) {\n"+
+  "    var evt = new EventEmitter();\n"+
+  "    return {\n"+
+  "        abort: abort, exit: exit, kill: kill,\n"+
+  "        nextTick: nextTick,\n"+
+  "        chdir: chdir, cwd: cwd,\n"+
+  "        title: 'node',\n"+
+  "        arch: 'ia32',\n"+
+  "        platform: 'linux',\n"+
+  "        execPath: '/usr/bin/nodejs',\n"+
+  "        getgid: getgid, setgid: setgid, getuid: getuid, setuid: setuid,\n"+
+  "        stdout: load_stdout(), stderr: load_stderr(), stdin: load_stdin(),\n"+
+  "        memoryUsage: memoryUsage,\n"+
+  "        uptime: load_uptime(),\n"+
+  "        hrtime: function () { throw new Error('High resultion time is not implemenetd yet.'); },\n"+
+  "        pid: load_pid(),\n"+
+  "        umask: load_umask(),\n"+
+  "        config: load_config(),\n"+
+  "        versions: load_versions(),\n"+
+  "        version: load_versions().node,\n"+
+  "        argv: options.argv,\n"+
+  "        env: options.env,\n"+
+  "        addListener: function (e, c) { return evt.addListener(e, c); },\n"+
+  "        on: function (e, c) { return evt.on(e, c); },\n"+
+  "        once: function (e, c) { return evt.once(e, c); },\n"+
+  "        removeListener: function (e, c) { return evt.removeListener(e, c); },\n"+
+  "        removeAllListeners: function (e) { return evt.removeAllListeners(e); },\n"+
+  "        setMaxListeners: function (n) { return evt.setMaxListeners(n); },\n"+
+  "        listeners: function (e) { return evt.listeners(e); },\n"+
+  "        emit: function (e, v) { return evt.emit(e, v); }\n"+
+  "    };\n"+
+  "    function abort() {\n"+
+  "    }\n"+
+  "    function exit(code) {\n"+
+  "    }\n"+
+  "    function kill(pid, signal) {\n"+
+  "        // when we emulate processes, implement process termination\n"+
+  "    }\n"+
+  "    function chdir(directory) {\n"+
+  "        var normDirectory = modules.path.normalize(directory);\n"+
+  "        var dirStat = modules.fs.statSync(normDirectory);\n"+
+  "        if (dirStat && dirStat.isDirectory()) {\n"+
+  "            if (normDirectory !== cwd()) {\n"+
+  "                options.cwd = normDirectory;\n"+
+  "            }\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            // TODO: throw a node-shaped error instead\n"+
+  "            throw new Error('ENOENT, no such file or directory');\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function cwd() {\n"+
+  "        return options.cwd;\n"+
+  "    }\n"+
+  "    function getgid() {\n"+
+  "        // taken from node running on ubuntu\n"+
+  "        return 1000;\n"+
+  "    }\n"+
+  "    function setgid(id) {\n"+
+  "        // TODO: use node-shaped error\n"+
+  "        throw new Error('EPERM, Operation not permitted');\n"+
+  "    }\n"+
+  "    function getuid() {\n"+
+  "        // taken from node running on ubuntu\n"+
+  "        return 1000;\n"+
+  "    }\n"+
+  "    function setuid(id) {\n"+
+  "        // TODO: use node-shaped error\n"+
+  "        throw new Error('EPERM, Operation not permitted');\n"+
+  "    }\n"+
+  "    function load_uptime() {\n"+
+  "        var _uptime_start_ = typeof Date.now === 'function' ? Date.now() : +(new Date());\n"+
+  "        return uptime;\n"+
+  "        function uptime() {\n"+
+  "            var now = typeof Date.now === 'function' ? Date.now() : +(new Date());\n"+
+  "            return now - _uptime_start_;\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function load_stdout() {\n"+
+  "        return {\n"+
+  "            write: function (msg) {\n"+
+  "                options.console.log(msg);\n"+
+  "            }\n"+
+  "        };\n"+
+  "    }\n"+
+  "    function load_stderr() {\n"+
+  "        return {};\n"+
+  "    }\n"+
+  "    function load_stdin() {\n"+
+  "        return {};\n"+
+  "    }\n"+
+  "    function memoryUsage() {\n"+
+  "        return {\n"+
+  "            rss: 13225984 + ((Math.random() * 3000) | 0),\n"+
+  "            heapTotal: 7130752 + ((Math.random() * 3000) | 0),\n"+
+  "            heapUsed: 2449612 + ((Math.random() * 3000) | 0)\n"+
+  "        };\n"+
+  "    }\n"+
+  "    function load_pid() {\n"+
+  "        return 32754 + ((Math.random() * 500) | 0);\n"+
+  "    }\n"+
+  "    function load_umask() {\n"+
+  "        var _umask_;\n"+
+  "        return umask;\n"+
+  "        function umask(mask) {\n"+
+  "            if (typeof _umask_ !== 'number') {\n"+
+  "                _umask_ = 2;\n"+
+  "            }\n"+
+  "            if (typeof mask === 'number') {\n"+
+  "                var res = _umask_;\n"+
+  "                _umask_ = mask;\n"+
+  "                return res;\n"+
+  "            }\n"+
+  "            return _umask_;\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function load_versions() {\n"+
+  "        // real node running on ubuntu as of Friday 22 of May 2015\n"+
+  "        // (these might not be properly implemented when hosted in browser)\n"+
+  "        return {\n"+
+  "            http_parser: '1.0',\n"+
+  "            node: '0.10.38',\n"+
+  "            v8: '3.14.5.9',\n"+
+  "            ares: '1.9.0-DEV',\n"+
+  "            uv: '0.10.36',\n"+
+  "            zlib: '1.2.8',\n"+
+  "            modules: '11',\n"+
+  "            openssl: '1.0.1m',\n"+
+  "            mi: '0.71n'\n"+
+  "        };\n"+
+  "    }\n"+
+  "    function load_config() {\n"+
+  "        return {\n"+
+  "            target_defaults: {\n"+
+  "                cflags: [],\n"+
+  "                default_configuration: 'Release',\n"+
+  "                defines: [],\n"+
+  "                include_dirs: [],\n"+
+  "                libraries: []\n"+
+  "            },\n"+
+  "            variables: {\n"+
+  "                clang: 0,\n"+
+  "                gcc_version: 48,\n"+
+  "                host_arch: 'ia32',\n"+
+  "                node_install_npm: true,\n"+
+  "                node_prefix: '/usr',\n"+
+  "                node_shared_cares: false,\n"+
+  "                node_shared_http_parser: false,\n"+
+  "                node_shared_libuv: false,\n"+
+  "                node_shared_openssl: false,\n"+
+  "                node_shared_v8: false,\n"+
+  "                node_shared_zlib: false,\n"+
+  "                node_tag: '',\n"+
+  "                node_unsafe_optimizations: 0,\n"+
+  "                node_use_dtrace: false,\n"+
+  "                node_use_etw: false,\n"+
+  "                node_use_openssl: true,\n"+
+  "                node_use_perfctr: false,\n"+
+  "                node_use_systemtap: false,\n"+
+  "                openssl_no_asm: 0,\n"+
+  "                python: '/usr/bin/python',\n"+
+  "                target_arch: 'ia32',\n"+
+  "                v8_enable_gdbjit: 0,\n"+
+  "                v8_no_strict_aliasing: 1,\n"+
+  "                v8_use_snapshot: false,\n"+
+  "                want_separate_host_toolset: 0\n"+
+  "            }\n"+
+  "        };\n"+
+  "    }\n"+
+  "}\n"+
+  "/// <reference path=\"../agent/API.d.ts\"/>\n"+
+  "/// <reference path=\"../../persistence/src/API.d.ts\"/>\n";
+        script += '\n\nconnection_to_parent.initApiContext = initApiContext;';
+        return script;
+    }
+})(isolation);
 /// <reference path="../../persistence/src/API.d.ts"/>
 function createErrorSerializer() {
     var dummyError = new Error();
@@ -1115,7 +2852,7 @@ function createErrorSerializer() {
         if (!error)
             return error;
         var result = {};
-        if (typeof error.prototype.constructor === 'function') {
+        if (typeof error.constructor === 'function') {
             if (error.constructor.name) {
                 result['@constructor'] = error.constructor.name;
             }
@@ -1217,6 +2954,69 @@ function createErrorSerializer() {
         return ctorName;
     }
 }
+function createComplexSerializer() {
+    var maxDepth = 3;
+    var dummy = {};
+    return {
+        serialize: serialize,
+        deserialize: deserialize
+    };
+    function serialize(obj) {
+        return serializeDepth(obj, 0);
+    }
+    function serializeDepth(obj, depth) {
+        switch (typeof obj) {
+            case 'function':
+                return serializeFunction(obj);
+            case 'object':
+                if (!obj)
+                    return 'null';
+                if ((Array.isArray && Array.isArray(obj)) || obj instanceof Array)
+                    return serializeArrayDepth(obj, depth);
+                return serializeObjectDepth(obj, depth);
+            default:
+                return obj;
+        }
+    }
+    function serializeFunction(obj) {
+        return obj.name ? { '@function': 'function ' + obj.name + '() { /*...*/ }' } : { '@function': 'function() { /*...*/ }' };
+    }
+    function serializeObjectDepth(obj, depth) {
+        var srz = {};
+        if (obj.constructor && obj.constructor.name && obj.constructor.name) {
+            srz['@constructor'] = obj.constructor.name;
+        }
+        var propCount = 0;
+        for (var k in obj)
+            if (!(k in dummy)) {
+                if (depth > maxDepth) {
+                    propCount++;
+                    continue;
+                }
+                srz[k] = serializeDepth(obj[k], depth + 1);
+            }
+        if (depth > maxDepth && propCount) {
+            srz['...'] = propCount;
+        }
+        return srz;
+    }
+    function serializeArrayDepth(arr, depth) {
+        if (depth > maxDepth && arr.length) {
+            return ['...'];
+        }
+        var result = [];
+        for (var i = 0; i < arr.length; i++) {
+            var srz = serializeDepth(arr[i], depth + 1);
+            if (typeof srz === 'undefined')
+                continue;
+            result[i] = srz;
+        }
+        return result;
+    }
+    function deserialize(obj) {
+        return obj;
+    }
+}
 function createRequestResponseDispatcher() {
     var diagTimeStart = +new Date();
     var requests = { count: 0 };
@@ -1295,13 +3095,12 @@ function driveApplyUpdates(tmDrive, msg) {
 }
 /// <reference path="ref.ts"/>
 /// <reference path="createErrorSerializer.ts"/>
+/// <reference path="createComplexSerializer.ts"/>
 /// <reference path="createRequestResponseDispatcher.ts"/>
 /// <reference path="createPushMessageDispatcher.ts"/>
 /// <reference path="driveApplyUpdates.ts"/>
 /// <reference path="../shared/all.ts"/>
 
-
-	isolation.createContextHost = createContextHost;
 
 }
 
@@ -1354,13 +3153,151 @@ var tests;
         };
         return snapshot;
     }
-    tests['createContextHost'] = createTestsWith_createContextHost(isolation);
-    tests['createContextHost_iframe'] = createTestsWith_createContextHost({ createContextHost: isolation.createContextHost.iframe });
-    tests['createContextHost_worker'] = createTestsWith_createContextHost({ createContextHost: isolation.createContextHost.worker });
-    function createTestsWith_createContextHost(isolation) {
+    tests['console'] = createTestsWith_createIsolateHost(isolation.createIsolateHost);
+    tests['console_iframe'] = createTestsWith_createIsolateHost(isolation.createIsolateHost.iframe);
+    tests['console_worker'] = createTestsWith_createIsolateHost(isolation.createIsolateHost.worker);
+    function createTestsWith_createIsolateHost(createIsolateHost) {
+        function testConsole(script, sourcePath, onconsole) {
+            var host = createIsolateHost(driveAs({}), function (host) {
+                host.onconsole = function (level, args) {
+                    onconsole(level, args, close_clean);
+                };
+                host.remoteEval(script, null, sourcePath, function (error, result) {
+                    try {
+                        assert(!error, 'error ' + error);
+                    }
+                    catch (err) {
+                        onconsole(null, null, null);
+                        close_clean();
+                    }
+                });
+                function close_clean() {
+                    try {
+                        if (host)
+                            host.terminate();
+                    }
+                    catch (error) { }
+                }
+            });
+        }
         return {
-            createContextHost_succeeds: function (callback) {
-                isolation.createContextHost(driveAs({}), function (host) {
+            console_log_3987345: function (callback) {
+                testConsole('console.log(3987345)', '/tests/remoteEval_console_log.js', function (level, args, close_clean) {
+                    try {
+                        assert.equal('log', level);
+                        assert.equal(1, args.length);
+                        assert.equal(3987345, args[0]);
+                    }
+                    catch (error) {
+                        callback(error);
+                        close_clean();
+                    }
+                    callback();
+                    close_clean();
+                });
+            },
+            console_error_20495: function (callback) {
+                testConsole('console.error(20495)', '/tests/remoteEval_console_log.js', function (level, args, close_clean) {
+                    try {
+                        assert.equal('error', level);
+                        assert.equal(1, args.length);
+                        assert.equal(20495, args[0]);
+                    }
+                    catch (error) {
+                        callback(error);
+                        close_clean();
+                    }
+                    callback();
+                    close_clean();
+                });
+            },
+            console_warn_abc_1_2: function (callback) {
+                testConsole('console.warn("abc", [1,2])', '/tests/remoteEval_console_log.js', function (level, args, close_clean) {
+                    try {
+                        assert.equal('warn', level);
+                        assert.equal(2, args.length);
+                        assert.equal("abc", args[0]);
+                        assert.equal(2, args[1].length);
+                        assert.equal(1, args[1][0]);
+                        assert.equal(2, args[1][1]);
+                    }
+                    catch (error) {
+                        callback(error);
+                        close_clean();
+                    }
+                    callback();
+                    close_clean();
+                });
+            },
+            console_trace_obj_a1_b456: function (callback) {
+                testConsole('console.trace({a:1,b:456})', '/tests/remoteEval_console_log.js', function (level, args, close_clean) {
+                    try {
+                        assert.equal('trace', level);
+                        assert.equal(1, args.length);
+                        assert.equal(1, args[0].a);
+                        assert.equal(456, args[0].b);
+                    }
+                    catch (error) {
+                        callback(error);
+                        close_clean();
+                    }
+                    callback();
+                    close_clean();
+                });
+            },
+            console_trace_obj_a1_bObject: function (callback) {
+                testConsole('console.trace({a:1,b:Object})', '/tests/remoteEval_console_log.js', function (level, args, close_clean) {
+                    try {
+                        assert.equal('trace', level);
+                        assert.equal(1, args.length);
+                        assert.equal(1, args[0].a);
+                        assert.equal('function Object() { /*...*/ }', args[0].b['@function']);
+                    }
+                    catch (error) {
+                        callback(error);
+                        close_clean();
+                    }
+                    callback();
+                    close_clean();
+                });
+            }
+        };
+    }
+})(tests || (tests = {}));
+function driveAs(snapshot) {
+    if (!snapshot.timestamp)
+        snapshot.timestamp = 1465249756308;
+    snapshot.files = function () {
+        var result = [];
+        for (var k in snapshot)
+            if (k && k.charCodeAt(0) === 47)
+                result.push(k);
+        return result;
+    };
+    snapshot.read = function (f) {
+        var dt = snapshot[f];
+        if (dt || typeof dt === 'string')
+            return dt;
+        else
+            return null;
+    };
+    snapshot.write = function (f, txt) {
+        if (txt || typeof txt === 'string')
+            snapshot[f] = txt;
+        else
+            delete snapshot[f];
+    };
+    return snapshot;
+}
+var tests;
+(function (tests) {
+    tests['createIsolateHost'] = createTestsWith_createIsolateHost(isolation.createIsolateHost);
+    tests['createIsolateHost_iframe'] = createTestsWith_createIsolateHost(isolation.createIsolateHost.iframe);
+    tests['createIsolateHost_worker'] = createTestsWith_createIsolateHost(isolation.createIsolateHost.worker);
+    function createTestsWith_createIsolateHost(createIsolateHost) {
+        return {
+            createIsolateHost_succeeds: function (callback) {
+                createIsolateHost(driveAs({}), function (host) {
                     callback();
                     try {
                         if (host)
@@ -1369,8 +3306,8 @@ var tests;
                     catch (error) { }
                 });
             },
-            createContextHost_terminate: function (callback) {
-                isolation.createContextHost(driveAs({}), function (host) {
+            createIsolateHost_terminate: function (callback) {
+                createIsolateHost(driveAs({}), function (host) {
                     try {
                         host.terminate();
                     }
@@ -1382,8 +3319,8 @@ var tests;
                 });
             },
             remoteEval_withoutReturn: function (callback) {
-                isolation.createContextHost(driveAs({}), function (host) {
-                    host.remoteEval('2+2', 0, function (error, result) {
+                createIsolateHost(driveAs({}), function (host) {
+                    host.remoteEval('2+2', 0, '/tests/remoteEval_withoutReturn.js', function (error, result) {
                         try {
                             assert(!error, 'error ' + error);
                             var _undef;
@@ -1405,8 +3342,8 @@ var tests;
                 });
             },
             remoteEval_returns: function (callback) {
-                isolation.createContextHost(driveAs({}), function (host) {
-                    host.remoteEval('return 2+2', 0, function (error, result) {
+                createIsolateHost(driveAs({}), function (host) {
+                    host.remoteEval('return 2+2', 0, '/tests/remoteEval_returns.js', function (error, result) {
                         try {
                             assert(!error, 'error ' + error);
                             assert.equal(4, result, '2+2 result');
@@ -1427,8 +3364,8 @@ var tests;
                 });
             },
             remoteEval_terminate: function (callback) {
-                isolation.createContextHost(driveAs({}), function (host) {
-                    host.remoteEval('return 2+2', 0, function (error, result) {
+                createIsolateHost(driveAs({}), function (host) {
+                    host.remoteEval('return 2+2', 0, '/tests/remoteEval_terminate.js', function (error, result) {
                         try {
                             host.terminate();
                             callback();
@@ -1439,9 +3376,55 @@ var tests;
                     });
                 });
             },
+            remoteEval_throw: function (callback) {
+                createIsolateHost(driveAs({}), function (host) {
+                    host.remoteEval('throw new Error("Abc34534")', 0, '/tests/remoteEval_throw.js', function (error, result) {
+                        try {
+                            assert(error, 'error ' + error);
+                            assert.equal('Abc34534', error.message);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                    function close_clean() {
+                        try {
+                            if (host)
+                                host.terminate();
+                        }
+                        catch (error) { }
+                    }
+                });
+            },
+            remoteEval_throw_CustomError: function (callback) {
+                createIsolateHost(driveAs({}), function (host) {
+                    host.remoteEval('throw new SyntaxError("DUTYFREE4")', 0, '/tests/remoteEval_throw_CustomError', function (error, result) {
+                        try {
+                            assert(error, 'error ' + error);
+                            assert((error + '').indexOf('SyntaxError') >= 0, 'indexOf(SyntaxError) in ' + error);
+                            assert((error + '').indexOf('DUTYFREE4') >= 0, 'indexOf(DUTYFREE4) in ' + error);
+                            assert.equal('DUTYFREE4', error.message);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                    function close_clean() {
+                        try {
+                            if (host)
+                                host.terminate();
+                        }
+                        catch (error) { }
+                    }
+                });
+            },
             remoteEval_simpleIN: function (callback) {
-                var host = isolation.createContextHost(driveAs({}), function (host) {
-                    host.remoteEval('return arguments[0]', 56, function (error, result) {
+                var host = createIsolateHost(driveAs({}), function (host) {
+                    host.remoteEval('return arguments[0]', 56, '/tests/remoteEval_simpleIN.js', function (error, result) {
                         try {
                             assert(!error, 'error ' + error);
                             assert.equal(56, result);
@@ -1462,8 +3445,8 @@ var tests;
                 });
             },
             remoteEval_complexIN: function (callback) {
-                isolation.createContextHost(driveAs({}), function (host) {
-                    host.remoteEval('return arguments[0].value', { value: 97 }, function (error, result) {
+                createIsolateHost(driveAs({}), function (host) {
+                    host.remoteEval('return arguments[0].value', { value: 97 }, '/tests/remoteEval_complexIN.js', function (error, result) {
                         try {
                             assert(!error, 'error ' + error);
                             assert.equal(97, result);
@@ -1484,8 +3467,8 @@ var tests;
                 });
             },
             remoteEval_complexOUT: function (callback) {
-                isolation.createContextHost(driveAs({}), function (host) {
-                    host.remoteEval('return { value: 23 }', null, function (error, result) {
+                createIsolateHost(driveAs({}), function (host) {
+                    host.remoteEval('return { value: 23 }', null, '/tests/remoteEval_complexOUT.js', function (error, result) {
                         try {
                             assert(!error, 'error ' + error);
                             assert.equal(23, result.value);
@@ -1506,8 +3489,8 @@ var tests;
                 });
             },
             remoteEval_complexIN_OUT: function (callback) {
-                isolation.createContextHost(driveAs({}), function (host) {
-                    host.remoteEval('return { value: arguments[0].x+arguments[0].y }', { x: 2, y: 2 }, function (error, result) {
+                createIsolateHost(driveAs({}), function (host) {
+                    host.remoteEval('return { value: arguments[0].x+arguments[0].y }', { x: 2, y: 2 }, '/tests/remoteEval_complexIN_OUT.js', function (error, result) {
                         try {
                             assert(!error, 'error ' + error);
                             assert.equal(4, result.value);
@@ -1529,13 +3512,13 @@ var tests;
             },
             connection_to_parent: {
                 invokeAsync_hits_onmessage: function (callback) {
-                    isolation.createContextHost(driveAs({}), function (host) {
+                    createIsolateHost(driveAs({}), function (host) {
                         var key = 'TEST-connection_to_parent_invokeAsync-' + (+new Date()) + '-' + Math.random();
                         host.onmessage = function () {
                             callback();
                             close_clean();
                         };
-                        host.remoteEval('connection_to_parent.invokeAsync({TEST_key: "' + key + '"})', null, function () {
+                        host.remoteEval('connection_to_parent.invokeAsync({TEST_key: "' + key + '"})', null, '/tests/connection_to_parent.js', function () {
                             // nothing
                         });
                         function close_clean() {
@@ -1548,7 +3531,7 @@ var tests;
                     });
                 },
                 invokeAsync_passes_right_message: function (callback) {
-                    isolation.createContextHost(driveAs({}), function (host) {
+                    createIsolateHost(driveAs({}), function (host) {
                         var key = 'TEST-connection_to_parent_invokeAsync-' + (+new Date()) + '-' + Math.random();
                         host.onmessage = function (msg) {
                             try {
@@ -1562,7 +3545,7 @@ var tests;
                             callback();
                             close_clean();
                         };
-                        host.remoteEval('connection_to_parent.invokeAsync({TEST_key: "' + key + '"})', null, function () {
+                        host.remoteEval('connection_to_parent.invokeAsync({TEST_key: "' + key + '"})', null, '/tests/invokeAsync_passes_right_message.js', function () {
                             // nothing
                         });
                         function close_clean() {
@@ -1575,7 +3558,7 @@ var tests;
                     });
                 },
                 invokeAsync_passes_return_bounce: function (callback) {
-                    isolation.createContextHost(driveAs({}), function (host) {
+                    createIsolateHost(driveAs({}), function (host) {
                         var key = 'TEST-connection_to_parent_invokeAsync-' + (+new Date()) + '-' + Math.random();
                         host.onmessage = function (msg, sync, response_callback) {
                             if (msg.TEST_response_after_invoke) {
@@ -1606,7 +3589,7 @@ var tests;
                             '  {TEST_key_original_message: "' + key + '"},\n' +
                             '  function (error, result) {\n' +
                             ' 	 connection_to_parent.invokeAsync({TEST_response_after_invoke: "' + key + '"});\n' +
-                            '  })', null, function () {
+                            '  })', null, '/tests/invokeAsync_passes_return_bounce.js', function () {
                             // this execution returns nothing, all conversation is through invokeAsync
                         });
                         function close_clean() {
@@ -1619,7 +3602,7 @@ var tests;
                     });
                 },
                 pushMessage_reply_with_invokeAsync: function (callback) {
-                    isolation.createContextHost(driveAs({}), function (host) {
+                    createIsolateHost(driveAs({}), function (host) {
                         var key = 'TEST-connection_to_parent_invokeAsync-' + (+new Date()) + '-' + Math.random();
                         host.onmessage = function (msg) {
                             try {
@@ -1633,7 +3616,7 @@ var tests;
                             callback();
                             close_clean();
                         };
-                        host.remoteEval('var unsub = connection_to_parent.onPushMessage(function(msg) { connection_to_parent.invokeAsync({TEST_key: msg.key+"123"}); unsub(); }); ', null, function () {
+                        host.remoteEval('var unsub = connection_to_parent.onPushMessage(function(msg) { connection_to_parent.invokeAsync({TEST_key: msg.key+"123"}); unsub(); }); ', null, '/tests/pushMessage_reply_with_invokeAsync.js', function () {
                             // nothing
                         });
                         host.pushMessage({ key: key });
@@ -1647,8 +3630,8 @@ var tests;
                     });
                 },
                 drive_empty_files_none: function (callback) {
-                    isolation.createContextHost(driveAs({}), function (host) {
-                        host.remoteEval('return connection_to_parent.drive.files()', null, function (error, result) {
+                    createIsolateHost(driveAs({}), function (host) {
+                        host.remoteEval('return connection_to_parent.drive.files()', null, '/tests/drive_empty_files_none.js', function (error, result) {
                             close_clean();
                             if (error)
                                 return callback(error);
@@ -1670,8 +3653,8 @@ var tests;
                     });
                 },
                 drive_empty_read_null: function (callback) {
-                    isolation.createContextHost(driveAs({}), function (host) {
-                        host.remoteEval('return connection_to_parent.drive.read("/temp")', null, function (error, result) {
+                    createIsolateHost(driveAs({}), function (host) {
+                        host.remoteEval('return connection_to_parent.drive.read("/temp")', null, '/tests/drive_empty_read_null', function (error, result) {
                             close_clean();
                             if (error)
                                 return callback(error);
@@ -1693,8 +3676,8 @@ var tests;
                     });
                 },
                 drive_withFile_files: function (callback) {
-                    isolation.createContextHost(driveAs({ '/mytext': 'mytext12514' }), function (host) {
-                        host.remoteEval('return connection_to_parent.drive.files()', null, function (error, result) {
+                    createIsolateHost(driveAs({ '/mytext': 'mytext12514' }), function (host) {
+                        host.remoteEval('return connection_to_parent.drive.files()', null, '/tests/drive_withFiles.js', function (error, result) {
                             close_clean();
                             if (error)
                                 return callback(error);
@@ -1717,8 +3700,8 @@ var tests;
                     });
                 },
                 drive_withFile_read_text06053: function (callback) {
-                    isolation.createContextHost(driveAs({ '/textfile': 'text06053' }), function (host) {
-                        host.remoteEval('return connection_to_parent.drive.read("/textfile")', null, function (error, result) {
+                    createIsolateHost(driveAs({ '/textfile': 'text06053' }), function (host) {
+                        host.remoteEval('return connection_to_parent.drive.read("/textfile")', null, '/tests/drive_withFile_read_text06053.js', function (error, result) {
                             close_clean();
                             if (error)
                                 return callback(error);
@@ -1740,8 +3723,8 @@ var tests;
                     });
                 },
                 drive_write_read_immediately: function (callback) {
-                    isolation.createContextHost(driveAs({}), function (host) {
-                        host.remoteEval('connection_to_parent.drive.write("/mytext", "ui4345"); return connection_to_parent.drive.read("/mytext")', null, function (error, result) {
+                    createIsolateHost(driveAs({}), function (host) {
+                        host.remoteEval('connection_to_parent.drive.write("/mytext", "ui4345"); return connection_to_parent.drive.read("/mytext")', null, '/tests/drive_write_read_immediately.js', function (error, result) {
                             close_clean();
                             if (error)
                                 return callback(error);
@@ -1764,13 +3747,13 @@ var tests;
                 },
                 drive_write_spinCycle_affectsDrive: function (callback) {
                     var drive = driveAs({});
-                    isolation.createContextHost(drive, function (host) {
-                        host.remoteEval('connection_to_parent.drive.write("/mytext", "rlrjo45")', null, function (error, result) {
+                    createIsolateHost(drive, function (host) {
+                        host.remoteEval('connection_to_parent.drive.write("/mytext", "rlrjo45")', null, '/tests/drive_write_spinCycle_affectsDrive.js', function (error, result) {
                             if (error) {
                                 close_clean();
                                 return callback(error);
                             }
-                            host.remoteEval('null', null, function (error, result) {
+                            host.remoteEval('null', null, '/tests/drive_write_spinCycle_affectsDrive__null.js', function (error, result) {
                                 close_clean();
                                 if (error)
                                     return callback(error);
@@ -1792,6 +3775,181 @@ var tests;
                         }
                     });
                 }
+            }
+        };
+    }
+})(tests || (tests = {}));
+var tests;
+(function (tests) {
+    function driveAs(snapshot) {
+        if (!snapshot.timestamp)
+            snapshot.timestamp = 1465249756308;
+        snapshot.files = function () {
+            var result = [];
+            for (var k in snapshot)
+                if (k && k.charCodeAt(0) === 47)
+                    result.push(k);
+            return result;
+        };
+        snapshot.read = function (f) {
+            var dt = snapshot[f];
+            if (dt || typeof dt === 'string')
+                return dt;
+            else
+                return null;
+        };
+        snapshot.write = function (f, txt) {
+            if (txt || typeof txt === 'string')
+                snapshot[f] = txt;
+            else
+                delete snapshot[f];
+        };
+        return snapshot;
+    }
+    tests['noapi'] = createTestsWith_createIsolateHost(isolation.createIsolateHost);
+    tests['noapi_iframe'] = createTestsWith_createIsolateHost(isolation.createIsolateHost.iframe);
+    tests['noapi_worker'] = createTestsWith_createIsolateHost(isolation.createIsolateHost.worker);
+    function createTestsWith_createIsolateHost(createIsolateHost) {
+        function initNoapi(drive, callback) {
+            isolation.createApiHost(driveAs(drive), {}, function (host) {
+                callback(host, close_clean);
+                function close_clean() {
+                    try {
+                        if (host)
+                            host.terminate();
+                    }
+                    catch (error) { }
+                }
+            });
+        }
+        return {
+            initApiContext_succeeds: function (callback) {
+                initNoapi({}, function (host, close_clean) {
+                    host.remoteEval('connection_to_parent.initApiContext({ drive: connection_to_parent.drive })', null, '/tests/initApiContext_succeeds.js', function (error, result) {
+                        try {
+                            assert(!error, error);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                });
+            },
+            initApiContext_process_someProperties: function (callback) {
+                initNoapi({}, function (host, close_clean) {
+                    host.remoteEval('var opts = { drive: connection_to_parent.drive }; connection_to_parent.initApiContext(opts);\n ' +
+                        'return {execPath: opts.process.execPath, platform: opts.process.platform, version: opts.process.version }; ', null, '/tests/initApiContext_process_someProperties.js', function (error, result) {
+                        try {
+                            assert(!error, error);
+                            assert.equal('/usr/bin/nodejs', result.execPath);
+                            assert.equal('linux', result.platform);
+                            assert.equal('0.10.38', result.version);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                });
+            },
+            initApiContext_runGlobal: function (callback) {
+                initNoapi({}, function (host, close_clean) {
+                    host.remoteEval('var opts = { drive: connection_to_parent.drive }; connection_to_parent.initApiContext(opts);\n ' +
+                        'return opts.runGlobal("2+4594");', null, '/tests/initApiContext_runGlobal.js', function (error, result) {
+                        try {
+                            assert(!error, error);
+                            assert.equal(4596, result);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                });
+            },
+            initApiContext_fs_existsSync_false: function (callback) {
+                initNoapi({}, function (host, close_clean) {
+                    host.remoteEval('var opts = { drive: connection_to_parent.drive }; connection_to_parent.initApiContext(opts);\n ' +
+                        'return opts.coreModules.fs.existsSync("/tmp"); ', null, '/tests/initApiContext_fs_existsSync_false.js', function (error, result) {
+                        try {
+                            assert(!error, error);
+                            assert.equal(false, result);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                });
+            },
+            initApiContext_fs_readFileSync: function (callback) {
+                initNoapi({ "/tmp": "dummy" }, function (host, close_clean) {
+                    host.remoteEval('var opts = { drive: connection_to_parent.drive }; connection_to_parent.initApiContext(opts);\n ' +
+                        'return opts.coreModules.fs.readFileSync("/tmp"); ', null, '/tests/initApiContext_fs_readFileSync.js', function (error, result) {
+                        try {
+                            assert(!error, error);
+                            assert.equal('dummy', result);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                });
+            },
+            initApiContext_require_moduleJS: function (callback) {
+                initNoapi({ "/module.js": "module.exports = 2891279123;" }, function (host, close_clean) {
+                    host.remoteEval('var opts = { drive: connection_to_parent.drive }; connection_to_parent.initApiContext(opts);\n ' +
+                        'return opts.global.require("/module.js"); ', null, '/tests/initApiContext_require_moduleJS.js', function (error, result) {
+                        try {
+                            assert(!error, error);
+                            assert.equal(2891279123, result);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                });
+            },
+            initApiContext_inModule_global_connection_to_parent_isUndefined: function (callback) {
+                initNoapi({ "/module.js": "module.exports = typeof connection_to_parent;" }, function (host, close_clean) {
+                    host.remoteEval('var opts = { drive: connection_to_parent.drive }; connection_to_parent.initApiContext(opts);\n ' +
+                        'return opts.global.require("/module.js"); ', null, '/tests/initApiContext_inModule_global_connection_to_parent_isUndefined.js', function (error, result) {
+                        try {
+                            assert(!error, error);
+                            assert.equal('undefined', result);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                });
+            },
+            initApiContext_inModule_global_XMLHttpRequest_isUndefined: function (callback) {
+                initNoapi({ "/module.js": "module.exports = typeof XMLHttpRequest;" }, function (host, close_clean) {
+                    host.remoteEval('var opts = { drive: connection_to_parent.drive }; connection_to_parent.initApiContext(opts);\n ' +
+                        'return opts.global.require("/module.js"); ', null, '/tests/initApiContext_inModule_global_XMLHttpRequest_isUndefined.js', function (error, result) {
+                        try {
+                            assert(!error, error);
+                            assert.equal('undefined', result);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                });
             }
         };
     }
