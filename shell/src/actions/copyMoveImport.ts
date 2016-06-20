@@ -98,8 +98,8 @@ namespace actions {
           var to_label_text = '';
         }
         else {
-          trg = env.repl.coreModules.path.resolve(trg);
-          var isDir = /\/$/.test(trg) ? true : env.repl.coreModules.fs.existsSync(trg) && env.repl.coreModules.fs.statSync(trg).isDirectory();
+          trg = env.path.resolve(trg);
+          var isDir = /\/$/.test(trg) ? true : env.fs.existsSync(trg) && env.fs.statSync(trg).isDirectory();
           var trgFiles = getDirFiles(env.drive, trg);
           if (isDir) {
             var to_label_text = ' (dir with '+trgFiles.length+' file'+(trgFiles.length===1?'':'s')+')';
@@ -112,7 +112,7 @@ namespace actions {
           var overlapCount = 0;
           var pairs = generateMovePairs();
           for (var i = 0; i < pairs.pairs.length; i++) {
-            if (env.repl.coreModules.fs.existsSync(pairs.pairs[i].target)) {
+            if (env.fs.existsSync(pairs.pairs[i].target)) {
               hasOverlap = true;
               overlapCount++;
             }
@@ -156,25 +156,25 @@ namespace actions {
       if (!targetName) return null;
       targetName = targetName.replace(/^\s+/, '').replace(/\s+$/,'');
       if (!targetName) return null;
-      targetDir = env.repl.coreModules.path.resolve(targetName);
+      targetDir = env.path.resolve(targetName);
 
       if (!env.dirSource && env.sourceFiles.length===1) {
         if (targetName.slice(-1)!=='/'
-           && (!env.repl.coreModules.fs.existsSync(targetDir) || !env.repl.coreModules.fs.statSync(targetDir).isDirectory())) {
+           && (!env.fs.existsSync(targetDir) || !env.fs.statSync(targetDir).isDirectory())) {
           // consider target a file
-          var target = env.repl.coreModules.path.resolve(targetDir);
+          var target = env.path.resolve(targetDir);
         }
         else {
           // consider target a directory where to put a file
-          var fn = env.repl.coreModules.path.basename(env.cursorPath);
-          var target = targetDir==='/' ? '/'+fn : env.repl.coreModules.path.resolve(targetDir, fn);
+          var fn = env.path.basename(env.cursorPath);
+          var target = targetDir==='/' ? '/'+fn : env.path.resolve(targetDir, fn);
         }
 
         if (!env.virtualSource && env.cursorPath===target) return null;
         return { select: target, pairs: [{ source: env.sourceFiles[0], target: target }] };
       }
       else {
-        var prefix = env.virtualSource ? '/' : env.repl.coreModules.path.resolve(env.currentPanelPath);
+        var prefix = env.virtualSource ? '/' : env.path.resolve(env.currentPanelPath);
         if (prefix!=='/') prefix += '/';
 
         if (!env.virtualSource && targetDir.slice(-1) !== '/') {
@@ -182,7 +182,7 @@ namespace actions {
           var cursorPath = env.cursorPath;
           if (env.selected && (env.selected.length>1 || env.selected[0]!==env.cursorPath))
             cursorPath = env.currentPanelPath;
-          prefix = env.repl.coreModules.path.resolve(cursorPath);
+          prefix = env.path.resolve(cursorPath);
         	if (prefix!=='/') prefix += '/';
         }
 
@@ -201,7 +201,7 @@ namespace actions {
                   select = '/'+restParts[j];
                 else
                   select =
-              			env.repl.coreModules.path.join(targetDir, restParts[j]);
+              			env.path.join(targetDir, restParts[j]);
                 break;
               }
             }
@@ -209,7 +209,7 @@ namespace actions {
 
         	var trgFile = targetDir === '/' ?
               sourceFilePath.slice(prefix.length) :
-              env.repl.coreModules.path.join(targetDir, sourceFilePath.slice(prefix.length));
+              env.path.join(targetDir, sourceFilePath.slice(prefix.length));
 
           if (env.virtualSource || sourceFilePath!==trgFile)
           	result.push({ source: env.sourceFiles[i], target: trgFile });
@@ -223,8 +223,16 @@ namespace actions {
 
     function commit() {
 
+      if (typeof console!=='undefined' && typeof console.log==='function' && console['__debug']) {
+        console.log('commit');
+      }
+
       var pairs = generateMovePairs();
       if (!pairs || !pairs.pairs.length) return;
+
+      if (typeof console!=='undefined' && typeof console.log==='function' && console['__debug']) {
+        console.log('commit:generateMoveParts['+pairs.pairs.length+']');
+      }
 
       env.drive.timestamp = +new Date();
 
@@ -232,8 +240,22 @@ namespace actions {
       var anyRemove = false;
       for (var i = 0; i < pairs.pairs.length; i++) {
         if (move) trgFileMap[pairs.pairs[i].target] = true;
+
+        if (typeof console!=='undefined' && typeof console.log==='function' && console['__debug']) {
+        	console.log('commit:pairs['+i+'] - getContent()...');
+      	}
         var content = pairs.pairs[i].source.getContent();
+
+        if (typeof console!=='undefined' && typeof console.log==='function' && console['__debug']) {
+        	console.log('commit:pairs['+i+'] - content['+content.length+'] - write()...');
+      	}
+
         env.drive.write(pairs.pairs[i].target, content);
+
+        if (typeof console!=='undefined' && typeof console.log==='function' && console['__debug']) {
+        	console.log('commit:pairs['+i+'] - content['+content.length+'] - write() OK.');
+      	}
+
         if (pairs.pairs[i].source.remove)
           anyRemove = true;
       }

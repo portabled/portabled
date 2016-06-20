@@ -133,7 +133,7 @@ class BootState {
 
     this.loadedFileCount++;
     this.domLoadedSize += file.contentLength;
-    this.domTotalSize = Math.min(this.domTotalSize, this.domLoadedSize);
+    this.domTotalSize = Math.max(this.domTotalSize, this.domLoadedSize);
   }
 
   private _removeNode(node: Node) {
@@ -165,7 +165,7 @@ class BootState {
           if (speculativeFile) {
             this._anticipationSize = speculativeFile.contentLength;
             this.domLoadedSize = this.domLoadedSize + this._anticipationSize;
-            this.domTotalSize = Math.min(this.domTotalSize, this.domLoadedSize); // total should not become less that loaded
+            this.domTotalSize = Math.max(this.domTotalSize, this.domLoadedSize); // total should not become less that loaded
           }
         }
         return;

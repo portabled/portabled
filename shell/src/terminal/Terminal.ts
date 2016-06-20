@@ -28,7 +28,6 @@ namespace terminal {
 
     constructor(
       private _host: HTMLElement,
-      private _repl: isolation.HostedProcess,
       private _checkInactive: () => boolean,
       version: string,
       getBootState: () => any) {
@@ -175,6 +174,10 @@ namespace terminal {
         return Math.round(ago/24/60/60/1000)+' days ago';
       else
         return Math.round(ago/365.2/24/60/60/1000)+' years ago';
+    }
+
+  	hasAnyTextSelected() {
+      return this._input.selectionEnd && (this._input.selectionEnd>this._input.selectionEnd || this._input.selectionEnd<this._input.selectionEnd);
     }
 
   	echoKey(e: KeyboardEvent) {
@@ -326,7 +329,7 @@ namespace terminal {
           this.writeAsCommand(code);
           this._queueRearrange();
 
-          setTimeout(() => this._evalAndLogResults(code), 20);
+          this.onexecute(code);
           return true;
         }
         else {
@@ -350,33 +353,6 @@ namespace terminal {
 
       this._rearrangeDelay = setTimeout(this._rearrangeClosure, 10);
     }
-
-
-    private _evalAndLogResults(code: string) {
-
-      var result;
-      try {
-        if (this.onexecute) {
-          this.onexecute(code);
-        }
-        else {
-          result = this._repl.eval(code, true /* use 'with' statement */);
-        }
-      }
-      catch (error) {
-        elem('div', {
-          text: error && error.stack ? error.stack : error,
-          color: 'red'
-        }, this._historyContent);
-
-        this._queueRearrange();
-        return;
-      }
-
-      if (typeof result !== 'undefined')
-      	this.log([result]);
-    }
-
 
   }
 

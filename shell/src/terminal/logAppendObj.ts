@@ -133,6 +133,7 @@ namespace terminal {
 
 
         if (obj.constructor && obj.constructor.name && obj.constructor.name !== 'Object' && obj.constructor.name !== 'Array') {
+          var hasConstructorName = true;
           elem('span', { text: obj.constructor.name, color: 'cornflowerblue' }, output);
           if (obj.constructor.prototype && obj.constructor.prototype.constructor
             && obj.constructor.prototype.constructor.name
@@ -196,11 +197,27 @@ namespace terminal {
                 insertNewLineIndent();
               };
 
+              var dummyObj = {};
+
               for (var k in obj) {
-                if (k !== 'message' && k !== 'stack'
-                    && obj.hasOwnProperty && !obj.hasOwnProperty(k)) continue;
+
+                try { var k_value = obj[k]; }
+                catch (err_get_k) { continue; } // TODO: report errors?
+
+                var skip = false;
+
+                if (k in dummyObj &&
+                    typeof obj.hasOwnProperty == 'function'
+                    && !obj.hasOwnProperty(k)) skip = true; // avoid Object prototype properties
+
+                if (typeof k_value==='function' &&
+                    typeof obj.hasOwnProperty == 'function'
+                    && !obj.hasOwnProperty(k)) skip = true; // avoid any prototype methods (functions)
+
+                if (skip) continue;
+
                 if (first) {
-                  if (level) {
+                  if (level || hasConstructorName) {
                     elem('br', output);
                     var indentStr = Array(level + 2).join('  ');
                     elem('span', { text: indentStr }, output);

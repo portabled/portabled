@@ -40,9 +40,9 @@ namespace actions {
 
       dir = dir.replace(/^\s+/,'').replace(/\s+$/, '');
 
-      var dirPath = env.repl.coreModules.path.resolve(dir);
+      var dirPath = env.path.resolve(dir);
       try {
-        var st = env.repl.coreModules.fs.statSync(dirPath);
+        var st = env.fs.statSync(dirPath);
         return; // TODO: show a validation message: file or directory exists
       }
       catch (error) { /* expected error, continue */ }

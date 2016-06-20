@@ -1,12 +1,35 @@
-module tests.attached {
+namespace tests.attached {
 
-  export function _generateAttachedStorageTests(opt: persistence.Drive.Optional) {
+  export function _generateAttachedStorageTests(opt: persistence.Drive.Optional): any {
 
     var nowRunKey = 'test'+opt.name+(new Date()+'').replace(/[^a-zA-Z]/g, '');
 
     function _generateKey(): string {
       return nowRunKey + '-'+Math.random();
     }
+
+    var predetection_failed = false;
+    try {
+      var ukey = _generateKey();
+      opt.detect(ukey, function(error, detached) {
+        if (error) predetection_failed = true;
+      });
+    }
+    catch (err) {
+      predetection_failed = true;
+    }
+
+    if (predetection_failed) {
+      return {
+        detect_succeeds(callback: (error: Error) => void) {
+          var ukey = _generateKey();
+          opt.detect(
+            ukey,
+            (error, detached) => callback(error ? new Error(error) : null));
+        }
+      };
+    }
+
 
     return {
 
@@ -21,11 +44,13 @@ module tests.attached {
         var ukey = _generateKey();
         opt.detect(
           ukey,
-          (error, detached) =>
+          (error, detached) => {
+          	if (error) { return callback(new Error(error)); }
+
             callback(detached.timestamp ?
               new Error('Expected null, found ' + detached.timestamp) :
-              null)
-          );
+              null);
+          });
       },
 
       applyTo(callback: (error: Error) => void) {
@@ -33,6 +58,8 @@ module tests.attached {
         opt.detect(
           ukey,
           (error, detached) => {
+          	if (error) { return callback(new Error(error)); }
+
             detached.applyTo({
                 timestamp: 0,
                 write: (name, content) => callback(new Error('Detached.apply: unexpected write('+name+','+content+'), the store should be empty.'))
@@ -48,6 +75,8 @@ module tests.attached {
         opt.detect(
           ukey,
           (error, detached) => {
+          	if (error) { return callback(new Error(error)); }
+
             detached.applyTo({
                 timestamp: 0,
                 write: (name, content) => callback(new Error('Detached.apply: unexpected write('+name+','+content+'), the store should be empty.'))
@@ -155,6 +184,8 @@ module tests.attached {
         opt.detect(
           ukey,
           (error, detached) => {
+          	if (error) { return callback(new Error(error)); }
+
             detached.applyTo({
                 timestamp: 0,
                 write: (name, content) => callback(new Error('Detached.apply: unexpected write('+name+','+content+'), the store should be empty.'))

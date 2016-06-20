@@ -1,12 +1,5 @@
-namespace tests.attached.indexedDBTests {
+namespace tests.attached {
 
-  export var browser;
+  export var indexedDBTests = _generateAttachedStorageTests((<any>persistence).attached.indexedDB);
 
-  try {
-    if (typeof indexedDB !== 'undefined' && indexedDB && typeof indexedDB.open === 'function')
-      browser = _generateAttachedStorageTests((<any>persistence).attached.indexedDB);
-  }
-  catch (error) {
-    browser = () => assert(false, 'Failure accessing indexedDB '+error.message);
-  }
 }

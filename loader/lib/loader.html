@@ -1,15 +1,13 @@
-
-
 // <script>document.body.innerHTML = '' </script> <script id=submodule_script>
 
-
+  
 
 function loader(window, document) {
 
 	loader.build = {
-    timestamp: 1462916538973, // Tue May 10 2016 22:42:18 GMT+0100 (GMT Daylight Time)
-    taken: 10361,
-    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.94 Safari/537.36"
+    timestamp: 1466286963379, // Sat Jun 18 2016 22:56:03 GMT+0100 (GMT Daylight Time)
+    taken: 8118,
+    platform: "node 0.10.38 on linux/ia32"
 }
 
 var bootState;
@@ -316,7 +314,17 @@ function onkeeploading() {
         && (bootDrive.domLoadedSize || bootDrive.domTotalSize))
         timings.domStarted = +new Date();
     removeSpyElements();
-    sz.update();
+    var goodTimeUpdateSize = false;
+    if (!onkeeploading._lastUpdateSize) {
+        goodTimeUpdateSize = true;
+    }
+    else {
+        var now = Date.now ? Date.now() : +new Date();
+        if (now - onkeeploading._lastUpdateSize > 500)
+            goodTimeUpdateSize = true;
+    }
+    if (goodTimeUpdateSize)
+        sz.update();
     var prevLoadedSize = bootDrive.domLoadedSize;
     var prevTotalSize = bootDrive.domTotalSize;
     bootDrive.continueLoading();
@@ -476,15 +484,15 @@ function window_onload() {
 }
 
 
-if (typeof module!=='undefined' && module && module.exports) {
+  if (typeof module!=='undefined' && module && module.exports) {
 
-  module.exports = loader;
+    module.exports = loader;
 
-}
-else {
-  document.body.style.color = 'white';
+  }
+  else {
+    document.body.style.color = 'white';
 
-  loader();
+    loader();
 var tests;
 (function (tests) {
     tests.buildMetadata = {
@@ -515,282 +523,353 @@ var tests;
 // (triple slash <) reference path="../src/API.d.ts"/>
 
 
-  // running tests from HTML page
-  var ui = document.createElement('div');
-  ui.style.color = 'black';
-  ui.innerHTML = '<h2> Tests for submodule... </h2>';
-  window.onload = function() {
-    runTests(generateTests());
-  };
+    // running tests from HTML page
+    var ui = document.createElement('div');
+    ui.style.color = 'black';
+    ui.innerHTML = '<h2> Tests for submodule... </h2>';
+    window.onload = function() {
+      runTests(generateTests());
+    };
 
-}
-
-//</script>
-/* <style>
-.prepared {
-  opacity: 0.5;
-}
-.success {
- opacity: 1;
-}
-.fail {
-  opacity: 1;
-  color: tomato;
-}
-.fail pre {
-  font-size: 70%;
-  margin: 0px; margin-left: 1em;
-  padding: 0px;
-}
-</style><script id=tests_scripts> /* */
-
-
-
-function runTests(tests) {
-  var summary = document.createElement('h2');
-  summary.style.color = 'black';
-
-  if ('textContent' in summary) summary.textContent = 'Tests (total '+tests.length+'):';
-  else summary.innerText = tests.length+'Tests (total '+tests.length+'):';
-  var successCount = 0;
-  var failCount = 0;
-  document.body.appendChild(summary);
-
-  var testList = document.createElement('div');
-  testList.style.color = 'black';
-  var runIndex = 0;
-  for (var i = 0; i < tests.length; i++) {
-    addTestRow(i);
   }
 
-  document.body.appendChild(testList);
-  setTimeout(function() {
-  	continueRunTests();
-  }, 100);
+  // # sourceURL=/submodule_script.js </script>
+  /* <style>
+  .prepared {
+    opacity: 0.5;
+  }
+  .running {
+    opacity: 1;
+    color: cornflowerblue;
+    font-weight: bold;
+  }
+  .success {
+   opacity: 1;
+  }
+  .fail {
+    opacity: 1;
+    color: tomato;
+  }
+  .fail pre {
+    font-size: 70%;
+    margin: 0px; margin-left: 1em;
+    padding: 0px;
+  }
+  </style><script id=tests_scripts> /* */
 
-  function continueRunTests() {
-    if (runIndex === tests.length) return;
-    var t = tests[runIndex];
-    runIndex++;
-    t.run(function(error) {
-      if (!error) {
-        t.testEntry.className = 'success';
-        successCount++;
+  
+
+  function runTests(tests) {
+
+    var testFilter = location.hash;
+    if (testFilter && testFilter.charAt(0)==='#') testFilter = testFilter.slice(1);
+
+    var summary = document.createElement('h2');
+    summary.style.color = 'black';
+
+    if ('textContent' in summary) summary.textContent = 'Tests (total '+tests.length+'):';
+    else summary.innerText = tests.length+'Tests (total '+tests.length+'):';
+    var successCount = 0;
+    var failCount = 0;
+    document.body.appendChild(summary);
+
+    var testList = document.createElement('div');
+    testList.style.color = 'black';
+
+    var disabledTestList = document.createElement('div');
+    disabledTestList.style.color = 'gold';
+
+    var runIndex = 0;
+    var testsToRun = [];
+    for (var i = 0; i < tests.length; i++) {
+      addTestRow(i);
+    }
+
+    document.body.appendChild(testList);
+    document.body.appendChild(disabledTestList);
+
+    setTimeout(function() {
+      continueRunTests();
+    }, 10);
+
+    function continueRunTests() {
+      if (runIndex === testsToRun.length) return;
+      var t = testsToRun[runIndex];
+      runIndex++;
+
+      if (t.disabled) {
+        setTimeout(continueRunTests, 1);
+        return;
+      }
+
+      var start = +new Date();
+      t.testEntry.className = 'running';
+      t.run(function(error) {
+        var finish = +new Date();
+        var tm = document.createElement('span');
+        if ('textContent' in tm) tm.textContent = ' '+(finish-start)+'ms';
+        else tm.innerText = ' '+(finish-start)+'ms';
+        tm.style.fontSize = '80%';
+        t.testEntry.appendChild(tm);
+        if (!error) {
+          t.testEntry.className = 'success';
+          successCount++;
+        }
+        else {
+          t.testEntry.className = 'fail';
+          var errorOutput = document.createElement('pre');
+          if ('textContent' in errorOutput) errorOutput.textContent = error;
+          else errorOutput.innerText = error;
+          t.testEntry.appendChild(errorOutput);
+          failCount++;
+        }
+
+        var summaryText =
+            'Tests ('+
+            (failCount?'failed '+failCount:'no fails')+
+            ', succeeded '+successCount+
+            (testsToRun.length>failCount+successCount?', '+(testsToRun.length-failCount-successCount)+' to finish':'')+'):';
+
+        if ('textContent' in summary) summary.textContent = summaryText;
+        else summary.innerText = summaryText;
+
+        setTimeout(continueRunTests, 5);
+      });
+    }
+
+    function addTestRow(i) {
+      var t = tests[i];
+      var testEntry = document.createElement('div');
+      if (testFilter && t.name.toLowerCase().indexOf(testFilter.toLowerCase())<0) {
+      	testEntry.className = 'disabled';
+        t.disabled = true;
+        disabledTestList.appendChild(testEntry);
+      }
+      else{
+      	testEntry.className = 'prepared';
+        testsToRun.push(t);
+      	testList.appendChild(testEntry);
+      }
+
+      if ('textContent' in testEntry) testEntry.textContent = t.name;
+      else testEntry.innerText = t.name;
+      t.testEntry = testEntry;
+    }
+  }
+
+
+  function assert(condition, message) {
+    if (!condition) throw new Error(message||'Failure '+condition);
+  }
+
+  assert.equal = (function(){
+    function equal(expected, actual, message) {
+      if (expected!=actual) throw new Error(message||'Unmatch: '+expected+' != '+actual);
+    }
+    return equal;
+  })();
+
+  function generateTests() {
+
+    var allTests = [];
+    var _dummy = {};
+
+    for (var k in tests) if (!(k in _dummy) && tests[k] && /^[a-z]/.test(k)) {
+      collectTests(k, tests[k]);
+    }
+
+    return allTests;
+
+
+    function collectTests(prefix, obj) {
+      if (!obj) return;
+      for (var k in obj) if (!(k in _dummy) && obj[k]) {
+        if (/^[A-Z]/.test(k) && typeof obj[k] === 'function') {
+          // TODO: should we construct here?
+        }
+        else if (/^[a-z]/.test(k)) {
+          if (typeof obj[k]==='function') {
+            if (k==='generateTests') {
+              var moreTests = obj.generateTests();
+              collectTests(prefix, moreTests);
+            }
+            else {
+              addTest(prefix+'.'+k, obj, k);
+            }
+          }
+          else if (typeof obj[k]==='object' && /^[a-z]/.test(k)) {
+            collectTests(prefix+'.'+k, obj[k]);
+          }
+        }
+      }
+    }
+
+    function addTest(fullname, thisObj, key) {
+      var args = functionArgs(thisObj[key]);
+      if (args && /callback/.test(args)) {
+        allTests.push({
+          name: fullname,
+          run: function(callback) {
+            try {
+              thisObj[key](callback);
+            }
+            catch (error) {
+              callback(error);
+            }
+          }
+        });
       }
       else {
-        t.testEntry.className = 'fail';
-        var errorOutput = document.createElement('pre');
-        if ('textContent' in errorOutput) errorOutput.textContent = error;
-        else errorOutput.innerText = error;
-        t.testEntry.appendChild(errorOutput);
-        failCount++;
-      }
+        allTests.push({
+          name: fullname,
+          run: function(callback) {
+            try {
+              thisObj[key]();
+            }
+            catch (error) {
+              callback(error);
+              return;
+            }
 
-      var summaryText =
-          'Tests ('+
-          (failCount?'failed '+failCount:'no fails')+
-          ', succeeded '+successCount+
-          (tests.length>failCount+successCount?', '+(tests.length-failCount-successCount)+' to finish':'')+'):';
-
-      if ('textContent' in summary) summary.textContent = summaryText;
-      else summary.innerText = summaryText;
-
-      setTimeout(continueRunTests, 5);
-    });
-  }
-
-  function addTestRow(i) {
-    var t = tests[i];
-    var testEntry = document.createElement('div');
-    testEntry.className = 'prepared';
-    if ('textContent' in testEntry) testEntry.textContent = t.name;
-    else testEntry.innerText = t.name;
-    t.testEntry = testEntry;
-    testList.appendChild(testEntry);
-  }
-}
-
-
-function assert(condition, message) {
-  if (!condition) throw new Error(message||'Failure '+condition);
-}
-
-assert.equal = (function(){
-  function equal(expected, actual, message) {
-    if (expected!=actual) throw new Error(message||'Unmatch: '+expected+' != '+actual);
-  }
-  return equal;
-})();
-
-function generateTests() {
-
-  var allTests = [];
-  var _dummy = {};
-
-  for (var k in tests) if (!(k in _dummy) && tests[k] && /^[a-z]/.test(k)) {
-    collectTests(k, tests[k]);
-  }
-
-  return allTests;
-
-
-  function collectTests(prefix, obj) {
-    if (!obj) return;
-    for (var k in obj) if (!(k in _dummy) && obj[k]) {
-      if (/^[A-Z]/.test(k) && typeof obj[k] === 'function') {
-        // TODO: should we construct here?
-      }
-      else if (/^[a-z]/.test(k)) {
-        if (typeof obj[k]==='function') {
-          if (k==='generateTests') {
-            var moreTests = obj.generateTests();
-            collectTests(prefix, moreTests);
+            callback(null);
           }
-          else {
-            addTest(prefix+'.'+k, obj, k);
-          }
-        }
-        else if (typeof obj[k]==='object' && /^[a-z]/.test(k)) {
-          collectTests(prefix+'.'+k, obj[k]);
-        }
+        });
       }
     }
+
   }
 
-  function addTest(fullname, thisObj, key) {
-    var args = functionArgs(thisObj[key]);
-    if (args && /callback/.test(args)) {
-      allTests.push({
-        name: fullname,
-        run: function(callback) {
-          try {
-            thisObj[key](callback);
-          }
-          catch (error) {
-            callback(error);
-          }
-        }
-      });
-    }
-    else {
-      allTests.push({
-        name: fullname,
-        run: function(callback) {
-          try {
-            thisObj[key]();
-          }
-          catch (error) {
-            callback(error);
-            return;
-          }
+  function functionBody(fn, replacements) {
+    // first skip until (
+    // then skip until )
+    // then skip until {
+    // then take everything until the last }
+    var match =
+        /^[^\(]*\([^\)]*\)[^\{]*\{([\s\S]*)\}[^\}]*$/.exec(fn+'');
+        // /^[^\(]*\([^\)]*\)[^\{]*\{([ \t]*\n)([\s\S]*)([ \t]*\n[ \t]*)\}[^\}]*$/.exec(fn+'');
+    if (!match) return null;
 
-          callback(null);
-        }
-      });
-    }
+    var bodyText = match[1];
+    if (!replacements) return bodyText;
+    else return substitute(bodyText, replacements);
   }
-
-}
-
-function functionBody(fn, replacements) {
-  // first skip until (
-  // then skip until )
-  // then skip until {
-  // then take everything until the last }
-  var match =
-      /^[^\(]*\([^\)]*\)[^\{]*\{([\s\S]*)\}[^\}]*$/.exec(fn+'');
-      // /^[^\(]*\([^\)]*\)[^\{]*\{([ \t]*\n)([\s\S]*)([ \t]*\n[ \t]*)\}[^\}]*$/.exec(fn+'');
-  if (!match) return null;
-
-  var bodyText = match[1];
-  if (!replacements) return bodyText;
-  else return substitute(bodyText, replacements);
-}
 function functionArgs(fn) {
-  var match = /^[^\(]*\(\s*([^\)]*)\s*\)/.exec(fn+'');
-  return match?match[1]:null;
-}
+    var match = /^[^\(]*\(\s*([^\)]*)\s*\)/.exec(fn+'');
+    return match?match[1]:null;
+  }
 function jsString(str) {
-  var hasNewlines = false && str.indexOf('\n')>=0;
-  var _JSON = typeof JSON!=='undefined'? JSON : typeof window === 'undefined' ? null : window.JSON;
-  if (_JSON && typeof _JSON.stringify === 'function')
-    return hasNewlines ? ('[\n  '+_JSON.stringify(str).replace(/\</g, '<"+"').replace(/([^\\])\\n/g, '$1",\n  "')+'\n  ].join("\\n")') : _JSON.stringify(str).replace(/\<\/script\>/gi, '<"+"/script>');
-  else
-  	return (hasNewlines ? '[\n  "' : '"') + str.replace(/[\"\s\\\<]/g, function(ch) {
-      if (ch==' ') return ch;
-      else if (ch==='\n') return hasNewlines ? '",\n  "' : '\\n';
-      else if (ch==='\r') return '\\r';
-      else if (ch==='\\') return '\\\\';
-      else if (ch==='<' || ch === '>') return ch+'"+"';
-      else return '\\u'+(0x10000 + ch.charCodeAt(0)).toString(16).slice(1);
-  	}) + (hasNewlines ? '"].join("\\n")' : '"');
-}
+    if (!str) {
+      if (typeof str==='string') return '""';
+      else if (typeof str==='undefined') return 'undefined';
+      else return 'null';
+    }
+
+    var _JSON = typeof JSON!=='undefined'? JSON : typeof window === 'undefined' ? null : window.JSON;
+    var result = '"';
+    var stretchStart = 0;
+    for (var i = 0; i < str.length; i++) {
+      var code = str.charCodeAt(i);
+      var fix;
+      switch (code) {
+        case 10: fix = i==str.length-1 ? '\\n' : '\\n"+\n  "'; break;
+        case 13: fix = '\\r'; break;
+        case 92: fix = '\\\\'; break;
+        case 34: fix = '\\\"'; break;
+        case 9: fix = '\\t'; break;
+        default:
+          if (code < 32 || // transcribe control codes
+              ((code&0xFF00)===0xFD00) || ((code&0xFF00)==0xFF00)) { // transcribe potentially corrupt Unicode
+            fix = '\\u'+(0x10000 + code).toString(16).slice(1);
+            break;
+          }
+          continue;
+      }
+
+      if (stretchStart!==i) {
+      	result += str.slice(stretchStart, i) + fix;
+      }
+      else {
+        result += fix;
+      }
+
+      stretchStart = i+1;
+    }
+
+    if (stretchStart)
+      result += str.slice(stretchStart)+'"';
+    else
+      result = '"'+str+'"';
+
+    return result;
+  }
 function jsStringLong(str) {
-  var wordCounts = {};
-  var wordArray = [];
-  str.replace(/[a-zA-Z0-9_]+/g, function(w) {
-    var key = '*'+w;
-    if (wordCounts[key]) {
-      wordCounts[key]++;
+    if (str===null) return 'null';
+    else if (typeof str==='undefined') return 'undefined';
+    var wordCounts = {};
+    var wordArray = [];
+    str.replace(/[a-zA-Z0-9_]+/g, function(w) {
+      var key = '*'+w;
+      if (wordCounts[key]) {
+        wordCounts[key]++;
+      }
+      else {
+        wordCounts[key] = 1;
+        wordArray.push(w);
+      }
+    });
+    wordArray.sort(function(w1, w2) {
+      var n1 = wordCounts['*'+w1];
+      var n2 = wordCounts['*'+w2];
+      return n1 > n2 ? -1 : n2 > 1 ? +1 : 0;
+    });
+    var replaceTable = {};
+    for (var i = 0; i < wordArray.length; i++) {
+      replaceTable['*'+wordArray[i]] = toLetterNumber(i);
     }
-    else {
-    	wordCounts[key] = 1;
-      wordArray.push(w);
+
+    var compressed = str.replace(/(\s+)|([a-zA-Z0-9_]+)/g, function(match, whitespace, word) {
+      if (word) return replaceTable['*'+word];
+      return whitespace.
+        replace(/ +/g, function(spaces) {
+          if(spaces.length<2) return spaces;
+          else return 'Z'+spaces.length;
+        }).
+        replace(/\n/g, 'Z');
+    });
+
+    return [
+      '(function(d,c,s,r,m,nn,n) { var k = 0;',
+      'return c.replace(/([a-zA-Y]+)|(Z[0-9]*)/g, function(x,t,w) {',
+        'if (w=="Z") return "\\n";',
+        'else if (w&&w.charCodeAt(0)=='+('Z').charCodeAt(0)+') return s[m=parseInt(w.slice(1))] || (s[m] = Array(m+1).join(" "));',
+        'if (r.hasOwnProperty(w)) return r[w];',
+        'nn=0,m=1;',
+        'for(var i=0;i<t.length;i++){',
+          'var n=t.charCodeAt(i);',
+          'nn+=m*(n-(n>'+(('a').charCodeAt(0)-1)+' ? '+('a').charCodeAt(0)+':'+(('A').charCodeAt(0)-26)+'));',
+          'm*='+(25+26)+';',
+        '}',
+        'if (nn<100 && !r[nn]) return r[nn] = d[nn];', // cache word lookups for 100 most frequent words
+        'else return d[nn];',
+      '});\n',
+      '}("'+wordArray.join(',')+'".split(","),"'+compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r')+'",[],{}))'
+    ].join('\n');
+
+    function toLetterNumber(num) {
+      if (!num) return 'a';
+      var base = 26+25; // a-z A-Y (leave out uppercase Z)
+      var result = [];
+      while (num) {
+        var n = num % base;
+        if (n<26)
+          result.push(String.fromCharCode('a'.charCodeAt(0)+n));
+        else
+          result.push(String.fromCharCode('A'.charCodeAt(0)+n-26));
+        num = (num / base)|0;
+      }
+      return result.join('');
     }
-  });
-  wordArray.sort(function(w1, w2) {
-    var n1 = wordCounts['*'+w1];
-    var n2 = wordCounts['*'+w2];
-    return n1 > n2 ? -1 : n2 > 1 ? +1 : 0;
-  });
-  var replaceTable = {};
-  for (var i = 0; i < wordArray.length; i++) {
-    replaceTable['*'+wordArray[i]] = toLetterNumber(i);
   }
 
-  var compressed = str.replace(/(\s+)|([a-zA-Z0-9_]+)/g, function(match, whitespace, word) {
-    if (word) return replaceTable['*'+word];
-    return whitespace.
-    	replace(/ +/g, function(spaces) {
-      	if(spaces.length<2) return spaces;
-        else return 'Z'+spaces.length;
-      }).
-    	replace(/\n/g, 'Z');
-  });
 
-  return [
-    '(function(d,c,s,r,m,nn,n) { var k = 0;',
-    'return c.replace(/([a-zA-Y]+)|(Z[0-9]*)/g, function(x,t,w) {',
-      'if (w=="Z") return "\\n";',
-      'else if (w&&w.charCodeAt(0)=='+('Z').charCodeAt(0)+') return s[m=parseInt(w.slice(1))] || (s[m] = Array(m+1).join(" "));',
-    	'if (r.hasOwnProperty(w)) return r[w];',
-      'nn=0,m=1;',
-      'for(var i=0;i<t.length;i++){',
-        'var n=t.charCodeAt(i);',
-        'nn+=m*(n-(n>'+(('a').charCodeAt(0)-1)+' ? '+('a').charCodeAt(0)+':'+(('A').charCodeAt(0)-26)+'));',
-        'm*='+(25+26)+';',
-      '}',
-    	'if (nn<100 && !r[nn]) return r[nn] = d[nn];', // cache word lookups for 100 most frequent words
-    	'else return d[nn];',
-    '});\n',
-    '}("'+wordArray.join(',')+'".split(","),"'+compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r')+'",[],{}))'
-  ].join('\n');
-
-  function toLetterNumber(num) {
-    if (!num) return 'a';
-    var base = 26+25; // a-z A-Y (leave out uppercase Z)
-    var result = [];
-    while (num) {
-      var n = num % base;
-      if (n<26)
-        result.push(String.fromCharCode('a'.charCodeAt(0)+n));
-      else
-        result.push(String.fromCharCode('A'.charCodeAt(0)+n-26));
-      num = (num / base)|0;
-    }
-    return result.join('');
-  }
-}
-
-
-// </script>
+  // # sourceURL=/tests_scripts.js </script>

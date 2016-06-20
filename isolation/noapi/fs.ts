@@ -1,6 +1,6 @@
 function createFS(
-drive: persistence.Drive,
- modules: { path: Path; }) {
+  drive: persistence.Drive,
+  modules: { path: Path; }) {
 
   var fs: FS = {
 

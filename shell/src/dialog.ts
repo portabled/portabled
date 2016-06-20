@@ -15,7 +15,7 @@ class DialogHost {
   }
 
   active(): DialogInfo {
-    return this._popupStack[this._popupStack.length-1||0]||null;
+    return this._topDialogOnStack_or_null();
   }
 
   show(dialogBody: HTMLElement): DialogInfo {
@@ -26,7 +26,7 @@ class DialogHost {
     //dialogBody.onclick = dialogBody.onmousedown = dialogBody.ontouchstart = <any>handleClick;
 
     if (this._shade) {
-      var lastTopDialog = this._popupStack[this._popupStack.length-1];
+      var lastTopDialog = this._topDialogOnStack_or_null();
       if (lastTopDialog) {
         // move current dialog underneath the shade
         document.body.removeChild(lastTopDialog.dialogBody);
@@ -47,21 +47,25 @@ class DialogHost {
     document.body.appendChild(dialogBody);
     this._animationLastTime =+new Date();
     if (!this._animateInterval)
-      this._animateInterval = setInterval(() => this._processAnimation(), 5);
+      this._animateInterval = setInterval(() => this._processAnimation(), 2);
 
     this._processAnimation();
 
     return instance;
   }
 
+	private _topDialogOnStack_or_null() {
+    return this._popupStack[(this._popupStack.length-1)||0]||null;
+  }
+
   private _processAnimation() {
     var goingIn = !this._animateOutDialog;
-    var newTime = +new Date();
+    var newTime = Date.now ? Date.now() : +new Date();
     var newPhase =
         this._animationLastPhase +
         (this._animationLastTime ? (+newTime - this._animationLastTime)/(goingIn ? fadeDuration : fadeDuration/2) : 0) * (goingIn?+1:-1);
     if (newPhase >=1 && goingIn) {
-      var dlg = this._popupStack[this._popupStack.length-1||0];
+      var dlg = this._topDialogOnStack_or_null();
       if (dlg) {
         dlg.dialogBody.style.opacity = <any>1;
         this._shade.style.opacity = <any>shadeOpacity;
@@ -78,7 +82,7 @@ class DialogHost {
       document.body.removeChild(this._animateOutDialog.dialogBody);
       this._animateOutDialog = null;
 
-      var nextDlg = this._popupStack[this._popupStack.length-1||0];
+      var nextDlg = this._topDialogOnStack_or_null();
       if (nextDlg) {
         this._shade.style.opacity = <any>shadeOpacity;
         document.body.removeChild(nextDlg.dialogBody);
@@ -97,9 +101,21 @@ class DialogHost {
     }
 
     if (goingIn) {
-      var dlg = this._popupStack[this._popupStack.length-1];
-      dlg.dialogBody.style.opacity = <any>newPhase;
-      this._shade.style.opacity = <any>(shadeOpacity*newPhase);
+      var dlg = this._topDialogOnStack_or_null();
+      if (!dlg) {
+        if (typeof console!=='undefined' && typeof console.warn==='function') {
+          console.warn('Animation with goingIn parameter, but no dialog on stack');
+        }
+        clearInterval(this._animateInterval);
+        this._animateInterval = null;
+        this._animationLastPhase = 0;
+        this._animationLastTime = 0;
+        return;
+      }
+      else {
+        dlg.dialogBody.style.opacity = <any>newPhase;
+        this._shade.style.opacity = <any>(shadeOpacity*newPhase);
+      }
     }
     else {
       this._animateOutDialog.dialogBody.style.opacity = <any>newPhase;
@@ -137,8 +153,11 @@ class DialogHost {
     // TODO: handle out-of-order closing
     var dlg = <DialogInstance>this.active();
     if (!dlg) return;
+
+    // if refuses to close, do nothing
     if (cancelCheck && typeof dlg.oncancelling === 'function' && dlg.oncancelling()) return;
 
+    // already animating out? fast-finish that one
     if (this._animateOutDialog)
       document.body.removeChild(this._animateOutDialog.dialogBody);
 
@@ -148,7 +167,7 @@ class DialogHost {
     this._animationLastTime = +new Date();
 
     if (!this._animateInterval)
-      this._animateInterval = setInterval(() => this._processAnimation(), 5);
+      this._animateInterval = setInterval(() => this._processAnimation(), 2);
 
     this._processAnimation();
   }

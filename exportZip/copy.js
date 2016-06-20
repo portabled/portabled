@@ -20,16 +20,20 @@ function run() {
   if (isOutputDir) {
     console.log('Writing at '+path.resolve(outputFile)+'...')
     for (var i = 0; i < allFiles.length; i++) {
-      var writeDir = path.resolve('.'+allFiles[i].path, '..');
+      var targetPath = allFiles[i].path;
+      if (targetPath.charCodeAt(0)===47) targetPath = targetPath.slice(1);
+      targetPath = path.join(process.argv[3], targetPath);
+      var writeDir = path.dirname(targetPath);
       createDirRecursive(writeDir);
+
       var content = allFiles[i].content;
       if (!content || typeof content !== 'string') content = fs.readFileSync(allFiles[i].contentPath)+'';
-      fs.writeFileSync(path.join(file,allFiles[i].path), content);
-      if ((i+1)%500===0) {
-        console.log('  '+i+'. '+allFiles[i].path);
+      fs.writeFileSync(targetPath, content);
+      if ((i+1)%20===1) {
+        console.log('  '+(i+1)+'. '+targetPath+' ...');
       }
     }
-    console.log('All '+allFiles.length+'saved.');
+    console.log('All '+allFiles.length+' saved.');
   }
   else {
     if (fs.existsSync(outputFile)) {

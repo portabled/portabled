@@ -1,6 +1,6 @@
 declare var unescape;
 
-var version = '0.83m';
+var version = '0.84j';
 
 class CommanderShell {
 
@@ -10,8 +10,12 @@ class CommanderShell {
   private _twoPanels: panels.TwoPanels;
   private _terminal: terminal.Terminal;
 
-  private _repl: isolation.HostedProcess;
-  private _replAlive: Function;
+  private _repl: isolation.LoadedApiProcess = null;
+	private _repl_keepAlive: any = null;
+	private _path: Path = null; // TODO: rename Path to isolation.noapi.Path
+	private _fs: FS = null; // TODO: rename FS to isolation.noapi.FS
+	private _filesChanged: (files: string[]) => void = null;
+	private _cwd: string = null;
 
   private _editor: handlers.Handler.Editor = null;
   private _savedPosns: any = {};
@@ -20,12 +24,36 @@ class CommanderShell {
   private _dialogHost = new DialogHost();
   private _stdLog: any;
 
+  private _runningProcessCount = 0;
+	private _runningProcesses: {proc: isolation.LoadedApiProcess; onstop(); }[] = [];
+
   constructor(private _topWindow: Window, private _host: HTMLElement, private _originalDrive: persistence.Drive, private _getBootState: () => any, complete: () => string) {
 
     var wrappedDrive = trackChanges(this._originalDrive);
     this._drive = wrappedDrive.drive;
     wrappedDrive.onchanges = changedFiles => this._onDriveChange(changedFiles);
 
+    this._cwd = '/';
+    this._path = createPath({
+      cwd: () => this._cwd
+    });
+
+    var fs_duple = createFS(this._drive, { path: this._path });
+    this._fs = fs_duple.fs;
+    this._filesChanged = fs_duple.filesChanged;
+
+    isolation.createApiHost(this._drive, {}, (replProcess) => {
+      this._repl = replProcess;
+      this._repl_keepAlive = this._repl.keepAlive();
+      this._repl.ondispose = () => {
+        if (typeof console!=='undefined' && typeof console.warn==='function') {
+          console.warn('REPL is shut down.');
+        }
+      };
+      this._applyConsole(this._repl);
+    });
+
+    /*
     this._repl = new isolation.HostedProcess(
       '/node_modules/repl.js',
       this._drive,
@@ -35,15 +63,13 @@ class CommanderShell {
       console.log.apply(console, args);
       // this._terminal.log(args);
     };
+    */
 
-    this._applyConsole(this._repl);
-    this._enhanceNoprocess(this._repl);
-    this._repl.enhanceChildProcess = chProc => {
-      this._applyConsole(chProc);
-      this._enhanceNoprocess(chProc);
-    };
-
-    this._replAlive = this._repl.keepAlive();
+    //this._enhanceNoprocess(this._repl);
+    //this._repl.enhanceChildProcess = chProc => {
+    //  this._applyConsole(chProc);
+    //  this._enhanceNoprocess(chProc);
+    //};
 
     elem(this._host, {
       background: 'black',
@@ -52,15 +78,15 @@ class CommanderShell {
 
     this._metrics = new layout.MetricsCollector(window);
 
-    this._terminal = new terminal.Terminal(this._host, this._repl, () => <any>this._editor || this._dialogHost.active(), version, this._getBootState);
+    this._terminal = new terminal.Terminal(this._host, () => <any>this._editor || this._dialogHost.active(), version, this._getBootState);
     var panelDirService =
         // panels.driveDirectoryService(this._drive);
-        panels.fsDirectoryService(this._repl.coreModules.fs);
+        panels.fsDirectoryService(this._fs);
 
     this._twoPanels = new panels.TwoPanels(
       this._host,
       '/',
-      this._repl.coreModules.fs.existsSync('/src') && this._repl.coreModules.fs.statSync('/src').isDirectory() ? '/src' : '/',
+      this._fs.existsSync('/src') && this._fs.statSync('/src').isDirectory() ? '/src' : '/',
       panelDirService);
     this._twoPanels.ondoubleclick = () => this._twoPanels_doubleclick();
 
@@ -71,7 +97,7 @@ class CommanderShell {
         _lastCwd = newPath;
         this._terminal.setPath(newPath);
         this._updateWindowTitle(newPath);
-        this._repl.cwd = newPath;
+        this._repl.runGlobal('process.chdir("'+newPath+'")', '/shell-chdir.js', null);
       }
     };
 
@@ -126,11 +152,11 @@ class CommanderShell {
     var _glob = (function() { return this; })();
 
     if (_glob.console && window.console && _glob.console.log && _glob.console.log!==window.console.log)
-      this._applyConsole(_glob);
-    this._applyConsole(window);
+      this._applyConsoleLocal(_glob);
+    this._applyConsoleLocal(window);
     var parent = window.parent;
     if (parent !== window.parent)
-      this._applyConsole(parent);
+      this._applyConsoleLocal(parent);
 
     setTimeout(() => {
       var reslt = complete();
@@ -190,7 +216,22 @@ class CommanderShell {
     this._keybar.arrange(this._metrics.metrics);
   }
 
-  private _applyConsole(glob: { console: { log: Function; }; }) {
+  private _applyConsole(proc: isolation.IsolatedProcess) {
+    proc.onconsole = (level, args) => {
+      if (level!=='log') {
+        var extendedArgs: any[] = [level];
+        for (var i = 0; i < args.length; i++){
+          extendedArgs.push(args[i]);
+        }
+        this._terminal.log(extendedArgs);
+      }
+      else {
+        this._terminal.log(args);
+      }
+    };
+  }
+
+  private _applyConsoleLocal(glob: { console: { log: Function; }; }) {
 
     if (!this._stdLog) {
       if (typeof console !== 'undefined' && typeof console.log === 'function')
@@ -290,6 +331,31 @@ class CommanderShell {
     enrichKeyEvent(e);
 
     if (this._dialogHost.active()) return;
+    if (this._runningProcessCount) {
+      var eatKey = false;
+      var forceStop = false;
+      if (e.shellPressed.CtrlC) {
+        if (!this._terminal.hasAnyTextSelected()) {
+          forceStop=true;
+        }
+      }
+      if (e.shellPressed.AltC || e.shellPressed.MetaC) {
+        forceStop=true;
+      }
+
+      if (forceStop) {
+        eatKey = true;
+        if (this._runningProcesses.length) {
+        	var procStop = this._runningProcesses.pop();
+          procStop.proc.terminate();
+          procStop.onstop();
+          this._runningProcessCount--;
+        }
+      }
+
+    	this._terminal.echoKey(e);
+      return eatKey;
+    }
 
     if (this._editor) {
       if (this._editor.handleKeydown) {
@@ -332,47 +398,47 @@ class CommanderShell {
 
   private _command(action: (env?: actions.ActionContext) => boolean, extraArgs?: string|FileList) {
 
-  var cursorPath = this._twoPanels.cursorPath();
-  var currentOppositePath = this._twoPanels.currentOppositePath();
-  var files: FileList = null;
+    var cursorPath = this._twoPanels.cursorPath();
+    var currentOppositePath = this._twoPanels.currentOppositePath();
+    var files: FileList = null;
 
-  if (typeof extraArgs === 'string') {
-    if (extraArgs.indexOf(' ')) {
-      var spacePos = extraArgs.indexOf(' ');
-      cursorPath = extraArgs.slice(0, spacePos);
-      currentOppositePath = extraArgs.slice(spacePos+1);
+    if (typeof extraArgs === 'string') {
+      if (extraArgs.indexOf(' ')) {
+        var spacePos = extraArgs.indexOf(' ');
+        cursorPath = extraArgs.slice(0, spacePos);
+        currentOppositePath = extraArgs.slice(spacePos+1);
+      }
+      else {
+        cursorPath = extraArgs;
+      }
     }
-    else {
-      cursorPath = extraArgs;
+    else if (extraArgs && extraArgs.length) {
+      files = extraArgs;
     }
-  }
-  else if (extraArgs && extraArgs.length) {
-    files = extraArgs;
-  }
 
-  var runResult = action({
-    drive: this._drive,
-    fs: this._repl.coreModules.fs,
-    cursorPath: cursorPath,
-    currentPanelPath: this._twoPanels.currentPath(),
-    targetPanelPath: currentOppositePath,
-    dialogHost: this._dialogHost,
-    repl: this._repl,
-    selectFile: (file: string) => {
-      this._twoPanels.selectFile(this._repl.coreModules.path.resolve(file));
-    },
-    selected: this._twoPanels.getHighlightedSelection(),
-    files: files
-  });
+    var runResult = action({
+      drive: this._drive,
+      fs: this._fs,
+      path: this._path,
+      cursorPath: cursorPath,
+      currentPanelPath: this._twoPanels.currentPath(),
+      targetPanelPath: currentOppositePath,
+      dialogHost: this._dialogHost,
+      selectFile: (file: string) => {
+        this._twoPanels.selectFile(this._path.resolve(file));
+      },
+      selected: this._twoPanels.getHighlightedSelection(),
+      files: files
+    });
 
-  if (!runResult) return false;
+    if (!runResult) return false;
 
-  this.measure();
-  this.arrange();
+    this.measure();
+    this.arrange();
 
-  this._queueRedraw();
+    this._queueRedraw();
 
-  return true;
+    return true;
   }
 
   private _closeEditor() {
@@ -394,7 +460,7 @@ class CommanderShell {
     if (!withPrompt) {
 
       try {
-        var stat = this._repl.coreModules.fs.statSync(cursorPath);
+        var stat = this._fs.statSync(cursorPath);
         if (!stat.isFile() || stat.isDirectory())
           withPrompt = true;
       }
@@ -404,7 +470,7 @@ class CommanderShell {
     }
 
     var edit = () => {
-      cursorPath = this._repl.coreModules.path.resolve(cursorPath);
+      cursorPath = this._path.resolve(cursorPath);
 
       var posn = this._savedPosns[cursorPath];
 
@@ -524,7 +590,7 @@ class CommanderShell {
     return edit();
   }
 
-  private _enhanceNoprocess(nopro: isolation.HostedProcess) {
+  private _enhanceNoprocess(nopro /*: isolation.HostedProcess*/) {
     nopro.coreModules['nodrive'] = this._drive;
     nopro.coreModules['nowindow'] = window;
     nopro.coreModules['noshell'] = this;
@@ -540,7 +606,7 @@ class CommanderShell {
     switch (firstWord) {
       case 'cd':
       case '@cd':
-        return this._cd(moreArgs ? this._repl.coreModules.path.resolve(moreArgs) : null);
+        return this._cd(moreArgs ? this._path.resolve(moreArgs) : null);
       case 'ls':
       case '@ls':
         return this._ls(moreArgs);
@@ -550,9 +616,11 @@ class CommanderShell {
       case 'node':
       case '@node':
         return this._node(moreArgs);
-      case 'tsc':
-      case '@tsc':
-        return this._tsc(moreArgs);
+//
+//      case 'tsc':
+//      case '@tsc':
+//        return this._tsc(moreArgs);
+//
       case 'window':
       case '@window':
         return this._window(moreArgs);
@@ -590,15 +658,13 @@ class CommanderShell {
       case '@remove':
       case 'rm':
       case '@rm':
-      case 'delete':
-      case '@delete':
       case 'del':
       case '@del':
         return this._command(actions.remove, moreArgs);
 
       default:
 
-        try { var fileExists = this._repl.coreModules.fs.existsSync(code); }
+        try { var fileExists = this._fs.existsSync(code); }
         catch (error) { }
 
         if (fileExists) {
@@ -606,12 +672,35 @@ class CommanderShell {
           return true;
         }
 
-        var result = this._repl.eval(code, true /*use 'with' statement*/);
-        if (result !== void 0) {
-          this._terminal.log([result]);
-        }
+        this._evalRepl(code);
         return true;
     }
+  }
+
+	private _evalRepl(code: string) {
+
+    var delayAnimateConsole = setTimeout(() => {
+      ani = this._twoPanels.temporarilyHidePanels();
+    }, 300);
+
+    var ani;
+    this._runningProcessCount++;
+    var _script_index = (<any>this._evalRepl)._script_index=(((<any>this._evalRepl)._script_index|0)+1);
+    this._repl.runGlobal(code, '/repl-shell/'+_script_index+'.js', (error, result) => {
+
+      var err_res = error||result;
+      if (err_res!==void 0)
+        this._terminal.log([err_res]);
+
+    	this._runningProcessCount--;
+
+      if (!ani) {
+        clearTimeout(delayAnimateConsole);
+      }
+      else {
+      	ani();
+      }
+    });
   }
 
   private _cd(args: string) {
@@ -689,44 +778,67 @@ class CommanderShell {
 
       this._terminal.writeAsCommand('node ' + args);
       var ani = this._twoPanels.temporarilyHidePanels();
+      this._runningProcessCount++;
 
       setTimeout(() => {
-        try {
-          var proc = new isolation.HostedProcess(argList[0], this._drive, window);
-          //proc.console.log = (...args: any[]) => { console.log.apply(console, args); };
 
-          proc.cwd = this._twoPanels.currentPath();
-          for (var i = 1; i < argList.length; i++) {
-            proc.argv.push(argList[i]);
-          }
-
-          this._applyConsole(proc);
-          this._enhanceNoprocess(proc);
-          proc.enhanceChildProcess = chProc => {
-            this._applyConsole(chProc);
-            this._enhanceNoprocess(chProc);
-          };
-
-          var evalStart = +new Date();
-          if (evalStart-commandStart>100)
-            this._terminal.writeSmall('...'+(((evalStart-commandStart)/100)|0)/10+'s to initialize process...');
-          var result = proc.eval(text);
-          if (typeof proc.exitCode == 'number')
-            result = proc.exitCode;
-          else
-            result = proc.mainModule.exports;
+        var argv: string[] = [];
+        for (var i = 1; i<argList.length; i++) {
+          argv.push(argList[i]);
         }
-        catch (error) {
-          result = error;
-        }
-        ani();
-        this._terminal.log([result]);
+
+        isolation.createApiHost(
+          this._drive,
+          {
+            scriptPath: argList[0],
+            argv: argv,
+            cwd: this._twoPanels.currentPath(),
+          },
+          proc => {
+
+            var onstop = ()=>{
+              this._runningProcessCount--;
+              ani();
+              if (typeof proc.exitCode == 'number')
+              	this._terminal.log([proc.exitCode]);
+              for (var i = this._runningProcesses.length-1; i>=0; i--) {
+                if (this._runningProcesses[i].proc===proc) {
+                  this._runningProcesses.splice(i, 1);
+                  break;
+                }
+              }
+            };
+
+            this._runningProcesses.push({proc,onstop});
+
+          	this._applyConsole(proc);
+            //this._enhanceNoprocess(proc);
+            //proc.enhanceChildProcess = chProc => {
+            //  this._applyConsole(chProc);
+            //  this._enhanceNoprocess(chProc);
+            //};
+
+            var evalStart = +new Date();
+            if (evalStart-commandStart>300)
+              this._terminal.writeSmall('...'+(((evalStart-commandStart)/100)|0)/10+'s to initialize process...');
+
+            proc.ondispose = () => {
+              onstop();
+            };
+
+            proc.runGlobal(text, argList[0], (error, result) => {
+            });
+
+          });
+
       }, 1);
 
       return true;
     }
   }
 
+
+/*
   private _tsc(args: string) {
     var tscPath = '/src/imports/ts/tsc.js';
     var text = this._drive.read(tscPath);
@@ -780,6 +892,8 @@ class CommanderShell {
     }
   }
 
+*/
+
   private _tryExtract(file: string, htmlContent: string) {
     var importedFiles = persistence.parseHTML(htmlContent);
     if (!importedFiles || !importedFiles.files || !importedFiles.files.length) return false;
@@ -819,11 +933,11 @@ class CommanderShell {
     if (/\.js$/.test(cursorPath)) {
       return this._node(cursorPath);
     }
-    else if (/\.ts$/.test(cursorPath)) {
+    /*else if (/\.ts$/.test(cursorPath)) {
       return this._tsc(cursorPath+' --pretty');
-    }
+    }*/
     else if (/.html$/.test(cursorPath)) {
-      var htmlContent = this._repl.coreModules.fs.readFileSync(cursorPath)+'';
+      var htmlContent = this._fs.readFileSync(cursorPath)+'';
       if (/\<\!\-\-\s*total /.test(htmlContent)) {
         var extractOK = this._tryExtract(cursorPath, htmlContent);
         if (extractOK) return true;
@@ -893,7 +1007,7 @@ class CommanderShell {
 
   private _onDriveChange(changedFiles: string[]) {
     this._queueRedraw();
-    this._repl.filesChanged(changedFiles);
+    this._filesChanged(changedFiles);
   }
 
   private _redrawTimer = null;

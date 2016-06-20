@@ -6,12 +6,12 @@ namespace actions {
 
     ExtendContext.prototype = env;
     var contextCopy: copyMoveImport.ExtendedActionContext = <any>new ExtendContext();
-    contextCopy.from = env.repl.coreModules.path.resolve(env.cursorPath);
+    contextCopy.from = env.path.resolve(env.cursorPath);
     contextCopy.dirSource = false;
 
     if (!env.selected || (env.selected.length===1 && env.selected[0]===contextCopy.from)) {
       try {
-        if (env.repl.coreModules.fs.statSync(contextCopy.from).isDirectory())
+        if (env.fs.statSync(contextCopy.from).isDirectory())
           contextCopy.dirSource = true;
       }
       catch (error) { }
@@ -41,7 +41,7 @@ namespace actions {
     function makeSourceEntry(path: string) {
       return {
         path: path,
-        getContent: () => env.repl.coreModules.fs.readFileSync(path) + '',
+        getContent: () => env.fs.readFileSync(path) + '',
         remove: move ? () => env.drive.write(path, null) : null
       };
     }

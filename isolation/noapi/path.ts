@@ -1,4 +1,4 @@
-function createPath(process: Process): Path {
+function createPath(process: { cwd(): string; }): Path {
 
   var result: Path = {
     basename, extname,

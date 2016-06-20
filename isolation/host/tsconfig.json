@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "out": "isolation.js",
+        "out": "host.js",
         "sourceMap": false
     }
 }

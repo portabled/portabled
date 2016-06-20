@@ -1,13 +1,5 @@
-namespace tests.attached.localStorageTests {
+namespace tests.attached {
 
-  export var browser;
-
-  try {
-    if (typeof localStorage !== 'undefined' && localStorage && typeof localStorage.getItem === 'function')
-      browser = _generateAttachedStorageTests((<any>persistence).attached.localStorage);
-  }
-  catch (error) {
-    browser = () => assert(false, 'Failure accessing localStorage '+error.message);
-  }
+  export var localStorageTests = _generateAttachedStorageTests((<any>persistence).attached.localStorage);
 
 }

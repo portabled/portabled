@@ -37,7 +37,7 @@ namespace actions {
       function processFileList(leadPath: string, fileList: FileList) {
         for (var i = 0; i < fileList.length; i++) {
           var fi: any = fileList[i];
-          var fiPath = env.repl.coreModules.path.join(
+          var fiPath = env.path.join(
             leadPath || '/',
             fi.relativePath || fi.webkitRelativePath || fi.msRelativePath || fi.mozRelativePath || fi.oRelativePath
             || fi.name);

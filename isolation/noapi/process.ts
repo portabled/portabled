@@ -5,6 +5,10 @@ function createProcess(
     cwd: string;
     env: any;
     console: any;
+  },
+  extra: {
+    exitCode: number;
+    shutdown: () => void;
   }): Process {
 
   var evt = new EventEmitter();
@@ -49,9 +53,12 @@ function createProcess(
   };
 
   function abort() {
+    if (extra.shutdown) extra.shutdown();
   }
 
   function exit(code?: number) {
+    extra.exitCode = code;
+    if (extra.shutdown) extra.shutdown();
   }
 
   function kill(pid: number, signal?: string) {

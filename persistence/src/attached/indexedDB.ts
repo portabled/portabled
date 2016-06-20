@@ -1,3 +1,5 @@
+//declare var onerror;
+
 function _getIndexedDB() {
   return typeof indexedDB === 'undefined' || typeof indexedDB.open !== 'function' ? null : indexedDB;
 }
@@ -8,7 +10,41 @@ namespace attached.indexedDB {
 
   export function detect(uniqueKey: string, callback: (error: string, detached: persistence.Drive.Detached) => void): void {
     try {
-      detectCore(uniqueKey, callback);
+
+      // Firefox fires global window.onerror
+      // when indexedDB.open is called in private mode
+      // (even though it still reports failure in request.onerror and DOES NOT throw anything)
+      var needsFirefoxPrivateModeOnerrorWorkaround =
+          typeof document !== 'undefined' && document.documentElement && document.documentElement.style
+          && 'MozAppearance' in document.documentElement.style;
+
+      if (needsFirefoxPrivateModeOnerrorWorkaround) {
+        try {
+
+          detectCore(uniqueKey, function(error, detached) {
+            callback(error, detached);
+
+          	// the global window.onerror will fire AFTER request.onerror,
+            // so here we temporarily install a dummy handler for it
+            var tmp_onerror = onerror;
+            onerror = function() { };
+            setTimeout(function() {
+              // restore on the next 'beat'
+            	onerror = tmp_onerror;
+            }, 1);
+
+          });
+
+        }
+        catch (err) {
+          callback(err.message, null);
+        }
+      }
+      else {
+
+          detectCore(uniqueKey, callback);
+      }
+
     }
     catch (error) {
       callback(error.message, null);
@@ -26,6 +62,7 @@ namespace attached.indexedDB {
     var dbName = uniqueKey || 'portabled';
 
     var openRequest = indexedDBInstance.open(dbName, 1);
+
     openRequest.onerror = (errorEvent) => callback('Opening database error: '+getErrorMessage(errorEvent), null);
 
     openRequest.onupgradeneeded = createDBAndTables;

@@ -1,0 +1,6 @@
+{
+  "compilerOptions": {
+    "out": "agent.js",
+      "sourceMap": false
+  }
+}

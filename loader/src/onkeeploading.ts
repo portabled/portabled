@@ -7,7 +7,18 @@ function onkeeploading() {
 
   removeSpyElements();
 
-  sz.update();
+  var goodTimeUpdateSize = false;
+  if (!(<any>onkeeploading)._lastUpdateSize) {
+    goodTimeUpdateSize = true;
+  }
+  else {
+    var now = Date.now?Date.now():+new Date();
+    if (now-(<any>onkeeploading)._lastUpdateSize>500)
+      goodTimeUpdateSize = true;
+  }
+
+  if (goodTimeUpdateSize)
+  	sz.update();
 
   var prevLoadedSize = bootDrive.domLoadedSize;
   var prevTotalSize = bootDrive.domTotalSize;

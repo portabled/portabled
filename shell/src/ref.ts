@@ -1,5 +1,7 @@
 /// <reference path="../../persistence/src/API.d.ts"/>
-/// <reference path="../../isolation/src/API.d.ts"/>
+/// <reference path="../../isolation/host/API.d.ts"/>
+
+/// <reference path="../../isolation/noapi/path_and_fs.refs.ts"/>
 
 declare var /* webkitRequestAnimationFrame, -- see lib.d.ts around 18017 */ mozRequestAnimationFrame;
 
