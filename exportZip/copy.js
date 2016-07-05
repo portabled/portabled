@@ -21,13 +21,22 @@ function run() {
     console.log('Writing at '+path.resolve(outputFile)+'...')
     for (var i = 0; i < allFiles.length; i++) {
       var targetPath = allFiles[i].path;
-      if (targetPath.charCodeAt(0)===47) targetPath = targetPath.slice(1);
+      if (targetPath.slice(-1)==='/' || targetPath.slice(-1)==='\\') continue;
+      if (targetPath.charAt(0)==='/' || targetPath.charAt(0)==='\\') targetPath = targetPath.slice(1);
       targetPath = path.join(process.argv[3], targetPath);
       var writeDir = path.dirname(targetPath);
       createDirRecursive(writeDir);
 
       var content = allFiles[i].content;
-      if (!content || typeof content !== 'string') content = fs.readFileSync(allFiles[i].contentPath)+'';
+      if (!content && typeof content !== 'string') {
+        try {
+          content = fs.readFileSync(allFiles[i].contentPath)+'';
+        }
+        catch (err) {
+          console.log('  '+(i+1)+'. '+targetPath+' '+JSON.stringify(allFiles[i])+' ...');
+          content = fs.readFileSync(allFiles[i].contentPath)+'';
+        }
+      }
       fs.writeFileSync(targetPath, content);
       if ((i+1)%20===1) {
         console.log('  '+(i+1)+'. '+targetPath+' ...');
