@@ -1,11 +1,12 @@
 // <script>document.body.innerHTML = '' </script> <script id=submodule_script>
 
+console.log('persistence...');
   
 function persistence(document, uniqueKey, optionalDrives) {
 
 	persistence.build = {
-    timestamp: 1467841752773, // Wed Jul 06 2016 22:49:12 GMT+0100 (GMT Daylight Time)
-    taken: 15111,
+    timestamp: 1467916527407, // Thu Jul 07 2016 19:35:27 GMT+0100 (GMT Daylight Time)
+    taken: 16620,
     platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"
 }
 
@@ -944,6 +945,14 @@ var attached;
     var webSQL;
     (function (webSQL) {
         var _emptyArray = [];
+        var _noop = function () {
+var args = [];
+for (var i = 0; i < arguments.length; i++) {
+  args.push(arguments[i]);
+}
+console.log('noop: ',args);
+alert('noop:\n'+args.join('\n'));
+        };
         function getOpenDatabase() {
             return typeof openDatabase !== 'function' ? null : openDatabase;
         }
@@ -1117,8 +1126,6 @@ var attached;
             }
             WebSQLShadow.prototype.write = function (file, content) {
                 var _this = this;
-                var now = Date.now ? Date.now() : +new Date();
-                if (this._conflatedWrites || now - this._lastWrite < 10) {
                     if (!this._conflatedWrites) {
                         this._conflatedWrites = {};
                         setTimeout(function () {
@@ -1128,12 +1135,6 @@ var attached;
                         }, 0);
                     }
                     this._conflatedWrites[file] = content;
-                }
-                else {
-                    var entry = {};
-                    entry[file] = content;
-                    this._writeCore(entry);
-                }
             };
             WebSQLShadow.prototype.forget = function (file) {
                 this._dropFileTable(file);
@@ -1142,7 +1143,7 @@ var attached;
                 var _this = this;
                 this._db.transaction(function (transaction) {
                     for (var file in writes)
-                        if (writes.hasOwnProperty(file)) {
+                        if (false && writes.hasOwnProperty(file)) {
                             _this._writeCoreSingle(transaction, file, writes[file], function (sqlError) {
                                 if (sqlError) {
                                     reportSQLError('writing into ' + file + ' ' + (writes[file] ? writes[file].length : 'none'), sqlError);
@@ -1150,34 +1151,36 @@ var attached;
                                 // TODO: if repeat is needed, consider delete writes[file] here
                             });
                         }
-                    _this._updateMetadata(transaction);
+                    //_this._updateMetadata(transaction);
                 }, function (transactionSqlError) {
                     reportSQLError('writeCore', transactionSqlError);
                 });
             };
             WebSQLShadow.prototype._updateMetadata = function (transaction) {
-                transaction.executeSql('CREATE TABLE IF NOT EXISTS "*metadata" (name PRIMARY KEY, value)');
-                transaction.executeSql('INSERT OR REPLACE INTO "*metadata" VALUES (?,?)', ['editedUTC', this.timestamp], function () { }, function (tran, sqlError) {
+                transaction.executeSql('CREATE TABLE '+/*IF NOT EXISTS*/+' "*metadata" (name PRIMARY KEY, value)', _emptyArray, _noop, _noop);
+                /*transaction.executeSql('INSERT OR REPLACE INTO "*metadata" VALUES (?,?)', ['editedUTC', this.timestamp], _noop, function (tran, sqlError) {
                     reportSQLError('updateMetadata', sqlError);
-                });
+                });*/
             };
             WebSQLShadow.prototype._writeCoreSingle = function (transaction, file, content, callback) {
                 var statements = this._getStatements(file);
-                var failCallback = function (transaction, sqlError) { return callback(sqlError); };
+                var failCallback = function (transaction, sqlError) {
+                    callback(sqlError);
+                };
                 if (content || typeof content === 'string') {
-                    transaction.executeSql(statements.createSQL);
-                    transaction.executeSql(statements.updateSQL, ['content', content], failCallback);
+                    transaction.executeSql(statements.createSQL, _emptyArray, _noop, _noop);
+                    //transaction.executeSql(statements.updateSQL, ['content', content], _noop, failCallback);
                 }
                 else {
-                    transaction.executeSql(statements.createSQL);
-                    transaction.executeSql(statements.deleteSQL, _emptyArray, failCallback);
+                    transaction.executeSql(statements.createSQL, _emptyArray, _noop, _noop);
+                    transaction.executeSql(statements.deleteSQL, _emptyArray, _noop, failCallback);
                 }
             };
             WebSQLShadow.prototype._dropFileTable = function (file) {
                 var _this = this;
                 var tableName = mangleDatabaseObjectName(file);
                 this._db.transaction(function (transaction) {
-                    transaction.executeSql('DROP TABLE "' + tableName + '"');
+                    transaction.executeSql('DROP TABLE "' + tableName + '"', _emptyArray, _noop, _noop);
                     _this._updateMetadata(transaction);
                 }, function (sqlError) {
                     reportSQLError('Transaction failure dropping table "' + tableName + '" for file "' + file + '".', sqlError);
@@ -2188,7 +2191,11 @@ var tests;
     ui.style.color = 'black';
     ui.innerHTML = '<h2> Tests for submodule... </h2>';
     window.onload = function() {
+console.log('wait to run tests...');
+setTimeout(function() {
+console.log('running...');
       runTests(generateTests());
+},1000);
     };
 
   }
@@ -2253,56 +2260,91 @@ var tests;
     }, 10);
 
     function continueRunTests() {
-      if (runIndex === testsToRun.length) return;
-      var t = testsToRun[runIndex];
-      runIndex++;
 
-      if (t.disabled) {
-        setTimeout(continueRunTests, 1);
-        return;
-      }
+      var endTimeSlice = (Date.now ? Date.now() : +new Date()) + 300;
 
-      if (typeof console!=='undefined' && console && console.log) {
-        console.log(t.testEntry.textContent || t.testEntry.innerText+'...');
-      }
-      var start = +new Date();
-      t.testEntry.className = 'running';
-      t.run(function(error) {
-        var finish = +new Date();
+      // keep running if possible
+      while (true){
+
+        var stillWithinCycle = true;
+        var completedSynchronously = false;
+
+        // skip the disabled
+        while (true) {
+          if (runIndex === testsToRun.length) return;
+          var t = testsToRun[runIndex];
+          runIndex++;
+          if (!t.disabled) break;
+        }
 
         if (typeof console!=='undefined' && console && console.log) {
-          console.log((start-finish)/1000+'s. ', error?error:'');
+          console.log(t.testEntry.textContent || t.testEntry.innerText+'...');
         }
 
-        var tm = document.createElement('span');
-        if ('textContent' in tm) tm.textContent = ' '+(finish-start)+'ms';
-        else tm.innerText = ' '+(finish-start)+'ms';
-        tm.style.fontSize = '80%';
-        t.testEntry.appendChild(tm);
-        if (!error) {
-          t.testEntry.className = 'success';
-          successCount++;
+        var start = +new Date();
+        t.testEntry.className = 'running';
+        t.run(function(error) {
+          var finish = +new Date();
+
+          if (error) {
+            if (typeof console!=='undefined' && console && console.error) {
+              console.error('  ', error, (finish-start)/1000+'s.'+(' '+error.stack?error.stack:''));
+            }
+          }
+          else {
+            if (typeof console!=='undefined' && console && console.log) {
+              console.log('  OK'+(finish-start)/1000+'s.');
+            }
+          }
+
+          var tm = document.createElement('span');
+          if ('textContent' in tm) tm.textContent = ' '+(finish-start)+'ms';
+          else tm.innerText = ' '+(finish-start)+'ms';
+          tm.style.fontSize = '80%';
+          t.testEntry.appendChild(tm);
+          if (!error) {
+            t.testEntry.className = 'success';
+            successCount++;
+          }
+          else {
+            t.testEntry.className = 'fail';
+            var errorOutput = document.createElement('pre');
+            if ('textContent' in errorOutput) errorOutput.textContent = error;
+            else errorOutput.innerText = error;
+            t.testEntry.appendChild(errorOutput);
+            failCount++;
+          }
+
+          var summaryText =
+              'Tests ('+
+              (failCount?'failed '+failCount:'no fails')+
+              ', succeeded '+successCount+
+              (testsToRun.length>failCount+successCount?', '+(testsToRun.length-failCount-successCount)+' to finish':'')+'):';
+
+          if ('textContent' in summary) summary.textContent = summaryText;
+          else summary.innerText = summaryText;
+
+          if (stillWithinCycle) {
+            completedSynchronously = true;
+          }
+          else {
+            // async anyway, continue inline
+          	continueRunTests();
+          }
+        });
+
+        stillWithinCycle = false;
+        if (completedSynchronously) {
+          var now = Date.now ? Date.now() : +new Date();
+          if (now>endTimeSlice) {
+            setTimeout(continueRunTests, 1);
+            return;
+          }
         }
         else {
-          t.testEntry.className = 'fail';
-          var errorOutput = document.createElement('pre');
-          if ('textContent' in errorOutput) errorOutput.textContent = error;
-          else errorOutput.innerText = error;
-          t.testEntry.appendChild(errorOutput);
-          failCount++;
+          return;
         }
-
-        var summaryText =
-            'Tests ('+
-            (failCount?'failed '+failCount:'no fails')+
-            ', succeeded '+successCount+
-            (testsToRun.length>failCount+successCount?', '+(testsToRun.length-failCount-successCount)+' to finish':'')+'):';
-
-        if ('textContent' in summary) summary.textContent = summaryText;
-        else summary.innerText = summaryText;
-
-        setTimeout(continueRunTests, 5);
-      });
+      }
     }
 
     function addTestRow(i) {
