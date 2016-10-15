@@ -15,7 +15,7 @@ function run() {
   }
 
   var file = input.file;
-  var allFiles = input.allFiles;
+  var inputAllFiles = input.allFiles;
   var isInputDir = input.isInputDir;
 
 
@@ -24,22 +24,22 @@ function run() {
 
   if (isOutputDir) {
     console.log('Writing at '+path.resolve(outputFile)+'...')
-    for (var i = 0; i < allFiles.length; i++) {
-      var targetPath = allFiles[i].path;
+    for (var i = 0; i < inputAllFiles.length; i++) {
+      var targetPath = inputAllFiles[i].path;
       if (targetPath.slice(-1)==='/' || targetPath.slice(-1)==='\\') continue;
       if (targetPath.charAt(0)==='/' || targetPath.charAt(0)==='\\') targetPath = targetPath.slice(1);
       targetPath = path.join(process.argv[3], targetPath);
       var writeDir = path.dirname(targetPath);
       createDirRecursive(writeDir);
 
-      var content = allFiles[i].content;
+      var content = inputAllFiles[i].content;
       if (!content && typeof content !== 'string') {
         try {
-          content = fs.readFileSync(allFiles[i].contentPath)+'';
+          content = fs.readFileSync(inputAllFiles[i].contentPath)+'';
         }
         catch (err) {
-          console.log('  '+(i+1)+'. '+targetPath+' '+JSON.stringify(allFiles[i])+' ...');
-          content = fs.readFileSync(allFiles[i].contentPath)+'';
+          console.log('  '+(i+1)+'. '+targetPath+' '+JSON.stringify(inputAllFiles[i])+' ...');
+          content = fs.readFileSync(inputAllFiles[i].contentPath)+'';
         }
       }
       fs.writeFileSync(targetPath, content);
@@ -47,7 +47,7 @@ function run() {
         console.log('  '+(i+1)+'. '+targetPath+' ...');
       }
     }
-    console.log('All '+allFiles.length+' saved.');
+    console.log('All '+inputAllFiles.length+' saved.');
   }
   else {
     if (fs.existsSync(outputFile)) {
@@ -56,7 +56,11 @@ function run() {
       var parsedOutputFile = persistence.parseHTML(outputFileHTML);
       console.log((parsedOutputFile.files.length||'none')+' found.');
 
-      updateParsedHTMLContent(outputFileHTML, parsedOutputFile, allFiles, function(file) { return fs.readFileSync(file.contentPath); });
+      updateParsedHTMLContent(
+        outputFileHTML,
+        parsedOutputFile,
+        inputAllFiles,
+        function(file) { return fs.readFileSync(file.contentPath); });
 
       console.log('Saving ['+resultHTML.length+']...');
       fs.writeFileSync(outputFile+'.updated.html', resultHTML);
@@ -64,11 +68,11 @@ function run() {
     else {
       var totalSize= 0;
       var manufacturedHTML = '';
-      for (var i = 0; i < allFiles.length; i++) {
-        var content = allFiles[i].content;
-        if (!content && typeof content!=='string') content = fs.readFileSync(allFiles[i].contentPath)+'';
+      for (var i = 0; i < inputAllFiles.length; i++) {
+        var content = inputAllFiles[i].content;
+        if (!content && typeof content!=='string') content = fs.readFileSync(inputAllFiles[i].contentPath)+'';
         totalSize += content.length;
-        manufacturedHTML+='<!--'+persistence.formatFileInner(allFiles[i].path, content)+'-->\n';
+        manufacturedHTML+='<!--'+persistence.formatFileInner(inputAllFiles[i].path, content)+'-->\n';
       }
       manufacturedHTML =
         '<!doctype html><html><head><meta charset="utf-8"><title>'+file+' EXPORT</title>\n'+
@@ -92,7 +96,7 @@ function run() {
     var targetShells = fs.readdirSync(root);
     // leave only .html files in the list
     for (var i = 0; i < targetShells.length; i++) {
-      if (!/\.html$/.test(targetShells[i])) {
+      if (/\.html\.updated\.html$/.test(targetShells[i]) || !/\.html$/.test(targetShells[i])) {
         targetShells.splice(i,1);
         i--;
       }
@@ -105,6 +109,9 @@ function run() {
       var parsedShells = [];
       var latestParsed;
       for (var i = 0; i <targetShells.length; i++) {
+
+        // HACK: limit the count for debugging
+        //if (parsedShells.length>=3 && !/(index|empty)\.html/.test(targetShells[i])) continue;
 
         var content = fs.readFileSync(targetShells[i])+'';
         var parsed = parseShell(content);
@@ -119,9 +126,6 @@ function run() {
           latestParsed = parsed;
         }
 
-
-        // HACK: limit the count for debugging
-        //if (parsedShells.length>=3) break;
       }
 
       if (parsedShells.length) {
@@ -142,16 +146,18 @@ function run() {
           }
 
 
-          // updateParsedHTMLContent(outputFileHTML, parsedOutputFile, allFiles, function(file) { return fs.readFileSync(file.contentPath); });
           var updatedHTML = updateParsedHTMLContent(
             latestParsed.content,
             latestParsed,
             allFiles,
             function (entry) {
               return entry.content;
-            });
+            },
+            true /* deleteExistingFiles */);
 
           fs.writeFileSync(parsedShells[i].path+'.updated.html', updatedHTML);
+
+          parsedShells[i] = null;
         }
 
       }
@@ -310,77 +316,97 @@ function collectInput() {
   return { file: file, allFiles: allFiles, isInputDir: isInputDir };
 }
 
-function updateParsedHTMLContent(outputFileHTML, parsedOutputFile, allFiles, readContent) {
+function updateParsedHTMLContent(
+  outputCompleteHTML,
+  outputParsed,
+  inputAllFiles,
+  readInputContent,
+  deleteExistingFiles) {
+
   // map to find matchings
-  var parsedMap = {};
-  for (var i = 0; i < parsedOutputFile.files.length; i++) {
-    parsedMap[parsedOutputFile.files[i].path] = parsedOutputFile.files[i];
+  var outputFileMap = {};
+  for (var i = 0; i < outputParsed.files.length; i++) {
+    outputFileMap[outputParsed.files[i].path] = outputParsed.files[i];
   }
 
-  // find matchings
-  for (var i = 0; i < allFiles.length; i++) {
-    var matchingParsedFile = parsedMap[allFiles[i].path];
-    if (matchingParsedFile) {
-      allFiles[i].matchingParsedFile = matchingParsedFile;
-      matchingParsedFile.matchingSourceFile = allFiles[i];
-    }
+  var inputFileMap = {};
+  for (var i = 0; i < inputAllFiles.length; i++) {
+    inputFileMap[inputAllFiles[i].path] = inputAllFiles[i];
   }
 
   var writtenFiles = 0;
 
   var resultBuf = [];
 
-  // now go backwards through existing files, and patch them
-  var offset = 0;
-  for (var i = 0; i < parsedOutputFile.files.length; i++) {
-    var parsedFi = parsedOutputFile.files[i];
-    if (parsedFi.matchingSourceFile) {
+  // now go backwards through existing files, and patch (or delete) them
+  var reverseFiles = outputParsed.files.slice();
+  reverseFiles.sort(function(f1, f2) {
+    return f1.start > f2.start ? -1 : f1.start < f2.start ? +1 : 0;
+  });
 
-      resultBuf.push(outputFileHTML.slice(offset, parsedFi.start));
+  var offset = outputCompleteHTML.length;
+  for (var i = 0; i < reverseFiles.length; i++) {
+    var outputFi = reverseFiles[i];
+    var matchingInputFile = inputFileMap[outputFi.path];
+    if (matchingInputFile) {
 
-      var content = parsedFi.matchingSourceFile.content;
-      if (!content && typeof content!=='string') content = fs.readFileSync(parsedFi.matchingSourceFile.contentPath)+'';
-      resultBuf.push(
+      resultBuf.unshift(outputCompleteHTML.slice(outputFi.end, offset));
+
+      var content = matchingInputFile.content;
+      if (!content && typeof content!=='string') content = readInputContent(matchingInputFile)+'';
+      resultBuf.unshift(
         '<!--'+
-        persistence.formatFileInner(parsedFi.matchingSourceFile.path, content)+
+        persistence.formatFileInner(matchingInputFile.path, content)+
         '-->');
 
-      offset = parsedFi.end;
+      offset = outputFi.start;
 
       writtenFiles++;
       if (writtenFiles%500===0) {
-        console.log('  '+writtenFiles+'. '+parsedFi.matchingSourceFile.path+' (overwrite)');
+        console.log('  '+writtenFiles+'. '+matchingInputFile.path+' (overwrite)');
       }
+    }
+    else if (deleteExistingFiles) {
+      var deleteChunk = outputCompleteHTML.slice(outputFi.start, outputFi.start+5)+'...'+outputCompleteHTML.slice(outputFi.end-5, outputFi.end);
+
+      resultBuf.unshift(outputCompleteHTML.slice(outputFi.end, offset));
+      // skip whole file
+      offset = outputFi.start;
     }
   }
 
-  var newFileInsertionOffset = offset;
-  if (newFileInsertionOffset===0) {
-    newFileInsertionOffset = outputFileHTML.lastIndexOf('-->');
-    if (newFileInsertionOffset>=0) {
-      newFileInsertionOffset += 3; // the length of end-comment
+  if (reverseFiles.length) {
+    var beforeInsertionPoint = outputCompleteHTML.slice(0, offset);
+  }
+  else {
+    offset = outputCompleteHTML.lastIndexOf('-->');
+    if (offset>=0) {
+      offset += 3; // the length of end-comment
     }
     else {
-      newFileInsertionOffset = outputFileHTML.lastIndexOf('</body');
-      if (newFileInsertionOffset<0) {
-          newFileInsertionOffset = outputFileHTML.lastIndexOf('<');
-        if (newFileInsertionOffset<0)
-          newFileInsertionOffset = outputFileHTML.length;
+      offset = outputCompleteHTML.lastIndexOf('</body');
+      if (offset<0) {
+          offset = outputCompleteHTML.lastIndexOf('<');
+        if (offset<0)
+          offset = outputCompleteHTML.length;
       }
     }
-    resultBuf.push(outputFileHTML.slice(offset, newFileInsertionOffset));
+    var beforeInsertionPoint = outputCompleteHTML.slice(0, offset);
+    if (offset<outputCompleteHTML.length)
+      resultBuf.push(outputCompleteHTML.slice(offset));
   }
 
   // now add new files
-  for (var i = 0; i < allFiles.length; i++) {
-    var newFile = allFiles[i];
-    if (newFile.matchingParsedFile) continue; // that's already taken care of
+  for (var i = 0; i < inputAllFiles.length; i++) {
+    var newFile = inputAllFiles[i];
+    var matchingOutputFile = outputFileMap[newFile.path];
+    if (matchingOutputFile) continue; // that's already taken care of
 
     var content = newFile.content;
-    if (!content && typeof content!=='string') content = readContent(newFile); // fs.readFileSync(newFile.contentPath)+'';
+    if (!content && typeof content!=='string') content = readInputContent(newFile); // fs.readFileSync(newFile.contentPath)+'';
 
     var insertChunk = '\n<!--'+persistence.formatFileInner(newFile.path, content)+'-->';
-    resultBuf.push(insertChunk);
+    resultBuf.unshift(insertChunk);
 
     writtenFiles++;
     if (writtenFiles%500===0) {
@@ -388,11 +414,7 @@ function updateParsedHTMLContent(outputFileHTML, parsedOutputFile, allFiles, rea
     }
   }
 
-  if (newFileInsertionOffset<outputFileHTML.length) {
-    resultBuf.push(outputFileHTML.slice(newFileInsertionOffset));
-  }
-
-  var resultHTML = resultBuf.join('');
+  var resultHTML = beforeInsertionPoint + resultBuf.join('');
 
   return resultHTML;
 }
