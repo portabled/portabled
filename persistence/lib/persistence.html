@@ -4,9 +4,9 @@
 function persistence(document, uniqueKey, optionalDrives) {
 
 	persistence.build = {
-    timestamp: 1466286955203, // Sat Jun 18 2016 22:55:55 GMT+0100 (GMT Daylight Time)
-    taken: 14597,
-    platform: "node 0.10.38 on linux/ia32"
+    timestamp: 1476487863101, // Sat Oct 15 2016 00:31:03 GMT+0100 (GMT Daylight Time)
+    taken: 15920,
+    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36"
 }
 
 var BootState = (function () {
@@ -24,6 +24,7 @@ var BootState = (function () {
         this.storageLoadFailures = {};
         this.newDOMFiles = [];
         this.newStorageFiles = [];
+        this.ondomnode = null;
         this._byPath = {};
         this._totals = null;
         this._completion = null;
@@ -86,12 +87,21 @@ var BootState = (function () {
         var file = DOMFile.tryParse(cmheader);
         if (file) {
             this._processFileNode(file);
+            if (typeof this.ondomnode === 'function') {
+                this.ondomnode(node, 'file', file);
+            }
             return;
         }
         var totals = DOMTotals.tryParse(cmheader);
         if (totals) {
             this._processTotalsNode(totals);
+            if (typeof this.ondomnode === 'function') {
+                this.ondomnode(node, 'totals', totals);
+            }
             return;
+        }
+        if (typeof this.ondomnode === 'function') {
+            this.ondomnode(node, null, null);
         }
     };
     BootState.prototype._processTotalsNode = function (totals) {
@@ -157,6 +167,11 @@ var BootState = (function () {
             }
             if (this._lastNode.nodeType === 8) {
                 this._processNode(this._lastNode);
+            }
+            else {
+                if (typeof this.ondomnode === 'function') {
+                    this.ondomnode(this._lastNode, null, null);
+                }
             }
             if (!nextNode) {
                 // finish
@@ -505,7 +520,7 @@ function parseHTML(html) {
     var totals = null;
     var totalsCommentStart;
     var totalsCommentEnd;
-    var scriptOrCommentStart = /\<(script[\s\>])|(\-\-)/gi;
+    var scriptOrCommentStart = /(\<script[\s\>])|(\<\!\-\-)/gi;
     var scriptEnd = /\<\/script\s*\>/gi;
     var commentEnd = /\-\-\>/g;
     var pos = 0;
@@ -751,18 +766,45 @@ var attached;
             function IndexedDBShadow(_db, timestamp) {
                 this._db = _db;
                 this.timestamp = timestamp;
+                this._lastWrite = 0;
+                this._conflatedWrites = null;
             }
             IndexedDBShadow.prototype.write = function (file, content) {
+                var _this = this;
+                var now = Date.now ? Date.now() : +new Date();
+                if (this._conflatedWrites || now - this._lastWrite < 10) {
+                    if (!this._conflatedWrites) {
+                        this._conflatedWrites = {};
+                        setTimeout(function () {
+                            var writes = _this._conflatedWrites;
+                            _this._conflatedWrites = null;
+                            _this._writeCore(writes);
+                        }, 0);
+                    }
+                    this._conflatedWrites[file] = content;
+                }
+                else {
+                    var entry = {};
+                    entry[file] = content;
+                    this._writeCore(entry);
+                }
+            };
+            IndexedDBShadow.prototype._writeCore = function (writes) {
+                this._lastWrite = Date.now ? Date.now() : +new Date();
                 var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
                 var filesStore = transaction.objectStore('files');
                 var metadataStore = transaction.objectStore('metadata');
-                // no file deletion here: we need to keep account of deletions too!
-                var fileData = {
-                    path: file,
-                    content: content,
-                    state: null
-                };
-                var putFile = filesStore.put(fileData);
+                for (var file in writes)
+                    if (writes.hasOwnProperty(file)) {
+                        var content = writes[file];
+                        // no file deletion here: we need to keep account of deletions too!
+                        var fileData = {
+                            path: file,
+                            content: content,
+                            state: null
+                        };
+                        var putFile = filesStore.put(fileData);
+                    }
                 var md = {
                     property: 'editedUTC',
                     value: Date.now()
@@ -2266,48 +2308,91 @@ var tests;
     }, 10);
 
     function continueRunTests() {
-      if (runIndex === testsToRun.length) return;
-      var t = testsToRun[runIndex];
-      runIndex++;
 
-      if (t.disabled) {
-        setTimeout(continueRunTests, 1);
-        return;
-      }
+      var endTimeSlice = (Date.now ? Date.now() : +new Date()) + 300;
 
-      var start = +new Date();
-      t.testEntry.className = 'running';
-      t.run(function(error) {
-        var finish = +new Date();
-        var tm = document.createElement('span');
-        if ('textContent' in tm) tm.textContent = ' '+(finish-start)+'ms';
-        else tm.innerText = ' '+(finish-start)+'ms';
-        tm.style.fontSize = '80%';
-        t.testEntry.appendChild(tm);
-        if (!error) {
-          t.testEntry.className = 'success';
-          successCount++;
+      // keep running if possible
+      while (true){
+
+        var stillWithinCycle = true;
+        var completedSynchronously = false;
+
+        // skip the disabled
+        while (true) {
+          if (runIndex === testsToRun.length) return;
+          var t = testsToRun[runIndex];
+          runIndex++;
+          if (!t.disabled) break;
+        }
+
+        if (typeof console!=='undefined' && console && console.log) {
+          console.log(t.testEntry.textContent || t.testEntry.innerText+'...');
+        }
+
+        var start = +new Date();
+        t.testEntry.className = 'running';
+        t.run(function(error) {
+          var finish = +new Date();
+
+          if (error) {
+            if (typeof console!=='undefined' && console && console.error) {
+              console.error('  ', error, (finish-start)/1000+'s.'+(' '+error.stack?error.stack:''));
+            }
+          }
+          else {
+            if (typeof console!=='undefined' && console && console.log) {
+              console.log('  OK'+(finish-start)/1000+'s.');
+            }
+          }
+
+          var tm = document.createElement('span');
+          if ('textContent' in tm) tm.textContent = ' '+(finish-start)+'ms';
+          else tm.innerText = ' '+(finish-start)+'ms';
+          tm.style.fontSize = '80%';
+          t.testEntry.appendChild(tm);
+          if (!error) {
+            t.testEntry.className = 'success';
+            successCount++;
+          }
+          else {
+            t.testEntry.className = 'fail';
+            var errorOutput = document.createElement('pre');
+            if ('textContent' in errorOutput) errorOutput.textContent = error;
+            else errorOutput.innerText = error;
+            t.testEntry.appendChild(errorOutput);
+            failCount++;
+          }
+
+          var summaryText =
+              'Tests ('+
+              (failCount?'failed '+failCount:'no fails')+
+              ', succeeded '+successCount+
+              (testsToRun.length>failCount+successCount?', '+(testsToRun.length-failCount-successCount)+' to finish':'')+'):';
+
+          if ('textContent' in summary) summary.textContent = summaryText;
+          else summary.innerText = summaryText;
+
+          if (stillWithinCycle) {
+            completedSynchronously = true;
+          }
+          else {
+            // async anyway, continue inline
+          	continueRunTests();
+          }
+        });
+
+        stillWithinCycle = false;
+        if (completedSynchronously) {
+          var now = Date.now ? Date.now() : +new Date();
+          if (now>endTimeSlice) {
+            setTimeout(continueRunTests, 1);
+            return;
+          }
         }
         else {
-          t.testEntry.className = 'fail';
-          var errorOutput = document.createElement('pre');
-          if ('textContent' in errorOutput) errorOutput.textContent = error;
-          else errorOutput.innerText = error;
-          t.testEntry.appendChild(errorOutput);
-          failCount++;
+          return;
         }
-
-        var summaryText =
-            'Tests ('+
-            (failCount?'failed '+failCount:'no fails')+
-            ', succeeded '+successCount+
-            (testsToRun.length>failCount+successCount?', '+(testsToRun.length-failCount-successCount)+' to finish':'')+'):';
-
-        if ('textContent' in summary) summary.textContent = summaryText;
-        else summary.innerText = summaryText;
-
-        setTimeout(continueRunTests, 5);
-      });
+      }
     }
 
     function addTestRow(i) {
@@ -2347,7 +2432,7 @@ var tests;
     var allTests = [];
     var _dummy = {};
 
-    for (var k in tests) if (!(k in _dummy) && tests[k] && /^[a-z]/.test(k)) {
+    for (var k in tests) if (!(k in _dummy) && tests[k] && /^[a-z\_]/.test(k)) {
       collectTests(k, tests[k]);
     }
 
@@ -2510,6 +2595,23 @@ function jsStringLong(str) {
         replace(/\n/g, 'Z');
     });
 
+    var wordarr = [];
+    var lineLen = 0;
+    for (var i = 0; i < wordArray.length; i++) {
+      var nextWord = wordArray[i];
+      if (lineLen) {
+        wordarr[wordarr.length-1] += ','+nextWord;
+      }
+      else {
+        if (i) nextWord = '"+\n"'+nextWord;
+        wordarr.push(nextWord);
+      }
+
+      lineLen+=nextWord.length+1;
+      if (lineLen>100)
+        lineLen = 0;
+    }
+
     return [
       '(function(d,c,s,r,m,nn,n) { var k = 0;',
       'return c.replace(/([a-zA-Y]+)|(Z[0-9]*)/g, function(x,t,w) {',
@@ -2525,7 +2627,7 @@ function jsStringLong(str) {
         'if (nn<100 && !r[nn]) return r[nn] = d[nn];', // cache word lookups for 100 most frequent words
         'else return d[nn];',
       '});\n',
-      '}("'+wordArray.join(',')+'".split(","),"'+compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r')+'",[],{}))'
+      '}(("'+wordarr.join(',')+'").split(","),"'+compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r')+'",[],{}))'
     ].join('\n');
 
     function toLetterNumber(num) {
