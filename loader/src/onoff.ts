@@ -8,6 +8,14 @@ function on(eventName, callback, _more) {
         progressCallbacks.push(callback);
         break;
 
+      case 'domnode':
+        domNodeCallbacks.push(callback);
+        for (var i = 0; i < keepDomNodesUntilBootComplete.length; i++) {
+          var n = keepDomNodesUntilBootComplete[i];
+          callback(n.node, n.recognizedKind, n.recognizedEntity);
+        }
+        break;
+
       case 'load':
         if (loadedCallbacks) loadedCallbacks.push(callback);
         else setTimeout(function() { callback(drive); }, 1);

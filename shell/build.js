@@ -36,11 +36,16 @@ var shell_html = build.substitute(ui_template, {
 console.log('  '+shell_html.length+' chars');
 
 console.log('Combining full HTML...');
+
 var miOpts = {
   boot_html: boot_html,
   shell_html: shell_html,
-  files: ['/'],
+  files: [path.resolve(__dirname, '..')],
   favicon: readLocal('favicon.base64.html')
+};
+miOpts.files.filterFiles = function(source, target) {
+  if (target==='/mi.html'|| target==='/empty.html') return false;
+  else return true;
 };
 
 var html = build.wrapEQ80(miOpts);

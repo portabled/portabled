@@ -29,9 +29,7 @@ function captureGlobalScopeVariables_atStart() {
     	_JSON_parse = JSON.parse.bind(JSON);
     }
     else {
-      var _JSON = JSON;
-      var _parse = JSON.parse;
-      _JSON_parse = (txt) => _parse.apply(_JSON, [txt]);
+      _JSON_parse = (str) => _eval('('+str+')');
     }
   }
 

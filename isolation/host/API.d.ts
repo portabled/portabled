@@ -8,15 +8,17 @@ declare namespace isolation {
     remoteEval(fnScript: string, arg: any, path: string, callback: (error: Error, result) => any);
     pushMessage(msg: any);
     terminate();
+
     onerror: (error: Error) => void;
     onmessage: (msg: any, syncReply: boolean, callback: (error: Error, response?: any) => void) => void;
     onconsole: (level: string, args: any[]) => void;
-    serializeError(err: Error): any;
   }
 
   export interface LoadedApiProcess extends IsolatedProcess {
     runGlobal(script: string, path: string, callback: (error: Error, result: any) => void);
     keepAlive(): () => void;
+
+    onchildprocess(opts: any, child_process: any, continueWithProcess: (error?: Error) => void): void;
     ondispose: () => void;
     exitCode: number;
   }

@@ -17,26 +17,23 @@ function RUN_ASYNC_CHANNEL(driveSnapshot: any) {
     write: driveUpdate_write_ASYNC_CHANNEL
   };
 
-  var cmpSer = createComplexSerializer();
-
   connection_to_parent = {
     drive: drive,
     onPushMessage: pushMessageDispatcher.onPushMessage,
-    invokeAsync: invokeAsync_ASYNC_CHANNEL,
-    serializeError: errorSer.serialize,
-    serialize: cmpSer.serialize
+    invokeAsync: invokeAsync_ASYNC_CHANNEL
   };
 
   install_console_redirect(postMessageToHost, cmpSer.serialize);
 
 
   function invokeAsync_ASYNC_CHANNEL(msg: any, callback: (error: Error, result: any) => void) {
+    var msg_ser = cmpSer.serialize(msg);
     if (callback) {
       var key = requestResponseDispatcher.pushCallback(callback);
-      postMessageToHost({ invokeAsync: { key: key, msg: msg } });
+      postMessageToHost({ invokeAsync: { key: key, msg: msg_ser } });
     }
     else {
-      postMessageToHost({ invokeAsync: { msg: msg } });
+      postMessageToHost({ invokeAsync: { msg: msg_ser } });
     }
   }
 
@@ -65,7 +62,7 @@ function RUN_ASYNC_CHANNEL(driveSnapshot: any) {
     }
 
     var callback = requestResponseDispatcher.popCallback(asyncResponse.key);
-    callback(asyncResponse.error && errorSer.serialize(asyncResponse.error), asyncResponse.result);
+    callback(asyncResponse.error && cmpSer.serialize(asyncResponse.error), asyncResponse.result);
   }
 
 

@@ -11,13 +11,14 @@ namespace panels {
 
     private _leftPanelHost: HTMLDivElement;
     private _rightPanelHost: HTMLDivElement;
+  	private _middleDarkStripe: HTMLDivElement;
 
     private _leftPanel: Panel;
     private _rightPanel: Panel;
 
   	private _internalMetrics = {
       contentWidth: 0,
-      bottomHap: 0
+      bottomGap: 0
     };
 
   	private _panelMetrics = {
@@ -41,6 +42,7 @@ namespace panels {
 
       this._leftPanelHost = <any>elem('div', { className: 'panels-panel panels-left-panel' }, this._scrollContent);
       this._rightPanelHost = <any>elem('div', { className: 'panels-panel panels-right-panel' }, this._scrollContent);
+      this._middleDarkStripe = <any>elem('div', { className: 'panels-middle-dark-stripe', cssText: 'position: absolute;' }, this._scrollContent);
 
       this._leftPanel = new Panel(
         this._leftPanelHost,
@@ -132,7 +134,7 @@ namespace panels {
       var panelWidth = (contentWidth / 2 - 0.5) | 0;
 
       this._internalMetrics.contentWidth = contentWidth;
-      this._internalMetrics.bottomHap = bottomGap;
+      this._internalMetrics.bottomGap = bottomGap;
       this._panelMetrics.hostHeight = panelHeight;
       this._panelMetrics.hostWidth = panelWidth;
       this._panelMetrics.windowMetrics = metrics;
@@ -174,6 +176,9 @@ namespace panels {
       if (this._rightPanelHost.style.display !== 'none')
         this._rightPanel.arrange(this._panelMetrics);
 
+      this._middleDarkStripe.style.left = hostWidthPx;
+      this._middleDarkStripe.style.width = '1.5px';
+      this._middleDarkStripe.style.height = hostHeightPx;
     }
 
     isVisible() {
@@ -259,11 +264,11 @@ namespace panels {
         };
 
         var sinceStart = +new Date() - start;
-        if (sinceStart >= stayTime) {
-          startFade();
+        if (sinceStart < stayTime) {
+          setTimeout(startFade, fadeTime - sinceStart);
         }
         else {
-          setTimeout(startFade, fadeTime - sinceStart);
+          startFade();
         }
       };
 

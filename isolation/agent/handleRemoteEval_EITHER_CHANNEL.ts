@@ -29,7 +29,7 @@ function handleRemoteEval_EITHER_CHANNEL(remoteEval) {
 
     var remoteErrorResponse = {
       key: remoteEval.key,
-      error: errorSer.serialize(error)
+      error: cmpSer.serialize(error)
     };
     postMessageToHost({remoteErrorResponse: remoteErrorResponse});
   }

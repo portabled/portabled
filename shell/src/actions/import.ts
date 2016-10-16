@@ -30,6 +30,7 @@ namespace actions {
         contextCopy.buttonText = 'Import';
         contextCopy.sourceFiles = allfiles;
         contextCopy.virtualSource = true;
+        contextCopy.targetPanelPath = contextCopy.currentPanelPath;
 
         copyMoveImport(contextCopy);
       }

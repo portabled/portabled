@@ -8,8 +8,16 @@ function createChildProcess(
     spawn
   };
 
-    function spawn() {
-      // TODO: invokeAsync-based implementation
+    function spawn(options: any) {
+
+      var sanitizedOptions = {};
+
+      connection_to_parent.invokeAsync(
+        { spawnChildProcess: sanitizedOptions },
+      	(error, result) => {
+      		// TODO: invokeAsync-based implementation
+          
+        });
     }
 
 }

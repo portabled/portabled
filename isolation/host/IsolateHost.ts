@@ -7,7 +7,7 @@ declare var msRequestFileSystem;
 
 (function(module) {
 
-	var errorSer = createErrorSerializer();
+	var srz = createComplexSerializer();
 
   module.createIsolateHost = createIsolateHost;
   module.createIsolateHost.worker = createWebWorkerHost;
@@ -51,7 +51,8 @@ declare var msRequestFileSystem;
 
     webWorker.onmessage = webworker_onmessage;
 
-    webWorker.postMessage({init_worker_connect: true});
+    var initMsg = getInitPlatformMessage();
+    webWorker.postMessage({init_worker_connect: initMsg});
 
     var hst: isolation.IsolatedProcess = {
         type: null,
@@ -60,13 +61,12 @@ declare var msRequestFileSystem;
         terminate: terminate_webworker,
         onerror: null,
         onmessage: null,
-      	onconsole: null,
-      	serializeError: errorSer.serialize
+      	onconsole: null
       };
 
     var fs: any;
 
-  	var cmpSer = createComplexSerializer();
+    var cmpSer = createComplexSerializer();
 
     function completeIsolatedProcess(type: string) {
       hst.type = <any>type;
@@ -109,6 +109,9 @@ declare var msRequestFileSystem;
       }
       else if (e.data.console_echo) {
         handleConsoleEcho(e.data.console_echo);
+      }
+      else if (e.data.globalError) {
+        handleGlobalError(e.data.globalError);
       }
       else if (e.data.key) {
         var req = requests[e.data.key];
@@ -169,7 +172,7 @@ declare var msRequestFileSystem;
     function handleInvokeAsync(invokeAsync) {
       if (!hst.onmessage) return;
       hst.onmessage(invokeAsync.msg, /*syncReply*/ false, (error, response) => {
-        var error_serialized = errorSer.serialize(error);
+        var error_serialized = srz.serialize(error);
         webWorker.postMessage({asyncResponse: {key:invokeAsync.key, error: error_serialized, response:response}});
       });
     }
@@ -188,7 +191,7 @@ declare var msRequestFileSystem;
 
       delete requests[remoteErrorResponse.key];
 
-      var error_deserialized = errorSer.deserialize(remoteErrorResponse.error);
+      var error_deserialized = srz.deserialize(remoteErrorResponse.error);
       req(error_deserialized);
     }
 
@@ -223,6 +226,15 @@ declare var msRequestFileSystem;
       else {
         var levelFn = console[console_echo.level];
         levelFn.apply(console, deser);
+      }
+    }
+
+    function handleGlobalError(globalError) {
+      var deser = cmpSer.deserialize(globalError);
+      if (hst.onerror) {
+        var err = cmpSer.deserialize(globalError);
+        var onerror = hst.onerror;
+        onerror(err);
       }
     }
 
@@ -337,7 +349,7 @@ declare var msRequestFileSystem;
     }
 
     function createWebWorker() {
-      var worker_body = getWorkerAgentScript();
+      var worker_body = getWorkerAgentScript(false/*doNotRun: false, i.e. do run straight away*/);
 
       if (typeof Blob==='function') {
         try {
@@ -373,168 +385,108 @@ declare var msRequestFileSystem;
 
   function createIFrameHost(drive: persistence.Drive, callback: (hst: isolation.IsolatedProcess) => void) {
 
+  var cmpSer = createComplexSerializer();
+
     var frm = createIFrame();
-    var hst: isolation.IsolatedProcess = {
-      type: 'iframe',
-  		remoteEval: remoteEval_iframe,
-      pushMessage: pushMessage_iframe,
-  		terminate: terminate_iframe,
-  		onerror: null,
-      onmessage: null,
-      onconsole: null,
-      serializeError: errorSer.serialize
-    };
 
-    var registeredPushMessageCallbacks: {(msg: any);}[] = [];
-    var registeredPushMessageCallbacks_length = 0;
-
-    callback(hst);
-
-    function remoteEval_iframe(fnScript: string, arg: any, path: string, callback: (error: Error, result?) => any) {
-      var fn = (0,frm.evalFN)('(function(){'+fnScript+'\n})'+(path ? '//# '+'sourceURL='+path : ''));
-      try {
-      	var result = fn(arg);
-      }
-      catch (error) {
-        callback(error);
-        return;
-      }
-
-      callback(null, result);
-    }
-
-    function pushMessage_iframe(msg: any) {
-      for (var i = 0; i < registeredPushMessageCallbacks_length; i++) {
-        var cb = registeredPushMessageCallbacks[i];
-        if (cb)
-        	cb(msg);
-      }
-    }
+    callback(<any>frm.hst);
 
     function terminate_iframe() {
-      if (frm && frm.ifr.parentElement){
+      if (frm && frm.ifr.parentElement) {
         frm.ifr.parentElement.removeChild(frm.ifr);
         frm = null;
       }
     }
 
-    function onPushMessage(registerCallback: (msg: any) => void) : ()=>void {
-      var index = registeredPushMessageCallbacks_length;
-      registeredPushMessageCallbacks.push(registerCallback);
-      registeredPushMessageCallbacks_length++;
-
-      return unregister_pushMessageCallback;
-      function unregister_pushMessageCallback() {
-        if (index<0) return;
-        delete registeredPushMessageCallbacks[index];
-        index = -1;
-
-        // adjust the tail (removal of callbacks may run out of order)
-        var newLength = registeredPushMessageCallbacks_length;
-        while(!registeredPushMessageCallbacks[newLength] && newLength>=0) {
-          newLength--;
-        }
-
-        if (newLength!==registeredPushMessageCallbacks_length)
-          registeredPushMessageCallbacks_length = newLength;
-      }
-    }
-
     function createIFrame() {
-
-      var cmpSer = createComplexSerializer();
 
       var ifr = document.createElement('iframe');
       ifr.src = 'about:blank'; // TODO: explore loading from Blob/data URI directly
       ifr.style.cssText = 'display: none; position: absolute; left: -50px; top: -50px; width: 0px; height: 0px;';
       document.body.appendChild(ifr);
       var ifrwin: any = ifr.contentWindow||(<any>ifr).window;
-      ifrwin.document.write('<'+'script>window[" "] = (function(ev){ return function(){ return ev(arguments[0]); }; })(eval);</'+'script>');
-      var evalFN = ifrwin[" "];
-      evalFN('window[" "]=void 0; (function(){arguments[0][0].parentElement.removeChild(arguments[0][0]);})(document.getElementsByTagName("script"));');
-      var connection_to_parent = {
-        drive: drive,
-        invokeAsync(msg: any, callback: (error: Error, result: any) => void) {
-        	try {
-            hst.onmessage(msg, /*syncReply*/true, callback);
-      		}
-      		catch (error) {
-            callback(error, null);
-          }
-      	},
-        invokeSync(msg: any) {
-          var reply: any;
-          hst.onmessage(msg, /*syncReply*/true, reply_passed => reply = reply_passed);
-          return reply;
-        },
-        onPushMessage: onPushMessage
+
+      var ifr_script = getWorkerAgentScript(true /*doNotRun*/);
+
+      ifrwin.document.write('<'+'script>'+ifr_script+'</'+'script>');
+
+
+      var hstCalls = ifrwin.window.agentFunction_iframe(drive);
+      hstCalls.onerror = hst_onerror_iframe;
+      hstCalls.onmessage = hst_onmessage_iframe;
+      hstCalls.onconsole = hst_onconsole_iframe;
+
+      var hst = {
+        type: 'iframe',
+        remoteEval: hst_remoteEval,
+        pushMessage: hst_pushMessage,
+        terminate: terminate_iframe,
+        onerror: null,
+        onmessage: null,
+        onconsole: null
       };
 
+      return { ifr, hst };
 
- 	 		if (ifrwin.console) {
-  			ConsoleRedirect.prototype = ifrwin.console;
+      function hst_pushMessage(msg: any) {
+        var msg_ser = cmpSer.serialize(msg);
+        hstCalls.pushMessage(msg_ser);
       }
 
-  		var console_redirect = new ConsoleRedirect();
-  		console_redirect.log = log_redirect;
-  		console_redirect.warn = warn_redirect;
-  		console_redirect.debug = debug_redirect;
-  		console_redirect.trace = trace_redirect;
-  		console_redirect.error = error_redirect;
-  		ifrwin.console = console_redirect;
+      function hst_remoteEval(fnScript: string, arg: any, path: string, callback: (error: Error, result) => any){
+        var arg_ser = cmpSer.serialize(arg);
+        hstCalls.remoteEval(fnScript, arg_ser, path, callback ? hst_remoteEval_callback : null);
 
-  		ifrwin.connection_to_parent = connection_to_parent;
-      return { ifr, evalFN, connection_to_parent };
-
-  		function ConsoleRedirect() { }
-
-  		function log_redirect() {
-        var args = [];
-        for (var i = 0; i < arguments.length; i++) { args.push(arguments[i]); }
-        console_level_redirect('log', args);
-      }
-
-  		function warn_redirect() {
-        var args = [];
-        for (var i = 0; i < arguments.length; i++) { args.push(arguments[i]); }
-        console_level_redirect('warn', args);
-      }
-
-  		function debug_redirect() {
-        var args = [];
-        for (var i = 0; i < arguments.length; i++) { args.push(arguments[i]); }
-        console_level_redirect('debug', args);
-      }
-
-			function trace_redirect() {
-        var args = [];
-        for (var i = 0; i < arguments.length; i++) { args.push(arguments[i]); }
-        console_level_redirect('trace', args);
-      }
-
-  		function error_redirect() {
-        var args = [];
-        for (var i = 0; i < arguments.length; i++) { args.push(arguments[i]); }
-        console_level_redirect('error', args);
-      }
-
-      function console_level_redirect(level: string, args: any[]) {
-        var serdeser = cmpSer.deserialize(cmpSer.serialize(args));
-        if (hst.onconsole) {
-          hst.onconsole(level, serdeser);
-        }
-        else {
-          if (typeof console!=='undefined') {
-            var levelFn = console[level] || console.log;
-            levelFn.apply(console, serdeser);
-          }
+        function hst_remoteEval_callback(error, result) {
+          var error_deser = cmpSer.deserialize(error);
+          var result_deser = cmpSer.deserialize(result);
+          callback(error_deser, result_deser);
         }
       }
 
-    };
+    }
+
+
+    function hst_onerror_iframe(err) {
+      if (frm.hst.onerror) {
+        var err_deser = cmpSer.deserialize(err);
+        frm.hst.onerror(err_deser);
+      }
+    }
+
+    function hst_onmessage_iframe(msg: any, syncReply: boolean, callback: (error: Error, response?: any) => void) {
+      if (frm.hst.onmessage) {
+        var msg_deser = cmpSer.deserialize(msg);
+        frm.hst.onmessage(msg_deser, syncReply, callback ? hst_onmessage_iframe_callback : null);
+      }
+
+      function hst_onmessage_iframe_callback(error, response) {
+        var error_deser = cmpSer.deserialize(error);
+        var response_deser = cmpSer.deserialize(response);
+        callback(error_deser, response_deser);
+      }
+    }
+
+    function hst_onconsole_iframe(level: string, args: any[]) {
+      if (frm.hst.onconsole) {
+        var args_deser = cmpSer.deserialize(args);
+        frm.hst.onconsole(level, args_deser);
+      }
+    }
+
 
   }
 
+ 	function getInitPlatformMessage() {
+    var initMsg = {
+      versions: { navigator: navigator.userAgent },
+      platform: (navigator.platform || 'Win32').toLowerCase(),
+      vendor: navigator.vendor|| (String.fromCharCode(0x47)+ 'oo'+String.fromCharCode(0x47).toLowerCase()+'le '+('PCInc').slice(2)+'.'),
+      languages: (<any>navigator).languages || (navigator.language?[navigator.language]:['en-us']),
+      cpuCount: (<any>navigator).hardwareConcurrency || 1
+    };
+  	return initMsg;
+	}
 
 
   function createApiHost(drive: persistence.Drive, options: any, callback: (api?: isolation.LoadedApiProcess) => void) {
@@ -543,6 +495,11 @@ declare var msRequestFileSystem;
           getApiScript() + '\n\n\n\n'+
           'arguments[0].drive = connection_to_parent.drive;\n'+
           'initApiContext(arguments[0]);';
+
+      if (!options.versions) {
+        var pltf = getInitPlatformMessage();
+        options.versions = pltf.versions;
+      }
 
       host.remoteEval(noapiSetupScript, options, '/isolation_noapi.js', (error) => {
         if (error) {
@@ -585,7 +542,7 @@ declare var msRequestFileSystem;
               // TODO: console.log??
               return;
             }
-            var err = errorSer.deserialize(msg.noapi_runGlobal_error.error);
+            var err = srz.deserialize(msg.noapi_runGlobal_error.error);
             callback(err);
           }
           else if (msg.noapi_runGlobal_response) {
@@ -599,7 +556,8 @@ declare var msRequestFileSystem;
               // TODO: console.log??
               return;
             }
-            callback(null, msg.noapi_runGlobal_response.response);
+            var response = srz.deserialize(msg.noapi_runGlobal_response.response);
+            callback(null, response);
           }
           else if (msg.keepAlive_addRef_response) {
             var keepAlive_onToken = keepAliveReqResDispatcher.popCallback(msg.keepAlive_addRef_response.key);
@@ -643,9 +601,14 @@ declare var msRequestFileSystem;
     });
 	}
 
-  function getWorkerAgentScript() {
+  function getWorkerAgentScript(doNOTrun: boolean) {
     var worker_body = "#workeragent#";
-  	worker_body = '(function() {    ' + worker_body + '\n\n\n})() //# '+'sourceURL=/isolation_worker_body.js';
+    if (doNOTrun) {
+  		worker_body = worker_body +'\n //# '+'sourceURL=/isolation_iframe_body.js';
+    }
+    else {
+  		worker_body = '(function() {    ' + worker_body + '\n\n\n'+ 'agentFunction_webWorker(); })() //# '+'sourceURL=/isolation_worker_body.js';
+    }
   	return worker_body;
   }
 

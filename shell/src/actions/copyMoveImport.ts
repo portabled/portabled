@@ -1,7 +1,8 @@
 namespace actions {
 
   export function copyMoveImport(env: copyMoveImport.ExtendedActionContext) {
-    if (!env.targetPanelPath) return false;
+    if (!env.targetPanelPath && env.virtualSource)
+      return false;
 
     var dlgBody = document.createElement('div');
     dlgBody.style.cssText =

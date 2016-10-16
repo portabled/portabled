@@ -22,7 +22,7 @@ function parseHTML(html: string): { files: { path: string; content: string; star
   var totalsCommentStart: number;
   var totalsCommentEnd: number;
 
-  var scriptOrCommentStart = /\<(script[\s\>])|(\-\-)/gi;
+  var scriptOrCommentStart = /(\<script[\s\>])|(\<!\-\-)/gi;
   var scriptEnd = /\<\/script\s*\>/gi;
   var commentEnd = /\-\-\>/g;
 

@@ -7,6 +7,6 @@ interface ConnectionToParent {
 
   onPushMessage(registerCallback: (msg: any) => void) : ()=>void;
 
-  serializeError(err: Error): any;
-  serialize(obj): any;
+  //serializeError(err: Error): any;
+  //serialize(obj): any;
 }

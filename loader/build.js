@@ -47,6 +47,8 @@ function loader(window, document) {
   loader.off = off;
   loader.createFrame = createFrame;
   loader.fadeToUI = fadeToUI;
+  loader.updateSize = function() { sz.update(); };
+
 
 	if (window) {
     if (!document) document = window;

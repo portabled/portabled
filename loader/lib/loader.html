@@ -5,9 +5,9 @@
 function loader(window, document) {
 
 	loader.build = {
-    timestamp: 1466286963379, // Sat Jun 18 2016 22:56:03 GMT+0100 (GMT Daylight Time)
-    taken: 8118,
-    platform: "node 0.10.38 on linux/ia32"
+    timestamp: 1476221723433, // Tue Oct 11 2016 22:35:23 GMT+0100 (GMT Daylight Time)
+    taken: 8814,
+    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36"
 }
 
 var bootState;
@@ -15,6 +15,7 @@ var fitFrameList;
 var boot;
 var shell;
 var sz;
+var domNodeCallbacks;
 var progressCallbacks;
 var loadedCallbacks;
 var resizeCallbacks;
@@ -75,12 +76,14 @@ function startBoot() {
     sz.fitframe(boot);
     sz.fitframe(shell);
     document.title = '/.';
+    domNodeCallbacks = [];
     progressCallbacks = [];
     loadedCallbacks = [];
     resizeCallbacks = [];
     resizeReportCallbacks = [];
     uniqueKey = deriveUniqueKey(location);
     bootDrive = persistence(document, uniqueKey);
+    bootDrive.ondomnode = handle_dom_node;
     document.title = '/:';
     if (window.addEventListener) {
         window.addEventListener('load', window_onload, true);
@@ -156,6 +159,9 @@ function fadeToUI() {
     shell.style.opacity = '0';
     shell.style.filter = 'alpha(opacity=0)'; // TODO: feature-detect and do either one or another
     shell.style.display = 'block';
+    if (loader.delayed_shell_html) {
+        loader.delayed_shell_html();
+    }
     var start = +new Date();
     var fadeintTime = Math.min(500, (start - timings.domStarted) / 2);
     var animateFadeIn = setInterval(animateStep, 20);
@@ -307,6 +313,14 @@ function fitresize() {
         }
     }
 } // fitresize
+var keepDomNodesUntilBootComplete = [];
+function handle_dom_node(node, recognizedKind, recognizedEntity) {
+    keepDomNodesUntilBootComplete.push({ node: node, recognizedKind: recognizedKind, recognizedEntity: recognizedEntity });
+    for (var i = 0; i < domNodeCallbacks.length; i++) {
+        var callback = domNodeCallbacks[i];
+        callback(node, recognizedKind, recognizedEntity);
+    }
+}
 function onkeeploading() {
     if (document.title === '/:')
         document.title = '/:.';
@@ -315,16 +329,18 @@ function onkeeploading() {
         timings.domStarted = +new Date();
     removeSpyElements();
     var goodTimeUpdateSize = false;
+    var now = Date.now ? Date.now() : +new Date();
     if (!onkeeploading._lastUpdateSize) {
         goodTimeUpdateSize = true;
     }
     else {
-        var now = Date.now ? Date.now() : +new Date();
         if (now - onkeeploading._lastUpdateSize > 500)
             goodTimeUpdateSize = true;
     }
-    if (goodTimeUpdateSize)
+    if (goodTimeUpdateSize) {
+        onkeeploading._lastUpdateSize = now;
         sz.update();
+    }
     var prevLoadedSize = bootDrive.domLoadedSize;
     var prevTotalSize = bootDrive.domTotalSize;
     bootDrive.continueLoading();
@@ -346,6 +362,13 @@ function on(eventName, callback, _more) {
         switch (eventName) {
             case 'progress':
                 progressCallbacks.push(callback);
+                break;
+            case 'domnode':
+                domNodeCallbacks.push(callback);
+                for (var i = 0; i < keepDomNodesUntilBootComplete.length; i++) {
+                    var n = keepDomNodesUntilBootComplete[i];
+                    callback(n.node, n.recognizedKind, n.recognizedEntity);
+                }
                 break;
             case 'load':
                 if (loadedCallbacks)
@@ -439,6 +462,8 @@ function window_onload() {
             loader.drive = loadedDrive;
         updateBootStateProps();
         bootState.read = function (file) { return drive.read(file); };
+        keepDomNodesUntilBootComplete = [];
+        domNodeCallbacks = [];
         timings.driveLoaded = +new Date();
         if (loadedCallbacks && loadedCallbacks.length) {
             if (document.title === '/:' || document.title === '/:.' || document.title === '//')
@@ -466,6 +491,8 @@ function window_onload() {
   loader.off = off;
   loader.createFrame = createFrame;
   loader.fadeToUI = fadeToUI;
+  loader.updateSize = function() { sz.update(); };
+
 
 	if (window) {
     if (!document) document = window;
@@ -593,48 +620,91 @@ var tests;
     }, 10);
 
     function continueRunTests() {
-      if (runIndex === testsToRun.length) return;
-      var t = testsToRun[runIndex];
-      runIndex++;
 
-      if (t.disabled) {
-        setTimeout(continueRunTests, 1);
-        return;
-      }
+      var endTimeSlice = (Date.now ? Date.now() : +new Date()) + 300;
 
-      var start = +new Date();
-      t.testEntry.className = 'running';
-      t.run(function(error) {
-        var finish = +new Date();
-        var tm = document.createElement('span');
-        if ('textContent' in tm) tm.textContent = ' '+(finish-start)+'ms';
-        else tm.innerText = ' '+(finish-start)+'ms';
-        tm.style.fontSize = '80%';
-        t.testEntry.appendChild(tm);
-        if (!error) {
-          t.testEntry.className = 'success';
-          successCount++;
+      // keep running if possible
+      while (true){
+
+        var stillWithinCycle = true;
+        var completedSynchronously = false;
+
+        // skip the disabled
+        while (true) {
+          if (runIndex === testsToRun.length) return;
+          var t = testsToRun[runIndex];
+          runIndex++;
+          if (!t.disabled) break;
+        }
+
+        if (typeof console!=='undefined' && console && console.log) {
+          console.log(t.testEntry.textContent || t.testEntry.innerText+'...');
+        }
+
+        var start = +new Date();
+        t.testEntry.className = 'running';
+        t.run(function(error) {
+          var finish = +new Date();
+
+          if (error) {
+            if (typeof console!=='undefined' && console && console.error) {
+              console.error('  ', error, (finish-start)/1000+'s.'+(' '+error.stack?error.stack:''));
+            }
+          }
+          else {
+            if (typeof console!=='undefined' && console && console.log) {
+              console.log('  OK'+(finish-start)/1000+'s.');
+            }
+          }
+
+          var tm = document.createElement('span');
+          if ('textContent' in tm) tm.textContent = ' '+(finish-start)+'ms';
+          else tm.innerText = ' '+(finish-start)+'ms';
+          tm.style.fontSize = '80%';
+          t.testEntry.appendChild(tm);
+          if (!error) {
+            t.testEntry.className = 'success';
+            successCount++;
+          }
+          else {
+            t.testEntry.className = 'fail';
+            var errorOutput = document.createElement('pre');
+            if ('textContent' in errorOutput) errorOutput.textContent = error;
+            else errorOutput.innerText = error;
+            t.testEntry.appendChild(errorOutput);
+            failCount++;
+          }
+
+          var summaryText =
+              'Tests ('+
+              (failCount?'failed '+failCount:'no fails')+
+              ', succeeded '+successCount+
+              (testsToRun.length>failCount+successCount?', '+(testsToRun.length-failCount-successCount)+' to finish':'')+'):';
+
+          if ('textContent' in summary) summary.textContent = summaryText;
+          else summary.innerText = summaryText;
+
+          if (stillWithinCycle) {
+            completedSynchronously = true;
+          }
+          else {
+            // async anyway, continue inline
+          	continueRunTests();
+          }
+        });
+
+        stillWithinCycle = false;
+        if (completedSynchronously) {
+          var now = Date.now ? Date.now() : +new Date();
+          if (now>endTimeSlice) {
+            setTimeout(continueRunTests, 1);
+            return;
+          }
         }
         else {
-          t.testEntry.className = 'fail';
-          var errorOutput = document.createElement('pre');
-          if ('textContent' in errorOutput) errorOutput.textContent = error;
-          else errorOutput.innerText = error;
-          t.testEntry.appendChild(errorOutput);
-          failCount++;
+          return;
         }
-
-        var summaryText =
-            'Tests ('+
-            (failCount?'failed '+failCount:'no fails')+
-            ', succeeded '+successCount+
-            (testsToRun.length>failCount+successCount?', '+(testsToRun.length-failCount-successCount)+' to finish':'')+'):';
-
-        if ('textContent' in summary) summary.textContent = summaryText;
-        else summary.innerText = summaryText;
-
-        setTimeout(continueRunTests, 5);
-      });
+      }
     }
 
     function addTestRow(i) {
@@ -674,7 +744,7 @@ var tests;
     var allTests = [];
     var _dummy = {};
 
-    for (var k in tests) if (!(k in _dummy) && tests[k] && /^[a-z]/.test(k)) {
+    for (var k in tests) if (!(k in _dummy) && tests[k] && /^[a-z\_]/.test(k)) {
       collectTests(k, tests[k]);
     }
 
@@ -837,6 +907,23 @@ function jsStringLong(str) {
         replace(/\n/g, 'Z');
     });
 
+    var wordarr = [];
+    var lineLen = 0;
+    for (var i = 0; i < wordArray.length; i++) {
+      var nextWord = wordArray[i];
+      if (lineLen) {
+        wordarr[wordarr.length-1] += ','+nextWord;
+      }
+      else {
+        if (i) nextWord = '"+\n"'+nextWord;
+        wordarr.push(nextWord);
+      }
+
+      lineLen+=nextWord.length+1;
+      if (lineLen>100)
+        lineLen = 0;
+    }
+
     return [
       '(function(d,c,s,r,m,nn,n) { var k = 0;',
       'return c.replace(/([a-zA-Y]+)|(Z[0-9]*)/g, function(x,t,w) {',
@@ -852,7 +939,7 @@ function jsStringLong(str) {
         'if (nn<100 && !r[nn]) return r[nn] = d[nn];', // cache word lookups for 100 most frequent words
         'else return d[nn];',
       '});\n',
-      '}("'+wordArray.join(',')+'".split(","),"'+compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r')+'",[],{}))'
+      '}(("'+wordarr.join(',')+'").split(","),"'+compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r')+'",[],{}))'
     ].join('\n');
 
     function toLetterNumber(num) {

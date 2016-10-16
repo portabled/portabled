@@ -21,6 +21,7 @@ var sz: {
   onresize: Function;
 };
 
+var domNodeCallbacks: Function[];
 var progressCallbacks: Function[];
 var loadedCallbacks: Function[];
 var resizeCallbacks: Function[];
@@ -90,6 +91,7 @@ function startBoot() {
 
   document.title = '/.';
 
+  domNodeCallbacks = [];
   progressCallbacks = [];
   loadedCallbacks = [];
   resizeCallbacks = [];
@@ -98,6 +100,7 @@ function startBoot() {
 
   uniqueKey = deriveUniqueKey(location);
   bootDrive = persistence(document, uniqueKey);
+  bootDrive.ondomnode = handle_dom_node;
 
 
   document.title = '/:';

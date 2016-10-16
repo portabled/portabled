@@ -249,22 +249,50 @@ namespace attached.indexedDB {
 
   class IndexedDBShadow implements persistence.Drive.Shadow {
 
+    private _lastWrite: number = 0;
+    private _conflatedWrites = null;
+
     constructor(private _db: IDBDatabase, public timestamp: number) {
     }
 
     write(file: string, content: string) {
+      var now = Date.now ? Date.now() : +new Date();
+      if (this._conflatedWrites || now-this._lastWrite<10) {
+        if (!this._conflatedWrites) {
+          this._conflatedWrites = {};
+          setTimeout(() => {
+            var writes = this._conflatedWrites;
+            this._conflatedWrites = null;
+            this._writeCore(writes);
+          }, 0);
+        }
+        this._conflatedWrites[file] = content;
+      }
+      else {
+        var entry = {};
+        entry[file] = content;
+        this._writeCore(entry);
+      }
+    }
+
+    private _writeCore(writes: any) {
+      this._lastWrite = Date.now ? Date.now() : +new Date();
       var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
       var filesStore = transaction.objectStore('files');
       var metadataStore = transaction.objectStore('metadata');
 
-      // no file deletion here: we need to keep account of deletions too!
-      var fileData: FileData = {
-        path: file,
-        content: content,
-        state: null
-      };
+      for (var file in writes) if (writes.hasOwnProperty(file)) {
+      	var content = writes[file];
 
-      var putFile = filesStore.put(fileData);
+        // no file deletion here: we need to keep account of deletions too!
+        var fileData: FileData = {
+          path: file,
+          content: content,
+          state: null
+        };
+
+        var putFile = filesStore.put(fileData);
+      }
 
       var md: MetadataData = {
         property: 'editedUTC',
@@ -272,7 +300,6 @@ namespace attached.indexedDB {
       };
 
       metadataStore.put(md);
-
     }
 
     forget(file: string) {

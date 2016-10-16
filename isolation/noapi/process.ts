@@ -5,6 +5,7 @@ function createProcess(
     cwd: string;
     env: any;
     console: any;
+   	versions: any;
   },
   extra: {
     exitCode: number;
@@ -178,7 +179,7 @@ function createProcess(
   function load_versions() {
     // real node running on ubuntu as of Friday 22 of May 2015
     // (these might not be properly implemented when hosted in browser)
-    return {
+    var versions = {
       http_parser: '1.0',
       node: '0.10.38',
       v8: '3.14.5.9',
@@ -189,6 +190,14 @@ function createProcess(
       openssl: '1.0.1m',
       mi: '0.71n'
     };
+
+    if (options.versions) {
+      for (var k in options.versions) if (options.versions.hasOwnProperty(k)) {
+        versions[k] = options.versions[k];
+      }
+    }
+
+    return versions;
   }
 
 

@@ -75,6 +75,13 @@
   float: right;
 }
 
+.panels-middle-dark-stripe {
+  background: black;
+  opacity: 0.8;
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";
+	filter: alpha(opacity=80);
+}
+
 .panels-panel-page {
   clear: both;
 }

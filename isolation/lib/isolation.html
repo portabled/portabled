@@ -5,13 +5,13 @@
 function isolation() {
 
 	isolation.build = {
-    timestamp: 1466286981782, // Sat Jun 18 2016 22:56:21 GMT+0100 (GMT Daylight Time)
-    taken: 18349,
-    platform: "node 0.10.38 on linux/ia32"
+    timestamp: 1476221740531, // Tue Oct 11 2016 22:35:40 GMT+0100 (GMT Daylight Time)
+    taken: 17024,
+    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36"
 };
 
 (function (module) {
-    var errorSer = createErrorSerializer();
+    var srz = createComplexSerializer();
     module.createIsolateHost = createIsolateHost;
     module.createIsolateHost.worker = createWebWorkerHost;
     module.createIsolateHost.iframe = createIFrameHost;
@@ -44,7 +44,8 @@ function isolation() {
         var diagTimeStart = +new Date();
         var requests = { count: 0 };
         webWorker.onmessage = webworker_onmessage;
-        webWorker.postMessage({ init_worker_connect: true });
+        var initMsg = getInitPlatformMessage();
+        webWorker.postMessage({ init_worker_connect: initMsg });
         var hst = {
             type: null,
             remoteEval: remoteEval_webworker,
@@ -52,8 +53,7 @@ function isolation() {
             terminate: terminate_webworker,
             onerror: null,
             onmessage: null,
-            onconsole: null,
-            serializeError: errorSer.serialize
+            onconsole: null
         };
         var fs;
         var cmpSer = createComplexSerializer();
@@ -97,6 +97,9 @@ function isolation() {
             }
             else if (e.data.console_echo) {
                 handleConsoleEcho(e.data.console_echo);
+            }
+            else if (e.data.globalError) {
+                handleGlobalError(e.data.globalError);
             }
             else if (e.data.key) {
                 var req = requests[e.data.key];
@@ -153,7 +156,7 @@ function isolation() {
             if (!hst.onmessage)
                 return;
             hst.onmessage(invokeAsync.msg, /*syncReply*/ false, function (error, response) {
-                var error_serialized = errorSer.serialize(error);
+                var error_serialized = srz.serialize(error);
                 webWorker.postMessage({ asyncResponse: { key: invokeAsync.key, error: error_serialized, response: response } });
             });
         }
@@ -169,7 +172,7 @@ function isolation() {
             if (!req)
                 return;
             delete requests[remoteErrorResponse.key];
-            var error_deserialized = errorSer.deserialize(remoteErrorResponse.error);
+            var error_deserialized = srz.deserialize(remoteErrorResponse.error);
             req(error_deserialized);
         }
         function handleDriveUpdates(driveUpdates) {
@@ -198,6 +201,14 @@ function isolation() {
             else {
                 var levelFn = console[console_echo.level];
                 levelFn.apply(console, deser);
+            }
+        }
+        function handleGlobalError(globalError) {
+            var deser = cmpSer.deserialize(globalError);
+            if (hst.onerror) {
+                var err = cmpSer.deserialize(globalError);
+                var onerror = hst.onerror;
+                onerror(err);
             }
         }
         function createDriveSnapshot() {
@@ -308,7 +319,7 @@ function isolation() {
             webWorker.terminate();
         }
         function createWebWorker() {
-            var worker_body = getWorkerAgentScript();
+            var worker_body = getWorkerAgentScript(false /*doNotRun: false, i.e. do run straight away*/);
             if (typeof Blob === 'function') {
                 try {
                     return webWorkerFromBlob();
@@ -338,158 +349,94 @@ function isolation() {
         }
     }
     function createIFrameHost(drive, callback) {
+        var cmpSer = createComplexSerializer();
         var frm = createIFrame();
-        var hst = {
-            type: 'iframe',
-            remoteEval: remoteEval_iframe,
-            pushMessage: pushMessage_iframe,
-            terminate: terminate_iframe,
-            onerror: null,
-            onmessage: null,
-            onconsole: null,
-            serializeError: errorSer.serialize
-        };
-        var registeredPushMessageCallbacks = [];
-        var registeredPushMessageCallbacks_length = 0;
-        callback(hst);
-        function remoteEval_iframe(fnScript, arg, path, callback) {
-            var fn = (0, frm.evalFN)('(function(){' + fnScript + '\n})' + (path ? '//# ' + 'sourceURL=' + path : ''));
-            try {
-                var result = fn(arg);
-            }
-            catch (error) {
-                callback(error);
-                return;
-            }
-            callback(null, result);
-        }
-        function pushMessage_iframe(msg) {
-            for (var i = 0; i < registeredPushMessageCallbacks_length; i++) {
-                var cb = registeredPushMessageCallbacks[i];
-                if (cb)
-                    cb(msg);
-            }
-        }
+        callback(frm.hst);
         function terminate_iframe() {
             if (frm && frm.ifr.parentElement) {
                 frm.ifr.parentElement.removeChild(frm.ifr);
                 frm = null;
             }
         }
-        function onPushMessage(registerCallback) {
-            var index = registeredPushMessageCallbacks_length;
-            registeredPushMessageCallbacks.push(registerCallback);
-            registeredPushMessageCallbacks_length++;
-            return unregister_pushMessageCallback;
-            function unregister_pushMessageCallback() {
-                if (index < 0)
-                    return;
-                delete registeredPushMessageCallbacks[index];
-                index = -1;
-                // adjust the tail (removal of callbacks may run out of order)
-                var newLength = registeredPushMessageCallbacks_length;
-                while (!registeredPushMessageCallbacks[newLength] && newLength >= 0) {
-                    newLength--;
-                }
-                if (newLength !== registeredPushMessageCallbacks_length)
-                    registeredPushMessageCallbacks_length = newLength;
-            }
-        }
         function createIFrame() {
-            var cmpSer = createComplexSerializer();
             var ifr = document.createElement('iframe');
             ifr.src = 'about:blank'; // TODO: explore loading from Blob/data URI directly
             ifr.style.cssText = 'display: none; position: absolute; left: -50px; top: -50px; width: 0px; height: 0px;';
             document.body.appendChild(ifr);
             var ifrwin = ifr.contentWindow || ifr.window;
-            ifrwin.document.write('<' + 'script>window[" "] = (function(ev){ return function(){ return ev(arguments[0]); }; })(eval);</' + 'script>');
-            var evalFN = ifrwin[" "];
-            evalFN('window[" "]=void 0; (function(){arguments[0][0].parentElement.removeChild(arguments[0][0]);})(document.getElementsByTagName("script"));');
-            var connection_to_parent = {
-                drive: drive,
-                invokeAsync: function (msg, callback) {
-                    try {
-                        hst.onmessage(msg, /*syncReply*/ true, callback);
-                    }
-                    catch (error) {
-                        callback(error, null);
-                    }
-                },
-                invokeSync: function (msg) {
-                    var reply;
-                    hst.onmessage(msg, /*syncReply*/ true, function (reply_passed) { return reply = reply_passed; });
-                    return reply;
-                },
-                onPushMessage: onPushMessage
+            var ifr_script = getWorkerAgentScript(true /*doNotRun*/);
+            ifrwin.document.write('<' + 'script>' + ifr_script + '</' + 'script>');
+            var hstCalls = ifrwin.window.agentFunction_iframe(drive);
+            hstCalls.onerror = hst_onerror_iframe;
+            hstCalls.onmessage = hst_onmessage_iframe;
+            hstCalls.onconsole = hst_onconsole_iframe;
+            var hst = {
+                type: 'iframe',
+                remoteEval: hst_remoteEval,
+                pushMessage: hst_pushMessage,
+                terminate: terminate_iframe,
+                onerror: null,
+                onmessage: null,
+                onconsole: null
             };
-            if (ifrwin.console) {
-                ConsoleRedirect.prototype = ifrwin.console;
+            return { ifr: ifr, hst: hst };
+            function hst_pushMessage(msg) {
+                var msg_ser = cmpSer.serialize(msg);
+                hstCalls.pushMessage(msg_ser);
             }
-            var console_redirect = new ConsoleRedirect();
-            console_redirect.log = log_redirect;
-            console_redirect.warn = warn_redirect;
-            console_redirect.debug = debug_redirect;
-            console_redirect.trace = trace_redirect;
-            console_redirect.error = error_redirect;
-            ifrwin.console = console_redirect;
-            ifrwin.connection_to_parent = connection_to_parent;
-            return { ifr: ifr, evalFN: evalFN, connection_to_parent: connection_to_parent };
-            function ConsoleRedirect() { }
-            function log_redirect() {
-                var args = [];
-                for (var i = 0; i < arguments.length; i++) {
-                    args.push(arguments[i]);
-                }
-                console_level_redirect('log', args);
-            }
-            function warn_redirect() {
-                var args = [];
-                for (var i = 0; i < arguments.length; i++) {
-                    args.push(arguments[i]);
-                }
-                console_level_redirect('warn', args);
-            }
-            function debug_redirect() {
-                var args = [];
-                for (var i = 0; i < arguments.length; i++) {
-                    args.push(arguments[i]);
-                }
-                console_level_redirect('debug', args);
-            }
-            function trace_redirect() {
-                var args = [];
-                for (var i = 0; i < arguments.length; i++) {
-                    args.push(arguments[i]);
-                }
-                console_level_redirect('trace', args);
-            }
-            function error_redirect() {
-                var args = [];
-                for (var i = 0; i < arguments.length; i++) {
-                    args.push(arguments[i]);
-                }
-                console_level_redirect('error', args);
-            }
-            function console_level_redirect(level, args) {
-                var serdeser = cmpSer.deserialize(cmpSer.serialize(args));
-                if (hst.onconsole) {
-                    hst.onconsole(level, serdeser);
-                }
-                else {
-                    if (typeof console !== 'undefined') {
-                        var levelFn = console[level] || console.log;
-                        levelFn.apply(console, serdeser);
-                    }
+            function hst_remoteEval(fnScript, arg, path, callback) {
+                var arg_ser = cmpSer.serialize(arg);
+                hstCalls.remoteEval(fnScript, arg_ser, path, callback ? hst_remoteEval_callback : null);
+                function hst_remoteEval_callback(error, result) {
+                    var error_deser = cmpSer.deserialize(error);
+                    var result_deser = cmpSer.deserialize(result);
+                    callback(error_deser, result_deser);
                 }
             }
         }
-        ;
+        function hst_onerror_iframe(err) {
+            if (frm.hst.onerror) {
+                var err_deser = cmpSer.deserialize(err);
+                frm.hst.onerror(err_deser);
+            }
+        }
+        function hst_onmessage_iframe(msg, syncReply, callback) {
+            if (frm.hst.onmessage) {
+                var msg_deser = cmpSer.deserialize(msg);
+                frm.hst.onmessage(msg_deser, syncReply, callback ? hst_onmessage_iframe_callback : null);
+            }
+            function hst_onmessage_iframe_callback(error, response) {
+                var error_deser = cmpSer.deserialize(error);
+                var response_deser = cmpSer.deserialize(response);
+                callback(error_deser, response_deser);
+            }
+        }
+        function hst_onconsole_iframe(level, args) {
+            if (frm.hst.onconsole) {
+                var args_deser = cmpSer.deserialize(args);
+                frm.hst.onconsole(level, args_deser);
+            }
+        }
+    }
+    function getInitPlatformMessage() {
+        var initMsg = {
+            versions: { navigator: navigator.userAgent },
+            platform: (navigator.platform || 'Win32').toLowerCase(),
+            vendor: navigator.vendor || (String.fromCharCode(0x47) + 'oo' + String.fromCharCode(0x47).toLowerCase() + 'le ' + ('PCInc').slice(2) + '.'),
+            languages: navigator.languages || (navigator.language ? [navigator.language] : ['en-us']),
+            cpuCount: navigator.hardwareConcurrency || 1
+        };
+        return initMsg;
     }
     function createApiHost(drive, options, callback) {
         isolation.createIsolateHost(drive, function (host) {
             var noapiSetupScript = getApiScript() + '\n\n\n\n' +
                 'arguments[0].drive = connection_to_parent.drive;\n' +
                 'initApiContext(arguments[0]);';
+            if (!options.versions) {
+                var pltf = getInitPlatformMessage();
+                options.versions = pltf.versions;
+            }
             host.remoteEval(noapiSetupScript, options, '/isolation_noapi.js', function (error) {
                 if (error) {
                     // TODO: console.log??
@@ -527,7 +474,7 @@ function isolation() {
                             // TODO: console.log??
                             return;
                         }
-                        var err = errorSer.deserialize(msg.noapi_runGlobal_error.error);
+                        var err = srz.deserialize(msg.noapi_runGlobal_error.error);
                         callback(err);
                     }
                     else if (msg.noapi_runGlobal_response) {
@@ -541,7 +488,8 @@ function isolation() {
                             // TODO: console.log??
                             return;
                         }
-                        callback(null, msg.noapi_runGlobal_response.response);
+                        var response = srz.deserialize(msg.noapi_runGlobal_response.response);
+                        callback(null, response);
                     }
                     else if (msg.keepAlive_addRef_response) {
                         var keepAlive_onToken = keepAliveReqResDispatcher.popCallback(msg.keepAlive_addRef_response.key);
@@ -576,7 +524,7 @@ function isolation() {
             });
         });
     }
-    function getWorkerAgentScript() {
+    function getWorkerAgentScript(doNOTrun) {
         var worker_body = "function RUN_ASYNC_CHANNEL(driveSnapshot) {\n"+
   "    self_onmessage = ASYNC_CHANNEL_webworker_onmessage;\n"+
   "    var pushMessageDispatcher = createPushMessageDispatcher();\n"+
@@ -592,22 +540,20 @@ function isolation() {
   "        timestamp: driveSnapshot.timestamp,\n"+
   "        write: driveUpdate_write_ASYNC_CHANNEL\n"+
   "    };\n"+
-  "    var cmpSer = createComplexSerializer();\n"+
   "    connection_to_parent = {\n"+
   "        drive: drive,\n"+
   "        onPushMessage: pushMessageDispatcher.onPushMessage,\n"+
-  "        invokeAsync: invokeAsync_ASYNC_CHANNEL,\n"+
-  "        serializeError: errorSer.serialize,\n"+
-  "        serialize: cmpSer.serialize\n"+
+  "        invokeAsync: invokeAsync_ASYNC_CHANNEL\n"+
   "    };\n"+
   "    install_console_redirect(postMessageToHost, cmpSer.serialize);\n"+
   "    function invokeAsync_ASYNC_CHANNEL(msg, callback) {\n"+
+  "        var msg_ser = cmpSer.serialize(msg);\n"+
   "        if (callback) {\n"+
   "            var key = requestResponseDispatcher.pushCallback(callback);\n"+
-  "            postMessageToHost({ invokeAsync: { key: key, msg: msg } });\n"+
+  "            postMessageToHost({ invokeAsync: { key: key, msg: msg_ser } });\n"+
   "        }\n"+
   "        else {\n"+
-  "            postMessageToHost({ invokeAsync: { msg: msg } });\n"+
+  "            postMessageToHost({ invokeAsync: { msg: msg_ser } });\n"+
   "        }\n"+
   "    }\n"+
   "    function ASYNC_CHANNEL_webworker_onmessage(e) {\n"+
@@ -633,7 +579,7 @@ function isolation() {
   "            return;\n"+
   "        }\n"+
   "        var callback = requestResponseDispatcher.popCallback(asyncResponse.key);\n"+
-  "        callback(asyncResponse.error && errorSer.serialize(asyncResponse.error), asyncResponse.result);\n"+
+  "        callback(asyncResponse.error && cmpSer.serialize(asyncResponse.error), asyncResponse.result);\n"+
   "    }\n"+
   "    function handleDriveUpdates_ASYNC_CHANNEL(driveUpdates) {\n"+
   "        driveSnapshot.timestamp = Math.max(driveSnapshot.timestamp, driveUpdates.timestamp);\n"+
@@ -701,6 +647,157 @@ function isolation() {
   "            return 0;\n"+
   "    }\n"+
   "}\n"+
+  "function RUN_IFRAME_CHANNEL(drive) {\n"+
+  "    var _eval = eval;\n"+
+  "    var cmpSer = createComplexSerializer();\n"+
+  "    if (typeof addEventListener === 'function') {\n"+
+  "        addEventListener('error', iframeGlobal_onerror, true);\n"+
+  "    }\n"+
+  "    else if (typeof attachEvent === 'function') {\n"+
+  "        attachEvent('onerror', iframeGlobal_onerror);\n"+
+  "    }\n"+
+  "    else {\n"+
+  "        window.onerror = iframeGlobal_onerror;\n"+
+  "    }\n"+
+  "    var hstCalls = {\n"+
+  "        remoteEval: remoteEval_iframe,\n"+
+  "        pushMessage: pushMessage_iframe,\n"+
+  "        onerror: null,\n"+
+  "        onmessage: null,\n"+
+  "        onconsole: null\n"+
+  "    };\n"+
+  "    var registeredPushMessageCallbacks = [];\n"+
+  "    var registeredPushMessageCallbacks_length = 0;\n"+
+  "    installConsoleRedirect();\n"+
+  "    connection_to_parent = {\n"+
+  "        drive: drive,\n"+
+  "        invokeAsync: invokeAsync_toParent,\n"+
+  "        invokeSync: invokeSync_toParent,\n"+
+  "        onPushMessage: onPushMessage\n"+
+  "    };\n"+
+  "    return hstCalls;\n"+
+  "    function installConsoleRedirect() {\n"+
+  "        if (typeof console !== 'undefined' && console) {\n"+
+  "            ConsoleRedirect.prototype = console;\n"+
+  "        }\n"+
+  "        var console_redirect = new ConsoleRedirect();\n"+
+  "        console_redirect.log = log_redirect;\n"+
+  "        console_redirect.warn = warn_redirect;\n"+
+  "        console_redirect.debug = debug_redirect;\n"+
+  "        console_redirect.trace = trace_redirect;\n"+
+  "        console_redirect.error = error_redirect;\n"+
+  "        console = console_redirect;\n"+
+  "        function ConsoleRedirect() { }\n"+
+  "        function log_redirect() {\n"+
+  "            var args = [];\n"+
+  "            for (var i = 0; i < arguments.length; i++) {\n"+
+  "                args.push(arguments[i]);\n"+
+  "            }\n"+
+  "            console_level_redirect('log', args);\n"+
+  "        }\n"+
+  "        function warn_redirect() {\n"+
+  "            var args = [];\n"+
+  "            for (var i = 0; i < arguments.length; i++) {\n"+
+  "                args.push(arguments[i]);\n"+
+  "            }\n"+
+  "            console_level_redirect('warn', args);\n"+
+  "        }\n"+
+  "        function debug_redirect() {\n"+
+  "            var args = [];\n"+
+  "            for (var i = 0; i < arguments.length; i++) {\n"+
+  "                args.push(arguments[i]);\n"+
+  "            }\n"+
+  "            console_level_redirect('debug', args);\n"+
+  "        }\n"+
+  "        function trace_redirect() {\n"+
+  "            var args = [];\n"+
+  "            for (var i = 0; i < arguments.length; i++) {\n"+
+  "                args.push(arguments[i]);\n"+
+  "            }\n"+
+  "            console_level_redirect('trace', args);\n"+
+  "        }\n"+
+  "        function error_redirect() {\n"+
+  "            var args = [];\n"+
+  "            for (var i = 0; i < arguments.length; i++) {\n"+
+  "                args.push(arguments[i]);\n"+
+  "            }\n"+
+  "            console_level_redirect('error', args);\n"+
+  "        }\n"+
+  "        function console_level_redirect(level, args) {\n"+
+  "            var args_ser = cmpSer.serialize(args);\n"+
+  "            if (hstCalls.onconsole) {\n"+
+  "                hstCalls.onconsole(level, args_ser);\n"+
+  "            }\n"+
+  "            else {\n"+
+  "                if (ConsoleRedirect.prototype) {\n"+
+  "                    var levelFn = ConsoleRedirect.prototype[level] || ConsoleRedirect.prototype.log;\n"+
+  "                    if (levelFn)\n"+
+  "                        levelFn.apply(console, args_ser);\n"+
+  "                }\n"+
+  "            }\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function invokeAsync_toParent(msg, callback) {\n"+
+  "        try {\n"+
+  "            var msg_ser = cmpSer.serialize(msg);\n"+
+  "            hstCalls.onmessage(msg_ser, /*syncReply*/ true, callback);\n"+
+  "        }\n"+
+  "        catch (error) {\n"+
+  "            var error_ser = cmpSer.serialize(error);\n"+
+  "            callback(error_ser, null);\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function invokeSync_toParent(msg) {\n"+
+  "        var msg_ser = cmpSer.serialize(msg);\n"+
+  "        var reply;\n"+
+  "        hstCalls.onmessage(msg_ser, /*syncReply*/ true, function (reply_passed) { return reply = reply_passed; });\n"+
+  "        return reply;\n"+
+  "    }\n"+
+  "    function iframeGlobal_onerror(e) {\n"+
+  "        var err = e.error || e;\n"+
+  "        hstCalls.onerror(cmpSer.serialize(err));\n"+
+  "    }\n"+
+  "    function remoteEval_iframe(fnScript, arg, path, callback) {\n"+
+  "        try {\n"+
+  "            // keep that double-function enclosure, as IE treats a function inside round brackets as a declaration rather than a value\n"+
+  "            var fn = (0, _eval)('(function(){ return function(){' + fnScript + '\\n}})()' + (path ? '//# ' + 'sourceURL=' + path : ''));\n"+
+  "            var result = fn(arg);\n"+
+  "        }\n"+
+  "        catch (error) {\n"+
+  "            var error_ser = cmpSer.serialize(error);\n"+
+  "            callback(error_ser);\n"+
+  "            return;\n"+
+  "        }\n"+
+  "        var result_ser = cmpSer.serialize(result);\n"+
+  "        callback(null, result_ser);\n"+
+  "    }\n"+
+  "    function pushMessage_iframe(msg) {\n"+
+  "        for (var i = 0; i < registeredPushMessageCallbacks_length; i++) {\n"+
+  "            var cb = registeredPushMessageCallbacks[i];\n"+
+  "            if (cb)\n"+
+  "                cb(msg);\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function onPushMessage(registerCallback) {\n"+
+  "        var index = registeredPushMessageCallbacks_length;\n"+
+  "        registeredPushMessageCallbacks.push(registerCallback);\n"+
+  "        registeredPushMessageCallbacks_length++;\n"+
+  "        return unregister_pushMessageCallback;\n"+
+  "        function unregister_pushMessageCallback() {\n"+
+  "            if (index < 0)\n"+
+  "                return;\n"+
+  "            delete registeredPushMessageCallbacks[index];\n"+
+  "            index = -1;\n"+
+  "            // adjust the tail (removal of callbacks may run out of order)\n"+
+  "            var newLength = registeredPushMessageCallbacks_length;\n"+
+  "            while (!registeredPushMessageCallbacks[newLength] && newLength >= 0) {\n"+
+  "                newLength--;\n"+
+  "            }\n"+
+  "            if (newLength !== registeredPushMessageCallbacks_length)\n"+
+  "                registeredPushMessageCallbacks_length = newLength;\n"+
+  "        }\n"+
+  "    }\n"+
+  "}\n"+
   "function RUN_SYNCFS_AIDED_CHANNEL(fs, msg) {\n"+
   "    var cookieBaseDate = +new Date();\n"+
   "    self_onmessage = SYNCFS_AIDED_CHANNEL_webworker_onmessage;\n"+
@@ -713,14 +810,11 @@ function isolation() {
   "        write: write_SYNCFS_AIDED_CHANNEL,\n"+
   "        storedSize: storedSize_SYNCFS_AIDED_CHANNEL\n"+
   "    };\n"+
-  "    var cmpSer = createComplexSerializer();\n"+
   "    connection_to_parent = {\n"+
   "        drive: drive,\n"+
   "        onPushMessage: pushMessageDispatcher.onPushMessage,\n"+
   "        invokeAsync: invokeAsync_SYNCFS_AIDED_CHANNEL,\n"+
-  "        invokeSync: invokeSync_SYNCFS_AIDED_CHANNEL,\n"+
-  "        serializeError: errorSer.serialize,\n"+
-  "        serialize: cmpSer.serialize\n"+
+  "        invokeSync: invokeSync_SYNCFS_AIDED_CHANNEL\n"+
   "    };\n"+
   "    install_console_redirect(postMessageToHost, cmpSer.serialize);\n"+
   "    function SYNCFS_AIDED_CHANNEL_webworker_onmessage(e) {\n"+
@@ -746,7 +840,7 @@ function isolation() {
   "            return;\n"+
   "        }\n"+
   "        var callback = requestResponseDispatcher.popCallback(asyncResponse.key);\n"+
-  "        callback(asyncResponse.error && errorSer.serialize(asyncResponse.error), asyncResponse.result);\n"+
+  "        callback(asyncResponse.error && cmpSer.serialize(asyncResponse.error), asyncResponse.result);\n"+
   "    }\n"+
   "    function handleDriveUpdates_SYNCFS_AIDED_CHANNEL(driveUpdates) {\n"+
   "        // TODO: support drive watch\n"+
@@ -785,30 +879,45 @@ function isolation() {
   "            _console_log('onmessage: asyncResponse with no key: ', asyncResponse);\n"+
   "    }\n"+
   "    function invokeAsync_SYNCFS_AIDED_CHANNEL(msg, callback) {\n"+
+  "        var msg_ser = cmpSer.serialize(msg);\n"+
   "        if (callback) {\n"+
   "            var key = requestResponseDispatcher.pushCallback(callback);\n"+
-  "            postMessageToHost({ invokeAsync: { key: key, msg: msg } });\n"+
+  "            postMessageToHost({ invokeAsync: { key: key, msg: msg_ser } });\n"+
   "        }\n"+
   "        else {\n"+
-  "            postMessageToHost({ invokeAsync: { msg: msg } });\n"+
+  "            postMessageToHost({ invokeAsync: { msg: msg_ser } });\n"+
   "        }\n"+
   "    }\n"+
   "    function invokeSync_SYNCFS_AIDED_CHANNEL(msg) {\n"+
   "        var cookieFilename = generateCookieFilename('invokeSync_');\n"+
   "        var invokeSync_response = postMessageWaitForResponse({ invokeSync: { key: cookieFilename, msg: msg } }, cookieFilename, 'invokeSync_');\n"+
   "        if (invokeSync_response.error) {\n"+
-  "            var toThrow = errorSer.deserialize(invokeSync_response.error);\n"+
+  "            var toThrow = cmpSer.deserialize(invokeSync_response.error);\n"+
   "            throw toThrow;\n"+
   "        }\n"+
   "        return invokeSync_response.response;\n"+
   "    }\n"+
   "    function postMessageWaitForResponse(msg, cookieFile, idle_sping_reason) {\n"+
   "        postMessageToHost(msg);\n"+
+  "        var parseFailAfter;\n"+
   "        while (true) {\n"+
   "            var content = getFileSync(fs, cookieFile);\n"+
   "            if (content) {\n"+
-  "                var result = _JSON_parse(content);\n"+
-  "                return result;\n"+
+  "                var now = Date.now ? Date.now() : +new Date();\n"+
+  "                if (parseFailAfter) {\n"+
+  "                    if (now > parseFailAfter) {\n"+
+  "                        var result = _JSON_parse(content);\n"+
+  "                        return result;\n"+
+  "                    }\n"+
+  "                }\n"+
+  "                try {\n"+
+  "                    var result = _JSON_parse(content);\n"+
+  "                    return result;\n"+
+  "                }\n"+
+  "                catch (error) {\n"+
+  "                    if (!parseFailAfter)\n"+
+  "                        parseFailAfter = now + 3000; // 3 seconds to complete the writing\n"+
+  "                }\n"+
   "            }\n"+
   "            SYNCFS_idle_spin(idle_sping_reason);\n"+
   "        }\n"+
@@ -846,29 +955,47 @@ function isolation() {
   "            _JSON_parse = JSON.parse.bind(JSON);\n"+
   "        }\n"+
   "        else {\n"+
-  "            var _JSON = JSON;\n"+
-  "            var _parse = JSON.parse;\n"+
-  "            _JSON_parse = function (txt) { return _parse.apply(_JSON, [txt]); };\n"+
+  "            _JSON_parse = function (str) { return _eval('(' + str + ')'); };\n"+
   "        }\n"+
   "    }\n"+
   "}\n"+
   "function postMessageToHost(msg) {\n"+
   "    _postMessage(msg);\n"+
   "}\n"+
-  "var errorSer = createErrorSerializer();\n"+
-  "captureGlobalScopeVariables_atStart();\n"+
-  "addMessageEventListener();\n"+
-  "expectMessage_init_worker_connect(function () {\n"+
-  "    var fs = detectSyncFSAvailable_or_reason();\n"+
-  "    if (typeof fs === 'string')\n"+
-  "        return requestAsyncMode(fs);\n"+
-  "    try {\n"+
-  "        trySetupSyncMode(fs);\n"+
-  "    }\n"+
-  "    catch (error) {\n"+
-  "        requestAsyncMode(error.message);\n"+
-  "    }\n"+
-  "});\n"+
+  "function addGlobalErrorListener() {\n"+
+  "    _addEventListener('error', function (e) {\n"+
+  "        var err_ser = cmpSer.serialize(e.error || e);\n"+
+  "        postMessageToHost({ globalError: { err_ser: err_ser } });\n"+
+  "    });\n"+
+  "}\n"+
+  "var cmpSer = createComplexSerializer();\n"+
+  "function agentFunction_iframe(drive) {\n"+
+  "    return RUN_IFRAME_CHANNEL(drive);\n"+
+  "}\n"+
+  "function agentFunction_webWorker() {\n"+
+  "    captureGlobalScopeVariables_atStart();\n"+
+  "    addMessageEventListener();\n"+
+  "    addGlobalErrorListener();\n"+
+  "    expectMessage_init_worker_connect(function (init_worker_connect) {\n"+
+  "        if (init_worker_connect) {\n"+
+  "            try {\n"+
+  "                if (typeof console !== 'undefined' && typeof console.info === 'function') {\n"+
+  "                    console.info('worker init: ', init_worker_connect);\n"+
+  "                }\n"+
+  "            }\n"+
+  "            catch (consoleError) { }\n"+
+  "        }\n"+
+  "        var fs = detectSyncFSAvailable_or_reason();\n"+
+  "        if (typeof fs === 'string')\n"+
+  "            return requestAsyncMode(fs);\n"+
+  "        try {\n"+
+  "            trySetupSyncMode(fs);\n"+
+  "        }\n"+
+  "        catch (error) {\n"+
+  "            requestAsyncMode(error.message);\n"+
+  "        }\n"+
+  "    });\n"+
+  "}\n"+
   "function detectSyncFSAvailable_or_reason() {\n"+
   "    var reqFS;\n"+
   "    var reqFS_variant_name;\n"+
@@ -914,7 +1041,7 @@ function isolation() {
   "    self_onmessage = function (e) {\n"+
   "        if (e.data.init_worker_connect) {\n"+
   "            self_onmessage = null;\n"+
-  "            callback();\n"+
+  "            callback(e.data.init_worker_connect);\n"+
   "        }\n"+
   "        else {\n"+
   "            reportUnknownMessage_expecting_init_worker_connect(e);\n"+
@@ -953,7 +1080,7 @@ function isolation() {
   "        }\n"+
   "        var remoteErrorResponse = {\n"+
   "            key: remoteEval.key,\n"+
-  "            error: errorSer.serialize(error)\n"+
+  "            error: cmpSer.serialize(error)\n"+
   "        };\n"+
   "        postMessageToHost({ remoteErrorResponse: remoteErrorResponse });\n"+
   "    }\n"+
@@ -1010,22 +1137,110 @@ function isolation() {
   "    }\n"+
   "}\n"+
   "/// <reference path=\"../../persistence/src/API.d.ts\"/>\n"+
-  "function createErrorSerializer() {\n"+
+  "function createComplexSerializer(self) {\n"+
+  "    if (!self)\n"+
+  "        self = (function () { return this; })();\n"+
+  "    var maxDepth = 8;\n"+
+  "    var dummy = {};\n"+
+  "    var dummyArray = [];\n"+
   "    var dummyError = new Error();\n"+
-  "    var knownProps = [\n"+
+  "    var dummyFunction = function () { };\n"+
+  "    var knownErrorProps = [\n"+
   "        'message', 'name',\n"+
   "        'stack',\n"+
   "        'fileName', 'lineNumber', 'columnNumber',\n"+
   "        'description', 'number', 'stackTraceLimit'\n"+
   "    ];\n"+
   "    var deserializedCtorCache = {};\n"+
+  "    var deserializedFnCache = {};\n"+
   "    return {\n"+
-  "        serialize: serialize_error,\n"+
-  "        deserialize: deserialize_error\n"+
+  "        serialize: serialize,\n"+
+  "        deserialize: deserialize\n"+
   "    };\n"+
+  "    function serialize(obj) {\n"+
+  "        return serializeDepth(obj, 0);\n"+
+  "    }\n"+
+  "    function serializeDepth(obj, depth) {\n"+
+  "        try {\n"+
+  "            switch (typeof obj) {\n"+
+  "                case 'function':\n"+
+  "                    return serializeFunctionDepth(obj, depth);\n"+
+  "                case 'object':\n"+
+  "                    if (!obj)\n"+
+  "                        return null;\n"+
+  "                    if (obj instanceof Error)\n"+
+  "                        return serialize_error(obj);\n"+
+  "                    if ((Array.isArray && Array.isArray(obj)) || obj instanceof Array)\n"+
+  "                        return serializeArrayDepth(obj, depth);\n"+
+  "                    return serializeObjectDepth(obj, depth);\n"+
+  "                default:\n"+
+  "                    return obj;\n"+
+  "            }\n"+
+  "        }\n"+
+  "        catch (error) {\n"+
+  "            return { '@unserializable': error.message };\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function serializeFunctionDepth(obj, depth) {\n"+
+  "        var result = obj.name ?\n"+
+  "            {\n"+
+  "                '@function': 'function ' + obj.name + '() { /*...*/ }',\n"+
+  "                '@function.name': obj.name\n"+
+  "            } :\n"+
+  "            {\n"+
+  "                '@function': 'function() { /*...*/ }'\n"+
+  "            };\n"+
+  "        for (var k in obj) {\n"+
+  "            if (!(k in dummyFunction)) {\n"+
+  "                result[k] = serializeObjectDepth(obj[k], depth + 1);\n"+
+  "            }\n"+
+  "        }\n"+
+  "        return result;\n"+
+  "    }\n"+
+  "    function serializeObjectDepth(obj, depth) {\n"+
+  "        var srz = {};\n"+
+  "        if (obj.constructor && obj.constructor.name && obj.constructor.name) {\n"+
+  "            var ctorName = obj.constructor.name;\n"+
+  "            if (ctorName !== 'Object')\n"+
+  "                srz['@constructor'] = ctorName;\n"+
+  "        }\n"+
+  "        var propCount = 0;\n"+
+  "        for (var k in obj)\n"+
+  "            if (!(k in dummy)) {\n"+
+  "                if (depth > maxDepth) {\n"+
+  "                    propCount++;\n"+
+  "                    continue;\n"+
+  "                }\n"+
+  "                var fail = false;\n"+
+  "                try {\n"+
+  "                    var kval = obj[k];\n"+
+  "                }\n"+
+  "                catch (error) {\n"+
+  "                    srz[k] = { '@unserializable': error.message };\n"+
+  "                    fail = true;\n"+
+  "                }\n"+
+  "                if (!fail)\n"+
+  "                    srz[k] = serializeDepth(obj[k], depth + 1);\n"+
+  "            }\n"+
+  "        if (depth > maxDepth && propCount) {\n"+
+  "            srz['...'] = propCount;\n"+
+  "        }\n"+
+  "        return srz;\n"+
+  "    }\n"+
+  "    function serializeArrayDepth(arr, depth) {\n"+
+  "        if (depth > maxDepth && arr.length) {\n"+
+  "            return ['...'];\n"+
+  "        }\n"+
+  "        var result = [];\n"+
+  "        for (var i = 0; i < arr.length; i++) {\n"+
+  "            var srz = serializeDepth(arr[i], depth + 1);\n"+
+  "            if (typeof srz === 'undefined')\n"+
+  "                continue;\n"+
+  "            result[i] = srz;\n"+
+  "        }\n"+
+  "        return result;\n"+
+  "    }\n"+
   "    function serialize_error(error) {\n"+
-  "        if (!error)\n"+
-  "            return error;\n"+
   "        var result = {};\n"+
   "        if (typeof error.constructor === 'function') {\n"+
   "            if (error.constructor.name) {\n"+
@@ -1039,8 +1254,8 @@ function isolation() {
   "                }\n"+
   "            }\n"+
   "        }\n"+
-  "        for (var i = 0; i < knownProps.length; i++) {\n"+
-  "            var p = knownProps[i];\n"+
+  "        for (var i = 0; i < knownErrorProps.length; i++) {\n"+
+  "            var p = knownErrorProps[i];\n"+
   "            if (error[p] !== null && typeof error[p] !== 'undefined' && typeof error[p] !== 'function')\n"+
   "                result[p] = error[p];\n"+
   "        }\n"+
@@ -1066,26 +1281,63 @@ function isolation() {
   "                result[p] = error[p];\n"+
   "            }\n"+
   "        }\n"+
-  "        return result;\n"+
-  "    }\n"+
-  "    function deserialize_error(err) {\n"+
-  "        if (!err)\n"+
-  "            return err;\n"+
-  "        var result;\n"+
-  "        var ctorName = err['@constructor'];\n"+
-  "        if (deserializedCtorCache.hasOwnProperty(ctorName)) {\n"+
-  "            result = new deserializedCtorCache[ctorName];\n"+
-  "        }\n"+
-  "        else {\n"+
-  "            result = createErrorInstance_uncachedCtorName(ctorName);\n"+
-  "        }\n"+
-  "        for (var k in err) {\n"+
-  "            if (!result[k])\n"+
-  "                result[k] = err[k];\n"+
+  "        if (result.stack) {\n"+
+  "            var lines = result.stack.split('\\n');\n"+
+  "            for (var i = lines.length - 1; i >= 0; i--) {\n"+
+  "                if (/\\beval\\b/.test(lines[i])) {\n"+
+  "                    if (i)\n"+
+  "                        result.stack = lines.slice(0, i).join('\\n');\n"+
+  "                    else\n"+
+  "                        result.stack = lines.slice(0, i + 1).join('\\n');\n"+
+  "                    break;\n"+
+  "                }\n"+
+  "            }\n"+
   "        }\n"+
   "        return result;\n"+
   "    }\n"+
-  "    function createErrorInstance_uncachedCtorName(ctorName) {\n"+
+  "    function deserialize(obj) {\n"+
+  "        if (typeof obj !== 'object' || obj === null)\n"+
+  "            return obj;\n"+
+  "        if ((Array.isArray && Array.isArray(obj)) || obj instanceof Array)\n"+
+  "            return deserializeArray(obj);\n"+
+  "        return deserializeObject(obj);\n"+
+  "    }\n"+
+  "    function deserializeObject(obj) {\n"+
+  "        var fnDeclText = obj['@function'];\n"+
+  "        var fnDeclName = obj['@function.name'];\n"+
+  "        if (fnDeclText) {\n"+
+  "            var fnDecl = deserializedFnCache[fnDeclText];\n"+
+  "            if (fnDecl)\n"+
+  "                return fnDecl;\n"+
+  "            try {\n"+
+  "                if (fnDeclName)\n"+
+  "                    var fnDeclFn = Function('return ' + fnDeclName + ';\\n' + fnDeclText);\n"+
+  "                else\n"+
+  "                    var fnDeclFn = Function('return ' + fnDeclText);\n"+
+  "                fnDecl = fnDeclFn();\n"+
+  "                deserializedFnCache[fnDeclText] = fnDecl;\n"+
+  "                return fnDecl;\n"+
+  "            }\n"+
+  "            catch (error) {\n"+
+  "            }\n"+
+  "        }\n"+
+  "        var ctorName = obj['@constructor'];\n"+
+  "        var result = createInstance_uncachedCtorName(ctorName);\n"+
+  "        for (var k in obj) {\n"+
+  "            if (k !== '@constructor' && !(k in dummy))\n"+
+  "                result[k] = obj[k];\n"+
+  "        }\n"+
+  "        return result;\n"+
+  "    }\n"+
+  "    function deserializeArray(obj) {\n"+
+  "        var result = [];\n"+
+  "        for (var k in obj)\n"+
+  "            if (!(k in dummyArray)) {\n"+
+  "                result[k] = obj[k];\n"+
+  "            }\n"+
+  "        return result;\n"+
+  "    }\n"+
+  "    function createInstance_uncachedCtorName(ctorName) {\n"+
   "        var result;\n"+
   "        ctorName = validateCtorName(ctorName);\n"+
   "        if (ctorName) {\n"+
@@ -1127,83 +1379,6 @@ function isolation() {
   "            }\n"+
   "        }\n"+
   "        return ctorName;\n"+
-  "    }\n"+
-  "}\n"+
-  "function createComplexSerializer() {\n"+
-  "    var maxDepth = 3;\n"+
-  "    var dummy = {};\n"+
-  "    return {\n"+
-  "        serialize: serialize,\n"+
-  "        deserialize: deserialize\n"+
-  "    };\n"+
-  "    function serialize(obj) {\n"+
-  "        return serializeDepth(obj, 0);\n"+
-  "    }\n"+
-  "    function serializeDepth(obj, depth) {\n"+
-  "        try {\n"+
-  "            switch (typeof obj) {\n"+
-  "                case 'function':\n"+
-  "                    return serializeFunction(obj);\n"+
-  "                case 'object':\n"+
-  "                    if (!obj)\n"+
-  "                        return 'null';\n"+
-  "                    if ((Array.isArray && Array.isArray(obj)) || obj instanceof Array)\n"+
-  "                        return serializeArrayDepth(obj, depth);\n"+
-  "                    return serializeObjectDepth(obj, depth);\n"+
-  "                default:\n"+
-  "                    return obj;\n"+
-  "            }\n"+
-  "        }\n"+
-  "        catch (error) {\n"+
-  "            return { '@unserializable': error.message };\n"+
-  "        }\n"+
-  "    }\n"+
-  "    function serializeFunction(obj) {\n"+
-  "        return obj.name ? { '@function': 'function ' + obj.name + '() { /*...*/ }' } : { '@function': 'function() { /*...*/ }' };\n"+
-  "    }\n"+
-  "    function serializeObjectDepth(obj, depth) {\n"+
-  "        var srz = {};\n"+
-  "        if (obj.constructor && obj.constructor.name && obj.constructor.name) {\n"+
-  "            srz['@constructor'] = obj.constructor.name;\n"+
-  "        }\n"+
-  "        var propCount = 0;\n"+
-  "        for (var k in obj)\n"+
-  "            if (!(k in dummy)) {\n"+
-  "                if (depth > maxDepth) {\n"+
-  "                    propCount++;\n"+
-  "                    continue;\n"+
-  "                }\n"+
-  "                var fail = false;\n"+
-  "                try {\n"+
-  "                    var kval = obj[k];\n"+
-  "                }\n"+
-  "                catch (error) {\n"+
-  "                    srz[k] = { '@unserializable': error.message };\n"+
-  "                    fail = true;\n"+
-  "                }\n"+
-  "                if (!fail)\n"+
-  "                    srz[k] = serializeDepth(obj[k], depth + 1);\n"+
-  "            }\n"+
-  "        if (depth > maxDepth && propCount) {\n"+
-  "            srz['...'] = propCount;\n"+
-  "        }\n"+
-  "        return srz;\n"+
-  "    }\n"+
-  "    function serializeArrayDepth(arr, depth) {\n"+
-  "        if (depth > maxDepth && arr.length) {\n"+
-  "            return ['...'];\n"+
-  "        }\n"+
-  "        var result = [];\n"+
-  "        for (var i = 0; i < arr.length; i++) {\n"+
-  "            var srz = serializeDepth(arr[i], depth + 1);\n"+
-  "            if (typeof srz === 'undefined')\n"+
-  "                continue;\n"+
-  "            result[i] = srz;\n"+
-  "        }\n"+
-  "        return result;\n"+
-  "    }\n"+
-  "    function deserialize(obj) {\n"+
-  "        return obj;\n"+
   "    }\n"+
   "}\n"+
   "function createRequestResponseDispatcher() {\n"+
@@ -1283,7 +1458,6 @@ function isolation() {
   "    }\n"+
   "}\n"+
   "/// <reference path=\"ref.ts\"/>\n"+
-  "/// <reference path=\"createErrorSerializer.ts\"/>\n"+
   "/// <reference path=\"createComplexSerializer.ts\"/>\n"+
   "/// <reference path=\"createRequestResponseDispatcher.ts\"/>\n"+
   "/// <reference path=\"createPushMessageDispatcher.ts\"/>\n"+
@@ -1406,7 +1580,12 @@ function isolation() {
   "    catch (err) {\n"+
   "    }\n"+
   "}\n";
-        worker_body = '(function() {    ' + worker_body + '\n\n\n})() //# ' + 'sourceURL=/isolation_worker_body.js';
+        if (doNOTrun) {
+            worker_body = worker_body + '\n //# ' + 'sourceURL=/isolation_iframe_body.js';
+        }
+        else {
+            worker_body = '(function() {    ' + worker_body + '\n\n\n' + 'agentFunction_webWorker(); })() //# ' + 'sourceURL=/isolation_worker_body.js';
+        }
         return worker_body;
     }
     function getApiScript() {
@@ -1465,6 +1644,7 @@ function isolation() {
   "    options.global.require.main = options.mainModule;\n"+
   "    options.global.__filename = options.scriptPath;\n"+
   "    options.global.__dirname = dirname(options.scriptPath);\n"+
+  "    options.resolve = resolve;\n"+
   "    //options.global.console = this.console;\n"+
   "    var fsTuple = createFS(options.drive, options.coreModules);\n"+
   "    var _fs_onfilesChanged = fsTuple.filesChanged;\n"+
@@ -1473,16 +1653,10 @@ function isolation() {
   "    options.coreModules.path = createPath(options.process);\n"+
   "    options.coreModules.http = createHTTP();\n"+
   "    options.coreModules.events = createEvents();\n"+
-  "    var enhChild = function (proc) {\n"+
-  "        if (options.enhanceChildProcess)\n"+
-  "            options.enhanceChildProcess(proc);\n"+
-  "        proc.enhanceChildProcess = enhChild;\n"+
-  "    };\n"+
   "    options.coreModules.child_process = createChildProcess(_connection_to_parent, {\n"+
   "        fs: options.coreModules.fs,\n"+
   "        path: options.coreModules.path,\n"+
-  "        process: options.global.process,\n"+
-  "        enhanceProcess: enhChild\n"+
+  "        process: options.global.process\n"+
   "    });\n"+
   "    options.process.exit = function (code) {\n"+
   "        options.exitCode = code || 0;\n"+
@@ -1712,7 +1886,7 @@ function isolation() {
   "            Math: 1, JSON: 1, RegExp: 1,\n"+
   "            Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,\n"+
   "            toString: 1, toJSON: 1, toValue: 1,\n"+
-  "            Map: 1, Promise: 1\n"+
+  "            Map: 1, Promise: 1, Symbol: 1\n"+
   "        };\n"+
   "    }\n"+
   "    function runScope(code, path, scope, globalScope, eval) {\n"+
@@ -1752,7 +1926,7 @@ function isolation() {
   "                obscureNameCache[k] = true;\n"+
   "            }\n"+
   "        }\n"+
-  "        var extendedCode = '(function(' + argNames.join(',') + '){    ' + code + '\\n}) //# ' + 'sourceURL=' + path;\n"+
+  "        var extendedCode = '(function() { return function (' + argNames.join(',') + '){    ' + code + '\\n} })() //# ' + 'sourceURL=' + path;\n"+
   "        var fn = eval(extendedCode);\n"+
   "        return fn.apply(this, argValues);\n"+
   "    }\n"+
@@ -1785,6 +1959,8 @@ function isolation() {
   "        var obscureNames = [];\n"+
   "        var obscureNameCache = {};\n"+
   "        for (var k in globalScope) {\n"+
+  "            if (k === 'caches')\n"+
+  "                continue;\n"+
   "            try {\n"+
   "                if (typeof globalScope[k] === 'undefined')\n"+
   "                    continue;\n"+
@@ -1800,6 +1976,8 @@ function isolation() {
   "            var allProps = Object.getOwnPropertyNames(globalScope);\n"+
   "            for (var i = 0; i < allProps.length; i++) {\n"+
   "                var k = allProps[i];\n"+
+  "                if (k === 'caches')\n"+
+  "                    continue;\n"+
   "                try {\n"+
   "                    if (typeof globalScope[k] === 'undefined')\n"+
   "                        continue;\n"+
@@ -1815,6 +1993,8 @@ function isolation() {
   "        for (var i = 0; i < obscureNames.length; i++) {\n"+
   "            var _undef;\n"+
   "            var k = obscureNames[i];\n"+
+  "            if (k === 'caches')\n"+
+  "                continue; // it tends to fail, let it be\n"+
   "            try {\n"+
   "                globalScope[k] = _undef;\n"+
   "            }\n"+
@@ -1844,11 +2024,11 @@ function isolation() {
   "            var result = runGlobal(noapi_runGlobal.script, noapi_runGlobal.path);\n"+
   "        }\n"+
   "        catch (error) {\n"+
-  "            _connection_to_parent.invokeAsync({ noapi_runGlobal_error: { error: _connection_to_parent.serializeError(error), key: noapi_runGlobal.key } });\n"+
+  "            _connection_to_parent.invokeAsync({ noapi_runGlobal_error: { error: error, key: noapi_runGlobal.key } });\n"+
   "            keepa();\n"+
   "            return;\n"+
   "        }\n"+
-  "        _connection_to_parent.invokeAsync({ noapi_runGlobal_response: { response: _connection_to_parent.serialize(result), key: noapi_runGlobal.key } });\n"+
+  "        _connection_to_parent.invokeAsync({ noapi_runGlobal_response: { response: result, key: noapi_runGlobal.key } });\n"+
   "        keepa();\n"+
   "    }\n"+
   "    function handleKeepAliveAddRef(addRef) {\n"+
@@ -1923,8 +2103,11 @@ function isolation() {
   "    return {\n"+
   "        spawn: spawn\n"+
   "    };\n"+
-  "    function spawn() {\n"+
-  "        // TODO: invokeAsync-based implementation\n"+
+  "    function spawn(options) {\n"+
+  "        var sanitizedOptions = {};\n"+
+  "        connection_to_parent.invokeAsync({ spawnChildProcess: sanitizedOptions }, function (error, result) {\n"+
+  "            // TODO: invokeAsync-based implementation\n"+
+  "        });\n"+
   "    }\n"+
   "}\n"+
   "function createEvents() {\n"+
@@ -2885,7 +3068,7 @@ function isolation() {
   "    function load_versions() {\n"+
   "        // real node running on ubuntu as of Friday 22 of May 2015\n"+
   "        // (these might not be properly implemented when hosted in browser)\n"+
-  "        return {\n"+
+  "        var versions = {\n"+
   "            http_parser: '1.0',\n"+
   "            node: '0.10.38',\n"+
   "            v8: '3.14.5.9',\n"+
@@ -2896,6 +3079,13 @@ function isolation() {
   "            openssl: '1.0.1m',\n"+
   "            mi: '0.71n'\n"+
   "        };\n"+
+  "        if (options.versions) {\n"+
+  "            for (var k in options.versions)\n"+
+  "                if (options.versions.hasOwnProperty(k)) {\n"+
+  "                    versions[k] = options.versions[k];\n"+
+  "                }\n"+
+  "        }\n"+
+  "        return versions;\n"+
   "    }\n"+
   "    function load_config() {\n"+
   "        return {\n"+
@@ -2943,22 +3133,110 @@ function isolation() {
     }
 })(isolation);
 /// <reference path="../../persistence/src/API.d.ts"/>
-function createErrorSerializer() {
+function createComplexSerializer(self) {
+    if (!self)
+        self = (function () { return this; })();
+    var maxDepth = 8;
+    var dummy = {};
+    var dummyArray = [];
     var dummyError = new Error();
-    var knownProps = [
+    var dummyFunction = function () { };
+    var knownErrorProps = [
         'message', 'name',
         'stack',
         'fileName', 'lineNumber', 'columnNumber',
         'description', 'number', 'stackTraceLimit'
     ];
     var deserializedCtorCache = {};
+    var deserializedFnCache = {};
     return {
-        serialize: serialize_error,
-        deserialize: deserialize_error
+        serialize: serialize,
+        deserialize: deserialize
     };
+    function serialize(obj) {
+        return serializeDepth(obj, 0);
+    }
+    function serializeDepth(obj, depth) {
+        try {
+            switch (typeof obj) {
+                case 'function':
+                    return serializeFunctionDepth(obj, depth);
+                case 'object':
+                    if (!obj)
+                        return null;
+                    if (obj instanceof Error)
+                        return serialize_error(obj);
+                    if ((Array.isArray && Array.isArray(obj)) || obj instanceof Array)
+                        return serializeArrayDepth(obj, depth);
+                    return serializeObjectDepth(obj, depth);
+                default:
+                    return obj;
+            }
+        }
+        catch (error) {
+            return { '@unserializable': error.message };
+        }
+    }
+    function serializeFunctionDepth(obj, depth) {
+        var result = obj.name ?
+            {
+                '@function': 'function ' + obj.name + '() { /*...*/ }',
+                '@function.name': obj.name
+            } :
+            {
+                '@function': 'function() { /*...*/ }'
+            };
+        for (var k in obj) {
+            if (!(k in dummyFunction)) {
+                result[k] = serializeObjectDepth(obj[k], depth + 1);
+            }
+        }
+        return result;
+    }
+    function serializeObjectDepth(obj, depth) {
+        var srz = {};
+        if (obj.constructor && obj.constructor.name && obj.constructor.name) {
+            var ctorName = obj.constructor.name;
+            if (ctorName !== 'Object')
+                srz['@constructor'] = ctorName;
+        }
+        var propCount = 0;
+        for (var k in obj)
+            if (!(k in dummy)) {
+                if (depth > maxDepth) {
+                    propCount++;
+                    continue;
+                }
+                var fail = false;
+                try {
+                    var kval = obj[k];
+                }
+                catch (error) {
+                    srz[k] = { '@unserializable': error.message };
+                    fail = true;
+                }
+                if (!fail)
+                    srz[k] = serializeDepth(obj[k], depth + 1);
+            }
+        if (depth > maxDepth && propCount) {
+            srz['...'] = propCount;
+        }
+        return srz;
+    }
+    function serializeArrayDepth(arr, depth) {
+        if (depth > maxDepth && arr.length) {
+            return ['...'];
+        }
+        var result = [];
+        for (var i = 0; i < arr.length; i++) {
+            var srz = serializeDepth(arr[i], depth + 1);
+            if (typeof srz === 'undefined')
+                continue;
+            result[i] = srz;
+        }
+        return result;
+    }
     function serialize_error(error) {
-        if (!error)
-            return error;
         var result = {};
         if (typeof error.constructor === 'function') {
             if (error.constructor.name) {
@@ -2972,8 +3250,8 @@ function createErrorSerializer() {
                 }
             }
         }
-        for (var i = 0; i < knownProps.length; i++) {
-            var p = knownProps[i];
+        for (var i = 0; i < knownErrorProps.length; i++) {
+            var p = knownErrorProps[i];
             if (error[p] !== null && typeof error[p] !== 'undefined' && typeof error[p] !== 'function')
                 result[p] = error[p];
         }
@@ -2999,26 +3277,63 @@ function createErrorSerializer() {
                 result[p] = error[p];
             }
         }
-        return result;
-    }
-    function deserialize_error(err) {
-        if (!err)
-            return err;
-        var result;
-        var ctorName = err['@constructor'];
-        if (deserializedCtorCache.hasOwnProperty(ctorName)) {
-            result = new deserializedCtorCache[ctorName];
-        }
-        else {
-            result = createErrorInstance_uncachedCtorName(ctorName);
-        }
-        for (var k in err) {
-            if (!result[k])
-                result[k] = err[k];
+        if (result.stack) {
+            var lines = result.stack.split('\n');
+            for (var i = lines.length - 1; i >= 0; i--) {
+                if (/\beval\b/.test(lines[i])) {
+                    if (i)
+                        result.stack = lines.slice(0, i).join('\n');
+                    else
+                        result.stack = lines.slice(0, i + 1).join('\n');
+                    break;
+                }
+            }
         }
         return result;
     }
-    function createErrorInstance_uncachedCtorName(ctorName) {
+    function deserialize(obj) {
+        if (typeof obj !== 'object' || obj === null)
+            return obj;
+        if ((Array.isArray && Array.isArray(obj)) || obj instanceof Array)
+            return deserializeArray(obj);
+        return deserializeObject(obj);
+    }
+    function deserializeObject(obj) {
+        var fnDeclText = obj['@function'];
+        var fnDeclName = obj['@function.name'];
+        if (fnDeclText) {
+            var fnDecl = deserializedFnCache[fnDeclText];
+            if (fnDecl)
+                return fnDecl;
+            try {
+                if (fnDeclName)
+                    var fnDeclFn = Function('return ' + fnDeclName + ';\n' + fnDeclText);
+                else
+                    var fnDeclFn = Function('return ' + fnDeclText);
+                fnDecl = fnDeclFn();
+                deserializedFnCache[fnDeclText] = fnDecl;
+                return fnDecl;
+            }
+            catch (error) {
+            }
+        }
+        var ctorName = obj['@constructor'];
+        var result = createInstance_uncachedCtorName(ctorName);
+        for (var k in obj) {
+            if (k !== '@constructor' && !(k in dummy))
+                result[k] = obj[k];
+        }
+        return result;
+    }
+    function deserializeArray(obj) {
+        var result = [];
+        for (var k in obj)
+            if (!(k in dummyArray)) {
+                result[k] = obj[k];
+            }
+        return result;
+    }
+    function createInstance_uncachedCtorName(ctorName) {
         var result;
         ctorName = validateCtorName(ctorName);
         if (ctorName) {
@@ -3060,83 +3375,6 @@ function createErrorSerializer() {
             }
         }
         return ctorName;
-    }
-}
-function createComplexSerializer() {
-    var maxDepth = 3;
-    var dummy = {};
-    return {
-        serialize: serialize,
-        deserialize: deserialize
-    };
-    function serialize(obj) {
-        return serializeDepth(obj, 0);
-    }
-    function serializeDepth(obj, depth) {
-        try {
-            switch (typeof obj) {
-                case 'function':
-                    return serializeFunction(obj);
-                case 'object':
-                    if (!obj)
-                        return 'null';
-                    if ((Array.isArray && Array.isArray(obj)) || obj instanceof Array)
-                        return serializeArrayDepth(obj, depth);
-                    return serializeObjectDepth(obj, depth);
-                default:
-                    return obj;
-            }
-        }
-        catch (error) {
-            return { '@unserializable': error.message };
-        }
-    }
-    function serializeFunction(obj) {
-        return obj.name ? { '@function': 'function ' + obj.name + '() { /*...*/ }' } : { '@function': 'function() { /*...*/ }' };
-    }
-    function serializeObjectDepth(obj, depth) {
-        var srz = {};
-        if (obj.constructor && obj.constructor.name && obj.constructor.name) {
-            srz['@constructor'] = obj.constructor.name;
-        }
-        var propCount = 0;
-        for (var k in obj)
-            if (!(k in dummy)) {
-                if (depth > maxDepth) {
-                    propCount++;
-                    continue;
-                }
-                var fail = false;
-                try {
-                    var kval = obj[k];
-                }
-                catch (error) {
-                    srz[k] = { '@unserializable': error.message };
-                    fail = true;
-                }
-                if (!fail)
-                    srz[k] = serializeDepth(obj[k], depth + 1);
-            }
-        if (depth > maxDepth && propCount) {
-            srz['...'] = propCount;
-        }
-        return srz;
-    }
-    function serializeArrayDepth(arr, depth) {
-        if (depth > maxDepth && arr.length) {
-            return ['...'];
-        }
-        var result = [];
-        for (var i = 0; i < arr.length; i++) {
-            var srz = serializeDepth(arr[i], depth + 1);
-            if (typeof srz === 'undefined')
-                continue;
-            result[i] = srz;
-        }
-        return result;
-    }
-    function deserialize(obj) {
-        return obj;
     }
 }
 function createRequestResponseDispatcher() {
@@ -3216,7 +3454,6 @@ function driveApplyUpdates(tmDrive, msg) {
     }
 }
 /// <reference path="ref.ts"/>
-/// <reference path="createErrorSerializer.ts"/>
 /// <reference path="createComplexSerializer.ts"/>
 /// <reference path="createRequestResponseDispatcher.ts"/>
 /// <reference path="createPushMessageDispatcher.ts"/>
@@ -4150,48 +4387,91 @@ var tests;
     }, 10);
 
     function continueRunTests() {
-      if (runIndex === testsToRun.length) return;
-      var t = testsToRun[runIndex];
-      runIndex++;
 
-      if (t.disabled) {
-        setTimeout(continueRunTests, 1);
-        return;
-      }
+      var endTimeSlice = (Date.now ? Date.now() : +new Date()) + 300;
 
-      var start = +new Date();
-      t.testEntry.className = 'running';
-      t.run(function(error) {
-        var finish = +new Date();
-        var tm = document.createElement('span');
-        if ('textContent' in tm) tm.textContent = ' '+(finish-start)+'ms';
-        else tm.innerText = ' '+(finish-start)+'ms';
-        tm.style.fontSize = '80%';
-        t.testEntry.appendChild(tm);
-        if (!error) {
-          t.testEntry.className = 'success';
-          successCount++;
+      // keep running if possible
+      while (true){
+
+        var stillWithinCycle = true;
+        var completedSynchronously = false;
+
+        // skip the disabled
+        while (true) {
+          if (runIndex === testsToRun.length) return;
+          var t = testsToRun[runIndex];
+          runIndex++;
+          if (!t.disabled) break;
+        }
+
+        if (typeof console!=='undefined' && console && console.log) {
+          console.log(t.testEntry.textContent || t.testEntry.innerText+'...');
+        }
+
+        var start = +new Date();
+        t.testEntry.className = 'running';
+        t.run(function(error) {
+          var finish = +new Date();
+
+          if (error) {
+            if (typeof console!=='undefined' && console && console.error) {
+              console.error('  ', error, (finish-start)/1000+'s.'+(' '+error.stack?error.stack:''));
+            }
+          }
+          else {
+            if (typeof console!=='undefined' && console && console.log) {
+              console.log('  OK'+(finish-start)/1000+'s.');
+            }
+          }
+
+          var tm = document.createElement('span');
+          if ('textContent' in tm) tm.textContent = ' '+(finish-start)+'ms';
+          else tm.innerText = ' '+(finish-start)+'ms';
+          tm.style.fontSize = '80%';
+          t.testEntry.appendChild(tm);
+          if (!error) {
+            t.testEntry.className = 'success';
+            successCount++;
+          }
+          else {
+            t.testEntry.className = 'fail';
+            var errorOutput = document.createElement('pre');
+            if ('textContent' in errorOutput) errorOutput.textContent = error;
+            else errorOutput.innerText = error;
+            t.testEntry.appendChild(errorOutput);
+            failCount++;
+          }
+
+          var summaryText =
+              'Tests ('+
+              (failCount?'failed '+failCount:'no fails')+
+              ', succeeded '+successCount+
+              (testsToRun.length>failCount+successCount?', '+(testsToRun.length-failCount-successCount)+' to finish':'')+'):';
+
+          if ('textContent' in summary) summary.textContent = summaryText;
+          else summary.innerText = summaryText;
+
+          if (stillWithinCycle) {
+            completedSynchronously = true;
+          }
+          else {
+            // async anyway, continue inline
+          	continueRunTests();
+          }
+        });
+
+        stillWithinCycle = false;
+        if (completedSynchronously) {
+          var now = Date.now ? Date.now() : +new Date();
+          if (now>endTimeSlice) {
+            setTimeout(continueRunTests, 1);
+            return;
+          }
         }
         else {
-          t.testEntry.className = 'fail';
-          var errorOutput = document.createElement('pre');
-          if ('textContent' in errorOutput) errorOutput.textContent = error;
-          else errorOutput.innerText = error;
-          t.testEntry.appendChild(errorOutput);
-          failCount++;
+          return;
         }
-
-        var summaryText =
-            'Tests ('+
-            (failCount?'failed '+failCount:'no fails')+
-            ', succeeded '+successCount+
-            (testsToRun.length>failCount+successCount?', '+(testsToRun.length-failCount-successCount)+' to finish':'')+'):';
-
-        if ('textContent' in summary) summary.textContent = summaryText;
-        else summary.innerText = summaryText;
-
-        setTimeout(continueRunTests, 5);
-      });
+      }
     }
 
     function addTestRow(i) {
@@ -4231,7 +4511,7 @@ var tests;
     var allTests = [];
     var _dummy = {};
 
-    for (var k in tests) if (!(k in _dummy) && tests[k] && /^[a-z]/.test(k)) {
+    for (var k in tests) if (!(k in _dummy) && tests[k] && /^[a-z\_]/.test(k)) {
       collectTests(k, tests[k]);
     }
 
@@ -4394,6 +4674,23 @@ function jsStringLong(str) {
         replace(/\n/g, 'Z');
     });
 
+    var wordarr = [];
+    var lineLen = 0;
+    for (var i = 0; i < wordArray.length; i++) {
+      var nextWord = wordArray[i];
+      if (lineLen) {
+        wordarr[wordarr.length-1] += ','+nextWord;
+      }
+      else {
+        if (i) nextWord = '"+\n"'+nextWord;
+        wordarr.push(nextWord);
+      }
+
+      lineLen+=nextWord.length+1;
+      if (lineLen>100)
+        lineLen = 0;
+    }
+
     return [
       '(function(d,c,s,r,m,nn,n) { var k = 0;',
       'return c.replace(/([a-zA-Y]+)|(Z[0-9]*)/g, function(x,t,w) {',
@@ -4409,7 +4706,7 @@ function jsStringLong(str) {
         'if (nn<100 && !r[nn]) return r[nn] = d[nn];', // cache word lookups for 100 most frequent words
         'else return d[nn];',
       '});\n',
-      '}("'+wordArray.join(',')+'".split(","),"'+compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r')+'",[],{}))'
+      '}(("'+wordarr.join(',')+'").split(","),"'+compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r')+'",[],{}))'
     ].join('\n');
 
     function toLetterNumber(num) {

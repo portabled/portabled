@@ -11,6 +11,8 @@ class BootState {
   newDOMFiles: string[] = [];
   newStorageFiles: string[] = [];
 
+	ondomnode: (node: any, recognizedKind: 'file' | 'totals', recognizedEntity: null) => void = null;
+
   private _byPath: { [path: string]: DOMFile; } = {};
 
   private _totals: DOMTotals = null;
@@ -91,14 +93,25 @@ class BootState {
     var file = DOMFile.tryParse(cmheader);
     if (file) {
       this._processFileNode(file);
+      if (typeof this.ondomnode==='function') {
+        this.ondomnode(node, 'file', file);
+      }
       return;
     }
 
     var totals = DOMTotals.tryParse(cmheader);
     if (totals) {
       this._processTotalsNode(totals);
+      if (typeof this.ondomnode==='function') {
+        this.ondomnode(node, 'totals', totals);
+      }
       return;
     }
+
+    if (typeof this.ondomnode==='function') {
+      this.ondomnode(node, null, null);
+    }
+
   }
 
   private _processTotalsNode(totals: DOMTotals) {
@@ -173,6 +186,11 @@ class BootState {
 
       if (this._lastNode.nodeType === 8) {
         this._processNode(<Comment>this._lastNode);
+      }
+      else {
+        if (typeof this.ondomnode==='function') {
+          this.ondomnode(this._lastNode, null, null);
+        }
       }
 
       if (!nextNode) {

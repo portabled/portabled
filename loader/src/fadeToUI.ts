@@ -4,6 +4,10 @@ function fadeToUI() {
   shell.style.filter = 'alpha(opacity=0)'; // TODO: feature-detect and do either one or another
   shell.style.display = 'block';
 
+  if (loader.delayed_shell_html) {
+    loader.delayed_shell_html();
+  }
+
   var start = +new Date();
   var fadeintTime = Math.min(500, (start-timings.domStarted)/2);
 

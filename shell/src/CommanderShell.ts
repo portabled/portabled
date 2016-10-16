@@ -348,8 +348,8 @@ class CommanderShell {
         if (this._runningProcesses.length) {
         	var procStop = this._runningProcesses.pop();
           procStop.proc.terminate();
-          procStop.onstop();
           this._runningProcessCount--;
+          procStop.onstop();
         }
       }
 
@@ -796,17 +796,26 @@ class CommanderShell {
           },
           proc => {
 
+            var stopped = false;
             var onstop = ()=>{
-              this._runningProcessCount--;
+              if (stopped) return;
+              stopped = true;
               ani();
               if (typeof proc.exitCode == 'number')
               	this._terminal.log([proc.exitCode]);
               for (var i = this._runningProcesses.length-1; i>=0; i--) {
                 if (this._runningProcesses[i].proc===proc) {
                   this._runningProcesses.splice(i, 1);
+              		this._runningProcessCount--;
                   break;
                 }
               }
+            };
+
+            var onerr = err => {
+              this._terminal.writeDirect('PROCERROR in '+argList[0]);
+              this._terminal.log([err]);
+              onstop();
             };
 
             this._runningProcesses.push({proc,onstop});
@@ -827,6 +836,7 @@ class CommanderShell {
             };
 
             proc.runGlobal(text, argList[0], (error, result) => {
+              if (error) onerr(error);
             });
 
           });
@@ -900,7 +910,7 @@ class CommanderShell {
 
     this._command(env => {
       var envExt: actions.copyMoveImport.ExtendedActionContext = <any>env;
-      envExt.cursorPath = file.replace(/.html$/, '')+'/';
+      envExt.cursorPath = file.replace(/\.html$/, '')+'/';
       envExt.dirSource = true;
       envExt.title = 'Extract';
       envExt.buttonText = 'Extract';
@@ -936,7 +946,7 @@ class CommanderShell {
     /*else if (/\.ts$/.test(cursorPath)) {
       return this._tsc(cursorPath+' --pretty');
     }*/
-    else if (/.html$/.test(cursorPath)) {
+    else if (/\.html$/.test(cursorPath)) {
       var htmlContent = this._fs.readFileSync(cursorPath)+'';
       if (/\<\!\-\-\s*total /.test(htmlContent)) {
         var extractOK = this._tryExtract(cursorPath, htmlContent);
@@ -968,8 +978,60 @@ class CommanderShell {
         uiDoc = uiDocParent;
       }
 
-      var html = this._drive.read(cursorPath);
-      var blankWindow = require('nowindow').open('about:blank');
+      //var html = this._drive.read(cursorPath);
+
+      var html = openBrowser({
+        path: cursorPath,
+        hash: null,
+        drive: {
+          read: (path) => {
+            if (/^\//.test(path)) return this._drive.read(path);
+            else return this._drive.read(this._path.resolve(cursorPath, '..', path));
+          }
+        }
+      });
+
+      try {
+      	var blankWindow = require('nowindow').open('about:blank');
+      }
+      catch (err) {
+        // cannot open a window
+      }
+
+      var showUsingBlob = () => {
+        var blob = new Blob([html], { type: 'text/html' });
+        var url = URL.createObjectURL(blob);
+        blankWindow.location.replace(url);
+      }
+
+      var showUsingDocumentWrite = () => {
+        blankWindow.document.open();
+        blankWindow.document.write(html);
+        blankWindow.document.close();
+      }
+
+      if (!blankWindow || (!blankWindow.location&&!blankWindow.document)) {
+        var dlgBody = document.createElement('div');
+        dlgBody.style.cssText =
+          'position: absolute; left: 10%; top: 10%; height: 80%; width: 80%; padding: 2px;'+
+          'background: white; color: black; border: solid 1px white;';
+
+        dlgBody.innerHTML =
+          '<iframe src="about:blank" style="width: 100%; height: 100%; opacity: 0.001;">'+
+          '</iframe>';
+
+        var hostIframe = dlgBody.getElementsByTagName('iframe')[0];
+
+        var dlg = this._dialogHost.show(dlgBody);
+
+        blankWindow = hostIframe.contentWindow || (<any>hostIframe).window;
+      }
+
+      // ensure fade out is there regardless
+      setTimeout(function() {
+        ani();
+      }, 1);
+
 
       if (typeof Blob==='function'
           && typeof URL!=='undefined'
@@ -985,18 +1047,9 @@ class CommanderShell {
         showUsingDocumentWrite();
       }
 
-      ani();
-
-      function showUsingBlob() {
-        var blob = new Blob([html], { type: 'text/html' });
-        var url = URL.createObjectURL(blob);
-        blankWindow.location.replace(url);
-      }
-
-      function showUsingDocumentWrite() {
-        blankWindow.document.open();
-        blankWindow.document.write(html);
-        blankWindow.document.close();
+      if (hostIframe) {
+        hostIframe.style.opacity = '1';
+        hostIframe.focus();
       }
 
     }, 1);

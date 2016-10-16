@@ -6,6 +6,8 @@ function window_onload() {
 
     updateBootStateProps();
     bootState.read = function(file) { return drive.read(file); };
+    keepDomNodesUntilBootComplete = [];
+    domNodeCallbacks = [];
 
     timings.driveLoaded = +new Date();
     if (loadedCallbacks && loadedCallbacks.length) {

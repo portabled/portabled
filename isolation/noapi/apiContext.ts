@@ -1,4 +1,4 @@
-declare var global;
+ declare var global;
 
 namespace initApiContext {
 
@@ -22,9 +22,10 @@ namespace initApiContext {
   	process?: any;
     mainModule;
 
-  	enhanceChildProcess?(proc: any);
     ondispose?: () => void;
     console?: any;
+
+    versions: any;
 
     runGlobal?(script: string, path?: string);
   }
@@ -109,6 +110,7 @@ function initApiContext(options: initApiContext.Options) {
   options.global.require.main = options.mainModule;
   options.global.__filename = options.scriptPath;
   options.global.__dirname = dirname(options.scriptPath);
+  options.resolve = resolve;
   //options.global.console = this.console;
 
   var fsTuple = createFS(options.drive, options.coreModules);
@@ -119,19 +121,13 @@ function initApiContext(options: initApiContext.Options) {
   options.coreModules.http = createHTTP();
   options.coreModules.events = createEvents();
 
-  var enhChild = (proc) => {
-    if (options.enhanceChildProcess)
-      options.enhanceChildProcess(proc);
-    proc.enhanceChildProcess = enhChild;
-  };
 
   options.coreModules.child_process = createChildProcess(
     _connection_to_parent,
     {
       fs: options.coreModules.fs,
       path: options.coreModules.path,
-      process: options.global.process,
-      enhanceProcess: enhChild
+      process: options.global.process
     });
 
 
@@ -393,7 +389,7 @@ function initApiContext(options: initApiContext.Options) {
       Math: 1, JSON: 1, RegExp: 1,
       Error: 1, SyntaxError: 1, EvalError: 1, RangeError: 1, ReferenceError: 1,
       toString: 1, toJSON: 1, toValue: 1,
-      Map: 1, Promise: 1
+      Map: 1, Promise: 1, Symbol: 1
     };
   }
 
@@ -439,7 +435,7 @@ function initApiContext(options: initApiContext.Options) {
       }
     }
 
-    var extendedCode = '(function('+argNames.join(',')+'){    '+code+'\n}) //# '+'sourceURL='+path;
+    var extendedCode = '(function() { return function ('+argNames.join(',')+'){    '+code+'\n} })() //# '+'sourceURL='+path;
     var fn = eval(extendedCode);
     return fn.apply(this, argValues);
   }
@@ -481,6 +477,7 @@ function initApiContext(options: initApiContext.Options) {
     var obscureNameCache = {};
 
     for (var k in globalScope){
+      if (k==='caches') continue;
       try {
         if (typeof globalScope[k]==='undefined') continue;
       }
@@ -497,6 +494,7 @@ function initApiContext(options: initApiContext.Options) {
       var allProps = Object.getOwnPropertyNames(globalScope);
       for (var i = 0; i < allProps.length; i++) {
         var k = allProps[i];
+        if (k==='caches') continue;
         try {
           if (typeof globalScope[k]==='undefined') continue;
         }
@@ -513,6 +511,7 @@ function initApiContext(options: initApiContext.Options) {
     for (var i = 0; i < obscureNames.length; i++) {
       var _undef;
       var k = obscureNames[i];
+      if (k==='caches') continue; // it tends to fail, let it be
       try {
         globalScope[k] = _undef;
       }
@@ -547,12 +546,12 @@ function initApiContext(options: initApiContext.Options) {
       var result = runGlobal(noapi_runGlobal.script, noapi_runGlobal.path);
     }
     catch (error) {
-      _connection_to_parent.invokeAsync({noapi_runGlobal_error: { error: _connection_to_parent.serializeError(error), key: noapi_runGlobal.key }});
+      _connection_to_parent.invokeAsync({noapi_runGlobal_error: { error: error, key: noapi_runGlobal.key }});
       keepa();
       return;
     }
 
-    _connection_to_parent.invokeAsync({noapi_runGlobal_response: {response: _connection_to_parent.serialize(result), key: noapi_runGlobal.key} });
+    _connection_to_parent.invokeAsync({noapi_runGlobal_response: {response: result, key: noapi_runGlobal.key} });
     keepa();
   }
 

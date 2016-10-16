@@ -114,6 +114,7 @@ function exportAll(module) {
   var path = require('path');
 
   module.exports = {
+    htmlSpotExternals: htmlSpotExternals,
     compileTS: compileTS,
     buildStats: buildStats,
     jsString: jsString,
@@ -160,14 +161,15 @@ function exportAll(module) {
     options.fileTotalCount = fileTotalCount;
     var totalsComment = '<!--'+persistence.formatTotalsInner(options.timestamp || +new Date(), fileTotalSize)+'-->';
 
+    var backgroundStyle = options.defaultBackground||'background:black;color:black;';
 
     return ''+
       '<!doctype html><head><meta charset="utf-8"><title> '+(options.title||'mini shell')+' </title>\n'+
-      '<meta http-equiv="x-ua-compatible" cpmtemt="IE=edge">'+
+      '<meta http-equiv="x-ua-compatible" content="IE=edge">'+
       totalsComment+'\n'+
       (options.favicon||'')+'\n'+
       '<HTA:APPLICATION id="htaHeader" SINGLEINSTANCE="no"></HTA:APPLICATION>'+
-      '<style data-legit=mi> *{display:none;'+(options.defaultBackground||'background:black;color:black;')+'} html,body{display:block;background:black;color:black;margin:0;padding:0;height:100%;overflow:hidden;} </style>\n'+
+      '<style data-legit=mi> *{display:none;'+backgroundStyle+'} html,body{display:block;'+backgroundStyle+'margin:0;padding:0;height:100%;overflow:hidden;} </style>\n'+
       '</head><body>\n'+
       '<'+'script data-legit=mi>\n'+
       loader+'\n\n\n'+
@@ -175,6 +177,7 @@ function exportAll(module) {
       'loader(window, document); //# sourceURL=/EQ80.js\n'+
       '</'+'script>\n'+
       (options.early_html?options.early_html:'')+
+
       '<'+'script data-legit=mi> // pushing BOOT\n'+
       '(function(doc) {\n'+
       '  if (doc.open) doc.open();\n'+
@@ -183,13 +186,31 @@ function exportAll(module) {
       '})(loader.boot.contentWindow.document || loader.boot.window.document);\n'+
       'loader.boot.style.display="block"; //# '+'sourceURL=/BOOT-docwrite.html\n'+
       '</'+'script>\n'+
-      '<'+'script data-legit=mi> // pushing SHELL\n'+
-      '(function(doc) {\n'+
-      '  if (doc.open) doc.open();\n'+
-      '  doc.write('+jsStringLong(options.shell_html)+');\n'+
-      '  if (doc.close) doc.close();\n'+
-      '})(loader.shell.contentWindow.document || loader.shell.window.document); //# '+'sourceURL=/SHELL-docwrite.html\n'+
-      '</'+'script>\n'+
+
+      (options.shell_html ?
+        '<'+'script data-legit=mi> // pushing SHELL\n'+
+        '(function(doc) {\n'+
+        '  if (doc.open) doc.open();\n'+
+        '  doc.write('+jsStringLong(options.shell_html)+');\n'+
+        '  if (doc.close) doc.close();\n'+
+        '})(loader.shell.contentWindow.document || loader.shell.window.document); //# '+'sourceURL=/SHELL-docwrite.html\n'+
+        '</'+'script>\n'
+       : '')+
+
+      (options.delayed_shell_html ?
+        '<'+'script data-legit=mi> // pushing SHELL: delayed\n'+
+        'loader.delayed_shell_html = (function() {\n'+
+        '  var doc = loader.shell.contentWindow.document || loader.shell.window.document;\n'+
+        '  return delayed_shell_html;\n'+
+        '  function delayed_shell_html() {\n'+
+        '    if (doc.open) doc.open();\n'+
+        '    doc.write('+jsStringLong(options.delayed_shell_html)+');\n'+
+        '    if (doc.close) doc.close();\n'+
+        '  }\n'+
+        '})(); //# '+'sourceURL=/SHELL-docwrite.html\n'+
+        '</'+'script>\n'
+       : '')+
+
       fileTotalHTML+
       '</body></html>';
   }
@@ -268,10 +289,17 @@ function exportAll(module) {
       if (redirectRoot) {
         var newPath = path.join(redirectRoot, file.slice(skipPathStrLength));
         if (newPath.charCodeAt(0)!==47) newPath = '/'+newPath;
+        if (filelist.filterFiles) {
+          if (!filelist.filterFiles(file, newPath)) return;
+        }
+
         addFileContent(newPath);
         redirects[newPath] = file;
       }
       else {
+        if (filelist.filterFiles) {
+          if (!filelist.filterFiles(file, file)) return;
+        }
         addFileContent(file);
       }
     }
@@ -333,7 +361,10 @@ function exportAll(module) {
       var platform;
       try { platform = require('nowindow').navigator.userAgent }
       catch (error) {
-        platform = 'node '+process.version+' on '+process.platform+'/'+process.arch;
+        if (process.versions.navigator)
+          platform = process.versions.navigator;
+        else
+          platform = 'node '+process.version+' on '+process.platform+'/'+process.arch;
       }
 
       var buildFinishTime = new Date();
@@ -431,6 +462,23 @@ function exportAll(module) {
         replace(/\n/g, 'Z');
     });
 
+    var wordarr = [];
+    var lineLen = 0;
+    for (var i = 0; i < wordArray.length; i++) {
+      var nextWord = wordArray[i];
+      if (lineLen) {
+        wordarr[wordarr.length-1] += ','+nextWord;
+      }
+      else {
+        if (i) nextWord = '"+\n"'+nextWord;
+        wordarr.push(nextWord);
+      }
+
+      lineLen+=nextWord.length+1;
+      if (lineLen>100)
+        lineLen = 0;
+    }
+
     return [
       '(function(d,c,s,r,m,nn,n) { var k = 0;',
       'return c.replace(/([a-zA-Y]+)|(Z[0-9]*)/g, function(x,t,w) {',
@@ -446,7 +494,7 @@ function exportAll(module) {
         'if (nn<100 && !r[nn]) return r[nn] = d[nn];', // cache word lookups for 100 most frequent words
         'else return d[nn];',
       '});\n',
-      '}("'+wordArray.join(',')+'".split(","),"'+compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r')+'",[],{}))'
+      '}(("'+wordarr.join(',')+'").split(","),"'+compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r')+'",[],{}))'
     ].join('\n');
 
     function toLetterNumber(num) {
@@ -513,6 +561,145 @@ function exportAll(module) {
   }
 
 
+
+  function htmlSpotExternals(html) {
+
+    if (!html) return typeof html==='string' ? [html] : [];
+
+    var linkStart =
+        /(\<script[\s\>])|(\<link[\s\>])|(\<\!\-\-)|(\<style[\s\>])/gim;
+
+    var scriptEndTag = /\<\/script(\s[^\>]*)?\>/gi;
+    var styleEndTag = /\<\/style(\s[^\>]*)?\>/gi;
+
+    var pos = 0;
+
+    var result = [];
+
+    while (true) {
+      linkStart.lastIndex = pos;
+      var match = linkStart.exec(html);
+
+      appendStatic(match ? match.index : html.length);
+
+      if (!match) break;
+
+      if (match[1]) {
+        // opening script tag
+        var tagEnd = html.indexOf('>', match.index+7 /* "<script".length */);
+        if (!tagEnd) {
+          pos = match.index;
+          appendStatic(html.length);
+          break;
+        }
+        var openingTagText = html.slice(match.index, tagEnd);
+        var srcMatch = /\ssrc=((\"([^\"]+)\")|(\'([^\']+)\')|(([^\'\"\s][^\s]*)(\s|$)))/.exec(openingTagText);
+        if (srcMatch) {
+          var src = srcMatch[3] || srcMatch[5] || srcMatch[7];
+        }
+
+        scriptEndTag.lastIndex = tagEnd+1;
+        var scriptEndTagMatch = scriptEndTag.exec(html);
+        if (!scriptEndTagMatch) {
+          appendStatic(html.length);
+          break;
+        }
+
+        if (src) {
+          result.push({
+            original: html.slice(match.index, scriptEndTagMatch.index + scriptEndTagMatch[0].length),
+            substituteLead:
+            openingTagText.slice(
+              0,
+              srcMatch.index +
+              (srcMatch.index + srcMatch[0].length === openingTagText.length ? 0 : 1)) + // <-- keep whitespace in place of src="..." attribute or not?
+            openingTagText.slice(srcMatch.index + srcMatch[0].length) +
+            '>',
+            substituteTrail: scriptEndTagMatch[0],
+            src: src
+          });
+          pos = scriptEndTagMatch.index + scriptEndTagMatch[0].length;
+        }
+        else {
+          pos = match.index;
+          appendStatic(scriptEndTagMatch.index + scriptEndTagMatch[0].length);
+        }
+
+      }
+      else if (match[2]) {
+        // opening link tag
+        var tagEnd = html.indexOf('>', match.index+5 /* "<link".length */);
+        if (!tagEnd) {
+          pos = match.index;
+          appendStatic(html.length);
+          break;
+        }
+        var linkTagText = html.slice(match.index, tagEnd);
+
+        var hrefMatch = /\shref=((\"([^\"]+)\")|(\'([^\']+)\')|(([^\'\"\s][^\s]*)(\s|$)))/.exec(linkTagText);
+        if (hrefMatch) {
+          var href = hrefMatch[3] || hrefMatch[5] || hrefMatch[7];
+        }
+
+        if (href && /\srel=((\"stylesheet\")|(\'stylesheet\')|(stylesheet\b))/i.test(linkTagText)) {
+          var styleLead =
+              '<style'+
+              linkTagText.slice(
+                5 /* "<link".length */,
+                hrefMatch.index +
+                (hrefMatch.index + hrefMatch[0].length === linkTagText.length ? 0 : 1)) + // <-- keep whitespace in place of href="..." attribute or not?
+              linkTagText.slice(hrefMatch.index + hrefMatch[0].length) +
+              '>';
+          styleLead = styleLead.replace(/\srel=((\"stylesheet\")|(\'stylesheet\')|(stylesheet\b))/gi, '');
+
+          result.push({
+            original: html.slice(match.index, tagEnd+1),
+            substituteLead: styleLead,
+            substituteTrail: '</style>',
+            src: href
+          });
+          pos = tagEnd+1;
+        }
+        else {
+          pos = match.index;
+          appendStatic(tagEnd+1);
+        }
+
+      }
+      else if (match[3]) {
+        // opening HTML comment (skip until comment ends)
+        var posCloseComment = html.indexOf('-->', match.index+4 /* "<!--".length */);
+        if (posCloseComment>=0)
+          appendStatic(posCloseComment + 3 /* "-->".length */);
+        else
+          appendStatic(html.length);
+      }
+      else if (match[4]) {
+        // opening style tag (skip until style ends)
+        var tagEnd = html.indexOf('>', match.index+5 /* "<link".length */);
+        styleEndTag.lastIndex = tagEnd+1;
+        var styleEndTagMatch = styleEndTag.exec(html);
+        if (styleEndTagMatch)
+          appendStatic(styleEndTagMatch.index + styleEndTagMatch[0].length);
+        else
+          appendStatic(html.length);
+      }
+
+    }
+
+    return result;
+
+    function appendStatic(upto) {
+      if (upto>pos) {
+        if (result.length && typeof result[result.length-1]==='string')
+          result[result.length-1] += html.slice(pos,upto);
+        else
+          result.push(html.slice(pos,upto));
+      }
+      pos = upto;
+    }
+
+  }
 
 
 
@@ -584,10 +771,6 @@ function exportAll(module) {
 
     return result;
   }
-
-
-
-
 
 
   function createLink(filename, content) {
@@ -736,48 +919,91 @@ function exportAll(module) {
     }, 10);
 
     function continueRunTests() {
-      if (runIndex === testsToRun.length) return;
-      var t = testsToRun[runIndex];
-      runIndex++;
 
-      if (t.disabled) {
-        setTimeout(continueRunTests, 1);
-        return;
-      }
+      var endTimeSlice = (Date.now ? Date.now() : +new Date()) + 300;
 
-      var start = +new Date();
-      t.testEntry.className = 'running';
-      t.run(function(error) {
-        var finish = +new Date();
-        var tm = document.createElement('span');
-        if ('textContent' in tm) tm.textContent = ' '+(finish-start)+'ms';
-        else tm.innerText = ' '+(finish-start)+'ms';
-        tm.style.fontSize = '80%';
-        t.testEntry.appendChild(tm);
-        if (!error) {
-          t.testEntry.className = 'success';
-          successCount++;
+      // keep running if possible
+      while (true){
+
+        var stillWithinCycle = true;
+        var completedSynchronously = false;
+
+        // skip the disabled
+        while (true) {
+          if (runIndex === testsToRun.length) return;
+          var t = testsToRun[runIndex];
+          runIndex++;
+          if (!t.disabled) break;
+        }
+
+        if (typeof console!=='undefined' && console && console.log) {
+          console.log(t.testEntry.textContent || t.testEntry.innerText+'...');
+        }
+
+        var start = +new Date();
+        t.testEntry.className = 'running';
+        t.run(function(error) {
+          var finish = +new Date();
+
+          if (error) {
+            if (typeof console!=='undefined' && console && console.error) {
+              console.error('  ', error, (finish-start)/1000+'s.'+(' '+error.stack?error.stack:''));
+            }
+          }
+          else {
+            if (typeof console!=='undefined' && console && console.log) {
+              console.log('  OK'+(finish-start)/1000+'s.');
+            }
+          }
+
+          var tm = document.createElement('span');
+          if ('textContent' in tm) tm.textContent = ' '+(finish-start)+'ms';
+          else tm.innerText = ' '+(finish-start)+'ms';
+          tm.style.fontSize = '80%';
+          t.testEntry.appendChild(tm);
+          if (!error) {
+            t.testEntry.className = 'success';
+            successCount++;
+          }
+          else {
+            t.testEntry.className = 'fail';
+            var errorOutput = document.createElement('pre');
+            if ('textContent' in errorOutput) errorOutput.textContent = error;
+            else errorOutput.innerText = error;
+            t.testEntry.appendChild(errorOutput);
+            failCount++;
+          }
+
+          var summaryText =
+              'Tests ('+
+              (failCount?'failed '+failCount:'no fails')+
+              ', succeeded '+successCount+
+              (testsToRun.length>failCount+successCount?', '+(testsToRun.length-failCount-successCount)+' to finish':'')+'):';
+
+          if ('textContent' in summary) summary.textContent = summaryText;
+          else summary.innerText = summaryText;
+
+          if (stillWithinCycle) {
+            completedSynchronously = true;
+          }
+          else {
+            // async anyway, continue inline
+          	continueRunTests();
+          }
+        });
+
+        stillWithinCycle = false;
+        if (completedSynchronously) {
+          var now = Date.now ? Date.now() : +new Date();
+          if (now>endTimeSlice) {
+            setTimeout(continueRunTests, 1);
+            return;
+          }
         }
         else {
-          t.testEntry.className = 'fail';
-          var errorOutput = document.createElement('pre');
-          if ('textContent' in errorOutput) errorOutput.textContent = error;
-          else errorOutput.innerText = error;
-          t.testEntry.appendChild(errorOutput);
-          failCount++;
+          return;
         }
-
-        var summaryText =
-            'Tests ('+
-            (failCount?'failed '+failCount:'no fails')+
-            ', succeeded '+successCount+
-            (testsToRun.length>failCount+successCount?', '+(testsToRun.length-failCount-successCount)+' to finish':'')+'):';
-
-        if ('textContent' in summary) summary.textContent = summaryText;
-        else summary.innerText = summaryText;
-
-        setTimeout(continueRunTests, 5);
-      });
+      }
     }
 
     function addTestRow(i) {
@@ -817,7 +1043,7 @@ function exportAll(module) {
     var allTests = [];
     var _dummy = {};
 
-    for (var k in tests) if (!(k in _dummy) && tests[k] && /^[a-z]/.test(k)) {
+    for (var k in tests) if (!(k in _dummy) && tests[k] && /^[a-z\_]/.test(k)) {
       collectTests(k, tests[k]);
     }
 

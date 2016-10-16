@@ -14,15 +14,11 @@ function RUN_SYNCFS_AIDED_CHANNEL(fs, msg) {
     storedSize: storedSize_SYNCFS_AIDED_CHANNEL
   };
 
-  var cmpSer = createComplexSerializer();
-
   connection_to_parent = {
     drive: drive,
     onPushMessage: pushMessageDispatcher.onPushMessage,
     invokeAsync: invokeAsync_SYNCFS_AIDED_CHANNEL,
-    invokeSync: invokeSync_SYNCFS_AIDED_CHANNEL,
-    serializeError: errorSer.serialize,
-    serialize: cmpSer.serialize
+    invokeSync: invokeSync_SYNCFS_AIDED_CHANNEL
   };
 
   install_console_redirect(postMessageToHost, cmpSer.serialize);
@@ -52,7 +48,7 @@ function RUN_SYNCFS_AIDED_CHANNEL(fs, msg) {
     }
 
     var callback = requestResponseDispatcher.popCallback(asyncResponse.key);
-    callback(asyncResponse.error && errorSer.serialize(asyncResponse.error), asyncResponse.result);
+    callback(asyncResponse.error && cmpSer.serialize(asyncResponse.error), asyncResponse.result);
   }
 
   function handleDriveUpdates_SYNCFS_AIDED_CHANNEL(driveUpdates) {
@@ -99,12 +95,13 @@ function RUN_SYNCFS_AIDED_CHANNEL(fs, msg) {
   }
 
   function invokeAsync_SYNCFS_AIDED_CHANNEL(msg: any, callback: (error: Error, result: any) => void) {
+    var msg_ser = cmpSer.serialize(msg);
     if (callback) {
       var key = requestResponseDispatcher.pushCallback(callback);
-      postMessageToHost({ invokeAsync: { key: key, msg: msg } });
+      postMessageToHost({ invokeAsync: { key: key, msg: msg_ser } });
     }
     else {
-      postMessageToHost({ invokeAsync: { msg: msg } });
+      postMessageToHost({ invokeAsync: { msg: msg_ser } });
     }
   }
 
@@ -114,7 +111,7 @@ function RUN_SYNCFS_AIDED_CHANNEL(fs, msg) {
 
 
     if (invokeSync_response.error) {
-      var toThrow = errorSer.deserialize(invokeSync_response.error);
+      var toThrow = cmpSer.deserialize(invokeSync_response.error);
       throw toThrow;
     }
 
@@ -123,11 +120,27 @@ function RUN_SYNCFS_AIDED_CHANNEL(fs, msg) {
 
   function postMessageWaitForResponse(msg: any, cookieFile: string, idle_sping_reason: string) {
     postMessageToHost(msg);
+    var parseFailAfter;
     while (true) {
       var content = getFileSync(fs, cookieFile);
       if (content) {
-        var result = _JSON_parse(content);
-        return result;
+
+        var now = Date.now ? Date.now() : + new Date();
+        if (parseFailAfter) {
+          if (now>parseFailAfter) {
+            var result = _JSON_parse(content);
+            return result;
+          }
+        }
+
+        try {
+          var result = _JSON_parse(content);
+          return result;
+        }
+        catch (error) {
+          if (!parseFailAfter)
+            parseFailAfter = now + 3000; // 3 seconds to complete the writing
+        }
       }
 
       SYNCFS_idle_spin(idle_sping_reason);

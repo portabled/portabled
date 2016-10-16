@@ -1,8 +1,8 @@
-function expectMessage_init_worker_connect(callback: () => void) {
+function expectMessage_init_worker_connect(callback: (init_worker_connect: any) => void) {
   self_onmessage = (e) => {
     if (e.data.init_worker_connect) {
       self_onmessage = null;
-      callback();
+      callback(e.data.init_worker_connect);
     }
     else {
       reportUnknownMessage_expecting_init_worker_connect(e);

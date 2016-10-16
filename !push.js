@@ -2,6 +2,7 @@ var fs = require('fs');
 var win = require('nowindow');
 var dialogHost = require('nodialog');
 
+
 loadGithubApi(function(error, Github) {
   if (error)
     console.log(error);
