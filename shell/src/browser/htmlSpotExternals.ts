@@ -42,9 +42,7 @@ function htmlSpotExternals(html: string): (string|htmlSpotExternals.Redirect)[] 
       }
       var openingTagText = html.slice(match.index, tagEnd);
       var srcMatch = /\ssrc=((\"([^\"]+)\")|(\'([^\']+)\')|(([^\'\"\s][^\s]*)(\s|$)))/.exec(openingTagText);
-      if (srcMatch) {
-        var src = srcMatch[3] || srcMatch[5] || srcMatch[7];
-      }
+      var src = srcMatch ? srcMatch[3] || srcMatch[5] || srcMatch[7] : null;
 
       scriptEndTag.lastIndex = tagEnd+1;
       var scriptEndTagMatch = scriptEndTag.exec(html);

@@ -95,6 +95,7 @@ class CommanderShell {
       var newPath = this._twoPanels.currentPath();
       if (newPath !== _lastCwd) {
         _lastCwd = newPath;
+        this._cwd = newPath;
         this._terminal.setPath(newPath);
         this._updateWindowTitle(newPath);
         this._repl.runGlobal('process.chdir("'+newPath+'")', '/shell-chdir.js', null);

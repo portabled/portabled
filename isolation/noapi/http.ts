@@ -1,14 +1,42 @@
 declare var XDomainRequest;
 
+var createXHR = (function() {
+
+  if (typeof XDomainRequest!=='undefined') {
+    var cachedXDomainRequest = XDomainRequest;
+    return () => {
+      var xdreq = new cachedXDomainRequest();
+      return xdreq;
+    };
+  }
+  else if (typeof ActiveXObject!=='undefined') {
+    var cachedActiveXObject = ActiveXObject;
+    return () => {
+      var axreq = new cachedActiveXObject('Microsoft.XMLHTTP');
+      return axreq;
+    };
+  }
+  else if (typeof XMLHttpRequest!=='undefined') {
+    var cachedXMLHttpRequest = XMLHttpRequest;
+    return () => {
+      var xhr = new cachedXMLHttpRequest();
+      xhr.withCredentials = true; // is it right?
+      return xhr;
+  	};
+  }
+
+})();
+
 function createHTTP(): any {
+
 
   class ClientRequest extends EventEmitter {
 
-    _options: any;
-    _url: string;
-    _method: string;
-    _callback: any;
-    _finished: boolean = false;
+    private _options: any;
+    private _url: string;
+    private _method: string;
+    private _callback: any;
+    private _finished: boolean = false;
 
     headers: {};
 
@@ -32,52 +60,82 @@ function createHTTP(): any {
     }
 
     end() {
-      var req_callback = (status, headers, data) => {
-        // TODO: report result
+      var res:IncomingMessage;
+      var req_callback = (error, status: number, chunk:any[], finish: boolean) => {
+
+        if(!res) res = new IncomingMessage(this);
+        res._handleStatus(error, status, chunk, finish);
       };
 
-      xhr_request( // normal XHR
-        this._url, this._method,
-        /*headers*/null, /*body*/null,
-        req_callback,
-        () => { // public CORS proxy fallback
-          corsProxy_request(
-            this._url, this._method,
-            /*headers*/null, /*body*/null,
-            req_callback,
-            () => { // public JSONP proxy fallback
-              jsonpProxy_request(
-                this._url, this._method,
-                /*headers*/null, /*body*/null,
-                req_callback,
-                () => { // YQL fallback
-                  yqlProxy_request(
-                    this._url, this._method,
-                    /*headers*/null, /*body*/null,
-                    req_callback,
-                    /*fallback*/ null);
+      xhr_request({
+          url: this._url,
+          method: this._method,
+          statusChanged: req_callback,
+          fallback: xhrError => {
+
+            corsProxy_request({
+              url: this._url,
+              method: this._method,
+              withCredentials: false,
+              statusChanged: req_callback,
+              fallback: corsError => {
+
+                yqlProxy_request({
+                  url: this._url,
+                  method: this._method,
+              		withCredentials: false,
+                  statusChanged: req_callback,
+                  fallback: corsError => {
+
+                    req_callback(xhrError, null, null, true);
+
+                  }
                 });
-            });
-        });
+
+            }
+          });
+        }
+      });;
+
     }
 
   }
 
   class IncomingMessage extends EventEmitter {
 
-    _xhr: XMLHttpRequest;
-    _req: ClientRequest;
+    private _responseReported = false;
+		private _offset = 0;
+
+    statusCode = 0;
     headers: {};
 
-    constructor(xhr: XMLHttpRequest, req: ClientRequest) {
+    constructor(private _req: ClientRequest) {
       super();
-      this._xhr = xhr;
+    }
 
-      if (this._xhr.status==200) {
-        // TODO: fetch the result
+		_handleStatus(error, status: number, chunk:any[], finish: boolean) {
+
+      this.statusCode = status;
+      this._ensureReported();
+
+      if (chunk)
+      	this.emit('data', chunk);
+
+      if (error) {
+        this.emit('error', chunk);
       }
-      else {
-        // TODO: fire error here?
+
+      if (finish) {
+        if (!error)
+        	this.emit('end');
+        this.emit('close');
+      }
+    }
+
+		private _ensureReported() {
+      if (!this._responseReported) {
+        this._responseReported = true;
+        this._req.emit('response', this);
       }
     }
 
@@ -87,7 +145,6 @@ function createHTTP(): any {
     request: (options, callback) => new ClientRequest(options, callback),
     get: (options, callback) => {
       var req = new ClientRequest(options, callback);
-      req._method = 'GET';
       req.end();
       return req;
     },
@@ -199,54 +256,182 @@ function createHTTP(): any {
 
 }
 
-function xhr_request(url: string, method: string, headers: any, body, callback: (status, headers, data) => void, fallback: () => void) {
-  var xhr = createXHR();
-  xhr.onreadystatechange = xhr_onreadystatechange;
-  xhr.open(this._url, this._method, true);
 
-  if (headers) {
-    for (var k in headers) if (headers.hasOwnProperty(k)) {
-      xhr.setRequestHeader(k, headers[k]);
-    }
+declare namespace xhr_request {
+  type Options = {
+    method: string;
+    url: string;
+    headers?: any;
+  	body?: string | any[];
+    withCredentials?: boolean;
+  	statusChanged(error, status: number, chunk:any[], finish: boolean);
+    fallback(error);
   }
 
-  // TODO: set body
-  xhr.send();
+}
+
+function xhr_request(options: xhr_request.Options) {
+
+  var canFallback = true;
+  try {
+  	var xhr = createXHR();
+
+    if ('withCredentials' in options &&'withCredentials' in xhr) {
+      xhr.withCredentials = options.withCredentials;
+    }
+
+    if ('responseType' in xhr) {
+      xhr.responseType = 'arraybuffer';
+    }
+  }
+  catch (error) {
+    reportStatusChanged(error, null, null, true);
+    return;
+  }
+
+  /*
+  try {
+		if (skipCredentials && xhr.withCredentials) xhr.withCredentials = false;
+  }
+  catch (error) { }
+  */
+
+  var lastState = {
+    status:0,
+    readyState:-1,
+    offset:-1,
+    finished:false
+  };
+
+  try {
+    xhr.onreadystatechange = xhr_onreadystatechange;
+    xhr.onload = xhr_onload;
+    xhr.onloadend = xhr_onload;
+    xhr.onprogress = xhr_onprogress;
+    xhr.onabort = xhr_onabort;
+    xhr.onerror = xhr_onerror;
+    xhr.open(options.method, options.url, true);
+
+    if (options.headers) {
+      for (var k in options.headers) if (options.headers.hasOwnProperty(k)) {
+        xhr.setRequestHeader(k, options.headers[k]);
+      }
+    }
+
+    var finished;
+    var reportedReadyState;
+
+    // TODO: set body
+    xhr.send();
+  }
+  catch (error) {
+    reportStatusChanged(error, null, null, true);
+    return;
+  }
+
+  function reportStatusChanged(error, status: number, chunk:any[], finish: boolean) {
+    if (error || finish) {
+      if (error || !status){
+        if (canFallback || options.fallback) {
+    			canFallback = false;
+          options.fallback(error);
+          return;
+        }
+      }
+    }
+
+    canFallback = false;
+    options.statusChanged(error, status, chunk, finish);
+  }
+
+  function update_callback(finish: boolean, error: Error) {
+    if (lastState.finished) return;
+
+    if (xhr.readyState===4)
+      finish = true;
+
+    if (error)
+      finish = true;
+
+    var chunk = getChunk();
+
+    if ((xhr.readyState|0) !== lastState.readyState) {
+      // TODO: any extra logic on readyState change??
+    }
+
+    if ((chunk && chunk.length)
+        || (xhr.status|0) !== lastState.status
+       	|| finish) {
+
+      lastState.status = xhr.status|0;
+      lastState.readyState = xhr.readyState|0;
+      lastState.finished = finish;
+
+      reportStatusChanged(error, lastState.status, chunk, finish);
+    }
+
+  }
+
+  function getChunk() {
+    var response = xhr.responseBlob || xhr.response || xhr.responseText;
+    if (!response || response.length<=lastState.offset) return null;
+
+    if (typeof response==='string') {
+      var chunk = new Buffer(response.slice(lastState.offset), 'utf8');
+    }
+    else {
+      var chunk: any = new Buffer(response, lastState.offset);
+    }
+
+    lastState.offset = response.length;
+
+    return chunk;
+  }
 
   function xhr_onreadystatechange() {
-    if (xhr.readyState!==4) return;
-    if (!xhr.status) return fallback();
-
-    if (xhr.status === 200) {
-      callback(xhr.status, /*headers*/{}, xhr.response);
-    }
-  };
-}
-
-function corsProxy_request(url: string, method: string, headers: any, body, callback: (status, headers, data) => void, fallback: () => void) {
-  // TODO: implement CORS proxy request
-}
-
-function jsonpProxy_request(url: string, method: string, headers: any, body, callback: (status, headers, data) => void, fallback: () => void) {
-  // TODO: implement JSONP proxy request
-}
-
-function yqlProxy_request(url: string, method: string, headers: any, body, callback: (status, headers, data) => void, fallback: () => void) {
-  // TODO: implement YQL proxy request
-}
-
-function createXHR(): XMLHttpRequest {
-  if (typeof XDomainRequest!=='undefined') {
-    var xdreq = new XDomainRequest();
-    return xdreq;
+    update_callback(false,null);
   }
-  else if (typeof ActiveXObject!=='undefined') {
-    var axreq = new ActiveXObject('Microsoft.XMLHTTP');
-    return axreq;
+
+  function xhr_onload() {
+    update_callback(true,null);
   }
-  else if (typeof XMLHttpRequest!=='undefined') {
-    var xhr = new XMLHttpRequest();
-    xhr.withCredentials = true; // is it right?
-    return xhr;
+
+  function xhr_onprogress() {
+    update_callback(false,null);
   }
+
+  function xhr_onabort() {
+    update_callback(true,new Error('Request aborted.'));
+  }
+
+  function xhr_onerror(event) {
+    if (!event) event = (window as any)['event'];
+
+    var error = !event ? new Error('XHR error') :
+    	event.error && 'message' in event.error ? event.error :
+    	event;
+
+    update_callback(true, error);
+  }
+
+}
+
+function corsProxy_request(options: xhr_request.Options) {
+  xhr_request({
+    method: options.method,
+    url: 'https://crossorigin.me/'+options.url,
+    headers: options.headers,
+  	body: options.body,
+    withCredentials: options.withCredentials,
+  	statusChanged: options.statusChanged,
+    fallback: options.fallback
+  });
+}
+
+function jsonpProxy_request(options: xhr_request.Options) {
+  options.fallback(null);
+}
+
+function yqlProxy_request(options: xhr_request.Options) {
+  options.fallback(null);
 }

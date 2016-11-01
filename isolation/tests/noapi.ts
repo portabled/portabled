@@ -202,7 +202,28 @@ namespace tests {
             close_clean();
           });
         });
-      }
+      },
+
+
+      initApiContext_http_get_returnsNotnull: (callback) => {
+        initNoapi({}, (host, close_clean) => {
+          host.remoteEval(
+            'var opts = { drive: connection_to_parent.drive }; connection_to_parent.initApiContext(opts);\n '+
+            'var http = opts.coreModules.http;\n'+
+            'var req = http.get({host:\'google.com\', path: \'/\'}, function(req) { var body = \'\'; req.on(\'data\', function(dt) { console.log(\'>\'+dt); }); });\n' +
+            'console.log(req)', null, '/tests/initApiContext_http_get_returnsNotnull.js', function (error, result) {
+              try {
+                assert(!error, error);
+                callback();
+              }
+              catch (err) {
+                callback(err);
+              }
+              close_clean();
+          });
+        });
+      },
+
 
 
 

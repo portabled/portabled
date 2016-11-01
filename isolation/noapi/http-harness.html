@@ -1,0 +1,145 @@
+<body>
+  <pre id=output></pre>
+<script>
+  dump._last = +new Date();
+  if(typeof output==='undefined') output = document.getElementById('output');
+	dump('tsc.js...');
+	function dump(txt) {
+    var now =+new Date();
+
+    var dt = document.createElement('span');
+    dt.style.opacity = 0.5; dt.style.minWidth = '6em'; dt.style.display = 'inline-block';
+    if (dump._last)
+    	dt.textContent = now - dump._last;
+    output.appendChild(dt);
+
+    var more = document.createElement('span');
+    more.textContent = txt;
+    output.appendChild(more);
+
+    var br = document.createElement('br');
+    output.appendChild(br);
+
+    dump._last = now;
+    console.log(txt);
+  }
+</script>
+<script type=text/static id=tsc.js src="../../node_modules/typescript/lib/tsc.js"></script>
+<script> dump(' OK.'); </script>
+<script type=text/static id=http.ts src="http.ts"></script>
+<script type=text/static id=events.ts src="events.ts"></script>
+<script type=text/static id=Buffer.ts src="Buffer.ts"></script>
+
+<script>
+
+dump('compile...');
+
+var httpJS = compileTS(
+  {
+    'http.ts': document.getElementById('http.ts').innerHTML,
+    'events.ts': document.getElementById('events.ts').innerHTML,
+    'Buffer.ts': document.getElementById('Buffer.ts').innerHTML
+  },
+  'http.ts','events.ts','Buffer.ts', '--out', 'http.js', '--inlineSourceMap', '--inlineSources');
+
+dump('eval...');
+try {
+	eval(httpJS['http.js']);
+}
+catch (evalError) {
+  dump('EVAL ERROR '+evalError+'\n'+(evalError.stack||''));
+}
+
+try {
+  var http = createHTTP();
+}
+catch (createError) {
+  dump('createHTTP ERROR '+createError+'\n'+(createError.stack||''));
+}
+
+dump('http.get...');
+
+var req = http.get({host:'google.com', path: '/'});
+
+var body = '';
+
+req.on('response',function(res) {
+  dump('response: '+res);
+
+  res.on('data', function(dt) {
+    dump('>'+dt);
+  });
+
+  res.on('end', function() {
+    dump('END');
+  });
+
+  res.on('error', function() {
+    dump('ERROR');
+  });
+
+});
+
+req.on('error', function() {
+  dump('req-ERROR');
+});
+
+
+function compileTS(dir/*, args*/){
+  function readDirectory(dir, extension, exclude) {
+    var result = [];
+    var expExclude = [], excludeMap = {};
+    for (var i = 0; i < exclude.length; i++) {
+      excludeMap[expExclude[i] = path.resolve(dir, exclude[i])] = true;
+    }
+
+    for (var f in dir) if (dir.hasOwnProperty(f)) {
+      if (!excludeMap[f]) {
+        if (!extension || f.slice(-extension.length)===extension) result.push(f);
+      }
+    }
+
+    return result;
+  }
+
+  var tscPath = 'typescript/lib/tsc.js';
+  var tscScript = '(function(){ return function (ChakraHost) { '+document.getElementById('tsc.js').innerHTML+'\n}})() //# '+'sourceURL='+tscPath+'@wrapped';
+
+  var result = {files:[]};
+
+  var chakraHost = {
+    newLine: '\n',
+    args: [],
+    useCaseSensitiveFileNames: true,
+    echo: function(text) {
+      console.log(text);
+    },
+    readFile: function (path, encoding) { return dir[path]; },
+    writeFile: function (file, data, writeByteOrderMark) {
+      //console.log('writeFile(',file,',',data.length);
+      result[file] = data;
+      result.files.push({file:file, data:data});
+    },
+    resolvePath: function(file) { return file; },
+    fileExists: function(file) { return !!dir[file]; },
+    directoryExists: function(file) { return true; },
+    createDirectory: function() { },
+    executingFile: tscPath,
+    currentDirectory: '/',
+    readDirectory: readDirectory,
+    quit: function() { }
+  };
+
+  for (var i = 1; i < arguments.length; i++) {
+    chakraHost.args.push(arguments[i]);
+  }
+
+  var tsc = eval(tscScript);
+  tsc(chakraHost);
+
+  return result;
+}
+
+
+</script>
+</body>

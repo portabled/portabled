@@ -5,9 +5,9 @@
 function isolation() {
 
 	isolation.build = {
-    timestamp: 1476221740531, // Tue Oct 11 2016 22:35:40 GMT+0100 (GMT Daylight Time)
-    taken: 17024,
-    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36"
+    timestamp: 1477988698388, // Tue Nov 01 2016 08:24:58 GMT+0000 (GMT Standard Time)
+    taken: 25760,
+    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36"
 };
 
 (function (module) {
@@ -1594,6 +1594,168 @@ function isolation() {
   "    function __() { this.constructor = d; }\n"+
   "    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());\n"+
   "};\n"+
+  "var Buffer;\n"+
+  "Buffer = (function () {\n"+
+  "    return Buffer;\n"+
+  "    function Buffer(data, encoding, offset) {\n"+
+  "        var buf;\n"+
+  "        if (typeof data === 'number') {\n"+
+  "            buf = new Uint8Array(data);\n"+
+  "        }\n"+
+  "        else if (typeof data === 'string') {\n"+
+  "            if (encoding == 'base64') {\n"+
+  "                var len = decodeBase64(data, null, 0);\n"+
+  "                buf = new Uint8Array(len);\n"+
+  "                decodeBase64(data, buf, 0);\n"+
+  "            }\n"+
+  "            else if (encoding == 'utf8' || !encoding) {\n"+
+  "                var len = encodeUTF8(data, null, 0);\n"+
+  "                buf = new Uint8Array(len);\n"+
+  "                encodeUTF8(data, buf, 0);\n"+
+  "            }\n"+
+  "        }\n"+
+  "        else if (typeof data === 'object' && data && typeof data.length === 'number') {\n"+
+  "            buf = new Uint8Array(data.length);\n"+
+  "            for (var i = 0; i < data.length; i++) {\n"+
+  "                buf[i] = data[i];\n"+
+  "            }\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            throw new Error('Buffer only supports initialization from length, array or string at the moment.');\n"+
+  "        }\n"+
+  "        buf.toString = toString;\n"+
+  "        // TODO: add Buffer methods\n"+
+  "        return buf;\n"+
+  "    }\n"+
+  "    function encodeUTF8(text, buf, start) {\n"+
+  "        var pos = start | 0;\n"+
+  "        for (var i = 0; i < text.length; i++) {\n"+
+  "            var ch = text.charCodeAt(i);\n"+
+  "            if (ch < 0x80) {\n"+
+  "                if (buf)\n"+
+  "                    buf[pos] = ch;\n"+
+  "                pos++;\n"+
+  "            }\n"+
+  "            else if (ch < 0x800) {\n"+
+  "                if (buf) {\n"+
+  "                    buf[pos] = 0xC0 | ((ch >> 6) & 0xFF);\n"+
+  "                    buf[pos + 1] = 0x80 | (ch & 0xFF);\n"+
+  "                }\n"+
+  "                pos += 2;\n"+
+  "            }\n"+
+  "            else {\n"+
+  "                // TODO: treat Unicode surrogate pair stuff\n"+
+  "                if (buf) {\n"+
+  "                    buf[pos] = 0xE0 | ((ch >> 12) & 0xFF);\n"+
+  "                    buf[pos + 1] = 0x80 | ((ch >> 6) & 0xFF);\n"+
+  "                    buf[pos + 2] = 0x80 | (ch & 0xFF);\n"+
+  "                }\n"+
+  "                pos += 3;\n"+
+  "            }\n"+
+  "        }\n"+
+  "        return pos;\n"+
+  "    }\n"+
+  "    function decodeUTF8(data) {\n"+
+  "        var result = '';\n"+
+  "        for (var i = 0; i < data.length; i++) {\n"+
+  "            var b = data[i];\n"+
+  "            var ch;\n"+
+  "            if (!(b & 0x80)) {\n"+
+  "                ch = b;\n"+
+  "            }\n"+
+  "            else {\n"+
+  "                if ((b & 0xE0) === 0xC0) {\n"+
+  "                    ch = (b << 6) | (data[i + 1] & 0xC0);\n"+
+  "                    i++;\n"+
+  "                }\n"+
+  "                else {\n"+
+  "                    ch = (b << 12) | ((data[i + 1] & 0xC0) << 6) | (data[i + 2] & 0xC0);\n"+
+  "                    i += 2;\n"+
+  "                }\n"+
+  "            }\n"+
+  "            result += String.fromCharCode(ch);\n"+
+  "        }\n"+
+  "        return result;\n"+
+  "    }\n"+
+  "    function b64Code(ch) {\n"+
+  "        if (ch >= 65 /*A*/ && ch <= 90 /*Z*/)\n"+
+  "            return ch - 65;\n"+
+  "        if (ch >= 97 /*a*/ && ch <= 122 /*z*/)\n"+
+  "            return ch - 97 + 26;\n"+
+  "        if (ch >= 48 /*0*/ && ch <= 57 /*9*/)\n"+
+  "            return ch - 48 + 26 + 26;\n"+
+  "        if (ch == 43 /*+*/ || ch == 45 /*-*/)\n"+
+  "            return 62;\n"+
+  "        if (ch == 47 /*/*/ || ch == 95 /*_*/)\n"+
+  "            return 63;\n"+
+  "        if (ch == 61 /*=*/)\n"+
+  "            return -1;\n"+
+  "        else if (ch == 32 || ch == 9 || ch == 13 || ch == 10 || /\\s/.test(String.fromCharCode(ch)))\n"+
+  "            return -2; // whitespace\n"+
+  "        else\n"+
+  "            return -3; // invalid\n"+
+  "    }\n"+
+  "    function decodeBase64(b64, buf, start) {\n"+
+  "        var phase = 0;\n"+
+  "        var accum = 0;\n"+
+  "        var pos = start | 0;\n"+
+  "        for (var i = 0; i < b64.length; i++) {\n"+
+  "            var ch = b64.charCodeAt(i);\n"+
+  "            var co = b64Code(ch);\n"+
+  "            if (phase >= 0) {\n"+
+  "                if (co >= 0) {\n"+
+  "                    phase = (phase + 1) % 4;\n"+
+  "                    accum = (accum << 6) | co;\n"+
+  "                    if (!phase) {\n"+
+  "                        if (buf) {\n"+
+  "                            buf[pos] = (accum >> 16) & 0xFF;\n"+
+  "                            buf[pos + 1] = (accum >> 8) & 0xFF;\n"+
+  "                            buf[pos + 2] = accum & 0xFF;\n"+
+  "                        }\n"+
+  "                        pos += 3;\n"+
+  "                        accum = 0;\n"+
+  "                    }\n"+
+  "                }\n"+
+  "                else if (co == -1)\n"+
+  "                    phase = -1; // TODO: enforce block size before setting\n"+
+  "                else if (co == -3)\n"+
+  "                    throw new Error('The string to be decoded is not correctly encoded.');\n"+
+  "            }\n"+
+  "            else if (phase == -1) {\n"+
+  "                if (co == -1)\n"+
+  "                    phase = -2;\n"+
+  "                else if (co != -2)\n"+
+  "                    throw new Error('The string to be decoded is not correctly encoded.');\n"+
+  "            }\n"+
+  "            else if (phase == -2) {\n"+
+  "                if (co != -2)\n"+
+  "                    throw new Error('The string to be decoded is not correctly encoded.');\n"+
+  "            }\n"+
+  "        }\n"+
+  "        if (phase == -1) {\n"+
+  "            if (buf) {\n"+
+  "                buf[pos] = (accum >> 10) & 0xFF;\n"+
+  "                buf[pos + 1] = (accum >> 2) & 0xFF;\n"+
+  "            }\n"+
+  "            pos += 2;\n"+
+  "        }\n"+
+  "        else if (phase == -2) {\n"+
+  "            if (buf) {\n"+
+  "                buf[pos] = (accum >> 4) & 0xFF;\n"+
+  "            }\n"+
+  "            pos++;\n"+
+  "        }\n"+
+  "        else if (phase)\n"+
+  "            throw new Error('The string to be decoded is not correctly encoded.');\n"+
+  "        return pos;\n"+
+  "    }\n"+
+  "    function toString(encoding) {\n"+
+  "        if (!encoding || encoding === 'utf8') {\n"+
+  "            return decodeUTF8(this);\n"+
+  "        }\n"+
+  "        throw new Error('Parameters are too weird.');\n"+
+  "    }\n"+
+  "})();\n"+
   "function initApiContext(options) {\n"+
   "    var _this = this;\n"+
   "    var _connection_to_parent = connection_to_parent;\n"+
@@ -2526,6 +2688,30 @@ function isolation() {
   "function watch(filename, arg1, arg2) {\n"+
   "    throw new Error('not implemented');\n"+
   "}\n"+
+  "var createXHR = (function () {\n"+
+  "    if (typeof XDomainRequest !== 'undefined') {\n"+
+  "        var cachedXDomainRequest = XDomainRequest;\n"+
+  "        return function () {\n"+
+  "            var xdreq = new cachedXDomainRequest();\n"+
+  "            return xdreq;\n"+
+  "        };\n"+
+  "    }\n"+
+  "    else if (typeof ActiveXObject !== 'undefined') {\n"+
+  "        var cachedActiveXObject = ActiveXObject;\n"+
+  "        return function () {\n"+
+  "            var axreq = new cachedActiveXObject('Microsoft.XMLHTTP');\n"+
+  "            return axreq;\n"+
+  "        };\n"+
+  "    }\n"+
+  "    else if (typeof XMLHttpRequest !== 'undefined') {\n"+
+  "        var cachedXMLHttpRequest = XMLHttpRequest;\n"+
+  "        return function () {\n"+
+  "            var xhr = new cachedXMLHttpRequest();\n"+
+  "            xhr.withCredentials = true; // is it right?\n"+
+  "            return xhr;\n"+
+  "        };\n"+
+  "    }\n"+
+  "})();\n"+
   "function createHTTP() {\n"+
   "    var ClientRequest = (function (_super) {\n"+
   "        __extends(ClientRequest, _super);\n"+
@@ -2549,42 +2735,75 @@ function isolation() {
   "        }\n"+
   "        ClientRequest.prototype.end = function () {\n"+
   "            var _this = this;\n"+
-  "            var req_callback = function (status, headers, data) {\n"+
-  "                // TODO: report result\n"+
+  "            var res;\n"+
+  "            var req_callback = function (error, status, chunk, finish) {\n"+
+  "                if (!res)\n"+
+  "                    res = new IncomingMessage(_this);\n"+
+  "                res._handleStatus(error, status, chunk, finish);\n"+
   "            };\n"+
-  "            xhr_request(// normal XHR\n"+
-  "            this._url, this._method, \n"+
-  "            /*headers*/ null, /*body*/ null, req_callback, function () {\n"+
-  "                corsProxy_request(_this._url, _this._method, \n"+
-  "                /*headers*/ null, /*body*/ null, req_callback, function () {\n"+
-  "                    jsonpProxy_request(_this._url, _this._method, \n"+
-  "                    /*headers*/ null, /*body*/ null, req_callback, function () {\n"+
-  "                        yqlProxy_request(_this._url, _this._method, \n"+
-  "                        /*headers*/ null, /*body*/ null, req_callback, \n"+
-  "                        /*fallback*/ null);\n"+
+  "            xhr_request({\n"+
+  "                url: this._url,\n"+
+  "                method: this._method,\n"+
+  "                statusChanged: req_callback,\n"+
+  "                fallback: function (xhrError) {\n"+
+  "                    corsProxy_request({\n"+
+  "                        url: _this._url,\n"+
+  "                        method: _this._method,\n"+
+  "                        withCredentials: false,\n"+
+  "                        statusChanged: req_callback,\n"+
+  "                        fallback: function (corsError) {\n"+
+  "                            yqlProxy_request({\n"+
+  "                                url: _this._url,\n"+
+  "                                method: _this._method,\n"+
+  "                                withCredentials: false,\n"+
+  "                                statusChanged: req_callback,\n"+
+  "                                fallback: function (corsError) {\n"+
+  "                                    req_callback(xhrError, null, null, true);\n"+
+  "                                }\n"+
+  "                            });\n"+
+  "                        }\n"+
   "                    });\n"+
-  "                });\n"+
+  "                }\n"+
   "            });\n"+
+  "            ;\n"+
   "        };\n"+
   "        return ClientRequest;\n"+
   "    }(EventEmitter));\n"+
   "    var IncomingMessage = (function (_super) {\n"+
   "        __extends(IncomingMessage, _super);\n"+
-  "        function IncomingMessage(xhr, req) {\n"+
+  "        function IncomingMessage(_req) {\n"+
   "            _super.call(this);\n"+
-  "            this._xhr = xhr;\n"+
-  "            if (this._xhr.status == 200) {\n"+
-  "            }\n"+
-  "            else {\n"+
-  "            }\n"+
+  "            this._req = _req;\n"+
+  "            this._responseReported = false;\n"+
+  "            this._offset = 0;\n"+
+  "            this.statusCode = 0;\n"+
   "        }\n"+
+  "        IncomingMessage.prototype._handleStatus = function (error, status, chunk, finish) {\n"+
+  "            this.statusCode = status;\n"+
+  "            this._ensureReported();\n"+
+  "            if (chunk)\n"+
+  "                this.emit('data', chunk);\n"+
+  "            if (error) {\n"+
+  "                this.emit('error', chunk);\n"+
+  "            }\n"+
+  "            if (finish) {\n"+
+  "                if (!error)\n"+
+  "                    this.emit('end');\n"+
+  "                this.emit('close');\n"+
+  "            }\n"+
+  "        };\n"+
+  "        IncomingMessage.prototype._ensureReported = function () {\n"+
+  "            if (!this._responseReported) {\n"+
+  "                this._responseReported = true;\n"+
+  "                this._req.emit('response', this);\n"+
+  "            }\n"+
+  "        };\n"+
   "        return IncomingMessage;\n"+
   "    }(EventEmitter));\n"+
   "    return {\n"+
   "        request: function (options, callback) { return new ClientRequest(options, callback); },\n"+
   "        get: function (options, callback) {\n"+
   "            var req = new ClientRequest(options, callback);\n"+
-  "            req._method = 'GET';\n"+
   "            req.end();\n"+
   "            return req;\n"+
   "        },\n"+
@@ -2694,52 +2913,138 @@ function isolation() {
   "        }\n"+
   "    };\n"+
   "}\n"+
-  "function xhr_request(url, method, headers, body, callback, fallback) {\n"+
-  "    var xhr = createXHR();\n"+
-  "    xhr.onreadystatechange = xhr_onreadystatechange;\n"+
-  "    xhr.open(this._url, this._method, true);\n"+
-  "    if (headers) {\n"+
-  "        for (var k in headers)\n"+
-  "            if (headers.hasOwnProperty(k)) {\n"+
-  "                xhr.setRequestHeader(k, headers[k]);\n"+
-  "            }\n"+
-  "    }\n"+
-  "    // TODO: set body\n"+
-  "    xhr.send();\n"+
-  "    function xhr_onreadystatechange() {\n"+
-  "        if (xhr.readyState !== 4)\n"+
-  "            return;\n"+
-  "        if (!xhr.status)\n"+
-  "            return fallback();\n"+
-  "        if (xhr.status === 200) {\n"+
-  "            callback(xhr.status, /*headers*/ {}, xhr.response);\n"+
+  "function xhr_request(options) {\n"+
+  "    var canFallback = true;\n"+
+  "    try {\n"+
+  "        var xhr = createXHR();\n"+
+  "        if ('withCredentials' in options && 'withCredentials' in xhr) {\n"+
+  "            xhr.withCredentials = options.withCredentials;\n"+
+  "        }\n"+
+  "        if ('responseType' in xhr) {\n"+
+  "            xhr.responseType = 'arraybuffer';\n"+
   "        }\n"+
   "    }\n"+
-  "    ;\n"+
-  "}\n"+
-  "function corsProxy_request(url, method, headers, body, callback, fallback) {\n"+
-  "    // TODO: implement CORS proxy request\n"+
-  "}\n"+
-  "function jsonpProxy_request(url, method, headers, body, callback, fallback) {\n"+
-  "    // TODO: implement JSONP proxy request\n"+
-  "}\n"+
-  "function yqlProxy_request(url, method, headers, body, callback, fallback) {\n"+
-  "    // TODO: implement YQL proxy request\n"+
-  "}\n"+
-  "function createXHR() {\n"+
-  "    if (typeof XDomainRequest !== 'undefined') {\n"+
-  "        var xdreq = new XDomainRequest();\n"+
-  "        return xdreq;\n"+
+  "    catch (error) {\n"+
+  "        reportStatusChanged(error, null, null, true);\n"+
+  "        return;\n"+
   "    }\n"+
-  "    else if (typeof ActiveXObject !== 'undefined') {\n"+
-  "        var axreq = new ActiveXObject('Microsoft.XMLHTTP');\n"+
-  "        return axreq;\n"+
+  "    /*\n"+
+  "    try {\n"+
+  "          if (skipCredentials && xhr.withCredentials) xhr.withCredentials = false;\n"+
   "    }\n"+
-  "    else if (typeof XMLHttpRequest !== 'undefined') {\n"+
-  "        var xhr = new XMLHttpRequest();\n"+
-  "        xhr.withCredentials = true; // is it right?\n"+
-  "        return xhr;\n"+
+  "    catch (error) { }\n"+
+  "    */\n"+
+  "    var lastState = {\n"+
+  "        status: 0,\n"+
+  "        readyState: -1,\n"+
+  "        offset: -1,\n"+
+  "        finished: false\n"+
+  "    };\n"+
+  "    try {\n"+
+  "        xhr.onreadystatechange = xhr_onreadystatechange;\n"+
+  "        xhr.onload = xhr_onload;\n"+
+  "        xhr.onloadend = xhr_onload;\n"+
+  "        xhr.onprogress = xhr_onprogress;\n"+
+  "        xhr.onabort = xhr_onabort;\n"+
+  "        xhr.onerror = xhr_onerror;\n"+
+  "        xhr.open(options.method, options.url, true);\n"+
+  "        if (options.headers) {\n"+
+  "            for (var k in options.headers)\n"+
+  "                if (options.headers.hasOwnProperty(k)) {\n"+
+  "                    xhr.setRequestHeader(k, options.headers[k]);\n"+
+  "                }\n"+
+  "        }\n"+
+  "        var finished;\n"+
+  "        var reportedReadyState;\n"+
+  "        // TODO: set body\n"+
+  "        xhr.send();\n"+
   "    }\n"+
+  "    catch (error) {\n"+
+  "        reportStatusChanged(error, null, null, true);\n"+
+  "        return;\n"+
+  "    }\n"+
+  "    function reportStatusChanged(error, status, chunk, finish) {\n"+
+  "        if (error || finish) {\n"+
+  "            if (error || !status) {\n"+
+  "                if (canFallback || options.fallback) {\n"+
+  "                    canFallback = false;\n"+
+  "                    options.fallback(error);\n"+
+  "                    return;\n"+
+  "                }\n"+
+  "            }\n"+
+  "        }\n"+
+  "        canFallback = false;\n"+
+  "        options.statusChanged(error, status, chunk, finish);\n"+
+  "    }\n"+
+  "    function update_callback(finish, error) {\n"+
+  "        if (lastState.finished)\n"+
+  "            return;\n"+
+  "        if (xhr.readyState === 4)\n"+
+  "            finish = true;\n"+
+  "        if (error)\n"+
+  "            finish = true;\n"+
+  "        var chunk = getChunk();\n"+
+  "        if ((xhr.readyState | 0) !== lastState.readyState) {\n"+
+  "        }\n"+
+  "        if ((chunk && chunk.length)\n"+
+  "            || (xhr.status | 0) !== lastState.status\n"+
+  "            || finish) {\n"+
+  "            lastState.status = xhr.status | 0;\n"+
+  "            lastState.readyState = xhr.readyState | 0;\n"+
+  "            lastState.finished = finish;\n"+
+  "            reportStatusChanged(error, lastState.status, chunk, finish);\n"+
+  "        }\n"+
+  "    }\n"+
+  "    function getChunk() {\n"+
+  "        var response = xhr.responseBlob || xhr.response || xhr.responseText;\n"+
+  "        if (!response || response.length <= lastState.offset)\n"+
+  "            return null;\n"+
+  "        if (typeof response === 'string') {\n"+
+  "            var chunk = new Buffer(response.slice(lastState.offset), 'utf8');\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            var chunk = new Buffer(response, lastState.offset);\n"+
+  "        }\n"+
+  "        lastState.offset = response.length;\n"+
+  "        return chunk;\n"+
+  "    }\n"+
+  "    function xhr_onreadystatechange() {\n"+
+  "        update_callback(false, null);\n"+
+  "    }\n"+
+  "    function xhr_onload() {\n"+
+  "        update_callback(true, null);\n"+
+  "    }\n"+
+  "    function xhr_onprogress() {\n"+
+  "        update_callback(false, null);\n"+
+  "    }\n"+
+  "    function xhr_onabort() {\n"+
+  "        update_callback(true, new Error('Request aborted.'));\n"+
+  "    }\n"+
+  "    function xhr_onerror(event) {\n"+
+  "        if (!event)\n"+
+  "            event = window['event'];\n"+
+  "        var error = !event ? new Error('XHR error') :\n"+
+  "            event.error && 'message' in event.error ? event.error :\n"+
+  "                event;\n"+
+  "        update_callback(true, error);\n"+
+  "    }\n"+
+  "}\n"+
+  "function corsProxy_request(options) {\n"+
+  "    xhr_request({\n"+
+  "        method: options.method,\n"+
+  "        url: 'https://crossorigin.me/' + options.url,\n"+
+  "        headers: options.headers,\n"+
+  "        body: options.body,\n"+
+  "        withCredentials: options.withCredentials,\n"+
+  "        statusChanged: options.statusChanged,\n"+
+  "        fallback: options.fallback\n"+
+  "    });\n"+
+  "}\n"+
+  "function jsonpProxy_request(options) {\n"+
+  "    options.fallback(null);\n"+
+  "}\n"+
+  "function yqlProxy_request(options) {\n"+
+  "    options.fallback(null);\n"+
   "}\n"+
   "function createModule(existingLoaded, id, filename, parent, requireForModule) {\n"+
   "    var module = {\n"+
@@ -4309,12 +4614,192 @@ var tests;
                         close_clean();
                     });
                 });
+            },
+            initApiContext_http_get_returnsNotnull: function (callback) {
+                initNoapi({}, function (host, close_clean) {
+                    host.remoteEval('var opts = { drive: connection_to_parent.drive }; connection_to_parent.initApiContext(opts);\n ' +
+                        'var http = opts.coreModules.http;\n' +
+                        'var req = http.get({host:\'google.com\', path: \'/\'}, function(req) { var body = \'\'; req.on(\'data\', function(dt) { console.log(\'>\'+dt); }); });\n' +
+                        'console.log(req)', null, '/tests/initApiContext_http_get_returnsNotnull.js', function (error, result) {
+                        try {
+                            assert(!error, error);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                });
             }
         };
     }
 })(tests || (tests = {}));
+var Buffer;
+Buffer = (function () {
+    return Buffer;
+    function Buffer(data, encoding, offset) {
+        var buf;
+        if (typeof data === 'number') {
+            buf = new Uint8Array(data);
+        }
+        else if (typeof data === 'string') {
+            if (encoding == 'base64') {
+                var len = decodeBase64(data, null, 0);
+                buf = new Uint8Array(len);
+                decodeBase64(data, buf, 0);
+            }
+            else if (encoding == 'utf8' || !encoding) {
+                var len = encodeUTF8(data, null, 0);
+                buf = new Uint8Array(len);
+                encodeUTF8(data, buf, 0);
+            }
+        }
+        else if (typeof data === 'object' && data && typeof data.length === 'number') {
+            buf = new Uint8Array(data.length);
+            for (var i = 0; i < data.length; i++) {
+                buf[i] = data[i];
+            }
+        }
+        else {
+            throw new Error('Buffer only supports initialization from length, array or string at the moment.');
+        }
+        buf.toString = toString;
+        // TODO: add Buffer methods
+        return buf;
+    }
+    function encodeUTF8(text, buf, start) {
+        var pos = start | 0;
+        for (var i = 0; i < text.length; i++) {
+            var ch = text.charCodeAt(i);
+            if (ch < 0x80) {
+                if (buf)
+                    buf[pos] = ch;
+                pos++;
+            }
+            else if (ch < 0x800) {
+                if (buf) {
+                    buf[pos] = 0xC0 | ((ch >> 6) & 0xFF);
+                    buf[pos + 1] = 0x80 | (ch & 0xFF);
+                }
+                pos += 2;
+            }
+            else {
+                // TODO: treat Unicode surrogate pair stuff
+                if (buf) {
+                    buf[pos] = 0xE0 | ((ch >> 12) & 0xFF);
+                    buf[pos + 1] = 0x80 | ((ch >> 6) & 0xFF);
+                    buf[pos + 2] = 0x80 | (ch & 0xFF);
+                }
+                pos += 3;
+            }
+        }
+        return pos;
+    }
+    function decodeUTF8(data) {
+        var result = '';
+        for (var i = 0; i < data.length; i++) {
+            var b = data[i];
+            var ch;
+            if (!(b & 0x80)) {
+                ch = b;
+            }
+            else {
+                if ((b & 0xE0) === 0xC0) {
+                    ch = (b << 6) | (data[i + 1] & 0xC0);
+                    i++;
+                }
+                else {
+                    ch = (b << 12) | ((data[i + 1] & 0xC0) << 6) | (data[i + 2] & 0xC0);
+                    i += 2;
+                }
+            }
+            result += String.fromCharCode(ch);
+        }
+        return result;
+    }
+    function b64Code(ch) {
+        if (ch >= 65 /*A*/ && ch <= 90 /*Z*/)
+            return ch - 65;
+        if (ch >= 97 /*a*/ && ch <= 122 /*z*/)
+            return ch - 97 + 26;
+        if (ch >= 48 /*0*/ && ch <= 57 /*9*/)
+            return ch - 48 + 26 + 26;
+        if (ch == 43 /*+*/ || ch == 45 /*-*/)
+            return 62;
+        if (ch == 47 /*/*/ || ch == 95 /*_*/)
+            return 63;
+        if (ch == 61 /*=*/)
+            return -1;
+        else if (ch == 32 || ch == 9 || ch == 13 || ch == 10 || /\s/.test(String.fromCharCode(ch)))
+            return -2; // whitespace
+        else
+            return -3; // invalid
+    }
+    function decodeBase64(b64, buf, start) {
+        var phase = 0;
+        var accum = 0;
+        var pos = start | 0;
+        for (var i = 0; i < b64.length; i++) {
+            var ch = b64.charCodeAt(i);
+            var co = b64Code(ch);
+            if (phase >= 0) {
+                if (co >= 0) {
+                    phase = (phase + 1) % 4;
+                    accum = (accum << 6) | co;
+                    if (!phase) {
+                        if (buf) {
+                            buf[pos] = (accum >> 16) & 0xFF;
+                            buf[pos + 1] = (accum >> 8) & 0xFF;
+                            buf[pos + 2] = accum & 0xFF;
+                        }
+                        pos += 3;
+                        accum = 0;
+                    }
+                }
+                else if (co == -1)
+                    phase = -1; // TODO: enforce block size before setting
+                else if (co == -3)
+                    throw new Error('The string to be decoded is not correctly encoded.');
+            }
+            else if (phase == -1) {
+                if (co == -1)
+                    phase = -2;
+                else if (co != -2)
+                    throw new Error('The string to be decoded is not correctly encoded.');
+            }
+            else if (phase == -2) {
+                if (co != -2)
+                    throw new Error('The string to be decoded is not correctly encoded.');
+            }
+        }
+        if (phase == -1) {
+            if (buf) {
+                buf[pos] = (accum >> 10) & 0xFF;
+                buf[pos + 1] = (accum >> 2) & 0xFF;
+            }
+            pos += 2;
+        }
+        else if (phase == -2) {
+            if (buf) {
+                buf[pos] = (accum >> 4) & 0xFF;
+            }
+            pos++;
+        }
+        else if (phase)
+            throw new Error('The string to be decoded is not correctly encoded.');
+        return pos;
+    }
+    function toString(encoding) {
+        if (!encoding || encoding === 'utf8') {
+            return decodeUTF8(this);
+        }
+        throw new Error('Parameters are too weird.');
+    }
+})();
 /// <reference path="../../persistence/src/API.d.ts"/>
 /// <reference path="../host/API.d.ts"/>
+/// <reference path="../noapi/Buffer.ts"/>
 
 
     // running tests from HTML page

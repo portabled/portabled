@@ -217,9 +217,8 @@ namespace panels {
               this._getPanel(!isLeftActive).set({currentPath: parentDir, cursorPath: file});
             }
           }
+        	this._toggleActivePanel();
         }
-
-        this._toggleActivePanel();
 
       });
     }

@@ -24,10 +24,11 @@ function openBrowser(options: openBrowser.Options) {
         result += content[i];
       }
       else {
-        var inject = options.drive.read((content[i] as htmlSpotExternals.Redirect).src);
+        var src = (content[i] as htmlSpotExternals.Redirect).src;
+        var inject = options.drive.read(src);
         if (typeof inject==='string') {
           if ((content[i] as htmlSpotExternals.Redirect).type==='script' || (content[i] as htmlSpotExternals.Redirect).type==='style') {
-            inject += '\n//# sourceURL='+options.path;
+            inject += '\n//# sourceURL='+src.replace(/\r|\n|<\//g, '');
           }
 
           result +=
