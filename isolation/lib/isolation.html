@@ -5,8 +5,8 @@
 function isolation() {
 
 	isolation.build = {
-    timestamp: 1477988698388, // Tue Nov 01 2016 08:24:58 GMT+0000 (GMT Standard Time)
-    taken: 25760,
+    timestamp: 1478074341311, // Wed Nov 02 2016 08:12:21 GMT+0000 (GMT Standard Time)
+    taken: 26482,
     platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36"
 };
 
@@ -1615,9 +1615,16 @@ function isolation() {
   "            }\n"+
   "        }\n"+
   "        else if (typeof data === 'object' && data && typeof data.length === 'number') {\n"+
-  "            buf = new Uint8Array(data.length);\n"+
-  "            for (var i = 0; i < data.length; i++) {\n"+
-  "                buf[i] = data[i];\n"+
+  "            buf = new Uint8Array(data.length - (offset | 0));\n"+
+  "            for (var i = offset | 0; i < data.length; i++) {\n"+
+  "                buf[i - (offset | 0)] = data[i];\n"+
+  "            }\n"+
+  "        }\n"+
+  "        else if (typeof data === 'object' && data && typeof data.byteLength === 'number') {\n"+
+  "            var dataAccess = new Uint8Array(data);\n"+
+  "            buf = new Uint8Array(data.byteLength - (offset | 0));\n"+
+  "            for (var i = offset | 0; i < data.byteLength; i++) {\n"+
+  "                buf[i - (offset | 0)] = dataAccess[i];\n"+
   "            }\n"+
   "        }\n"+
   "        else {\n"+
@@ -2996,7 +3003,10 @@ function isolation() {
   "        }\n"+
   "    }\n"+
   "    function getChunk() {\n"+
-  "        var response = xhr.responseBlob || xhr.response || xhr.responseText;\n"+
+  "        try {\n"+
+  "            var response = xhr.responseBlob || xhr.response || (xhr.responseType !== 'arraybuffer' && xhr.responseText);\n"+
+  "        }\n"+
+  "        catch (err) { }\n"+
   "        if (!response || response.length <= lastState.offset)\n"+
   "            return null;\n"+
   "        if (typeof response === 'string') {\n"+
@@ -3780,6 +3790,96 @@ module.exports = isolation;
     document.body.style.color = 'white';
 
     isolation();
+var tests;
+(function (tests) {
+    var buffer;
+    (function (buffer) {
+        buffer.fromNumber = {
+            'with_0': function () {
+                var buf = new Buffer(0);
+                assert.equal(0, buf.length);
+            },
+            'with_1': function () {
+                var buf = new Buffer(1);
+                assert.equal(1, buf.length);
+                assert.equal(0, buf[0]);
+            },
+            'with_2': function () {
+                var buf = new Buffer(2);
+                assert.equal(2, buf.length);
+                assert.equal(0, buf[0]);
+                assert.equal(0, buf[1]);
+            },
+            'with_22': function () {
+                var buf = new Buffer(22);
+                assert.equal(22, buf.length);
+                for (var i = 0; i < 22; i++) {
+                    assert.equal(0, buf[i], 'buf[' + i + ']');
+                }
+            }
+        };
+        buffer.fromUtf8 = {
+            empty: function () {
+                var buf = new Buffer('', 'utf8');
+                assert.equal(0, buf.length);
+            },
+            with_a: function () {
+                var buf = new Buffer('a', 'utf8');
+                assert.equal(1, buf.length);
+                assert.equal(('a').charCodeAt(0), buf[0]);
+            },
+            with_A: function () {
+                var buf = new Buffer('A', 'utf8');
+                assert.equal(1, buf.length);
+                assert.equal(('A').charCodeAt(0), buf[0]);
+            },
+            with_cr: function () {
+                var buf = new Buffer('\r', 'utf8');
+                assert.equal(1, buf.length);
+                assert.equal(('\r').charCodeAt(0), buf[0]);
+            },
+            with_lf: function () {
+                var buf = new Buffer('\n', 'utf8');
+                assert.equal(1, buf.length);
+                assert.equal(('\n').charCodeAt(0), buf[0]);
+            },
+            with_crlf: function () {
+                var buf = new Buffer('\r\n', 'utf8');
+                assert.equal(2, buf.length);
+                assert.equal(('\r\n').charCodeAt(0), buf[0]);
+            },
+            with_zero: function () {
+                var buf = new Buffer(String.fromCharCode(0), 'utf8');
+                assert.equal(1, buf.length);
+                assert.equal(0, buf[0]);
+            },
+            with_MultilineText: function () {
+                var multilineText = 'Let us go, you and I,\nWhen the evening is spread out against the sky\nLike a patient etherized upon a table.';
+                var buf = new Buffer(multilineText, 'utf8');
+                assert.equal(multilineText.length, buf.length);
+                for (var i = 0; i < buf.length; i++) {
+                    assert.equal(multilineText.charCodeAt(i), buf[i], 'buf[' + i + ']');
+                }
+            }
+        };
+        function utf8ToStringRoundtripTest(text) {
+            return function () {
+                var buf = new Buffer(text, 'utf8');
+                assert.equal(text, buf.toString());
+            };
+        }
+        buffer.toString_roundtrip = {
+            with_empty: utf8ToStringRoundtripTest(''),
+            with_a: utf8ToStringRoundtripTest('a'),
+            with_A: utf8ToStringRoundtripTest('A'),
+            with_cr: utf8ToStringRoundtripTest('\r'),
+            with_lf: utf8ToStringRoundtripTest('\n'),
+            with_crlf: utf8ToStringRoundtripTest('\r\n'),
+            with_zero: utf8ToStringRoundtripTest(String.fromCharCode(0)),
+            with_MultilineText: utf8ToStringRoundtripTest('Let us go, you and I,\nWhen the evening is spread out against the sky\nLike a patient etherized upon a table.')
+        };
+    })(buffer = tests.buffer || (tests.buffer = {}));
+})(tests || (tests = {}));
 var tests;
 (function (tests) {
     tests.buildMetadata = {
@@ -4656,9 +4756,16 @@ Buffer = (function () {
             }
         }
         else if (typeof data === 'object' && data && typeof data.length === 'number') {
-            buf = new Uint8Array(data.length);
-            for (var i = 0; i < data.length; i++) {
-                buf[i] = data[i];
+            buf = new Uint8Array(data.length - (offset | 0));
+            for (var i = offset | 0; i < data.length; i++) {
+                buf[i - (offset | 0)] = data[i];
+            }
+        }
+        else if (typeof data === 'object' && data && typeof data.byteLength === 'number') {
+            var dataAccess = new Uint8Array(data);
+            buf = new Uint8Array(data.byteLength - (offset | 0));
+            for (var i = offset | 0; i < data.byteLength; i++) {
+                buf[i - (offset | 0)] = dataAccess[i];
             }
         }
         else {

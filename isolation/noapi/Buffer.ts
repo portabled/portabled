@@ -3,7 +3,7 @@ Buffer = (function() {
 
   return Buffer as any;
 
-  function Buffer(data: string[] | number[] | Uint8Array | Buffer, encoding?: string, offset?: number) {
+  function Buffer(data: any, encoding?: string, offset?: number) {
     var buf: Uint8Array;
     if (typeof data==='number') {
       buf = new Uint8Array(data as number);
@@ -21,9 +21,16 @@ Buffer = (function() {
       }
     }
     else if (typeof data==='object'&& data && typeof data.length==='number') {
-      buf =new Uint8Array(data.length);
-      for (var i = 0; i < data.length; i++) {
-        buf[i] = data[i] as number;
+      buf =new Uint8Array(data.length - (offset|0));
+      for (var i = offset|0; i < data.length; i++) {
+        buf[i - (offset|0)] = data[i] as number;
+      }
+    }
+    else if (typeof data==='object'&& data && typeof data.byteLength==='number') {
+      var dataAccess = new Uint8Array(data);
+      buf =new Uint8Array(data.byteLength - (offset|0));
+      for (var i = offset|0; i < data.byteLength; i++) {
+        buf[i - (offset|0)] = dataAccess[i] as number;
       }
     }
     else {

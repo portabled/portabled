@@ -1,30 +1,29 @@
 namespace tests.buffer {
 
   export var fromNumber = {
-      'with_0': function() {
-        var buf=new Buffer(0);
-        assert.equal(0, buf.length);
-      },
-      'with_1': function() {
-        var buf=new Buffer(1);
-        assert.equal(1, buf.length);
-        assert.equal(0, buf[0]);
-      },
-      'with_2': function() {
-        var buf=new Buffer(2);
-        assert.equal(2, buf.length);
-        assert.equal(0, buf[0]);
-        assert.equal(0, buf[1]);
-      },
-      'with_22': function() {
-        var buf=new Buffer(22);
-        assert.equal(22, buf.length);
-        for (var i = 0; i < 22; i++) {
-        	assert.equal(0, buf[i], 'buf['+i+']');
-        }
+    'with_0': function() {
+      var buf=new Buffer(0);
+      assert.equal(0, buf.length);
+    },
+    'with_1': function() {
+      var buf=new Buffer(1);
+      assert.equal(1, buf.length);
+      assert.equal(0, buf[0]);
+    },
+    'with_2': function() {
+      var buf=new Buffer(2);
+      assert.equal(2, buf.length);
+      assert.equal(0, buf[0]);
+      assert.equal(0, buf[1]);
+    },
+    'with_22': function() {
+      var buf=new Buffer(22);
+      assert.equal(22, buf.length);
+      for (var i = 0; i < 22; i++) {
+        assert.equal(0, buf[i], 'buf['+i+']');
       }
-
     }
+
   };
 
 	export var fromUtf8 = {
@@ -37,7 +36,7 @@ namespace tests.buffer {
       assert.equal(1, buf.length);
       assert.equal(('a').charCodeAt(0), buf[0]);
     },
-    with_a: function() {
+    with_A: function() {
       var buf=new Buffer('A', 'utf8');
       assert.equal(1, buf.length);
       assert.equal(('A').charCodeAt(0), buf[0]);
@@ -51,6 +50,11 @@ namespace tests.buffer {
       var buf=new Buffer('\n', 'utf8');
       assert.equal(1, buf.length);
       assert.equal(('\n').charCodeAt(0), buf[0]);
+    },
+    with_crlf: function() {
+      var buf=new Buffer('\r\n', 'utf8');
+      assert.equal(2, buf.length);
+      assert.equal(('\r\n').charCodeAt(0), buf[0]);
     },
     with_zero: function() {
       var buf=new Buffer(String.fromCharCode(0), 'utf8');
@@ -67,4 +71,21 @@ namespace tests.buffer {
     }
   };
 
+	function utf8ToStringRoundtripTest(text) {
+    return function() {
+      var buf = new Buffer(text, 'utf8');
+      assert.equal(text, buf.toString());
+    };
+  }
+
+  export var toString_roundtrip = {
+    with_empty: utf8ToStringRoundtripTest(''),
+    with_a: utf8ToStringRoundtripTest('a'),
+    with_A: utf8ToStringRoundtripTest('A'),
+    with_cr: utf8ToStringRoundtripTest('\r'),
+    with_lf: utf8ToStringRoundtripTest('\n'),
+    with_crlf: utf8ToStringRoundtripTest('\r\n'),
+    with_zero: utf8ToStringRoundtripTest(String.fromCharCode(0)),
+    with_MultilineText: utf8ToStringRoundtripTest('Let us go, you and I,\nWhen the evening is spread out against the sky\nLike a patient etherized upon a table.')
+  };
 }

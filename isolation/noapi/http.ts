@@ -373,7 +373,11 @@ function xhr_request(options: xhr_request.Options) {
   }
 
   function getChunk() {
-    var response = xhr.responseBlob || xhr.response || xhr.responseText;
+    try {
+    	var response = xhr.responseBlob || xhr.response || (xhr.responseType!=='arraybuffer' && xhr.responseText);
+    }
+    catch (err) {}
+
     if (!response || response.length<=lastState.offset) return null;
 
     if (typeof response==='string') {
