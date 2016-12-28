@@ -1,3 +1,5 @@
+// prototype work, not used anywhere
+
 console.log('jsStringLong...');
 jsStringLong(jsStringLong+'');
 console.log('\ncodemirror.js...');

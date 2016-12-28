@@ -34,8 +34,11 @@ namespace editor {
       this._host.appendChild(this._cmhost);
       this._cm = createCodeMirrorEditor(this._cmhost);
 
-      if (typeof text === 'string')
+      if (typeof text === 'string') {
         this._cm.getDoc().setValue(text);
+        this._cm.getDoc().clearHistory();
+      }
+
       this._lastText = this._cm.getDoc().getValue();
 
       this._title = <any>elem('div', {

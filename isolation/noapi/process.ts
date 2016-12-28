@@ -40,7 +40,7 @@ function createProcess(
     version: load_versions().node,
 
     argv: options.argv,
-    env: options.env,
+    env: options.env || {},
 
     addListener: (e,c) => evt.addListener(e,c),
     on: (e, c) => evt.on(e,c),
@@ -126,7 +126,10 @@ function createProcess(
   function load_stdout() {
     return <WritableStream>{
       write(msg) {
-        options.console.log(msg);
+        if (options.console)
+        	options.console.log(msg);
+        else
+          console.log(msg);
       }
     };
   }

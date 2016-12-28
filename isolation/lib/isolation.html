@@ -5,9 +5,9 @@
 function isolation() {
 
 	isolation.build = {
-    timestamp: 1478074341311, // Wed Nov 02 2016 08:12:21 GMT+0000 (GMT Standard Time)
-    taken: 26482,
-    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36"
+    timestamp: 1482915667490, // Wed Dec 28 2016 09:01:07 GMT+0000 (GMT Standard Time)
+    taken: 24107,
+    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36"
 };
 
 (function (module) {
@@ -453,8 +453,9 @@ function isolation() {
                 var keepAliveReqResDispatcher = createRequestResponseDispatcher();
                 callback(api_host);
                 function api_remote_runGlobal(script, path, callback) {
+                    var strippedScript = stripHashBang(script);
                     var key = reqResDispatcher.pushCallback(callback);
-                    api_host.pushMessage({ noapi_runGlobal: { script: script, path: path, key: key } });
+                    api_host.pushMessage({ noapi_runGlobal: { script: strippedScript, path: path, key: key } });
                 }
                 function api_remote_onmessage(msg) {
                     if (msg.noapi_ondispose) {
@@ -523,6 +524,21 @@ function isolation() {
                 }
             });
         });
+    }
+    function stripHashBang(text) {
+        if (text.charAt(0) === '#') {
+            // ignore leads
+            var posLineEnd = text.indexOf('\n');
+            if (posLineEnd > 0 && posLineEnd < 300) {
+                var firstLine = text.slice(0, posLineEnd);
+                if (posLineEnd === 1)
+                    firstLine = ' ';
+                else
+                    firstLine = '//' + firstLine.slice(0, firstLine.length - 2);
+                text = firstLine + text.slice(posLineEnd);
+            }
+        }
+        return text;
     }
     function getWorkerAgentScript(doNOTrun) {
         var worker_body = "function RUN_ASYNC_CHANNEL(driveSnapshot) {\n"+
@@ -1788,6 +1804,7 @@ function isolation() {
   "            path: null,\n"+
   "            events: null,\n"+
   "            http: null,\n"+
+  "            https: null,\n"+
   "            child_process: null\n"+
   "        };\n"+
   "    if (!options.scriptPath)\n"+
@@ -1802,6 +1819,7 @@ function isolation() {
   "    };\n"+
   "    options.global.process = options.process = createProcess(options.coreModules, options, processExtra);\n"+
   "    options.global.module = options.mainModule = createModule({}, 'repl' /*id*/, null /*filename*/, null /*parent*/, require);\n"+
+  "    options.global.Buffer = Buffer;\n"+
   "    options.requireModule = requireModule;\n"+
   "    function require(moduleName) {\n"+
   "        if (options.finished)\n"+
@@ -1821,6 +1839,7 @@ function isolation() {
   "    options.coreModules.os = createOS(options.global);\n"+
   "    options.coreModules.path = createPath(options.process);\n"+
   "    options.coreModules.http = createHTTP();\n"+
+  "    options.coreModules.https = createHTTP(true /*https*/);\n"+
   "    options.coreModules.events = createEvents();\n"+
   "    options.coreModules.child_process = createChildProcess(_connection_to_parent, {\n"+
   "        fs: options.coreModules.fs,\n"+
@@ -2719,19 +2738,20 @@ function isolation() {
   "        };\n"+
   "    }\n"+
   "})();\n"+
-  "function createHTTP() {\n"+
+  "function createHTTP(https) {\n"+
   "    var ClientRequest = (function (_super) {\n"+
   "        __extends(ClientRequest, _super);\n"+
   "        function ClientRequest(options, callback) {\n"+
   "            _super.call(this);\n"+
   "            this._finished = false;\n"+
+  "            this._data = null;\n"+
   "            if (typeof options === 'string') {\n"+
   "                this._url = options;\n"+
   "                this._options = {};\n"+
   "            }\n"+
   "            else {\n"+
   "                this._url =\n"+
-  "                    (options.protocol || 'http') + '://' +\n"+
+  "                    (options.protocol || https ? 'https' : 'http') + '://' +\n"+
   "                        (options.host || options.hostname || 'localhost') +\n"+
   "                        (options.port ? ':' + options.port : '') +\n"+
   "                        (options.path || '/');\n"+
@@ -2740,8 +2760,35 @@ function isolation() {
   "            this._method = options.method || 'GET';\n"+
   "            this._callback = callback || options.callback;\n"+
   "        }\n"+
-  "        ClientRequest.prototype.end = function () {\n"+
+  "        ClientRequest.prototype.write = function (data) {\n"+
+  "            if (data == null || typeof data === 'undefined')\n"+
+  "                return;\n"+
+  "            if (typeof data === 'string') {\n"+
+  "                if (this._data === null) {\n"+
+  "                    this._data = data;\n"+
+  "                }\n"+
+  "                else if (typeof this._data === 'string') {\n"+
+  "                    this._data += data;\n"+
+  "                }\n"+
+  "                else {\n"+
+  "                    this._data = Buffer.concat(this._data, new Buffer(data));\n"+
+  "                }\n"+
+  "            }\n"+
+  "            else {\n"+
+  "                if (this._data === null) {\n"+
+  "                    this._data = data;\n"+
+  "                }\n"+
+  "                else if (typeof this._data === 'string') {\n"+
+  "                    this._data = Buffer.concat(new Buffer(this._data), data);\n"+
+  "                }\n"+
+  "                else {\n"+
+  "                    this._data = Buffer.concat(this._data, data);\n"+
+  "                }\n"+
+  "            }\n"+
+  "        };\n"+
+  "        ClientRequest.prototype.end = function (data) {\n"+
   "            var _this = this;\n"+
+  "            this.write(data);\n"+
   "            var res;\n"+
   "            var req_callback = function (error, status, chunk, finish) {\n"+
   "                if (!res)\n"+
@@ -2752,6 +2799,7 @@ function isolation() {
   "                url: this._url,\n"+
   "                method: this._method,\n"+
   "                statusChanged: req_callback,\n"+
+  "                body: this._data,\n"+
   "                fallback: function (xhrError) {\n"+
   "                    corsProxy_request({\n"+
   "                        url: _this._url,\n"+
@@ -2964,7 +3012,7 @@ function isolation() {
   "        var finished;\n"+
   "        var reportedReadyState;\n"+
   "        // TODO: set body\n"+
-  "        xhr.send();\n"+
+  "        xhr.send(options.body);\n"+
   "    }\n"+
   "    catch (error) {\n"+
   "        reportStatusChanged(error, null, null, true);\n"+
@@ -3254,11 +3302,13 @@ function isolation() {
   "/// <reference path=\"../../isolation/noapi/module_def.d.ts\"/>\n"+
   "/// <reference path=\"../../isolation/noapi/process_def.d.ts\"/>\n"+
   "/// <reference path=\"../../isolation/noapi/asyncUtils.ts\"/>\n"+
+  "/// <reference path=\"../../isolation/noapi/Buffer.ts\"/>\n"+
   "/// <reference path=\"../../isolation/noapi/path.ts\"/>\n"+
   "/// <reference path=\"../../isolation/noapi/path_def.d.ts\"/>\n"+
   "/// <reference path=\"../../isolation/noapi/fs.ts\"/>\n"+
   "/// <reference path=\"../../isolation/noapi/fs_def.d.ts\"/>\n"+
   "/// <reference path=\"../../isolation/noapi/fs-cache.ts\"/>\n"+
+  "/// <reference path=\"../../isolation/noapi/http.ts\"/>\n"+
   "function createProcess(modules, options, extra) {\n"+
   "    var evt = new EventEmitter();\n"+
   "    return {\n"+
@@ -3280,7 +3330,7 @@ function isolation() {
   "        versions: load_versions(),\n"+
   "        version: load_versions().node,\n"+
   "        argv: options.argv,\n"+
-  "        env: options.env,\n"+
+  "        env: options.env || {},\n"+
   "        addListener: function (e, c) { return evt.addListener(e, c); },\n"+
   "        on: function (e, c) { return evt.on(e, c); },\n"+
   "        once: function (e, c) { return evt.once(e, c); },\n"+
@@ -3345,7 +3395,10 @@ function isolation() {
   "    function load_stdout() {\n"+
   "        return {\n"+
   "            write: function (msg) {\n"+
-  "                options.console.log(msg);\n"+
+  "                if (options.console)\n"+
+  "                    options.console.log(msg);\n"+
+  "                else\n"+
+  "                    console.log(msg);\n"+
   "            }\n"+
   "        };\n"+
   "    }\n"+
@@ -3878,6 +3931,78 @@ var tests;
             with_zero: utf8ToStringRoundtripTest(String.fromCharCode(0)),
             with_MultilineText: utf8ToStringRoundtripTest('Let us go, you and I,\nWhen the evening is spread out against the sky\nLike a patient etherized upon a table.')
         };
+        function driveAs(snapshot) {
+            if (!snapshot.timestamp)
+                snapshot.timestamp = 1465249756308;
+            snapshot.files = function () {
+                var result = [];
+                for (var k in snapshot)
+                    if (k && k.charCodeAt(0) === 47)
+                        result.push(k);
+                return result;
+            };
+            snapshot.read = function (f) {
+                var dt = snapshot[f];
+                if (dt || typeof dt === 'string')
+                    return dt;
+                else
+                    return null;
+            };
+            snapshot.write = function (f, txt) {
+                if (txt || typeof txt === 'string')
+                    snapshot[f] = txt;
+                else
+                    delete snapshot[f];
+            };
+            return snapshot;
+        }
+        buffer['hosted'] = createTestsWith_createIsolateHost(isolation.createIsolateHost);
+        buffer['hosted_iframe'] = createTestsWith_createIsolateHost(isolation.createIsolateHost.iframe);
+        buffer['hosted_worker'] = createTestsWith_createIsolateHost(isolation.createIsolateHost.worker);
+        function createTestsWith_createIsolateHost(createIsolateHost) {
+            function initNoapi(drive, callback) {
+                isolation.createApiHost(driveAs(drive), {}, function (host) {
+                    callback(host, close_clean);
+                    function close_clean() {
+                        try {
+                            if (host)
+                                host.terminate();
+                        }
+                        catch (error) { }
+                    }
+                });
+            }
+            return {
+                newBuffer_succeeds: function (callback) {
+                    initNoapi({}, function (host, close_clean) {
+                        host.runGlobal('new Buffer(100)', 'script.js', function (error, result) {
+                            try {
+                                assert(!error, error);
+                                callback();
+                            }
+                            catch (err) {
+                                callback(err);
+                            }
+                            close_clean();
+                        });
+                    });
+                },
+                bufferA: function (callback) {
+                    initNoapi({}, function (host, close_clean) {
+                        host.runGlobal("var buf=new Buffer('A', 'utf8');\n              if (buf.length!==1) throw new Error('buffer length!=1');\n              if (buf[0] !== ('A').charCodeAt(0)) throw new Error('buf[0]!=#A');", 'script.js', function (error, result) {
+                            try {
+                                assert(!error, error);
+                                callback();
+                            }
+                            catch (err) {
+                                callback(err);
+                            }
+                            close_clean();
+                        });
+                    });
+                }
+            };
+        }
     })(buffer = tests.buffer || (tests.buffer = {}));
 })(tests || (tests = {}));
 var tests;
@@ -4619,10 +4744,41 @@ var tests;
                     });
                 });
             },
-            initApiContext_runGlobal: function (callback) {
+            initApiContext_remoteEval: function (callback) {
                 initNoapi({}, function (host, close_clean) {
                     host.remoteEval('var opts = { drive: connection_to_parent.drive }; connection_to_parent.initApiContext(opts);\n ' +
                         'return opts.runGlobal("2+4594");', null, '/tests/initApiContext_runGlobal.js', function (error, result) {
+                        try {
+                            assert(!error, error);
+                            assert.equal(4596, result);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                });
+            },
+            initApiContext_runGlobal: function (callback) {
+                initNoapi({}, function (host, close_clean) {
+                    host.runGlobal('2+4594', '/tests/initApiContext_runGlobal.js', function (error, result) {
+                        try {
+                            assert(!error, error);
+                            assert.equal(4596, result);
+                            callback();
+                        }
+                        catch (err) {
+                            callback(err);
+                        }
+                        close_clean();
+                    });
+                });
+            },
+            initApiContext_runGlobal_hashbang: function (callback) {
+                initNoapi({}, function (host, close_clean) {
+                    host.runGlobal('#!/blablabla\n' +
+                        '2+4594', '/tests/initApiContext_runGlobal_hashbang.js', function (error, result) {
                         try {
                             assert(!error, error);
                             assert.equal(4596, result);

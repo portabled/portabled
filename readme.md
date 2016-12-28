@@ -2,6 +2,7 @@ New mini portable shell development
 =========================
 
 
+
 ## Boot process
 
 The boot process begins with first bytes of the page received, during the loading of the content,

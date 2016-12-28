@@ -521,8 +521,11 @@ declare var msRequestFileSystem;
         callback(api_host);
 
         function api_remote_runGlobal(script: string, path: string, callback: (error: Error, result: any) => void) {
+
+          var strippedScript = stripHashBang(script);
+
           var key = reqResDispatcher.pushCallback(callback);
-          api_host.pushMessage({noapi_runGlobal: { script: script, path: path, key: key }});
+          api_host.pushMessage({noapi_runGlobal: { script: strippedScript, path: path, key: key }});
         }
 
         function api_remote_onmessage(msg: any) {
@@ -600,6 +603,22 @@ declare var msRequestFileSystem;
       });
     });
 	}
+
+  function stripHashBang(text: string): string {
+    if (text.charAt(0)==='#') {
+      // ignore leads
+      var posLineEnd = text.indexOf('\n');
+      if (posLineEnd>0 && posLineEnd<300) {
+        var firstLine = text.slice(0, posLineEnd);
+        if (posLineEnd===1)
+          firstLine = ' ';
+        else
+          firstLine = '//'+firstLine.slice(0, firstLine.length-2);
+        text = firstLine + text.slice(posLineEnd);
+      }
+    }
+    return text;
+  }
 
   function getWorkerAgentScript(doNOTrun: boolean) {
     var worker_body = "#workeragent#";

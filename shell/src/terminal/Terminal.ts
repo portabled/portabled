@@ -22,6 +22,8 @@ namespace terminal {
     private _rearrangeDelay = 0;
     private _rearrangeClosure = null;
 
+  	private _hidePrompt = false;
+
     onexecute: (code: string) => any = null;
   	onkeydown: (e: KeyboardEvent) => any = null;
   	onenterdetected: () => any = null;
@@ -249,9 +251,15 @@ namespace terminal {
       this._input.focus();
     }
 
-    temporarilyHidePrompt(replacementText: string): () => void {
-      // TODO: hide prompt, display replacement text instead
-      return () => { };
+    temporarilyHidePrompt(): () => void {
+      this._hidePrompt = true;
+      this.arrange(this._hostMetrics);
+      this._queueRearrange();
+      return () => {
+        this._hidePrompt = false;
+        this.arrange(this._hostMetrics);
+        this._queueRearrange();
+      };
     }
 
     measure() {
@@ -273,8 +281,17 @@ namespace terminal {
         this._history.style.height = (metrics.hostHeight - metrics.emHeight * 2.4) + 'px';
         this._history.scrollTop = this._historyContentHeight - (metrics.hostHeight - metrics.emHeight * 2.4);
       }
-      this._input.style.left = this._promptWidth + 'px';
-      this._input.style.width = (metrics.hostWidth - this._promptWidth) + 'px';
+
+      if (this._hidePrompt) {
+        this._prompt.style.display = 'none';
+        this._input.style.left = '0';
+        this._input.style.width = metrics.hostWidth + 'px';
+      }
+      else {
+        this._prompt.style.display = '';
+        this._input.style.left = this._promptWidth + 'px';
+        this._input.style.width = (metrics.hostWidth - this._promptWidth) + 'px';
+      }
     }
 
     storeAsHistory(command: string) {

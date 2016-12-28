@@ -59,7 +59,13 @@ catch (createError) {
 
 dump('http.get...');
 
-var req = http.get({host:'google.com', path: '/'});
+var req = http.request({
+  host:'api.github.com',
+  method: 'PUT',
+  path: '/repos/portabled/portabled/contents/test-1.js'
+});
+
+req.end('OK OK');
 
 var body = '';
 

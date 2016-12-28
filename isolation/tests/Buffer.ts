@@ -88,4 +88,83 @@ namespace tests.buffer {
     with_zero: utf8ToStringRoundtripTest(String.fromCharCode(0)),
     with_MultilineText: utf8ToStringRoundtripTest('Let us go, you and I,\nWhen the evening is spread out against the sky\nLike a patient etherized upon a table.')
   };
+
+
+  function driveAs(snapshot) {
+    if (!snapshot.timestamp) snapshot.timestamp = 1465249756308;
+    snapshot.files = function() {
+      var result = [];
+      for (var k in snapshot) if (k && k.charCodeAt(0)===47) result.push(k);
+      return result;
+    };
+    snapshot.read = function(f) {
+      var dt = snapshot[f];
+      if (dt || typeof dt==='string') return dt;
+      else return null;
+    };
+    snapshot.write = function(f, txt) {
+      if (txt || typeof txt==='string') snapshot[f] = txt;
+      else delete snapshot[f];
+    };
+    return snapshot;
+  }
+
+  buffer['hosted'] = createTestsWith_createIsolateHost(isolation.createIsolateHost);
+
+  buffer['hosted_iframe'] = createTestsWith_createIsolateHost(isolation.createIsolateHost.iframe);
+
+  buffer['hosted_worker'] = createTestsWith_createIsolateHost(isolation.createIsolateHost.worker);
+
+  function createTestsWith_createIsolateHost(createIsolateHost: any) {
+
+    function initNoapi(drive, callback: (host, close_clean) => void) {
+      isolation.createApiHost(driveAs(drive), {}, host=> {
+        callback(host, close_clean);
+
+        function close_clean() {
+          try { if (host) host.terminate(); }
+          catch (error) { }
+        }
+      });
+    }
+
+    return {
+
+      newBuffer_succeeds: (callback) => {
+        initNoapi({}, (host, close_clean) => {
+          host.runGlobal('new Buffer(100)', 'script.js', (error, result) => {
+            try {
+              assert(!error, error);
+              callback();
+            }
+            catch (err) {
+              callback(err);
+            }
+            close_clean();
+          });
+        });
+      },
+
+      bufferA: (callback) => {
+        initNoapi({}, (host, close_clean) => {
+          host.runGlobal(
+            `var buf=new Buffer('A', 'utf8');
+              if (buf.length!==1) throw new Error('buffer length!=1');
+              if (buf[0] !== ('A').charCodeAt(0)) throw new Error('buf[0]!=#A');`,
+						'script.js',
+            (error, result) => {
+            try {
+              assert(!error, error);
+              callback();
+            }
+            catch (err) {
+              callback(err);
+            }
+            close_clean();
+          });
+        });
+      }
+    };
+  }
+
 }

@@ -3,6 +3,7 @@ namespace actions {
   export interface ActionContext {
     drive: persistence.Drive;
     fs: FS;
+    http: any;
     path: Path;
     cursorPath: string;
     currentPanelPath: string;

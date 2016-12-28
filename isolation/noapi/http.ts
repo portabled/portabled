@@ -27,7 +27,7 @@ var createXHR = (function() {
 
 })();
 
-function createHTTP(): any {
+function createHTTP(https?: boolean): any {
 
 
   class ClientRequest extends EventEmitter {
@@ -37,6 +37,8 @@ function createHTTP(): any {
     private _method: string;
     private _callback: any;
     private _finished: boolean = false;
+
+  	private _data = null;
 
     headers: {};
 
@@ -49,7 +51,7 @@ function createHTTP(): any {
       }
       else {
         this._url =
-          (options.protocol || 'http')+'://'+
+          (options.protocol || https ? 'https' : 'http')+'://'+
           (options.host || options.hostname || 'localhost') +
           (options.port ? ':'+options.port : '')+
           (options.path || '/');
@@ -59,7 +61,37 @@ function createHTTP(): any {
       this._callback = callback || options.callback;
     }
 
-    end() {
+  	write(data) {
+      if (data==null || typeof data==='undefined') return;
+
+      if (typeof data==='string') {
+        if (this._data===null) {
+          this._data = data;
+        }
+        else if (typeof this._data==='string') {
+          this._data+=data;
+        }
+        else {
+          this._data = Buffer.concat(this._data, new Buffer(data));
+        }
+      }
+      else {
+        if (this._data===null) {
+          this._data = data;
+        }
+        else if (typeof this._data==='string') {
+          this._data = Buffer.concat(new Buffer(this._data), data);
+        }
+        else {
+          this._data = Buffer.concat(this._data, data);
+        }
+      }
+    }
+
+    end(data?) {
+
+      this.write(data);
+
       var res:IncomingMessage;
       var req_callback = (error, status: number, chunk:any[], finish: boolean) => {
 
@@ -67,10 +99,12 @@ function createHTTP(): any {
         res._handleStatus(error, status, chunk, finish);
       };
 
+
       xhr_request({
           url: this._url,
           method: this._method,
           statusChanged: req_callback,
+        	body: this._data,
           fallback: xhrError => {
 
             corsProxy_request({
@@ -322,7 +356,7 @@ function xhr_request(options: xhr_request.Options) {
     var reportedReadyState;
 
     // TODO: set body
-    xhr.send();
+    xhr.send(options.body);
   }
   catch (error) {
     reportStatusChanged(error, null, null, true);

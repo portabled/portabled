@@ -78,13 +78,52 @@ namespace tests {
         });
       },
 
-      initApiContext_runGlobal: (callback) => {
+      initApiContext_remoteEval: (callback) => {
         initNoapi({}, (host, close_clean) => {
           host.remoteEval(
             'var opts = { drive: connection_to_parent.drive }; connection_to_parent.initApiContext(opts);\n '+
             'return opts.runGlobal("2+4594");',
             null,
             '/tests/initApiContext_runGlobal.js',
+            (error, result) => {
+            try {
+              assert(!error, error);
+              assert.equal(4596, result);
+              callback();
+            }
+            catch (err) {
+              callback(err);
+            }
+            close_clean();
+          });
+        });
+      },
+
+      initApiContext_runGlobal: (callback) => {
+        initNoapi({}, (host, close_clean) => {
+          host.runGlobal(
+            '2+4594',
+            '/tests/initApiContext_runGlobal.js',
+            (error, result) => {
+            try {
+              assert(!error, error);
+              assert.equal(4596, result);
+              callback();
+            }
+            catch (err) {
+              callback(err);
+            }
+            close_clean();
+          });
+        });
+      },
+
+      initApiContext_runGlobal_hashbang: (callback) => {
+        initNoapi({}, (host, close_clean) => {
+          host.runGlobal(
+            '#!/blablabla\n'+
+            '2+4594',
+            '/tests/initApiContext_runGlobal_hashbang.js',
             (error, result) => {
             try {
               assert(!error, error);

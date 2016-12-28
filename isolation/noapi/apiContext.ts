@@ -18,7 +18,7 @@ namespace initApiContext {
     exitCode?: number;
 
     global?: Global;
-    coreModules?: any | { fs: FS; os: OS; path: Path; events: any; http: any; child_process: any; };
+    coreModules?: any | { fs: FS; os: OS; path: Path; events: any; http: any; https: any; child_process: any; };
   	process?: any;
     mainModule;
 
@@ -78,6 +78,7 @@ function initApiContext(options: initApiContext.Options) {
     path: <Path>null,
     events: null,
     http: null,
+    https: null,
     child_process: null
   };
 
@@ -97,6 +98,7 @@ function initApiContext(options: initApiContext.Options) {
 
   options.global.process = options.process = createProcess(options.coreModules, <any>options, processExtra);
   options.global.module = options.mainModule = createModule({}, 'repl' /*id*/, null /*filename*/, null /*parent*/, require);
+  options.global.Buffer = Buffer;
 
   options.requireModule = requireModule;
   function require(moduleName: string) {
@@ -119,6 +121,7 @@ function initApiContext(options: initApiContext.Options) {
   options.coreModules.os = createOS(options.global);
   options.coreModules.path = createPath(options.process);
   options.coreModules.http = createHTTP();
+  options.coreModules.https = createHTTP(true/*https*/);
   options.coreModules.events = createEvents();
 
 

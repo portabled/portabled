@@ -1,5 +1,6 @@
 declare var unescape;
 
+
 var version = '0.84j';
 
 class CommanderShell {
@@ -16,6 +17,7 @@ class CommanderShell {
 	private _fs: FS = null; // TODO: rename FS to isolation.noapi.FS
 	private _filesChanged: (files: string[]) => void = null;
 	private _cwd: string = null;
+	private _http: any = null;
 
   private _editor: handlers.Handler.Editor = null;
   private _savedPosns: any = {};
@@ -41,6 +43,8 @@ class CommanderShell {
     var fs_duple = createFS(this._drive, { path: this._path });
     this._fs = fs_duple.fs;
     this._filesChanged = fs_duple.filesChanged;
+
+    this._http = createHTTP();
 
     isolation.createApiHost(this._drive, {}, (replProcess) => {
       this._repl = replProcess;
@@ -112,7 +116,7 @@ class CommanderShell {
       { text: 'MkDir', action: () => this._command(actions.mkDir) },
       { text: 'Delete', action: () => this._command(actions.remove) },
       { text: 'Options' },
-      { text: 'Save', action: () => actions.save() || true }
+      { text: 'Save', action: () => this._command(actions.save) }
     ]);
 
     var resizeMod = require('resize');
@@ -303,8 +307,7 @@ class CommanderShell {
   }
 
   AltS() {
-    actions.save();
-    return true;
+    return this._command(actions.save);
   }
 
   AltE(e) {
@@ -421,6 +424,7 @@ class CommanderShell {
       drive: this._drive,
       fs: this._fs,
       path: this._path,
+      http: this._http,
       cursorPath: cursorPath,
       currentPanelPath: this._twoPanels.currentPath(),
       targetPanelPath: currentOppositePath,
@@ -678,10 +682,19 @@ class CommanderShell {
     }
   }
 
+	private _beginCommand() {
+    var showPanels = this._twoPanels.temporarilyHidePanels();
+    var showPrompt = this._terminal.temporarilyHidePrompt();
+    return () => {
+      showPanels();
+      showPrompt();
+    };
+  }
+
 	private _evalRepl(code: string) {
 
     var delayAnimateConsole = setTimeout(() => {
-      ani = this._twoPanels.temporarilyHidePanels();
+      ani = this._beginCommand();
     }, 300);
 
     var ani;
@@ -778,7 +791,7 @@ class CommanderShell {
       }
 
       this._terminal.writeAsCommand('node ' + args);
-      var ani = this._twoPanels.temporarilyHidePanels();
+      var ani = this._beginCommand();
       this._runningProcessCount++;
 
       setTimeout(() => {
@@ -957,7 +970,7 @@ class CommanderShell {
       return this._window(cursorPath);
     }
     else {
-      var ani = this._twoPanels.temporarilyHidePanels();
+      var ani = this._beginCommand();
       this._terminal.writeAsCommand('@type ' + cursorPath);
       this._terminal.writeDirect(this._drive.read(cursorPath));
       this._terminal.storeAsHistory('@type ' + cursorPath);
@@ -969,7 +982,7 @@ class CommanderShell {
   private _window(cursorPath: string) {
 
     this._terminal.writeAsCommand('@window ' + cursorPath);
-    var ani = this._twoPanels.temporarilyHidePanels();
+    var ani = this._beginCommand();
     setTimeout(() => {
 
       var uiDoc: any = this._host;
