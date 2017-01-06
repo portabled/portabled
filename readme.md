@@ -2,6 +2,16 @@ New mini portable shell development
 =========================
 
 
+<blockquote>
+
+A new development plan: make EQ80 build produce a single universal file, capable of features:
+* Export PE.js parsing/generation functions
+* Export main build functions: compileTS, jsStringLong etc.
+* Extract/combine files features from command-line tool currently named "exportZip/copy.js"
+
+</blockquote>
+
+
 
 ## Boot process
 

@@ -1,18 +1,520 @@
 // <script>document.body.innerHTML = '' </script> <script id=submodule_script>
+    
 
-  // EQ80 library
-var build = {
-    timestamp: 1478074314811, // Wed Nov 02 2016 08:11:54 GMT+0000 (GMT Standard Time)
-    taken: 9,
-    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36"
-};
+function loader(window, document) {
+
+	loader.build = {
+    timestamp: 1483685707251, // Fri Jan 06 2017 06:55:07 GMT+0000 (GMT Standard Time)
+    taken: 17892,
+    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36"
+}
+
+var bootState;
+var fitFrameList;
+var boot;
+var shell;
+var sz;
+var domNodeCallbacks;
+var progressCallbacks;
+var loadedCallbacks;
+var resizeCallbacks;
+var resizeReportCallbacks;
+var uniqueKey;
+var bootDrive; // BootState
+var drive; // Drive
+var keepLoading;
+function startBoot() {
+    if (typeof timings === 'undefined' || !timings)
+        timings = { domStarted: +new Date() };
+    else if (!timings.domStarted)
+        timings.domStarted = +new Date();
+    timings.scriptStart = +new Date();
+    window.onerror = function () {
+        var msg = 'UNHANDLED';
+        for (var i = 0; i < arguments.length; i++) {
+            var a = arguments[i];
+            try {
+                if (a && typeof a === 'object') {
+                    if (a.constructor && a.constructor.name && a.constructor.name !== 'Object')
+                        msg += '\n{' + a.constructor.name + ':';
+                    else
+                        msg += '\n{';
+                    for (var k in a)
+                        if (a[k] && typeof a[k] !== 'function' && !String[k]) {
+                            try {
+                                msg += '\n  ' + k + ': ' + a[k];
+                            }
+                            catch (err) {
+                                msg += '\n  ' + k + ': [##' + err.message + ']';
+                            }
+                        }
+                    msg += ' }';
+                }
+                else {
+                    msg += '\n' + a;
+                }
+            }
+            catch (err) {
+                msg += '[##' + err.message + ']';
+            }
+        }
+        alert(msg);
+    };
+    bootState = {};
+    fitFrameList = [];
+    document.title = '.';
+    removeSpyElements();
+    document.title = ':';
+    // creates both frames invisible
+    boot = createFrame();
+    boot.style.zIndex = 100;
+    shell = createFrame();
+    shell.style.zIndex = 10;
+    document.title = '/';
+    sz = fitresize();
+    sz.fitframe(boot);
+    sz.fitframe(shell);
+    document.title = '/.';
+    domNodeCallbacks = [];
+    progressCallbacks = [];
+    loadedCallbacks = [];
+    resizeCallbacks = [];
+    resizeReportCallbacks = [];
+    uniqueKey = deriveUniqueKey(location);
+    bootDrive = persistence(document, uniqueKey);
+    bootDrive.ondomnode = handle_dom_node;
+    document.title = '/:';
+    if (window.addEventListener) {
+        window.addEventListener('load', window_onload, true);
+    }
+    else if (window.attachEvent) {
+        window.attachEvent('onload', window_onload);
+    }
+    else {
+        window.onload = window_onload;
+    }
+    keepLoading = setInterval(onkeeploading, 30);
+}
+function createFrame() {
+    var iframe = document.createElement('iframe');
+    iframe.application = 'yes'; // MHTA trusted
+    iframe.__knownFrame = true;
+    iframe.style.cssText = 'position:absolute; left:0; top:0; width:100%; height:100%; border:none;display:none;padding:0px;margin:0px;';
+    iframe.src = 'about:blank';
+    iframe.frameBorder = '0';
+    document.body.appendChild(iframe);
+    var ifrwin = iframe.contentWindow;
+    if (!ifrwin) {
+        // IE567 - try to make it behave
+        try {
+            iframe.contentWindow = ifrwin = iframe.window;
+        }
+        catch (err) { }
+    }
+    var ifrdoc = ifrwin.document;
+    if (ifrdoc.open)
+        ifrdoc.open();
+    ifrdoc.write('<' + '!doctype html><' + 'html><' + 'head><' + 'style>' +
+        'html{margin:0;padding:0;border:none;height:100%;border:none;overflow:hidden;}' +
+        'body{margin:0;padding:0;border:none;height:100%;border:none;overflow:hidden;}' +
+        '*,*:before,*:after{box-sizing:inherit;}' +
+        'html{box-sizing:border-box;}' +
+        '</' + 'style><' + 'body>' +
+        '<' + 'body></' + 'html>');
+    if (ifrdoc.close)
+        ifrdoc.close();
+    fitFrameList.push(iframe);
+    return iframe;
+} // createFrame
+function deriveUniqueKey(locationSeed) {
+    var key = (locationSeed + '').split('?')[0].split('#')[0].toLowerCase();
+    var posIndexTrail = key.search(/\/index\.html$/);
+    if (posIndexTrail > 0)
+        key = key.slice(0, posIndexTrail);
+    if (key.charAt(0) === '/')
+        key = key.slice(1);
+    if (key.slice(-1) === '/')
+        key = key.slice(0, key.length - 1);
+    // extract readable part
+    var colonSplit = key.split(':');
+    var readableKey = colonSplit[colonSplit.length - 1].replace(/[^a-zA-Z0-9\/]/g, '').replace(/\/\//g, '/').replace(/^\//, '').replace(/\/$/, '').replace(/\.html$/, '');
+    var readableSlashPos = readableKey.indexOf('/');
+    if (readableSlashPos > 0 && readableSlashPos < readableKey.length / 2)
+        readableKey = readableKey.slice(readableSlashPos + 1);
+    readableKey = readableKey.replace('/', '_');
+    if (!readableKey)
+        readableKey = 'po';
+    return readableKey + '_' + smallHash(key) + 'H' + smallHash(key.slice(1) + 'a');
+    function smallHash(key) {
+        for (var h = 0, i = 0; i < key.length; i++) {
+            h = Math.pow(31, h + 31 / key.charCodeAt(i));
+            h -= h | 0;
+        }
+        return (h * 2000000000) | 0;
+    }
+}
+function fadeToUI() {
+    sz.update();
+    shell.style.opacity = '0';
+    shell.style.filter = 'alpha(opacity=0)'; // TODO: feature-detect and do either one or another
+    shell.style.display = 'block';
+    if (loader.delayed_shell_html) {
+        loader.delayed_shell_html();
+    }
+    var start = +new Date();
+    var fadeintTime = Math.min(500, (start - timings.domStarted) / 2);
+    var animateFadeIn = setInterval(animateStep, 20);
+    function animateStep() {
+        var passed = (+new Date()) - start;
+        var opacity = Math.min(passed, fadeintTime) / fadeintTime;
+        boot.style.opacity = (1 - opacity).toString();
+        boot.style.filter = 'alpha(opacity=' + (((1 - opacity) * 100) | 0) + ')'; // TODO: feature-detect and do either one or another
+        shell.style.opacity = opacity;
+        shell.style.filter = 'alpha(opacity=' + ((opacity * 100) | 0) + ')'; // TODO: feature-detect and do either one or another
+        if (passed >= fadeintTime) {
+            shell.style.opacity = 1;
+            shell.style.filter = 'alpha(opacity=100)';
+            boot.style.opacity = 0;
+            boot.style.filter = 'alpha(opacity=0)';
+            if (animateFadeIn) {
+                sz.update();
+                clearInterval(animateFadeIn);
+                animateFadeIn = 0;
+                setTimeout(function () {
+                    sz.update();
+                    if (boot.parentElement)
+                        boot.parentElement.removeChild(boot);
+                    shell.style.opacity = null;
+                    shell.style.filter = null;
+                    if (document.title === '//.')
+                        document.title = '//:';
+                }, 1);
+            }
+        }
+    }
+} // fadeToUI
+function fitresize() {
+    var needResize = false;
+    var forceResize = false;
+    var newSize = {
+        windowWidth: 0,
+        windowHeight: 0,
+        scrollX: 0,
+        scrollY: 0
+    };
+    on(window, 'scroll', global_resize_detect);
+    on(window, 'resize', global_resize_detect);
+    if (window.document) {
+        var body = window.document.body;
+        var docElem;
+        if (docElem = window.document.documentElement || (body ? body.parentElement || body.parentNode : null)) {
+            on(docElem, 'resize', global_resize_detect);
+            on(docElem, 'scroll', global_resize_detect);
+        }
+        if (body) {
+            on(body, 'resize', global_resize_detect);
+            on(body, 'scroll', global_resize_detect);
+        }
+    }
+    var state = {
+        update: update,
+        fitframe: fitframe,
+        windowWidth: 0,
+        windowHeight: 0,
+        scrollX: 0,
+        scrollY: 0,
+        onresize: null
+    };
+    getMetrics(state);
+    return state;
+    function update() {
+        check_resize_now();
+    }
+    function fitframe(frame) {
+        var frwindow = frame.contentWindow || frame.window;
+        var frdoc = frwindow.document;
+        var frbody = frdoc ? frdoc.body : null;
+        var docs = [frdoc, frbody, frwindow];
+        var events = ['touchstart', 'touchmove', 'touchend', 'pointerdown', 'pointerup', 'pointerout', 'keydown', 'keyup'];
+        for (var i = 0; i < docs.length; i++) {
+            if (!docs[i])
+                continue;
+            for (var j = 0; j < events.length; j++) {
+                on(docs[i], events[j], global_resize_detect);
+            }
+        }
+        fitFrameList.push(frame);
+        forceResize = true;
+        global_resize_detect();
+    }
+    function global_resize_detect() {
+        if (needResize)
+            return;
+        needResize = true;
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(check_resize_now);
+        }
+        else {
+            setTimeout(check_resize_now, 5);
+        }
+    }
+    function getMetrics(metrics) {
+        metrics.windowWidth = window.innerWidth || (document.body ? (document.body.parentElement ? document.body.parentElement.clientWidth : 0) || document.body.clientWidth : null);
+        metrics.windowHeight = window.innerHeight || (document.body ? (document.body.parentElement ? document.body.parentElement.clientHeight : 0) || document.body.clientHeight : null);
+        metrics.scrollX = window.scrollX || window.pageXOffset || (document.body ? document.body.scrollLeft || (document.body.parentElement ? document.body.parentElement.scrollLeft : 0) || 0 : null);
+        metrics.scrollY = window.scrollY || window.pageYOffset || (document.body ? document.body.scrollTop || (document.body.parentElement ? document.body.parentElement.scrollTop : 0) || 0 : null);
+    }
+    function check_resize_now() {
+        getMetrics(newSize);
+        if (!forceResize
+            && newSize.windowWidth === state.windowWidth
+            && newSize.windowHeight === state.windowHeight
+            && newSize.scrollX === state.scrollX
+            && newSize.scrollY === state.scrollY) {
+            needResize = false;
+            return;
+        }
+        forceResize = false;
+        apply_new_size_now();
+        needResize = false;
+    }
+    function apply_new_size_now() {
+        state.windowWidth = newSize.windowWidth;
+        state.windowHeight = newSize.windowHeight;
+        state.scrollX = newSize.scrollX;
+        state.scrollY = newSize.scrollY;
+        var wpx = state.windowWidth + 'px';
+        var hpx = state.windowHeight + 'px';
+        var xpx = state.scrollX + 'px';
+        var ypx = state.scrollY + 'px';
+        for (var i = 0; i < fitFrameList.length; i++) {
+            var fr = fitFrameList[i];
+            if (!fr.parentElement && !fr.parentNode)
+                continue;
+            fr.style.left = xpx;
+            fr.style.top = ypx;
+            fr.style.width = wpx;
+            fr.style.height = hpx;
+        }
+        if (resizeCallbacks.length) {
+            if (resizeReportCallbacks.length)
+                resizeReportCallbacks = [];
+            var sz = {
+                windowWidth: state.windowWidth,
+                windowHeight: state.windowHeight,
+                scrollX: state.scrollX,
+                scrollY: state.scrollY
+            };
+            for (var i = 0; i < resizeCallbacks.length; i++) {
+                var cb = resizeCallbacks[i];
+                cb(sz);
+            }
+        }
+    }
+} // fitresize
+var keepDomNodesUntilBootComplete = [];
+function handle_dom_node(node, recognizedKind, recognizedEntity) {
+    keepDomNodesUntilBootComplete.push({ node: node, recognizedKind: recognizedKind, recognizedEntity: recognizedEntity });
+    for (var i = 0; i < domNodeCallbacks.length; i++) {
+        var callback = domNodeCallbacks[i];
+        callback(node, recognizedKind, recognizedEntity);
+    }
+}
+function onkeeploading() {
+    if (document.title === '/:')
+        document.title = '/:.';
+    if (!timings.domStarted
+        && (bootDrive.domLoadedSize || bootDrive.domTotalSize))
+        timings.domStarted = +new Date();
+    removeSpyElements();
+    var goodTimeUpdateSize = false;
+    var now = Date.now ? Date.now() : +new Date();
+    if (!onkeeploading._lastUpdateSize) {
+        goodTimeUpdateSize = true;
+    }
+    else {
+        if (now - onkeeploading._lastUpdateSize > 500)
+            goodTimeUpdateSize = true;
+    }
+    if (goodTimeUpdateSize) {
+        onkeeploading._lastUpdateSize = now;
+        sz.update();
+    }
+    var prevLoadedSize = bootDrive.domLoadedSize;
+    var prevTotalSize = bootDrive.domTotalSize;
+    bootDrive.continueLoading();
+    updateBootStateProps();
+    if (bootDrive.newDOMFiles.length || bootDrive.newStorageFiles.length
+        || prevLoadedSize !== bootDrive.domLoadedSize || prevTotalSize !== bootDrive.domTotalSize) {
+        if (document.title === '/:' || document.title === '/:.')
+            document.title = '//';
+        for (var i = 0; i < progressCallbacks.length; i++) {
+            var callback = progressCallbacks[i];
+            callback(bootDrive);
+        }
+    }
+}
+function on(eventName, callback, _more) {
+    if (typeof eventName === 'string') {
+        if (typeof callback !== 'function')
+            return;
+        switch (eventName) {
+            case 'progress':
+                progressCallbacks.push(callback);
+                break;
+            case 'domnode':
+                domNodeCallbacks.push(callback);
+                for (var i = 0; i < keepDomNodesUntilBootComplete.length; i++) {
+                    var n = keepDomNodesUntilBootComplete[i];
+                    callback(n.node, n.recognizedKind, n.recognizedEntity);
+                }
+                break;
+            case 'load':
+                if (loadedCallbacks)
+                    loadedCallbacks.push(callback);
+                else
+                    setTimeout(function () { callback(drive); }, 1);
+                break;
+            case 'resize':
+                resizeCallbacks.push(callback);
+                resizeReportCallbacks.push(callback);
+                if (resizeReportCallbacks.length === 1) {
+                    setTimeout(function () {
+                        for (var i = 0; i < resizeReportCallbacks.length; i++) {
+                            var cb = resizeReportCallbacks[i];
+                            cb(sz);
+                        }
+                        resizeReportCallbacks = [];
+                    }, 1);
+                }
+                break;
+        }
+        return;
+    }
+    var obj = eventName;
+    eventName = callback;
+    callback = _more;
+    if (obj.addEventListener) {
+        try {
+            obj.addEventListener(eventName, callback, false);
+            return;
+        }
+        catch (e) { }
+    }
+    else if (obj.attachEvent) {
+        try {
+            obj.attachEvent('on' + eventName, callback);
+            return;
+        }
+        catch (e) { }
+    }
+    obj['on' + eventName] = function (e) { return callback(e || window.event); };
+} // on
+// TODO: figure out when obj argument is skipped
+function off(obj, eventName, callback) {
+    if (obj.removeEventListener) {
+        obj.removeEventListener(eventName, callback, false);
+    }
+    else if (obj.detachEvent) {
+        obj.detachEvent('on' + eventName, callback);
+    }
+    else {
+        if (obj['on' + eventName])
+            obj['on' + eventName] = null;
+    }
+} // off
+function removeSpyElements() {
+    removeElements('iframe');
+    removeElements('style');
+    removeElements('script');
+    function removeElements(tagName) {
+        var list = document.getElementsByTagName(tagName);
+        for (var i = 0; i < list.length; i++) {
+            var elem = (list[i] || list.item(i));
+            if (elem.__knownFrame)
+                continue;
+            if (elem && elem.parentElement &&
+                elem.getAttribute && elem.getAttribute('data-legit') !== 'mi') {
+                if ((shell && elem === shell) || (boot && elem === boot))
+                    continue;
+                try {
+                    elem.parentElement.removeChild(elem);
+                    i--;
+                }
+                catch (error) { }
+            }
+        }
+    }
+}
+function updateBootStateProps() {
+    for (var k in bootDrive)
+        if (k && bootDrive.hasOwnProperty(k) && typeof bootDrive[k] !== 'function' && k.charAt(0) !== '_') {
+            bootState[k] = bootDrive[k];
+        }
+    if (!bootState.read)
+        bootState.read = function (path) { return bootDrive.read(path); };
+}
+function window_onload() {
+    function onfinishloading(loadedDrive) {
+        drive = loadedDrive;
+        if (typeof loader !== 'undefined' && loader)
+            loader.drive = loadedDrive;
+        updateBootStateProps();
+        bootState.read = function (file) { return drive.read(file); };
+        keepDomNodesUntilBootComplete = [];
+        domNodeCallbacks = [];
+        timings.driveLoaded = +new Date();
+        if (loadedCallbacks && loadedCallbacks.length) {
+            if (document.title === '/:' || document.title === '/:.' || document.title === '//')
+                document.title = '//.';
+            for (var i = 0; i < loadedCallbacks.length; i++) {
+                var callback = loadedCallbacks[i];
+                callback(drive);
+            }
+        }
+        else {
+            if (document.title === '/:' || document.title === '/:.' || document.title === '//')
+                document.title = '//,';
+            fadeToUI();
+        }
+    }
+    clearInterval(keepLoading);
+    removeSpyElements();
+    timings.documentLoaded = +new Date();
+    sz.update();
+    bootDrive.finishParsing(onfinishloading);
+}
+
+
+	loader.on = on;
+  loader.off = off;
+  loader.createFrame = createFrame;
+  loader.fadeToUI = fadeToUI;
+  loader.updateSize = function() { sz.update(); };
+
+
+	if (window) {
+    if (!document) document = window;
+    // TODO: export state for use
+    startBoot();
+
+    loader.boot =boot;
+    loader.shell = shell;
+    loader.bootState = bootState;
+    loader.timings = timings;
+  }
+  else {
+    // TODO: export state for testing
+    loader.deriveUniqueKey = deriveUniqueKey;
+  }
+}
 
 function persistence(document, uniqueKey, optionalDrives) {
 
 	persistence.build = {
-    timestamp: 1476735804178, // Mon Oct 17 2016 21:23:24 GMT+0100 (GMT Daylight Time)
-    taken: 14036,
-    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36"
+    timestamp: 1483645953566, // Thu Jan 05 2017 19:52:33 GMT+0000 (GMT Standard Time)
+    taken: 14528,
+    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36"
 }
 
 var BootState = (function () {
@@ -1791,2010 +2293,1283 @@ var encodings;
 }
 
 
-function loader(window, document) {
-
-	loader.build = {
-    timestamp: 1476735813241, // Mon Oct 17 2016 21:23:33 GMT+0100 (GMT Daylight Time)
-    taken: 8990,
-    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36"
-}
-
-var bootState;
-var fitFrameList;
-var boot;
-var shell;
-var sz;
-var domNodeCallbacks;
-var progressCallbacks;
-var loadedCallbacks;
-var resizeCallbacks;
-var resizeReportCallbacks;
-var uniqueKey;
-var bootDrive; // BootState
-var drive; // Drive
-var keepLoading;
-function startBoot() {
-    if (typeof timings === 'undefined' || !timings)
-        timings = { domStarted: +new Date() };
-    else if (!timings.domStarted)
-        timings.domStarted = +new Date();
-    timings.scriptStart = +new Date();
-    window.onerror = function () {
-        var msg = 'UNHANDLED';
-        for (var i = 0; i < arguments.length; i++) {
-            var a = arguments[i];
-            try {
-                if (a && typeof a === 'object') {
-                    if (a.constructor && a.constructor.name && a.constructor.name !== 'Object')
-                        msg += '\n{' + a.constructor.name + ':';
-                    else
-                        msg += '\n{';
-                    for (var k in a)
-                        if (a[k] && typeof a[k] !== 'function' && !String[k]) {
-                            try {
-                                msg += '\n  ' + k + ': ' + a[k];
-                            }
-                            catch (err) {
-                                msg += '\n  ' + k + ': [##' + err.message + ']';
-                            }
-                        }
-                    msg += ' }';
-                }
-                else {
-                    msg += '\n' + a;
-                }
-            }
-            catch (err) {
-                msg += '[##' + err.message + ']';
-            }
-        }
-        alert(msg);
-    };
-    bootState = {};
-    fitFrameList = [];
-    document.title = '.';
-    removeSpyElements();
-    document.title = ':';
-    // creates both frames invisible
-    boot = createFrame();
-    boot.style.zIndex = 100;
-    shell = createFrame();
-    shell.style.zIndex = 10;
-    document.title = '/';
-    sz = fitresize();
-    sz.fitframe(boot);
-    sz.fitframe(shell);
-    document.title = '/.';
-    domNodeCallbacks = [];
-    progressCallbacks = [];
-    loadedCallbacks = [];
-    resizeCallbacks = [];
-    resizeReportCallbacks = [];
-    uniqueKey = deriveUniqueKey(location);
-    bootDrive = persistence(document, uniqueKey);
-    bootDrive.ondomnode = handle_dom_node;
-    document.title = '/:';
-    if (window.addEventListener) {
-        window.addEventListener('load', window_onload, true);
-    }
-    else if (window.attachEvent) {
-        window.attachEvent('onload', window_onload);
-    }
-    else {
-        window.onload = window_onload;
-    }
-    keepLoading = setInterval(onkeeploading, 30);
-}
-function createFrame() {
-    var iframe = document.createElement('iframe');
-    iframe.application = 'yes'; // MHTA trusted
-    iframe.__knownFrame = true;
-    iframe.style.cssText = 'position:absolute; left:0; top:0; width:100%; height:100%; border:none;display:none;padding:0px;margin:0px;';
-    iframe.src = 'about:blank';
-    iframe.frameBorder = '0';
-    document.body.appendChild(iframe);
-    var ifrwin = iframe.contentWindow;
-    if (!ifrwin) {
-        // IE567 - try to make it behave
+;
+    if (typeof module !== 'undefined' && module && module.exports) {
+        function build_tools(exports) {
+var fs = require("fs"), path = require("path");function buildStats() {
+    var buildStartTime = +new Date();
+    return completeBuildStats;
+    function completeBuildStats() {
+        var platform;
         try {
-            iframe.contentWindow = ifrwin = iframe.window;
+            platform = require('nowindow').navigator.userAgent;
         }
-        catch (err) { }
-    }
-    var ifrdoc = ifrwin.document;
-    if (ifrdoc.open)
-        ifrdoc.open();
-    ifrdoc.write('<' + '!doctype html><' + 'html><' + 'head><' + 'style>' +
-        'html{margin:0;padding:0;border:none;height:100%;border:none;overflow:hidden;}' +
-        'body{margin:0;padding:0;border:none;height:100%;border:none;overflow:hidden;}' +
-        '*,*:before,*:after{box-sizing:inherit;}' +
-        'html{box-sizing:border-box;}' +
-        '</' + 'style><' + 'body>' +
-        '<' + 'body></' + 'html>');
-    if (ifrdoc.close)
-        ifrdoc.close();
-    fitFrameList.push(iframe);
-    return iframe;
-} // createFrame
-function deriveUniqueKey(locationSeed) {
-    var key = (locationSeed + '').split('?')[0].split('#')[0].toLowerCase();
-    var posIndexTrail = key.search(/\/index\.html$/);
-    if (posIndexTrail > 0)
-        key = key.slice(0, posIndexTrail);
-    if (key.charAt(0) === '/')
-        key = key.slice(1);
-    if (key.slice(-1) === '/')
-        key = key.slice(0, key.length - 1);
-    // extract readable part
-    var colonSplit = key.split(':');
-    var readableKey = colonSplit[colonSplit.length - 1].replace(/[^a-zA-Z0-9\/]/g, '').replace(/\/\//g, '/').replace(/^\//, '').replace(/\/$/, '').replace(/\.html$/, '');
-    var readableSlashPos = readableKey.indexOf('/');
-    if (readableSlashPos > 0 && readableSlashPos < readableKey.length / 2)
-        readableKey = readableKey.slice(readableSlashPos + 1);
-    readableKey = readableKey.replace('/', '_');
-    if (!readableKey)
-        readableKey = 'po';
-    return readableKey + '_' + smallHash(key) + 'H' + smallHash(key.slice(1) + 'a');
-    function smallHash(key) {
-        for (var h = 0, i = 0; i < key.length; i++) {
-            h = Math.pow(31, h + 31 / key.charCodeAt(i));
-            h -= h | 0;
+        catch (error) {
+            if (process.versions.navigator)
+                platform = process.versions.navigator;
+            else
+                platform = 'node ' + process.version + ' on ' + process.platform + '/' + process.arch;
         }
-        return (h * 2000000000) | 0;
+        var buildFinishTime = new Date();
+        return {
+            timestamp: +buildFinishTime,
+            taken: (+buildFinishTime) - buildStartTime,
+            platform: platform,
+            toString: function () {
+                return ('{\n' +
+                    '    timestamp: ' + (+buildFinishTime) + ', // ' + buildFinishTime + '\n' +
+                    '    taken: ' + ((+buildFinishTime) - buildStartTime) + ',\n' +
+                    '    platform: ' + jsString(platform) + '\n' +
+                    '}');
+            }
+        };
     }
 }
-function fadeToUI() {
-    sz.update();
-    shell.style.opacity = '0';
-    shell.style.filter = 'alpha(opacity=0)'; // TODO: feature-detect and do either one or another
-    shell.style.display = 'block';
-    if (loader.delayed_shell_html) {
-        loader.delayed_shell_html();
+function compileTS() {
+    var args = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        args[_i - 0] = arguments[_i];
     }
-    var start = +new Date();
-    var fadeintTime = Math.min(500, (start - timings.domStarted) / 2);
-    var animateFadeIn = setInterval(animateStep, 20);
-    function animateStep() {
-        var passed = (+new Date()) - start;
-        var opacity = Math.min(passed, fadeintTime) / fadeintTime;
-        boot.style.opacity = (1 - opacity).toString();
-        boot.style.filter = 'alpha(opacity=' + (((1 - opacity) * 100) | 0) + ')'; // TODO: feature-detect and do either one or another
-        shell.style.opacity = opacity;
-        shell.style.filter = 'alpha(opacity=' + ((opacity * 100) | 0) + ')'; // TODO: feature-detect and do either one or another
-        if (passed >= fadeintTime) {
-            shell.style.opacity = 1;
-            shell.style.filter = 'alpha(opacity=100)';
-            boot.style.opacity = 0;
-            boot.style.filter = 'alpha(opacity=0)';
-            if (animateFadeIn) {
-                sz.update();
-                clearInterval(animateFadeIn);
-                animateFadeIn = 0;
-                setTimeout(function () {
-                    sz.update();
-                    if (boot.parentElement)
-                        boot.parentElement.removeChild(boot);
-                    shell.style.opacity = null;
-                    shell.style.filter = null;
-                    if (document.title === '//.')
-                        document.title = '//:';
-                }, 1);
+    function readDirectory(dir, extension, exclude) {
+        var result = [];
+        var expExclude = [], excludeMap = {};
+        for (var i = 0; i < exclude.length; i++) {
+            excludeMap[expExclude[i] = path.resolve(dir, exclude[i])] = true;
+        }
+        addDir(dir);
+        return result;
+        function addDir(dir) {
+            var files = fs.readdirSync(dir || ".").sort();
+            var directories = [];
+            for (var i = 0; i < files.length; i++) {
+                var f = path.resolve(dir, files[i]);
+                if (!excludeMap[f]) {
+                    var stat = fs.statSync(f);
+                    if (stat.isFile() && (!extension || f.slice(-extension.length) === extension))
+                        result.push(f);
+                    if (stat.isDirectory())
+                        directories.push(f);
+                }
             }
+            for (var i = 0; i < directories.length; i++)
+                addDir(directories[i]);
         }
     }
-} // fadeToUI
-function fitresize() {
-    var needResize = false;
-    var forceResize = false;
-    var newSize = {
-        windowWidth: 0,
-        windowHeight: 0,
-        scrollX: 0,
-        scrollY: 0
+    var tscPath = require.resolve('typescript/lib/tsc.js');
+    var tscScript = '(function(){ return function (ChakraHost) { ' + fs.readFileSync(tscPath) + '\n}})() //# ' + 'sourceURL=' + tscPath + '@wrapped';
+    var result = { files: [] };
+    var chakraHost = {
+        newLine: '\n',
+        args: args,
+        useCaseSensitiveFileNames: true,
+        echo: function (text) {
+            console.log(text);
+        },
+        readFile: function (path, encoding) {
+            return fs.readFileSync(path) + '';
+        },
+        writeFile: function (file, data, writeByteOrderMark) {
+            //console.log('writeFile(',file,',',data.length);
+            result[file] = data;
+            result.files.push({ file: file, data: data });
+        },
+        resolvePath: function (file) { return path.resolve(file); },
+        fileExists: function (file) { return fs.existsSync(file) && fs.statSync(file).isFile(); },
+        directoryExists: function (file) {
+            return path.resolve(file) === '/' || fs.existsSync(file) && fs.statSync(file).isDirectory();
+        },
+        createDirectory: function () { },
+        executingFile: tscPath,
+        currentDirectory: process.cwd(),
+        readDirectory: readDirectory,
+        quit: function () { }
     };
-    on(window, 'scroll', global_resize_detect);
-    on(window, 'resize', global_resize_detect);
-    if (window.document) {
-        var body = window.document.body;
-        var docElem;
-        if (docElem = window.document.documentElement || (body ? body.parentElement || body.parentNode : null)) {
-            on(docElem, 'resize', global_resize_detect);
-            on(docElem, 'scroll', global_resize_detect);
-        }
-        if (body) {
-            on(body, 'resize', global_resize_detect);
-            on(body, 'scroll', global_resize_detect);
-        }
-    }
-    var state = {
-        update: update,
-        fitframe: fitframe,
-        windowWidth: 0,
-        windowHeight: 0,
-        scrollX: 0,
-        scrollY: 0,
-        onresize: null
-    };
-    getMetrics(state);
-    return state;
-    function update() {
-        check_resize_now();
-    }
-    function fitframe(frame) {
-        var frwindow = frame.contentWindow || frame.window;
-        var frdoc = frwindow.document;
-        var frbody = frdoc ? frdoc.body : null;
-        var docs = [frdoc, frbody, frwindow];
-        var events = ['touchstart', 'touchmove', 'touchend', 'pointerdown', 'pointerup', 'pointerout', 'keydown', 'keyup'];
-        for (var i = 0; i < docs.length; i++) {
-            if (!docs[i])
-                continue;
-            for (var j = 0; j < events.length; j++) {
-                on(docs[i], events[j], global_resize_detect);
-            }
-        }
-        fitFrameList.push(frame);
-        forceResize = true;
-        global_resize_detect();
-    }
-    function global_resize_detect() {
-        if (needResize)
-            return;
-        needResize = true;
-        if (typeof requestAnimationFrame === 'function') {
-            requestAnimationFrame(check_resize_now);
-        }
-        else {
-            setTimeout(check_resize_now, 5);
-        }
-    }
-    function getMetrics(metrics) {
-        metrics.windowWidth = window.innerWidth || (document.body ? (document.body.parentElement ? document.body.parentElement.clientWidth : 0) || document.body.clientWidth : null);
-        metrics.windowHeight = window.innerHeight || (document.body ? (document.body.parentElement ? document.body.parentElement.clientHeight : 0) || document.body.clientHeight : null);
-        metrics.scrollX = window.scrollX || window.pageXOffset || (document.body ? document.body.scrollLeft || (document.body.parentElement ? document.body.parentElement.scrollLeft : 0) || 0 : null);
-        metrics.scrollY = window.scrollY || window.pageYOffset || (document.body ? document.body.scrollTop || (document.body.parentElement ? document.body.parentElement.scrollTop : 0) || 0 : null);
-    }
-    function check_resize_now() {
-        getMetrics(newSize);
-        if (!forceResize
-            && newSize.windowWidth === state.windowWidth
-            && newSize.windowHeight === state.windowHeight
-            && newSize.scrollX === state.scrollX
-            && newSize.scrollY === state.scrollY) {
-            needResize = false;
-            return;
-        }
-        forceResize = false;
-        apply_new_size_now();
-        needResize = false;
-    }
-    function apply_new_size_now() {
-        state.windowWidth = newSize.windowWidth;
-        state.windowHeight = newSize.windowHeight;
-        state.scrollX = newSize.scrollX;
-        state.scrollY = newSize.scrollY;
-        var wpx = state.windowWidth + 'px';
-        var hpx = state.windowHeight + 'px';
-        var xpx = state.scrollX + 'px';
-        var ypx = state.scrollY + 'px';
-        for (var i = 0; i < fitFrameList.length; i++) {
-            var fr = fitFrameList[i];
-            if (!fr.parentElement && !fr.parentNode)
-                continue;
-            fr.style.left = xpx;
-            fr.style.top = ypx;
-            fr.style.width = wpx;
-            fr.style.height = hpx;
-        }
-        if (resizeCallbacks.length) {
-            if (resizeReportCallbacks.length)
-                resizeReportCallbacks = [];
-            var sz = {
-                windowWidth: state.windowWidth,
-                windowHeight: state.windowHeight,
-                scrollX: state.scrollX,
-                scrollY: state.scrollY
-            };
-            for (var i = 0; i < resizeCallbacks.length; i++) {
-                var cb = resizeCallbacks[i];
-                cb(sz);
-            }
-        }
-    }
-} // fitresize
-var keepDomNodesUntilBootComplete = [];
-function handle_dom_node(node, recognizedKind, recognizedEntity) {
-    keepDomNodesUntilBootComplete.push({ node: node, recognizedKind: recognizedKind, recognizedEntity: recognizedEntity });
-    for (var i = 0; i < domNodeCallbacks.length; i++) {
-        var callback = domNodeCallbacks[i];
-        callback(node, recognizedKind, recognizedEntity);
-    }
+    var tsc = eval(tscScript);
+    tsc(chakraHost);
+    return result;
 }
-function onkeeploading() {
-    if (document.title === '/:')
-        document.title = '/:.';
-    if (!timings.domStarted
-        && (bootDrive.domLoadedSize || bootDrive.domTotalSize))
-        timings.domStarted = +new Date();
-    removeSpyElements();
-    var goodTimeUpdateSize = false;
-    var now = Date.now ? Date.now() : +new Date();
-    if (!onkeeploading._lastUpdateSize) {
-        goodTimeUpdateSize = true;
-    }
-    else {
-        if (now - onkeeploading._lastUpdateSize > 500)
-            goodTimeUpdateSize = true;
-    }
-    if (goodTimeUpdateSize) {
-        onkeeploading._lastUpdateSize = now;
-        sz.update();
-    }
-    var prevLoadedSize = bootDrive.domLoadedSize;
-    var prevTotalSize = bootDrive.domTotalSize;
-    bootDrive.continueLoading();
-    updateBootStateProps();
-    if (bootDrive.newDOMFiles.length || bootDrive.newStorageFiles.length
-        || prevLoadedSize !== bootDrive.domLoadedSize || prevTotalSize !== bootDrive.domTotalSize) {
-        if (document.title === '/:' || document.title === '/:.')
-            document.title = '//';
-        for (var i = 0; i < progressCallbacks.length; i++) {
-            var callback = progressCallbacks[i];
-            callback(bootDrive);
-        }
-    }
+function functionArgs(fn) {
+    var match = /^[^\(]*\(\s*([^\)]*)\s*\)/.exec(fn + '');
+    return match ? match[1] : null;
 }
-function on(eventName, callback, _more) {
-    if (typeof eventName === 'string') {
-        if (typeof callback !== 'function')
-            return;
-        switch (eventName) {
-            case 'progress':
-                progressCallbacks.push(callback);
-                break;
-            case 'domnode':
-                domNodeCallbacks.push(callback);
-                for (var i = 0; i < keepDomNodesUntilBootComplete.length; i++) {
-                    var n = keepDomNodesUntilBootComplete[i];
-                    callback(n.node, n.recognizedKind, n.recognizedEntity);
-                }
-                break;
-            case 'load':
-                if (loadedCallbacks)
-                    loadedCallbacks.push(callback);
-                else
-                    setTimeout(function () { callback(drive); }, 1);
-                break;
-            case 'resize':
-                resizeCallbacks.push(callback);
-                resizeReportCallbacks.push(callback);
-                if (resizeReportCallbacks.length === 1) {
-                    setTimeout(function () {
-                        for (var i = 0; i < resizeReportCallbacks.length; i++) {
-                            var cb = resizeReportCallbacks[i];
-                            cb(sz);
-                        }
-                        resizeReportCallbacks = [];
-                    }, 1);
-                }
-                break;
-        }
-        return;
-    }
-    var obj = eventName;
-    eventName = callback;
-    callback = _more;
-    if (obj.addEventListener) {
-        try {
-            obj.addEventListener(eventName, callback, false);
-            return;
-        }
-        catch (e) { }
-    }
-    else if (obj.attachEvent) {
-        try {
-            obj.attachEvent('on' + eventName, callback);
-            return;
-        }
-        catch (e) { }
-    }
-    obj['on' + eventName] = function (e) { return callback(e || window.event); };
-} // on
-// TODO: figure out when obj argument is skipped
-function off(obj, eventName, callback) {
-    if (obj.removeEventListener) {
-        obj.removeEventListener(eventName, callback, false);
-    }
-    else if (obj.detachEvent) {
-        obj.detachEvent('on' + eventName, callback);
-    }
-    else {
-        if (obj['on' + eventName])
-            obj['on' + eventName] = null;
-    }
-} // off
-function removeSpyElements() {
-    removeElements('iframe');
-    removeElements('style');
-    removeElements('script');
-    function removeElements(tagName) {
-        var list = document.getElementsByTagName(tagName);
-        for (var i = 0; i < list.length; i++) {
-            var elem = (list[i] || list.item(i));
-            if (elem.__knownFrame)
-                continue;
-            if (elem && elem.parentElement &&
-                elem.getAttribute && elem.getAttribute('data-legit') !== 'mi') {
-                if ((shell && elem === shell) || (boot && elem === boot))
-                    continue;
-                try {
-                    elem.parentElement.removeChild(elem);
-                    i--;
-                }
-                catch (error) { }
-            }
-        }
-    }
+function functionBody(fn, replacements) {
+    // first skip until (
+    // then skip until )
+    // then skip until {
+    // then take everything until the last }
+    var match = /^[^\(]*\([^\)]*\)[^\{]*\{([\s\S]*)\}[^\}]*$/.exec(fn + '');
+    // /^[^\(]*\([^\)]*\)[^\{]*\{([ \t]*\n)([\s\S]*)([ \t]*\n[ \t]*)\}[^\}]*$/.exec(fn+'');
+    if (!match)
+        return null;
+    var bodyText = match[1];
+    if (!replacements)
+        return bodyText;
+    else
+        return substitute(bodyText, replacements);
 }
-function updateBootStateProps() {
-    for (var k in bootDrive)
-        if (k && bootDrive.hasOwnProperty(k) && typeof bootDrive[k] !== 'function' && k.charAt(0) !== '_') {
-            bootState[k] = bootDrive[k];
-        }
-    if (!bootState.read)
-        bootState.read = function (path) { return bootDrive.read(path); };
-}
-function window_onload() {
-    function onfinishloading(loadedDrive) {
-        drive = loadedDrive;
-        if (typeof loader !== 'undefined' && loader)
-            loader.drive = loadedDrive;
-        updateBootStateProps();
-        bootState.read = function (file) { return drive.read(file); };
-        keepDomNodesUntilBootComplete = [];
-        domNodeCallbacks = [];
-        timings.driveLoaded = +new Date();
-        if (loadedCallbacks && loadedCallbacks.length) {
-            if (document.title === '/:' || document.title === '/:.' || document.title === '//')
-                document.title = '//.';
-            for (var i = 0; i < loadedCallbacks.length; i++) {
-                var callback = loadedCallbacks[i];
-                callback(drive);
-            }
-        }
-        else {
-            if (document.title === '/:' || document.title === '/:.' || document.title === '//')
-                document.title = '//,';
-            fadeToUI();
-        }
-    }
-    clearInterval(keepLoading);
-    removeSpyElements();
-    timings.documentLoaded = +new Date();
-    sz.update();
-    bootDrive.finishParsing(onfinishloading);
-}
-
-
-	loader.on = on;
-  loader.off = off;
-  loader.createFrame = createFrame;
-  loader.fadeToUI = fadeToUI;
-  loader.updateSize = function() { sz.update(); };
-
-
-	if (window) {
-    if (!document) document = window;
-    // TODO: export state for use
-    startBoot();
-
-    loader.boot =boot;
-    loader.shell = shell;
-    loader.bootState = bootState;
-    loader.timings = timings;
-  }
-  else {
-    // TODO: export state for testing
-    loader.deriveUniqueKey = deriveUniqueKey;
-  }
-}
-
-
-persistence();
-
-  if (typeof module!=='undefined' && module && module.exports) {
-
-    
-  var fs = require('fs');
-  var path = require('path');
-
-  module.exports = {
-    htmlSpotExternals: htmlSpotExternals,
-    compileTS: compileTS,
-    buildStats: buildStats,
-    jsString: jsString,
-    jsStringLong: jsStringLong,
-    functionBody: functionBody,
-    functionArgs: functionArgs,
-    wrapScript: wrapScript,
-    substitute: substitute,
-    wrapEQ80: wrapEQ80,
-    getFiles: getFiles,
-    createLink: createLink
-  };
-
-  /**
-   * options: {
-   *   title: string;
-   *   early_html: string;
-   *   boot_html: string;
-   *   shell_html: string;
-   *   files: map of path/content, or array of strings;
-   *   timestamp: number;
-   *   defaultBackground: string;
-   *   favicon: string;
-   * }
-   */
-  function wrapEQ80(options) {
-
-    var fileTotalHTML='';
-    var fileTotalSize = 0;
-    var fileTotalCount = 0;
-
-    var fdir = getFiles(options.files);
-    var fileList = fdir.files();
-
-    for (var i = 0; i < fileList.length; i++) {
-      var n = persistence.formatFileInner(fileList[i], fdir.read(fileList[i]));
-      var sz = n.length - n.indexOf('\n') - 1; // size is counted only for content
-      fileTotalSize += sz;
-      fileTotalCount++;
-      fileTotalHTML=fileTotalHTML?fileTotalHTML+'\n<!--'+n+'-->':'<!--'+n+'-->';
-    }
-
-    options.fileTotalSize = fileTotalSize;
-    options.fileTotalCount = fileTotalCount;
-    var totalsComment = '<!--'+persistence.formatTotalsInner(options.timestamp || +new Date(), fileTotalSize)+'-->';
-
-    var backgroundStyle = options.defaultBackground||'background:black;color:black;';
-
-    return ''+
-      '<!doctype html><head><meta charset="utf-8"><title> '+(options.title||'mini shell')+' </title>\n'+
-      '<meta http-equiv="x-ua-compatible" content="IE=edge">'+
-      totalsComment+'\n'+
-      (options.favicon||'')+'\n'+
-      '<HTA:APPLICATION id="htaHeader" SINGLEINSTANCE="no"></HTA:APPLICATION>'+
-      '<style data-legit=mi> *{display:none;'+backgroundStyle+'} html,body{display:block;'+backgroundStyle+'margin:0;padding:0;height:100%;overflow:hidden;} </style>\n'+
-      '</head><body>\n'+
-      '<'+'script data-legit=mi>\n'+
-      loader+'\n\n\n'+
-      persistence+'\n\n\n'+
-      'loader(window, document); //# sourceURL=/EQ80.js\n'+
-      '</'+'script>\n'+
-      (options.early_html?options.early_html:'')+
-
-      '<'+'script data-legit=mi> // pushing BOOT\n'+
-      '(function(doc) {\n'+
-      '  if (doc.open) doc.open();\n'+
-      '  doc.write('+jsStringLong(options.boot_html)+');\n'+
-      '  if (doc.close) doc.close();\n'+
-      '})(loader.boot.contentWindow.document || loader.boot.window.document);\n'+
-      'loader.boot.style.display="block"; //# '+'sourceURL=/BOOT-docwrite.html\n'+
-      '</'+'script>\n'+
-
-      (options.shell_html ?
-        '<'+'script data-legit=mi> // pushing SHELL\n'+
-        '(function(doc) {\n'+
-        '  if (doc.open) doc.open();\n'+
-        '  doc.write('+jsStringLong(options.shell_html)+');\n'+
-        '  if (doc.close) doc.close();\n'+
-        '})(loader.shell.contentWindow.document || loader.shell.window.document); //# '+'sourceURL=/SHELL-docwrite.html\n'+
-        '</'+'script>\n'
-       : '')+
-
-      (options.delayed_shell_html ?
-        '<'+'script data-legit=mi> // pushing SHELL: delayed\n'+
-        'loader.delayed_shell_html = (function() {\n'+
-        '  var doc = loader.shell.contentWindow.document || loader.shell.window.document;\n'+
-        '  return delayed_shell_html;\n'+
-        '  function delayed_shell_html() {\n'+
-        '    if (doc.open) doc.open();\n'+
-        '    doc.write('+jsStringLong(options.delayed_shell_html)+');\n'+
-        '    if (doc.close) doc.close();\n'+
-        '  }\n'+
-        '})(); //# '+'sourceURL=/SHELL-docwrite.html\n'+
-        '</'+'script>\n'
-       : '')+
-
-      fileTotalHTML+
-      '</body></html>';
-  }
-
-
-  function getFiles(filelist) {
-
+function getFiles(filelist) {
     var list = [];
     var map = {};
     var redirects = {};
-
     // iterate and populate list/map
     // (this also eliminates duplicates)
     addFiles(filelist);
-
-
     return {
-      files: function() { return list; },
-      read: function(fi) {
-        var content = map[fi];
-        if (typeof content==='function') {
-          content=content();
-        }
-        else if (typeof content!=='string') {
-          content = fs.readFileSync(redirects[fi] || fi);
-        }
-        return content;
-      }
-    };
-
-    function addFiles(files) {
-      if (!files) return;
-
-      if (typeof files==='string') {
-        addFileStr(files);
-        return;
-      }
-
-      if (typeof files==='function') {
-        addFiles(files());
-        return;
-      }
-
-      if (files.length && typeof files.length==='number') {
-        for (var i = 0; i < files.length; i++) {
-          addFiles(files[i]);
-        }
-      }
-
-      if (typeof files==='object') {
-        for (var k in files) if (k.charCodeAt(0)===47 && files.hasOwnProperty(k)) { // k is path thus starts with slash
-          var content = files[k];
-          if (typeof content==='string' || typeof content==='function') {
-            addFileContent(k,content);
-          }
-          else if (content && typeof content.length==='number') {
-            for (var i = 0; i < content.length; i++) {
-              var subcontent = content[i];
-              if (typeof subcontent==='string') {
-                subcontent = path.resolve(subcontent);
-                addFileStr(subcontent, subcontent.length, k);
-              }
+        files: function () { return list; },
+        read: function (fi) {
+            var content = map[fi];
+            if (typeof content === 'function') {
+                content = content();
             }
-          }
+            else if (typeof content !== 'string') {
+                content = fs.readFileSync(redirects[fi] || fi);
+            }
+            return content;
         }
-      }
+    };
+    function addFiles(files) {
+        if (!files)
+            return;
+        if (typeof files === 'string') {
+            addFileStr(files);
+            return;
+        }
+        if (typeof files === 'function') {
+            addFiles(files());
+            return;
+        }
+        if (files.length && typeof files.length === 'number') {
+            for (var i = 0; i < files.length; i++) {
+                addFiles(files[i]);
+            }
+        }
+        if (typeof files === 'object') {
+            for (var k in files)
+                if (k.charCodeAt(0) === 47 && files.hasOwnProperty(k)) {
+                    var content = files[k];
+                    if (typeof content === 'string' || typeof content === 'function') {
+                        addFileContent(k, content);
+                    }
+                    else if (content && typeof content.length === 'number') {
+                        for (var i = 0; i < content.length; i++) {
+                            var subcontent = content[i];
+                            if (typeof subcontent === 'string') {
+                                subcontent = path.resolve(subcontent);
+                                addFileStr(subcontent, subcontent.length, k);
+                            }
+                        }
+                    }
+                }
+        }
     }
-
     function addFileContent(file, content) {
-      delete redirects[file];
-      if (!map[file]) list.push(file);
-      map[file] = content;
+        delete redirects[file];
+        if (!map[file])
+            list.push(file);
+        map[file] = content;
     }
-
     function addFileContentRead(file, skipPathStrLength, redirectRoot) {
-      if (redirectRoot) {
-        var newPath = path.join(redirectRoot, file.slice(skipPathStrLength));
-        if (newPath.charCodeAt(0)!==47) newPath = '/'+newPath;
-        if (filelist.filterFiles) {
-          if (!filelist.filterFiles(file, newPath)) return;
+        if (redirectRoot) {
+            var newPath = path.join(redirectRoot, file.slice(skipPathStrLength));
+            if (newPath.charCodeAt(0) !== 47)
+                newPath = '/' + newPath;
+            if (filelist.filterFiles) {
+                if (!filelist.filterFiles(file, newPath))
+                    return;
+            }
+            addFileContent(newPath);
+            redirects[newPath] = file;
         }
-
-        addFileContent(newPath);
-        redirects[newPath] = file;
-      }
-      else {
-        if (filelist.filterFiles) {
-          if (!filelist.filterFiles(file, file)) return;
+        else {
+            if (filelist.filterFiles) {
+                if (!filelist.filterFiles(file, file))
+                    return;
+            }
+            addFileContent(file);
         }
-        addFileContent(file);
-      }
     }
-
     function addFileStr(file, skipPathStrLength, redirectRoot) {
-      if (file!=='/' && !fs.existsSync(file)) {
-        // TODO: handle globs??
-        return;
-      }
-
-      var stat = file === '/' ? null : fs.statSync(file);
-      if (stat && stat.isFile()) {
-        addFileContentRead(file, skipPathStrLength, redirectRoot);
-      }
-
-      if (stat && !stat.isDirectory()) return;
-
-      var dirs = [file];
-      while (dirs.length) {
-        var d = dirs.pop();
-        var files = fs.readdirSync(d);
-        for (var i = 0; i <files.length; i++) {
-          if (files[i]==='.' || files[i]==='..') continue;
-          var f = path.join(d, files[i]);
-          var stat = fs.statSync(f);
-
-          if (stat.isFile()) {
-            addFileContentRead(f, skipPathStrLength, redirectRoot);
-          }
-
-          if (stat.isDirectory()) {
-            dirs.push(f);
-          }
+        if (file !== '/' && !fs.existsSync(file)) {
+            // TODO: handle globs??
+            return;
         }
-      }
+        var stat = file === '/' ? null : fs.statSync(file);
+        if (stat && stat.isFile()) {
+            addFileContentRead(file, skipPathStrLength, redirectRoot);
+        }
+        if (stat && !stat.isDirectory())
+            return;
+        var dirs = [file];
+        while (dirs.length) {
+            var d = dirs.pop();
+            var files = fs.readdirSync(d);
+            for (var i = 0; i < files.length; i++) {
+                if (files[i] === '.' || files[i] === '..')
+                    continue;
+                var f = path.join(d, files[i]);
+                var stat = fs.statSync(f);
+                if (stat.isFile()) {
+                    addFileContentRead(f, skipPathStrLength, redirectRoot);
+                }
+                if (stat.isDirectory()) {
+                    dirs.push(f);
+                }
+            }
+        }
     }
-  }
-
-  function wrapScript(replacements) {
-    var result = functionBody(
-      (template_content+'').replace(/\<\/\[script/g, '</'+'script').replace(
-        /\"\#build_functions\#\"/,
-        functionBody+'\n'+
-        functionArgs+'\n'+
-        jsString+'\n'+
-        jsStringLong+'\n'),
-      replacements);
-
-    result = result.replace(/^\s+/, '').replace(/\s+$/, '')+'\n';
+}
+function htmlSpotExternals(html) {
+    if (!html)
+        return typeof html === 'string' ? [html] : [];
+    var linkStart = /(\<script[\s\>])|(\<link[\s\>])|(\<\!\-\-)|(\<style[\s\>])/gim;
+    var scriptEndTag = /\<\/script(\s[^\>]*)?\>/gi;
+    var styleEndTag = /\<\/style(\s[^\>]*)?\>/gi;
+    var pos = 0;
+    var result = [];
+    while (true) {
+        linkStart.lastIndex = pos;
+        var match = linkStart.exec(html);
+        appendStatic(match ? match.index : html.length);
+        if (!match)
+            break;
+        if (match[1]) {
+            // opening script tag
+            var tagEnd = html.indexOf('>', match.index + 7 /* "<script".length */);
+            if (!tagEnd) {
+                pos = match.index;
+                appendStatic(html.length);
+                break;
+            }
+            var openingTagText = html.slice(match.index, tagEnd);
+            var srcMatch = /\ssrc=((\"([^\"]+)\")|(\'([^\']+)\')|(([^\'\"\s][^\s]*)(\s|$)))/.exec(openingTagText);
+            if (srcMatch) {
+                var src = srcMatch[3] || srcMatch[5] || srcMatch[7];
+            }
+            scriptEndTag.lastIndex = tagEnd + 1;
+            var scriptEndTagMatch = scriptEndTag.exec(html);
+            if (!scriptEndTagMatch) {
+                appendStatic(html.length);
+                break;
+            }
+            if (src) {
+                result.push({
+                    original: html.slice(match.index, scriptEndTagMatch.index + scriptEndTagMatch[0].length),
+                    substituteLead: openingTagText.slice(0, srcMatch.index +
+                        (srcMatch.index + srcMatch[0].length === openingTagText.length ? 0 : 1)) +
+                        openingTagText.slice(srcMatch.index + srcMatch[0].length) +
+                        '>',
+                    substituteTrail: scriptEndTagMatch[0],
+                    src: src
+                });
+                pos = scriptEndTagMatch.index + scriptEndTagMatch[0].length;
+            }
+            else {
+                pos = match.index;
+                appendStatic(scriptEndTagMatch.index + scriptEndTagMatch[0].length);
+            }
+        }
+        else if (match[2]) {
+            // opening link tag
+            var tagEnd = html.indexOf('>', match.index + 5 /* "<link".length */);
+            if (!tagEnd) {
+                pos = match.index;
+                appendStatic(html.length);
+                break;
+            }
+            var linkTagText = html.slice(match.index, tagEnd);
+            var hrefMatch = /\shref=((\"([^\"]+)\")|(\'([^\']+)\')|(([^\'\"\s][^\s]*)(\s|$)))/.exec(linkTagText);
+            if (hrefMatch) {
+                var href = hrefMatch[3] || hrefMatch[5] || hrefMatch[7];
+            }
+            if (href && /\srel=((\"stylesheet\")|(\'stylesheet\')|(stylesheet\b))/i.test(linkTagText)) {
+                var styleLead = '<style' +
+                    linkTagText.slice(5 /* "<link".length */, hrefMatch.index +
+                        (hrefMatch.index + hrefMatch[0].length === linkTagText.length ? 0 : 1)) +
+                    linkTagText.slice(hrefMatch.index + hrefMatch[0].length) +
+                    '>';
+                styleLead = styleLead.replace(/\srel=((\"stylesheet\")|(\'stylesheet\')|(stylesheet\b))/gi, '');
+                result.push({
+                    original: html.slice(match.index, tagEnd + 1),
+                    substituteLead: styleLead,
+                    substituteTrail: '</style>',
+                    src: href
+                });
+                pos = tagEnd + 1;
+            }
+            else {
+                pos = match.index;
+                appendStatic(tagEnd + 1);
+            }
+        }
+        else if (match[3]) {
+            // opening HTML comment (skip until comment ends)
+            var posCloseComment = html.indexOf('-->', match.index + 4 /* "<!--".length */);
+            if (posCloseComment >= 0)
+                appendStatic(posCloseComment + 3 /* "-->".length */);
+            else
+                appendStatic(html.length);
+        }
+        else if (match[4]) {
+            // opening style tag (skip until style ends)
+            var tagEnd = html.indexOf('>', match.index + 5 /* "<link".length */);
+            styleEndTag.lastIndex = tagEnd + 1;
+            var styleEndTagMatch = styleEndTag.exec(html);
+            if (styleEndTagMatch)
+                appendStatic(styleEndTagMatch.index + styleEndTagMatch[0].length);
+            else
+                appendStatic(html.length);
+        }
+    }
     return result;
-  }
-
-  function buildStats() {
-    var buildStartTime = +new Date();
-
-    return completeBuildStats;
-
-    function completeBuildStats() {
-      var platform;
-      try { platform = require('nowindow').navigator.userAgent }
-      catch (error) {
-        if (process.versions.navigator)
-          platform = process.versions.navigator;
-        else
-          platform = 'node '+process.version+' on '+process.platform+'/'+process.arch;
-      }
-
-      var buildFinishTime = new Date();
-
-      return {
-        timestamp: +buildFinishTime,
-        taken: buildFinishTime-buildStartTime,
-        platform: jsString(platform),
-
-        toString: function() {
-          return (
-            '{\n'+
-            '    timestamp: '+(+buildFinishTime)+', // '+buildFinishTime+'\n'+
-            '    taken: '+(buildFinishTime-buildStartTime)+',\n'+
-            '    platform: '+jsString(platform)+'\n'+
-            '}');
+    function appendStatic(upto) {
+        if (upto > pos) {
+            if (result.length && typeof result[result.length - 1] === 'string')
+                result[result.length - 1] += html.slice(pos, upto);
+            else
+                result.push(html.slice(pos, upto));
         }
-      };
-
+        pos = upto;
     }
-  }
-
-  function substitute(bodyText, replacements) {
-    if (typeof replacements==='function') {
-      var update = bodyText.replace(
-        /\"\#([\S]+)\#\"/g,
-        function(str, token) {
-          return replacements(token)||'';
-        });
-    }
-    else {
-      var update = bodyText.replace(
-        /\"\#([\S]+)\#\"/g,
-        function(str, token) {
-          var r = replacements[token];
-          if (typeof r==='function') return r()||'';
-          else return r||'';
-        });
-    }
-    return update;
-  }
-
-  function functionBody(fn, replacements) {
-    // first skip until (
-    // then skip until )
-    // then skip until {
-    // then take everything until the last }
-    var match =
-        /^[^\(]*\([^\)]*\)[^\{]*\{([\s\S]*)\}[^\}]*$/.exec(fn+'');
-        // /^[^\(]*\([^\)]*\)[^\{]*\{([ \t]*\n)([\s\S]*)([ \t]*\n[ \t]*)\}[^\}]*$/.exec(fn+'');
-    if (!match) return null;
-
-    var bodyText = match[1];
-    if (!replacements) return bodyText;
-    else return substitute(bodyText, replacements);
-  }
-
-  function functionArgs(fn) {
-    var match = /^[^\(]*\(\s*([^\)]*)\s*\)/.exec(fn+'');
-    return match?match[1]:null;
-  }
-
-  function jsStringLong(str) {
-    if (str===null) return 'null';
-    else if (typeof str==='undefined') return 'undefined';
-    var wordCounts = {};
-    var wordArray = [];
-    str.replace(/[a-zA-Z0-9_]+/g, function(w) {
-      var key = '*'+w;
-      if (wordCounts[key]) {
-        wordCounts[key]++;
-      }
-      else {
-        wordCounts[key] = 1;
-        wordArray.push(w);
-      }
-    });
-    wordArray.sort(function(w1, w2) {
-      var n1 = wordCounts['*'+w1];
-      var n2 = wordCounts['*'+w2];
-      return n1 > n2 ? -1 : n2 > 1 ? +1 : 0;
-    });
-    var replaceTable = {};
-    for (var i = 0; i < wordArray.length; i++) {
-      replaceTable['*'+wordArray[i]] = toLetterNumber(i);
-    }
-
-    var compressed = str.replace(/(\s+)|([a-zA-Z0-9_]+)/g, function(match, whitespace, word) {
-      if (word) return replaceTable['*'+word];
-      return whitespace.
-        replace(/ +/g, function(spaces) {
-          if(spaces.length<2) return spaces;
-          else return 'Z'+spaces.length;
-        }).
-        replace(/\n/g, 'Z');
-    });
-
-    var wordarr = [];
-    var lineLen = 0;
-    for (var i = 0; i < wordArray.length; i++) {
-      var nextWord = wordArray[i];
-      if (lineLen) {
-        wordarr[wordarr.length-1] += ','+nextWord;
-      }
-      else {
-        if (i) nextWord = '"+\n"'+nextWord;
-        wordarr.push(nextWord);
-      }
-
-      lineLen+=nextWord.length+1;
-      if (lineLen>100)
-        lineLen = 0;
-    }
-
-    return [
-      '(function(d,c,s,r,m,nn,n) { var k = 0;',
-      'return c.replace(/([a-zA-Y]+)|(Z[0-9]*)/g, function(x,t,w) {',
-        'if (w=="Z") return "\\n";',
-        'else if (w&&w.charCodeAt(0)=='+('Z').charCodeAt(0)+') return s[m=parseInt(w.slice(1))] || (s[m] = Array(m+1).join(" "));',
-        'if (r.hasOwnProperty(w)) return r[w];',
-        'nn=0,m=1;',
-        'for(var i=0;i<t.length;i++){',
-          'var n=t.charCodeAt(i);',
-          'nn+=m*(n-(n>'+(('a').charCodeAt(0)-1)+' ? '+('a').charCodeAt(0)+':'+(('A').charCodeAt(0)-26)+'));',
-          'm*='+(25+26)+';',
-        '}',
-        'if (nn<100 && !r[nn]) return r[nn] = d[nn];', // cache word lookups for 100 most frequent words
-        'else return d[nn];',
-      '});\n',
-      '}(("'+wordarr.join(',')+'").split(","),"'+compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r')+'",[],{}))'
-    ].join('\n');
-
-    function toLetterNumber(num) {
-      if (!num) return 'a';
-      var base = 26+25; // a-z A-Y (leave out uppercase Z)
-      var result = [];
-      while (num) {
-        var n = num % base;
-        if (n<26)
-          result.push(String.fromCharCode('a'.charCodeAt(0)+n));
-        else
-          result.push(String.fromCharCode('A'.charCodeAt(0)+n-26));
-        num = (num / base)|0;
-      }
-      return result.join('');
-    }
-  }
-
-
-  function jsString(str) {
+}
+function jsString(str) {
     if (!str) {
-      if (typeof str==='string') return '""';
-      else if (typeof str==='undefined') return 'undefined';
-      else return 'null';
+        if (typeof str === 'string')
+            return '""';
+        else if (typeof str === 'undefined')
+            return 'undefined';
+        else
+            return 'null';
     }
-
-    var _JSON = typeof JSON!=='undefined'? JSON : typeof window === 'undefined' ? null : window.JSON;
+    var _JSON = typeof JSON !== 'undefined' ? JSON : typeof window === 'undefined' ? null : window.JSON;
     var result = '"';
     var stretchStart = 0;
     for (var i = 0; i < str.length; i++) {
-      var code = str.charCodeAt(i);
-      var fix;
-      switch (code) {
-        case 10: fix = i==str.length-1 ? '\\n' : '\\n"+\n  "'; break;
-        case 13: fix = '\\r'; break;
-        case 92: fix = '\\\\'; break;
-        case 34: fix = '\\\"'; break;
-        case 9: fix = '\\t'; break;
-        default:
-          if (code < 32 || // transcribe control codes
-              ((code&0xFF00)===0xFD00) || ((code&0xFF00)==0xFF00)) { // transcribe potentially corrupt Unicode
-            fix = '\\u'+(0x10000 + code).toString(16).slice(1);
-            break;
-          }
-          continue;
-      }
-
-      if (stretchStart!==i) {
-      	result += str.slice(stretchStart, i) + fix;
-      }
-      else {
-        result += fix;
-      }
-
-      stretchStart = i+1;
+        var code = str.charCodeAt(i);
+        var fix;
+        switch (code) {
+            case 10:
+                fix = i == str.length - 1 ? '\\n' : '\\n"+\n  "';
+                break;
+            case 13:
+                fix = '\\r';
+                break;
+            case 92:
+                fix = '\\\\';
+                break;
+            case 34:
+                fix = '\\\"';
+                break;
+            case 9:
+                fix = '\\t';
+                break;
+            default:
+                if (code < 32 ||
+                    ((code & 0xFF00) === 0xFD00) || ((code & 0xFF00) == 0xFF00)) {
+                    fix = '\\u' + (0x10000 + code).toString(16).slice(1);
+                    break;
+                }
+                continue;
+        }
+        if (stretchStart !== i) {
+            result += str.slice(stretchStart, i) + fix;
+        }
+        else {
+            result += fix;
+        }
+        stretchStart = i + 1;
     }
-
     if (stretchStart)
-      result += str.slice(stretchStart)+'"';
+        result += str.slice(stretchStart) + '"';
     else
-      result = '"'+str+'"';
-
+        result = '"' + str + '"';
     return result;
-  }
-
-
-
-  function htmlSpotExternals(html) {
-
-    if (!html) return typeof html==='string' ? [html] : [];
-
-    var linkStart =
-        /(\<script[\s\>])|(\<link[\s\>])|(\<\!\-\-)|(\<style[\s\>])/gim;
-
-    var scriptEndTag = /\<\/script(\s[^\>]*)?\>/gi;
-    var styleEndTag = /\<\/style(\s[^\>]*)?\>/gi;
-
-    var pos = 0;
-
-    var result = [];
-
-    while (true) {
-      linkStart.lastIndex = pos;
-      var match = linkStart.exec(html);
-
-      appendStatic(match ? match.index : html.length);
-
-      if (!match) break;
-
-      if (match[1]) {
-        // opening script tag
-        var tagEnd = html.indexOf('>', match.index+7 /* "<script".length */);
-        if (!tagEnd) {
-          pos = match.index;
-          appendStatic(html.length);
-          break;
+}
+function jsStringLong(str) {
+    if (str === null)
+        return 'null';
+    else if (typeof str === 'undefined')
+        return 'undefined';
+    var wordCounts = {};
+    var singleWordSet = {};
+    var wordArray = [];
+    var dummy = {};
+    str.replace(/[a-zA-Z0-9_]+/g, function (w) {
+        var key = w in dummy ? '*' + w : w;
+        if (singleWordSet[key]) {
+            wordCounts[key] = 2;
         }
-        var openingTagText = html.slice(match.index, tagEnd);
-        var srcMatch = /\ssrc=((\"([^\"]+)\")|(\'([^\']+)\')|(([^\'\"\s][^\s]*)(\s|$)))/.exec(openingTagText);
-        if (srcMatch) {
-          var src = srcMatch[3] || srcMatch[5] || srcMatch[7];
-        }
-
-        scriptEndTag.lastIndex = tagEnd+1;
-        var scriptEndTagMatch = scriptEndTag.exec(html);
-        if (!scriptEndTagMatch) {
-          appendStatic(html.length);
-          break;
-        }
-
-        if (src) {
-          result.push({
-            original: html.slice(match.index, scriptEndTagMatch.index + scriptEndTagMatch[0].length),
-            substituteLead:
-            openingTagText.slice(
-              0,
-              srcMatch.index +
-              (srcMatch.index + srcMatch[0].length === openingTagText.length ? 0 : 1)) + // <-- keep whitespace in place of src="..." attribute or not?
-            openingTagText.slice(srcMatch.index + srcMatch[0].length) +
-            '>',
-            substituteTrail: scriptEndTagMatch[0],
-            src: src
-          });
-          pos = scriptEndTagMatch.index + scriptEndTagMatch[0].length;
+        else if (wordCounts[key]) {
+            wordCounts[key]++;
         }
         else {
-          pos = match.index;
-          appendStatic(scriptEndTagMatch.index + scriptEndTagMatch[0].length);
+            singleWordSet[key] = 1;
+            wordArray.push(w);
         }
-
-      }
-      else if (match[2]) {
-        // opening link tag
-        var tagEnd = html.indexOf('>', match.index+5 /* "<link".length */);
-        if (!tagEnd) {
-          pos = match.index;
-          appendStatic(html.length);
-          break;
+    });
+    wordArray.sort(function (w1, w2) {
+        var k1 = w1 in dummy ? '*' + w1 : w1;
+        var k2 = w2 in dummy ? '*' + w2 : w2;
+        var n1 = wordCounts[k1];
+        var n2 = wordCounts[k2];
+        return n1 > n2 ? -1 : n2 > 1 ? +1 : 0;
+    });
+    var replaceTable = {};
+    for (var i = 0; i < wordArray.length; i++) {
+        var k = wordArray[i] in dummy ? '*' + wordArray[i] : wordArray[i];
+        replaceTable[k] = toLetterNumber(i);
+    }
+    var compressed = str.replace(/(\s+)|([a-zA-Z0-9_]+)/g, function (match, whitespace, word) {
+        if (word) {
+            var k = word in dummy ? '*' + word : word;
+            return replaceTable[k];
         }
-        var linkTagText = html.slice(match.index, tagEnd);
-
-        var hrefMatch = /\shref=((\"([^\"]+)\")|(\'([^\']+)\')|(([^\'\"\s][^\s]*)(\s|$)))/.exec(linkTagText);
-        if (hrefMatch) {
-          var href = hrefMatch[3] || hrefMatch[5] || hrefMatch[7];
-        }
-
-        if (href && /\srel=((\"stylesheet\")|(\'stylesheet\')|(stylesheet\b))/i.test(linkTagText)) {
-          var styleLead =
-              '<style'+
-              linkTagText.slice(
-                5 /* "<link".length */,
-                hrefMatch.index +
-                (hrefMatch.index + hrefMatch[0].length === linkTagText.length ? 0 : 1)) + // <-- keep whitespace in place of href="..." attribute or not?
-              linkTagText.slice(hrefMatch.index + hrefMatch[0].length) +
-              '>';
-          styleLead = styleLead.replace(/\srel=((\"stylesheet\")|(\'stylesheet\')|(stylesheet\b))/gi, '');
-
-          result.push({
-            original: html.slice(match.index, tagEnd+1),
-            substituteLead: styleLead,
-            substituteTrail: '</style>',
-            src: href
-          });
-          pos = tagEnd+1;
+        return whitespace.
+            replace(/  +/g, function (spaces) {
+            return 'Z' + spaces.length;
+        }).
+            replace(/\n/g, 'Z');
+    });
+    var wordarr = [];
+    var lineLen = 0;
+    for (var i = 0; i < wordArray.length; i++) {
+        var nextWord = wordArray[i];
+        if (lineLen) {
+            wordarr[wordarr.length - 1] += ',' + nextWord;
         }
         else {
-          pos = match.index;
-          appendStatic(tagEnd+1);
+            if (i)
+                nextWord = '"+\n"' + nextWord;
+            wordarr.push(nextWord);
         }
-
-      }
-      else if (match[3]) {
-        // opening HTML comment (skip until comment ends)
-        var posCloseComment = html.indexOf('-->', match.index+4 /* "<!--".length */);
-        if (posCloseComment>=0)
-          appendStatic(posCloseComment + 3 /* "-->".length */);
-        else
-          appendStatic(html.length);
-      }
-      else if (match[4]) {
-        // opening style tag (skip until style ends)
-        var tagEnd = html.indexOf('>', match.index+5 /* "<link".length */);
-        styleEndTag.lastIndex = tagEnd+1;
-        var styleEndTagMatch = styleEndTag.exec(html);
-        if (styleEndTagMatch)
-          appendStatic(styleEndTagMatch.index + styleEndTagMatch[0].length);
-        else
-          appendStatic(html.length);
-      }
-
+        lineLen += nextWord.length + 1;
+        if (lineLen > 100)
+            lineLen = 0;
     }
-
-    return result;
-
-    function appendStatic(upto) {
-      if (upto>pos) {
-        if (result.length && typeof result[result.length-1]==='string')
-          result[result.length-1] += html.slice(pos,upto);
-        else
-          result.push(html.slice(pos,upto));
-      }
-      pos = upto;
-    }
-
-  }
-
-
-
-  function compileTS(/*args*/){
-    function readDirectory(dir, extension, exclude) {
-      var result = [];
-      var expExclude = [], excludeMap = {};
-      for (var i = 0; i < exclude.length; i++) {
-        excludeMap[expExclude[i] = path.resolve(dir, exclude[i])] = true;
-      }
-      addDir(dir);
-      return result;
-
-      function addDir(dir) {
-        var files = fs.readdirSync(dir || ".").sort();
-        var directories = [];
-
-        for (var i = 0; i < files.length; i++) {
-          var f = path.resolve(dir, files[i]);
-          if (!excludeMap[f]) {
-            var stat = fs.statSync(f);
-            if (stat.isFile() && (!extension || f.slice(-extension.length)===extension)) result.push(f);
-            if (stat.isDirectory()) directories.push(f);
-          }
+    return [
+        '(function(d,c,s,r,m,nn,n) { var k = 0;',
+        'return c.replace(/([a-zA-Y]+)|(Z[0-9]*)/g, function(x,t,w) {',
+        'if (w=="Z") return "\\n";',
+        'else if (w&&w.charCodeAt(0)==' + ('Z').charCodeAt(0) + ') return s[m=parseInt(w.slice(1))] || (s[m] = Array(m+1).join(" "));',
+        'if (r.hasOwnProperty(w)) return r[w];',
+        'nn=0,m=1;',
+        'for(var i=0;i<t.length;i++){',
+        'var n=t.charCodeAt(i);',
+        'nn+=m*(n-(n>' + (('a').charCodeAt(0) - 1) + ' ? ' + ('a').charCodeAt(0) + ':' + (('A').charCodeAt(0) - 26) + '));',
+        'm*=' + (25 + 26) + ';',
+        '}',
+        'if (nn<100 && !r[nn]) return r[nn] = d[nn];',
+        'else return d[nn];',
+        '});\n',
+        '}(("' + wordarr.join(',') + '").split(","),"' + compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r') + '",[],{}))'
+    ].join('\n');
+    function toLetterNumber(num) {
+        if (!num)
+            return 'a';
+        var base = 26 + 25; // a-z A-Y (leave out uppercase Z)
+        var result = [];
+        while (num) {
+            var n = num % base;
+            if (n < 26)
+                result.push(String.fromCharCode('a'.charCodeAt(0) + n));
+            else
+                result.push(String.fromCharCode('A'.charCodeAt(0) + n - 26));
+            num = (num / base) | 0;
         }
-
-        for (var i = 0; i < directories.length; i++) addDir(directories[i]);
-      }
+        return result.join('');
     }
-
-    var tscPath = require.resolve('typescript/lib/tsc.js');
-    var tscScript = '(function(){ return function (ChakraHost) { '+fs.readFileSync(tscPath)+'\n}})() //# '+'sourceURL='+tscPath+'@wrapped';
-
-    var result = {files:[]};
-
-    var chakraHost = {
-      newLine: '\n',
-      args: [],
-      useCaseSensitiveFileNames: true,
-      echo: function(text) {
-        console.log(text);
-      },
-      readFile: function (path, encoding) {
-        return fs.readFileSync(path)+'';
-      },
-      writeFile: function (file, data, writeByteOrderMark) {
-        //console.log('writeFile(',file,',',data.length);
-        result[file] = data;
-        result.files.push({file:file, data:data});
-      },
-      resolvePath: function(file) { return path.resolve(file); },
-      fileExists: function(file) { return fs.existsSync(file) && fs.statSync(file).isFile(); },
-      directoryExists: function(file) {
-        return path.resolve(file) === '/' || fs.existsSync(file) && fs.statSync(file).isDirectory();
-      },
-      createDirectory: function() { },
-      executingFile: tscPath,
-      currentDirectory: process.cwd(),
-      readDirectory: readDirectory,
-      quit: function() { }
-    };
-
-    for (var i = 0; i < arguments.length; i++) {
-      chakraHost.args.push(arguments[i]);
-    }
-
-    var tsc = eval(tscScript);
-    tsc(chakraHost);
-
-    return result;
-  }
-
-
-  function createLink(filename, content) {
-
-    try { var window = require('nowindow'); }
-    catch (error) { return '<'+'A'+'>'; }
-
-    var document = window.document;
-
-    try {
-      if (window.Blob
-          && window.URL
-          && typeof window.URL.createObjectURL==='function') {
-
-        var blob = new window.Blob(typeof content.join === 'function' ? [content.join('\n')] : [content], { type: 'text/html' });
-        var url = window.URL.createObjectURL(blob);
-
-        var link = document.createElement('a');
-
-        link.href = url;
-        //link.download = filename;
-        if ('textContent' in link) link.textContent = filename;
-        else link.innerText = filename;
-
-        if (window.navigator.msSaveOrOpenBlob) {
-          link.onclick = function(e) {
-            if (!e) e = window.event;
-            e.cancelBubble = true;
-            if (e.preventDefault) e.preventDefault();
-            window.navigator.msSaveOrOpenBlob(blob, filename);
-          };
-        }
-        return link;
-      }
-    }
-    catch (error) { }
-
-    var link = document.createElement('a');
-    if ('textContent' in link) link.textContent = filename;
-    else link.innerText = filename;
-    link.href = '#';
-    link.onclick = function(e) {
-      if (!e) e = window.event;
-      if (e.preventDefault) e.preventDefault();
-      if ('cancelBubble' in e) e.cancelBubble = true;
-
-      var blankWindow = window.open('about:blank', '_blank'+(+new Date()));
-
-      if (blankWindow.document.open)
-        blankWindow.document.open();
-      blankWindow.document.write(typeof content.join === 'function' ? [content.join('\n')] : [content]);
-      if (blankWindow.document.close)
-        blankWindow.document.close();
-
-      return true;
-    };
-
-    return link;
-  }
-
-
-
-  function template_content() {
-
-  // <script>document.body.innerHTML = '' </[script> <script id=submodule_script>
-
-  "#lib#"
-
-  if (typeof module!=='undefined' && module && module.exports) {
-
-    "#lib_exports#"
-
-  }
-  else {
-    document.body.style.color = 'white';
-
-    "#lib_tests#"
-
-    // running tests from HTML page
-    var ui = document.createElement('div');
-    ui.style.color = 'black';
-    ui.innerHTML = '<h2> Tests for submodule... </h2>';
-    window.onload = function() {
-      runTests(generateTests());
-    };
-
-  }
-
-  // # sourceURL=/submodule_script.js </[script>
-  /* <style>
-  .prepared {
-    opacity: 0.5;
-  }
-  .running {
-    opacity: 1;
-    color: cornflowerblue;
-    font-weight: bold;
-  }
-  .success {
-   opacity: 1;
-  }
-  .fail {
-    opacity: 1;
-    color: tomato;
-  }
-  .fail pre {
-    font-size: 70%;
-    margin: 0px; margin-left: 1em;
-    padding: 0px;
-  }
-  </style><script id=tests_scripts> /* */
-
-  "#tests#"
-
-  function runTests(tests) {
-
-    var testFilter = location.hash;
-    if (testFilter && testFilter.charAt(0)==='#') testFilter = testFilter.slice(1);
-
-    var summary = document.createElement('h2');
-    summary.style.color = 'black';
-
-    if ('textContent' in summary) summary.textContent = 'Tests (total '+tests.length+'):';
-    else summary.innerText = tests.length+'Tests (total '+tests.length+'):';
-    var successCount = 0;
-    var failCount = 0;
-    document.body.appendChild(summary);
-
-    var testList = document.createElement('div');
-    testList.style.color = 'black';
-
-    var disabledTestList = document.createElement('div');
-    disabledTestList.style.color = 'gold';
-
-    var runIndex = 0;
-    var testsToRun = [];
-    for (var i = 0; i < tests.length; i++) {
-      addTestRow(i);
-    }
-
-    document.body.appendChild(testList);
-    document.body.appendChild(disabledTestList);
-
-    setTimeout(function() {
-      continueRunTests();
-    }, 10);
-
-    function continueRunTests() {
-
-      var endTimeSlice = (Date.now ? Date.now() : +new Date()) + 300;
-
-      // keep running if possible
-      while (true){
-
-        var stillWithinCycle = true;
-        var completedSynchronously = false;
-
-        // skip the disabled
-        while (true) {
-          if (runIndex === testsToRun.length) return;
-          var t = testsToRun[runIndex];
-          runIndex++;
-          if (!t.disabled) break;
-        }
-
-        if (typeof console!=='undefined' && console && console.log) {
-          console.log(t.testEntry.textContent || t.testEntry.innerText+'...');
-        }
-
-        var start = +new Date();
-        t.testEntry.className = 'running';
-        t.run(function(error) {
-          var finish = +new Date();
-
-          if (error) {
-            if (typeof console!=='undefined' && console && console.error) {
-              console.error('  ', error, (finish-start)/1000+'s.'+(' '+error.stack?error.stack:''));
-            }
-          }
-          else {
-            if (typeof console!=='undefined' && console && console.log) {
-              console.log('  OK'+(finish-start)/1000+'s.');
-            }
-          }
-
-          var tm = document.createElement('span');
-          if ('textContent' in tm) tm.textContent = ' '+(finish-start)+'ms';
-          else tm.innerText = ' '+(finish-start)+'ms';
-          tm.style.fontSize = '80%';
-          t.testEntry.appendChild(tm);
-          if (!error) {
-            t.testEntry.className = 'success';
-            successCount++;
-          }
-          else {
-            t.testEntry.className = 'fail';
-            var errorOutput = document.createElement('pre');
-            if ('textContent' in errorOutput) errorOutput.textContent = error;
-            else errorOutput.innerText = error;
-            t.testEntry.appendChild(errorOutput);
-            failCount++;
-          }
-
-          var summaryText =
-              'Tests ('+
-              (failCount?'failed '+failCount:'no fails')+
-              ', succeeded '+successCount+
-              (testsToRun.length>failCount+successCount?', '+(testsToRun.length-failCount-successCount)+' to finish':'')+'):';
-
-          if ('textContent' in summary) summary.textContent = summaryText;
-          else summary.innerText = summaryText;
-
-          if (stillWithinCycle) {
-            completedSynchronously = true;
-          }
-          else {
-            // async anyway, continue inline
-          	continueRunTests();
-          }
+}
+function substitute(bodyText, replacements) {
+    if (typeof replacements === 'function') {
+        var update = bodyText.replace(/\"\#([\S]+)\#\"/g, function (str, token) {
+            return replacements(token) || '';
         });
-
-        stillWithinCycle = false;
-        if (completedSynchronously) {
-          var now = Date.now ? Date.now() : +new Date();
-          if (now>endTimeSlice) {
-            setTimeout(continueRunTests, 1);
-            return;
-          }
+    }
+    else {
+        var update = bodyText.replace(/\"\#([\S]+)\#\"/g, function (str, token) {
+            var r = replacements[token];
+            if (typeof r === 'function')
+                return r() || '';
+            else
+                return r || '';
+        });
+    }
+    return update;
+}
+function wrapEQ80(options) {
+    var fileTotalHTML = '';
+    var fileTotalSize = 0;
+    var fileTotalCount = 0;
+    var fdir = getFiles(options.files);
+    var fileList = fdir.files();
+    for (var i = 0; i < fileList.length; i++) {
+        var n = persistence.formatFileInner(fileList[i], fdir.read(fileList[i]));
+        var sz = n.length - n.indexOf('\n') - 1; // size is counted only for content
+        fileTotalSize += sz;
+        fileTotalCount++;
+        fileTotalHTML = fileTotalHTML ? fileTotalHTML + '\n<!--' + n + '-->' : '<!--' + n + '-->';
+    }
+    options.fileTotalSize = fileTotalSize;
+    options.fileTotalCount = fileTotalCount;
+    var totalsComment = '<!--' + persistence.formatTotalsInner(options.timestamp || +new Date(), fileTotalSize) + '-->';
+    var backgroundStyle = options.defaultBackground || 'background:black;color:black;';
+    return '' +
+        '<!doctype html><head><meta charset="utf-8"><title> ' + (options.title || 'mini shell') + ' </title>\n' +
+        '<meta http-equiv="x-ua-compatible" content="IE=edge">' +
+        totalsComment + '\n' +
+        (options.favicon || '') + '\n' +
+        '<HTA:APPLICATION id="htaHeader" SINGLEINSTANCE="no"></HTA:APPLICATION>' +
+        '<style data-legit=mi> *{display:none;' + backgroundStyle + '} html,body{display:block;' + backgroundStyle + 'margin:0;padding:0;height:100%;overflow:hidden;} </style>\n' +
+        '</head><body>\n' +
+        '<' + 'script data-legit=mi>\n' +
+        loader + '\n\n\n' +
+        persistence + '\n\n\n' +
+        'loader(window, document); //# sourceURL=/EQ80.js\n' +
+        '</' + 'script>\n' +
+        (options.early_html ? options.early_html : '') +
+        '<' + 'script data-legit=mi> // pushing BOOT\n' +
+        '(function(doc) {\n' +
+        '  if (doc.open) doc.open();\n' +
+        '  doc.write(' + jsStringLong(options.boot_html) + ');\n' +
+        '  if (doc.close) doc.close();\n' +
+        '})(loader.boot.contentWindow.document || loader.boot.window.document);\n' +
+        'loader.boot.style.display="block"; //# ' + 'sourceURL=/BOOT-docwrite.html\n' +
+        '</' + 'script>\n' +
+        (options.shell_html ?
+            '<' + 'script data-legit=mi> // pushing SHELL\n' +
+                '(function(doc) {\n' +
+                '  if (doc.open) doc.open();\n' +
+                '  doc.write(' + jsStringLong(options.shell_html) + ');\n' +
+                '  if (doc.close) doc.close();\n' +
+                '})(loader.shell.contentWindow.document || loader.shell.window.document); //# ' + 'sourceURL=/SHELL-docwrite.html\n' +
+                '</' + 'script>\n'
+            : '') +
+        (options.delayed_shell_html ?
+            '<' + 'script data-legit=mi> // pushing SHELL: delayed\n' +
+                'loader.delayed_shell_html = (function() {\n' +
+                '  var doc = loader.shell.contentWindow.document || loader.shell.window.document;\n' +
+                '  return delayed_shell_html;\n' +
+                '  function delayed_shell_html() {\n' +
+                '    if (doc.open) doc.open();\n' +
+                '    doc.write(' + jsStringLong(options.delayed_shell_html) + ');\n' +
+                '    if (doc.close) doc.close();\n' +
+                '  }\n' +
+                '})(); //# ' + 'sourceURL=/SHELL-docwrite.html\n' +
+                '</' + 'script>\n'
+            : '') +
+        fileTotalHTML +
+        '</body></html>';
+}
+function wrapScript(replacements) {
+    var result = functionBody((template_content + '').replace(/\<\/\[script/g, '</' + 'script').replace(/\"\#build_functions\#\"/, functionBody + '\n' +
+        functionArgs + '\n' +
+        jsString + '\n' +
+        jsStringLong + '\n'), replacements);
+    result = result.replace(/^\s+/, '').replace(/\s+$/, '') + '\n';
+    return result;
+}
+function template_content() {
+    // <script>document.body.innerHTML = '' </[script> <script id=submodule_script>
+    "#lib#";
+    if (typeof module !== 'undefined' && module && module.exports) {
+        "#lib_exports#";
+    }
+    else {
+        document.body.style.color = 'white';
+        "#lib_tests#";
+        // running tests from HTML page
+        var ui = document.createElement('div');
+        ui.style.color = 'black';
+        ui.innerHTML = '<h2> Tests for submodule... </h2>';
+        window.onload = function () {
+            runTests(generateTests());
+        };
+    }
+    // # sourceURL=/submodule_script.js </[script>
+    /* <style>
+    .prepared {
+      opacity: 0.5;
+    }
+    .running {
+      opacity: 1;
+      color: cornflowerblue;
+      font-weight: bold;
+    }
+    .success {
+     opacity: 1;
+    }
+    .fail {
+      opacity: 1;
+      color: tomato;
+    }
+    .fail pre {
+      font-size: 70%;
+      margin: 0px; margin-left: 1em;
+      padding: 0px;
+    }
+    </style><script id=tests_scripts> /* */
+    "#tests#";
+    function runTests(tests) {
+        var testFilter = location.hash;
+        if (testFilter && testFilter.charAt(0) === '#')
+            testFilter = testFilter.slice(1);
+        var summary = document.createElement('h2');
+        summary.style.color = 'black';
+        if ('textContent' in summary)
+            summary.textContent = 'Tests (total ' + tests.length + '):';
+        else
+            summary.innerText = tests.length + 'Tests (total ' + tests.length + '):';
+        var successCount = 0;
+        var failCount = 0;
+        document.body.appendChild(summary);
+        var testList = document.createElement('div');
+        testList.style.color = 'black';
+        var disabledTestList = document.createElement('div');
+        disabledTestList.style.color = 'gold';
+        var runIndex = 0;
+        var testsToRun = [];
+        for (var i = 0; i < tests.length; i++) {
+            addTestRow(i);
         }
-        else {
-          return;
+        document.body.appendChild(testList);
+        document.body.appendChild(disabledTestList);
+        setTimeout(function () {
+            continueRunTests();
+        }, 10);
+        function continueRunTests() {
+            var endTimeSlice = (Date.now ? Date.now() : +new Date()) + 300;
+            // keep running if possible
+            while (true) {
+                var stillWithinCycle = true;
+                var completedSynchronously = false;
+                // skip the disabled
+                while (true) {
+                    if (runIndex === testsToRun.length)
+                        return;
+                    var t = testsToRun[runIndex];
+                    runIndex++;
+                    if (!t.disabled)
+                        break;
+                }
+                if (typeof console !== 'undefined' && console && console.log) {
+                    console.log(t.testEntry.textContent || t.testEntry.innerText + '...');
+                }
+                var start = +new Date();
+                t.testEntry.className = 'running';
+                t.run(function (error) {
+                    var finish = +new Date();
+                    if (error) {
+                        if (typeof console !== 'undefined' && console && console.error) {
+                            console.error('  ', error, (finish - start) / 1000 + 's.' + (' ' + error.stack ? error.stack : ''));
+                        }
+                    }
+                    else {
+                        if (typeof console !== 'undefined' && console && console.log) {
+                            console.log('  OK' + (finish - start) / 1000 + 's.');
+                        }
+                    }
+                    var tm = document.createElement('span');
+                    if ('textContent' in tm)
+                        tm.textContent = ' ' + (finish - start) + 'ms';
+                    else
+                        tm.innerText = ' ' + (finish - start) + 'ms';
+                    tm.style.fontSize = '80%';
+                    t.testEntry.appendChild(tm);
+                    if (!error) {
+                        t.testEntry.className = 'success';
+                        successCount++;
+                    }
+                    else {
+                        t.testEntry.className = 'fail';
+                        var errorOutput = document.createElement('pre');
+                        if ('textContent' in errorOutput)
+                            errorOutput.textContent = error;
+                        else
+                            errorOutput.innerText = error;
+                        t.testEntry.appendChild(errorOutput);
+                        failCount++;
+                    }
+                    var summaryText = 'Tests (' +
+                        (failCount ? 'failed ' + failCount : 'no fails') +
+                        ', succeeded ' + successCount +
+                        (testsToRun.length > failCount + successCount ? ', ' + (testsToRun.length - failCount - successCount) + ' to finish' : '') + '):';
+                    if ('textContent' in summary)
+                        summary.textContent = summaryText;
+                    else
+                        summary.innerText = summaryText;
+                    if (stillWithinCycle) {
+                        completedSynchronously = true;
+                    }
+                    else {
+                        // async anyway, continue inline
+                        continueRunTests();
+                    }
+                });
+                stillWithinCycle = false;
+                if (completedSynchronously) {
+                    var now = Date.now ? Date.now() : +new Date();
+                    if (now > endTimeSlice) {
+                        setTimeout(continueRunTests, 1);
+                        return;
+                    }
+                }
+                else {
+                    return;
+                }
+            }
         }
-      }
-    }
-
-    function addTestRow(i) {
-      var t = tests[i];
-      var testEntry = document.createElement('div');
-      if (testFilter && t.name.toLowerCase().indexOf(testFilter.toLowerCase())<0) {
-      	testEntry.className = 'disabled';
-        t.disabled = true;
-        disabledTestList.appendChild(testEntry);
-      }
-      else{
-      	testEntry.className = 'prepared';
-        testsToRun.push(t);
-      	testList.appendChild(testEntry);
-      }
-
-      if ('textContent' in testEntry) testEntry.textContent = t.name;
-      else testEntry.innerText = t.name;
-      t.testEntry = testEntry;
-    }
-  }
-
-
-  function assert(condition, message) {
-    if (!condition) throw new Error(message||'Failure '+condition);
-  }
-
-  assert.equal = (function(){
-    function equal(expected, actual, message) {
-      if (expected!=actual) throw new Error(message||'Unmatch: '+expected+' != '+actual);
-    }
-    return equal;
-  })();
-
-  function generateTests() {
-
-    var allTests = [];
-    var _dummy = {};
-
-    for (var k in tests) if (!(k in _dummy) && tests[k] && /^[a-z\_]/.test(k)) {
-      collectTests(k, tests[k]);
-    }
-
-    return allTests;
-
-
-    function collectTests(prefix, obj) {
-      if (!obj) return;
-      for (var k in obj) if (!(k in _dummy) && obj[k]) {
-        if (/^[A-Z]/.test(k) && typeof obj[k] === 'function') {
-          // TODO: should we construct here?
-        }
-        else if (/^[a-z]/.test(k)) {
-          if (typeof obj[k]==='function') {
-            if (k==='generateTests') {
-              var moreTests = obj.generateTests();
-              collectTests(prefix, moreTests);
+        function addTestRow(i) {
+            var t = tests[i];
+            var testEntry = document.createElement('div');
+            if (testFilter && t.name.toLowerCase().indexOf(testFilter.toLowerCase()) < 0) {
+                testEntry.className = 'disabled';
+                t.disabled = true;
+                disabledTestList.appendChild(testEntry);
             }
             else {
-              addTest(prefix+'.'+k, obj, k);
+                testEntry.className = 'prepared';
+                testsToRun.push(t);
+                testList.appendChild(testEntry);
             }
-          }
-          else if (typeof obj[k]==='object' && /^[a-z]/.test(k)) {
-            collectTests(prefix+'.'+k, obj[k]);
-          }
+            if ('textContent' in testEntry)
+                testEntry.textContent = t.name;
+            else
+                testEntry.innerText = t.name;
+            t.testEntry = testEntry;
         }
-      }
     }
-
-    function addTest(fullname, thisObj, key) {
-      var args = functionArgs(thisObj[key]);
-      if (args && /callback/.test(args)) {
-        allTests.push({
-          name: fullname,
-          run: function(callback) {
-            try {
-              thisObj[key](callback);
-            }
-            catch (error) {
-              callback(error);
-            }
-          }
-        });
-      }
-      else {
-        allTests.push({
-          name: fullname,
-          run: function(callback) {
-            try {
-              thisObj[key]();
-            }
-            catch (error) {
-              callback(error);
-              return;
-            }
-
-            callback(null);
-          }
-        });
-      }
+    function assert(condition, message) {
+        if (!condition)
+            throw new Error(message || 'Failure ' + condition);
     }
-
-  }
-
-  "#build_functions#"
-
-  // # sourceURL=/tests_scripts.js </[script>
-  }
-
-
-  }
-  else {
-    document.body.style.color = 'white';
-
-    // tests/jsString_and_long.js
-define_jsString_and_long_tests(
-  typeof tests==='undefined' || !tests ? (tests = {}):tests);
-
-function define_jsString_and_long_tests(tests){
-
-  var jsString_pairs = [
-    [null, 'null'],
-    ['', '""'],
-    ['\'', '"\'"'],
-    ['"', '"\\""'],
-    ['\\', '"\\\\"'],
-    ['abcdef', '"abcdef"'],
-    ['\n', '"\\n"'],
-    ['abc\ndef', '"abc\\n"+\n  "def"'],
-    ['\r\n', '"\\r\\n"'],
-    [String.fromCharCode(0), '"\\u0000"'],
-    [String.fromCharCode(0x00FD), '"\u00FD"'], // no substitution
-    [String.fromCharCode(0xFD00), '"\\ufd00"'],
-    [String.fromCharCode(0x60FD), '"\u60FD"'], // no substitution
-    [String.fromCharCode(0xFD60), '"\\ufd60"'],
-    [String.fromCharCode(0x00FF), '"\u00FF"'], // no substitution
-    [String.fromCharCode(0xFF00), '"\\uff00"'],
-    [String.fromCharCode(0x60FF), '"\u60FF"'], // no substitution
-    [String.fromCharCode(0xFF60), '"\\uff60"'],
-    ['a  ', '"a  "'],
-    ['  a  ', '"  a  "'],
-    ['  a', '"  a"']
-  ];
-
-  var jsStringTests = {};
-  var jsStringLongTests = {};
-
-  for (var i = 0; i < jsString_pairs.length; i++) {
-    var arg = jsString_pairs[i][0];
-    var res = jsString_pairs[i][1];
-    var longres = jsString_pairs[i][2];
-    addTest(arg, res, longres);
-  }
-
-  jsStringLongTests['testScriptItself (roundtrip)'] = function() {
-    var txt = define_jsString_and_long_tests+'';
-    var rdtr = eval(jsStringLong(txt));
-    assert.equal(txt, rdtr);
-  };
-
-  jsStringLongTests['testScriptItself (compresses)'] = function() {
-    var txt = define_jsString_and_long_tests+'';
-    var cmpr = jsStringLong(txt);
-    assert.equal(
-      'compression',
-    	cmpr.length<txt.length ? 'compression' : 'was '+txt.length+', become '+cmpr.length);
-  };
-
-  tests.jsString = jsStringTests;
-  tests.jsStringLong = jsStringLongTests;
-
-  function addTest(arg, res, longres) {
-    jsStringTests['arg: '+JSON.stringify(arg)] = function() {
-      assert.equal(res, jsString(arg));
-    };
-    jsStringTests['arg: '+JSON.stringify(arg)+' (roundtrip)'] = function() {
-      var rdtr = eval(jsString(arg));
-      assert.equal(arg, rdtr);
-    };
-    jsStringLongTests['arg: '+JSON.stringify(arg)+' (roundtrip)'] = function() {
-      var rdtr = eval(jsStringLong(arg));
-      assert.equal(arg, rdtr);
-    };
-  }
-
+    assert.equal = (function () {
+        function equal(expected, actual, message) {
+            if (expected != actual)
+                throw new Error(message || 'Unmatch: ' + expected + ' != ' + actual);
+        }
+        return equal;
+    })();
+    function generateTests() {
+        var allTests = [];
+        var _dummy = {};
+        for (var k in tests)
+            if (!(k in _dummy) && tests[k] && /^[a-z\_]/.test(k)) {
+                collectTests(k, tests[k]);
+            }
+        return allTests;
+        function collectTests(prefix, obj) {
+            if (!obj)
+                return;
+            for (var k in obj)
+                if (!(k in _dummy) && obj[k]) {
+                    if (/^[A-Z]/.test(k) && typeof obj[k] === 'function') {
+                    }
+                    else if (/^[a-z]/.test(k)) {
+                        if (typeof obj[k] === 'function') {
+                            if (k === 'generateTests') {
+                                var moreTests = obj.generateTests();
+                                collectTests(prefix, moreTests);
+                            }
+                            else {
+                                addTest(prefix + '.' + k, obj, k);
+                            }
+                        }
+                        else if (typeof obj[k] === 'object' && /^[a-z]/.test(k)) {
+                            collectTests(prefix + '.' + k, obj[k]);
+                        }
+                    }
+                }
+        }
+        function addTest(fullname, thisObj, key) {
+            var args = functionArgs(thisObj[key]);
+            if (args && /callback/.test(args)) {
+                allTests.push({
+                    name: fullname,
+                    run: function (callback) {
+                        try {
+                            thisObj[key](callback);
+                        }
+                        catch (error) {
+                            callback(error);
+                        }
+                    }
+                });
+            }
+            else {
+                allTests.push({
+                    name: fullname,
+                    run: function (callback) {
+                        try {
+                            thisObj[key]();
+                        }
+                        catch (error) {
+                            callback(error);
+                            return;
+                        }
+                        callback(null);
+                    }
+                });
+            }
+        }
+    }
+    "#build_functions#";
+    // # sourceURL=/tests_scripts.js </[script>
 }
 
 
 
-    // running tests from HTML page
-    var ui = document.createElement('div');
-    ui.style.color = 'black';
-    ui.innerHTML = '<h2> Tests for submodule... </h2>';
-    window.onload = function() {
-      runTests(generateTests());
+exports.htmlSpotExternals = htmlSpotExternals;
+exports.compileTS = compileTS;
+exports.buildStats = buildStats;
+exports.jsString = jsString;
+exports.jsStringLong = jsStringLong;
+exports.functionBody = functionBody;
+exports.functionArgs = functionArgs;
+exports.wrapScript = wrapScript;
+exports.substitute = substitute;
+exports.wrapEQ80 = wrapEQ80;
+exports.getFiles = getFiles;
+
+persistence();
+exports.loader = loader;
+exports.persistence = persistence;
+}
+
+build_tools(module.exports);;
+    }
+    else {
+        document.body.style.color = 'white';
+        loader();
+
+
+var tests;
+(function (tests) {
+    tests.buildMetadata = {
+        'not null': function () { return assert(loader.build); },
+        'timestamp>=1462227529476': function () { return assert(loader.build.timestamp >= 1462227529476); },
+        '60000>taken>10': function () { return assert(loader.build.taken > 10 && loader.build.taken < 60000); },
+        'platform is string': function () { return assert.equal('string', typeof loader.build.platform); }
     };
-
-  }
-
-  // # sourceURL=/submodule_script.js </script>
-  /* <style>
-  .prepared {
-    opacity: 0.5;
-  }
-  .running {
-    opacity: 1;
-    color: cornflowerblue;
-    font-weight: bold;
-  }
-  .success {
-   opacity: 1;
-  }
-  .fail {
-    opacity: 1;
-    color: tomato;
-  }
-  .fail pre {
-    font-size: 70%;
-    margin: 0px; margin-left: 1em;
-    padding: 0px;
-  }
-  </style><script id=tests_scripts> /* */
-
-  
-
-  function runTests(tests) {
-
-    var testFilter = location.hash;
-    if (testFilter && testFilter.charAt(0)==='#') testFilter = testFilter.slice(1);
-
-    var summary = document.createElement('h2');
-    summary.style.color = 'black';
-
-    if ('textContent' in summary) summary.textContent = 'Tests (total '+tests.length+'):';
-    else summary.innerText = tests.length+'Tests (total '+tests.length+'):';
-    var successCount = 0;
-    var failCount = 0;
-    document.body.appendChild(summary);
-
-    var testList = document.createElement('div');
-    testList.style.color = 'black';
-
-    var disabledTestList = document.createElement('div');
-    disabledTestList.style.color = 'gold';
-
-    var runIndex = 0;
-    var testsToRun = [];
-    for (var i = 0; i < tests.length; i++) {
-      addTestRow(i);
+})(tests || (tests = {}));
+;
+var tests;
+(function (tests) {
+    tests.deriveUniqueKey_tests = {
+        null_value: function () { return assertGoodKey(loader.deriveUniqueKey(null)); },
+        strempty_value: function () { return assertGoodKey(loader.deriveUniqueKey('')); },
+        str123456_value: function () { return assertGoodKey(loader.deriveUniqueKey('123456')); }
+    };
+    function assertGoodKey(key) {
+        assert(key.length > 5, 'length>5');
+        assert(/^[a-zA-Z0-9_]+$/.test(key), 'all chars are alphanumberical');
+        for (var i = 3; i < key.length; i++) {
+            assert(key.charAt(i) !== key.charAt(i - 1)
+                || key.charAt(i - 1) !== key.charAt(i - 2)
+                || key.charAt(i - 2) !== key.charAt(i - 3), '3 or more duplicate characters at ' + (i - 3));
+        }
     }
-
-    document.body.appendChild(testList);
-    document.body.appendChild(disabledTestList);
-
-    setTimeout(function() {
-      continueRunTests();
-    }, 10);
-
-    function continueRunTests() {
-
-      var endTimeSlice = (Date.now ? Date.now() : +new Date()) + 300;
-
-      // keep running if possible
-      while (true){
-
-        var stillWithinCycle = true;
-        var completedSynchronously = false;
-
-        // skip the disabled
-        while (true) {
-          if (runIndex === testsToRun.length) return;
-          var t = testsToRun[runIndex];
-          runIndex++;
-          if (!t.disabled) break;
+})(tests || (tests = {}));
+// (triple slash <) reference path="../src/API.d.ts"/>
+;
+        // running tests from HTML page
+        var ui = document.createElement('div');
+        ui.style.color = 'black';
+        ui.innerHTML = '<h2> Tests for submodule... </h2>';
+        window.onload = function () {
+            runTests(generateTests());
+        };
+    }
+    // # sourceURL=/submodule_script.js </script>
+    /* <style>
+    .prepared {
+      opacity: 0.5;
+    }
+    .running {
+      opacity: 1;
+      color: cornflowerblue;
+      font-weight: bold;
+    }
+    .success {
+     opacity: 1;
+    }
+    .fail {
+      opacity: 1;
+      color: tomato;
+    }
+    .fail pre {
+      font-size: 70%;
+      margin: 0px; margin-left: 1em;
+      padding: 0px;
+    }
+    </style><script id=tests_scripts> /* */
+    ;
+    function runTests(tests) {
+        var testFilter = location.hash;
+        if (testFilter && testFilter.charAt(0) === '#')
+            testFilter = testFilter.slice(1);
+        var summary = document.createElement('h2');
+        summary.style.color = 'black';
+        if ('textContent' in summary)
+            summary.textContent = 'Tests (total ' + tests.length + '):';
+        else
+            summary.innerText = tests.length + 'Tests (total ' + tests.length + '):';
+        var successCount = 0;
+        var failCount = 0;
+        document.body.appendChild(summary);
+        var testList = document.createElement('div');
+        testList.style.color = 'black';
+        var disabledTestList = document.createElement('div');
+        disabledTestList.style.color = 'gold';
+        var runIndex = 0;
+        var testsToRun = [];
+        for (var i = 0; i < tests.length; i++) {
+            addTestRow(i);
         }
-
-        if (typeof console!=='undefined' && console && console.log) {
-          console.log(t.testEntry.textContent || t.testEntry.innerText+'...');
-        }
-
-        var start = +new Date();
-        t.testEntry.className = 'running';
-        t.run(function(error) {
-          var finish = +new Date();
-
-          if (error) {
-            if (typeof console!=='undefined' && console && console.error) {
-              console.error('  ', error, (finish-start)/1000+'s.'+(' '+error.stack?error.stack:''));
+        document.body.appendChild(testList);
+        document.body.appendChild(disabledTestList);
+        setTimeout(function () {
+            continueRunTests();
+        }, 10);
+        function continueRunTests() {
+            var endTimeSlice = (Date.now ? Date.now() : +new Date()) + 300;
+            // keep running if possible
+            while (true) {
+                var stillWithinCycle = true;
+                var completedSynchronously = false;
+                // skip the disabled
+                while (true) {
+                    if (runIndex === testsToRun.length)
+                        return;
+                    var t = testsToRun[runIndex];
+                    runIndex++;
+                    if (!t.disabled)
+                        break;
+                }
+                if (typeof console !== 'undefined' && console && console.log) {
+                    console.log(t.testEntry.textContent || t.testEntry.innerText + '...');
+                }
+                var start = +new Date();
+                t.testEntry.className = 'running';
+                t.run(function (error) {
+                    var finish = +new Date();
+                    if (error) {
+                        if (typeof console !== 'undefined' && console && console.error) {
+                            console.error('  ', error, (finish - start) / 1000 + 's.' + (' ' + error.stack ? error.stack : ''));
+                        }
+                    }
+                    else {
+                        if (typeof console !== 'undefined' && console && console.log) {
+                            console.log('  OK' + (finish - start) / 1000 + 's.');
+                        }
+                    }
+                    var tm = document.createElement('span');
+                    if ('textContent' in tm)
+                        tm.textContent = ' ' + (finish - start) + 'ms';
+                    else
+                        tm.innerText = ' ' + (finish - start) + 'ms';
+                    tm.style.fontSize = '80%';
+                    t.testEntry.appendChild(tm);
+                    if (!error) {
+                        t.testEntry.className = 'success';
+                        successCount++;
+                    }
+                    else {
+                        t.testEntry.className = 'fail';
+                        var errorOutput = document.createElement('pre');
+                        if ('textContent' in errorOutput)
+                            errorOutput.textContent = error;
+                        else
+                            errorOutput.innerText = error;
+                        t.testEntry.appendChild(errorOutput);
+                        failCount++;
+                    }
+                    var summaryText = 'Tests (' +
+                        (failCount ? 'failed ' + failCount : 'no fails') +
+                        ', succeeded ' + successCount +
+                        (testsToRun.length > failCount + successCount ? ', ' + (testsToRun.length - failCount - successCount) + ' to finish' : '') + '):';
+                    if ('textContent' in summary)
+                        summary.textContent = summaryText;
+                    else
+                        summary.innerText = summaryText;
+                    if (stillWithinCycle) {
+                        completedSynchronously = true;
+                    }
+                    else {
+                        // async anyway, continue inline
+                        continueRunTests();
+                    }
+                });
+                stillWithinCycle = false;
+                if (completedSynchronously) {
+                    var now = Date.now ? Date.now() : +new Date();
+                    if (now > endTimeSlice) {
+                        setTimeout(continueRunTests, 1);
+                        return;
+                    }
+                }
+                else {
+                    return;
+                }
             }
-          }
-          else {
-            if (typeof console!=='undefined' && console && console.log) {
-              console.log('  OK'+(finish-start)/1000+'s.');
-            }
-          }
-
-          var tm = document.createElement('span');
-          if ('textContent' in tm) tm.textContent = ' '+(finish-start)+'ms';
-          else tm.innerText = ' '+(finish-start)+'ms';
-          tm.style.fontSize = '80%';
-          t.testEntry.appendChild(tm);
-          if (!error) {
-            t.testEntry.className = 'success';
-            successCount++;
-          }
-          else {
-            t.testEntry.className = 'fail';
-            var errorOutput = document.createElement('pre');
-            if ('textContent' in errorOutput) errorOutput.textContent = error;
-            else errorOutput.innerText = error;
-            t.testEntry.appendChild(errorOutput);
-            failCount++;
-          }
-
-          var summaryText =
-              'Tests ('+
-              (failCount?'failed '+failCount:'no fails')+
-              ', succeeded '+successCount+
-              (testsToRun.length>failCount+successCount?', '+(testsToRun.length-failCount-successCount)+' to finish':'')+'):';
-
-          if ('textContent' in summary) summary.textContent = summaryText;
-          else summary.innerText = summaryText;
-
-          if (stillWithinCycle) {
-            completedSynchronously = true;
-          }
-          else {
-            // async anyway, continue inline
-          	continueRunTests();
-          }
-        });
-
-        stillWithinCycle = false;
-        if (completedSynchronously) {
-          var now = Date.now ? Date.now() : +new Date();
-          if (now>endTimeSlice) {
-            setTimeout(continueRunTests, 1);
-            return;
-          }
         }
-        else {
-          return;
-        }
-      }
-    }
-
-    function addTestRow(i) {
-      var t = tests[i];
-      var testEntry = document.createElement('div');
-      if (testFilter && t.name.toLowerCase().indexOf(testFilter.toLowerCase())<0) {
-      	testEntry.className = 'disabled';
-        t.disabled = true;
-        disabledTestList.appendChild(testEntry);
-      }
-      else{
-      	testEntry.className = 'prepared';
-        testsToRun.push(t);
-      	testList.appendChild(testEntry);
-      }
-
-      if ('textContent' in testEntry) testEntry.textContent = t.name;
-      else testEntry.innerText = t.name;
-      t.testEntry = testEntry;
-    }
-  }
-
-
-  function assert(condition, message) {
-    if (!condition) throw new Error(message||'Failure '+condition);
-  }
-
-  assert.equal = (function(){
-    function equal(expected, actual, message) {
-      if (expected!=actual) throw new Error(message||'Unmatch: '+expected+' != '+actual);
-    }
-    return equal;
-  })();
-
-  function generateTests() {
-
-    var allTests = [];
-    var _dummy = {};
-
-    for (var k in tests) if (!(k in _dummy) && tests[k] && /^[a-z\_]/.test(k)) {
-      collectTests(k, tests[k]);
-    }
-
-    return allTests;
-
-
-    function collectTests(prefix, obj) {
-      if (!obj) return;
-      for (var k in obj) if (!(k in _dummy) && obj[k]) {
-        if (/^[A-Z]/.test(k) && typeof obj[k] === 'function') {
-          // TODO: should we construct here?
-        }
-        else if (/^[a-z]/.test(k)) {
-          if (typeof obj[k]==='function') {
-            if (k==='generateTests') {
-              var moreTests = obj.generateTests();
-              collectTests(prefix, moreTests);
+        function addTestRow(i) {
+            var t = tests[i];
+            var testEntry = document.createElement('div');
+            if (testFilter && t.name.toLowerCase().indexOf(testFilter.toLowerCase()) < 0) {
+                testEntry.className = 'disabled';
+                t.disabled = true;
+                disabledTestList.appendChild(testEntry);
             }
             else {
-              addTest(prefix+'.'+k, obj, k);
+                testEntry.className = 'prepared';
+                testsToRun.push(t);
+                testList.appendChild(testEntry);
             }
-          }
-          else if (typeof obj[k]==='object' && /^[a-z]/.test(k)) {
-            collectTests(prefix+'.'+k, obj[k]);
-          }
+            if ('textContent' in testEntry)
+                testEntry.textContent = t.name;
+            else
+                testEntry.innerText = t.name;
+            t.testEntry = testEntry;
         }
-      }
     }
-
-    function addTest(fullname, thisObj, key) {
-      var args = functionArgs(thisObj[key]);
-      if (args && /callback/.test(args)) {
-        allTests.push({
-          name: fullname,
-          run: function(callback) {
-            try {
-              thisObj[key](callback);
-            }
-            catch (error) {
-              callback(error);
-            }
-          }
-        });
-      }
-      else {
-        allTests.push({
-          name: fullname,
-          run: function(callback) {
-            try {
-              thisObj[key]();
-            }
-            catch (error) {
-              callback(error);
-              return;
-            }
-
-            callback(null);
-          }
-        });
-      }
+    function assert(condition, message) {
+        if (!condition)
+            throw new Error(message || 'Failure ' + condition);
     }
-
-  }
-
-  function functionBody(fn, replacements) {
+    assert.equal = (function () {
+        function equal(expected, actual, message) {
+            if (expected != actual)
+                throw new Error(message || 'Unmatch: ' + expected + ' != ' + actual);
+        }
+        return equal;
+    })();
+    function generateTests() {
+        var allTests = [];
+        var _dummy = {};
+        for (var k in tests)
+            if (!(k in _dummy) && tests[k] && /^[a-z\_]/.test(k)) {
+                collectTests(k, tests[k]);
+            }
+        return allTests;
+        function collectTests(prefix, obj) {
+            if (!obj)
+                return;
+            for (var k in obj)
+                if (!(k in _dummy) && obj[k]) {
+                    if (/^[A-Z]/.test(k) && typeof obj[k] === 'function') {
+                    }
+                    else if (/^[a-z]/.test(k)) {
+                        if (typeof obj[k] === 'function') {
+                            if (k === 'generateTests') {
+                                var moreTests = obj.generateTests();
+                                collectTests(prefix, moreTests);
+                            }
+                            else {
+                                addTest(prefix + '.' + k, obj, k);
+                            }
+                        }
+                        else if (typeof obj[k] === 'object' && /^[a-z]/.test(k)) {
+                            collectTests(prefix + '.' + k, obj[k]);
+                        }
+                    }
+                }
+        }
+        function addTest(fullname, thisObj, key) {
+            var args = functionArgs(thisObj[key]);
+            if (args && /callback/.test(args)) {
+                allTests.push({
+                    name: fullname,
+                    run: function (callback) {
+                        try {
+                            thisObj[key](callback);
+                        }
+                        catch (error) {
+                            callback(error);
+                        }
+                    }
+                });
+            }
+            else {
+                allTests.push({
+                    name: fullname,
+                    run: function (callback) {
+                        try {
+                            thisObj[key]();
+                        }
+                        catch (error) {
+                            callback(error);
+                            return;
+                        }
+                        callback(null);
+                    }
+                });
+            }
+        }
+    }
+    function functionBody(fn, replacements) {
     // first skip until (
     // then skip until )
     // then skip until {
     // then take everything until the last }
-    var match =
-        /^[^\(]*\([^\)]*\)[^\{]*\{([\s\S]*)\}[^\}]*$/.exec(fn+'');
-        // /^[^\(]*\([^\)]*\)[^\{]*\{([ \t]*\n)([\s\S]*)([ \t]*\n[ \t]*)\}[^\}]*$/.exec(fn+'');
-    if (!match) return null;
-
+    var match = /^[^\(]*\([^\)]*\)[^\{]*\{([\s\S]*)\}[^\}]*$/.exec(fn + '');
+    // /^[^\(]*\([^\)]*\)[^\{]*\{([ \t]*\n)([\s\S]*)([ \t]*\n[ \t]*)\}[^\}]*$/.exec(fn+'');
+    if (!match)
+        return null;
     var bodyText = match[1];
-    if (!replacements) return bodyText;
-    else return substitute(bodyText, replacements);
-  }
+    if (!replacements)
+        return bodyText;
+    else
+        return substitute(bodyText, replacements);
+}
 function functionArgs(fn) {
-    var match = /^[^\(]*\(\s*([^\)]*)\s*\)/.exec(fn+'');
-    return match?match[1]:null;
-  }
+    var match = /^[^\(]*\(\s*([^\)]*)\s*\)/.exec(fn + '');
+    return match ? match[1] : null;
+}
 function jsString(str) {
     if (!str) {
-      if (typeof str==='string') return '""';
-      else if (typeof str==='undefined') return 'undefined';
-      else return 'null';
+        if (typeof str === 'string')
+            return '""';
+        else if (typeof str === 'undefined')
+            return 'undefined';
+        else
+            return 'null';
     }
-
-    var _JSON = typeof JSON!=='undefined'? JSON : typeof window === 'undefined' ? null : window.JSON;
+    var _JSON = typeof JSON !== 'undefined' ? JSON : typeof window === 'undefined' ? null : window.JSON;
     var result = '"';
     var stretchStart = 0;
     for (var i = 0; i < str.length; i++) {
-      var code = str.charCodeAt(i);
-      var fix;
-      switch (code) {
-        case 10: fix = i==str.length-1 ? '\\n' : '\\n"+\n  "'; break;
-        case 13: fix = '\\r'; break;
-        case 92: fix = '\\\\'; break;
-        case 34: fix = '\\\"'; break;
-        case 9: fix = '\\t'; break;
-        default:
-          if (code < 32 || // transcribe control codes
-              ((code&0xFF00)===0xFD00) || ((code&0xFF00)==0xFF00)) { // transcribe potentially corrupt Unicode
-            fix = '\\u'+(0x10000 + code).toString(16).slice(1);
-            break;
-          }
-          continue;
-      }
-
-      if (stretchStart!==i) {
-      	result += str.slice(stretchStart, i) + fix;
-      }
-      else {
-        result += fix;
-      }
-
-      stretchStart = i+1;
+        var code = str.charCodeAt(i);
+        var fix;
+        switch (code) {
+            case 10:
+                fix = i == str.length - 1 ? '\\n' : '\\n"+\n  "';
+                break;
+            case 13:
+                fix = '\\r';
+                break;
+            case 92:
+                fix = '\\\\';
+                break;
+            case 34:
+                fix = '\\\"';
+                break;
+            case 9:
+                fix = '\\t';
+                break;
+            default:
+                if (code < 32 ||
+                    ((code & 0xFF00) === 0xFD00) || ((code & 0xFF00) == 0xFF00)) {
+                    fix = '\\u' + (0x10000 + code).toString(16).slice(1);
+                    break;
+                }
+                continue;
+        }
+        if (stretchStart !== i) {
+            result += str.slice(stretchStart, i) + fix;
+        }
+        else {
+            result += fix;
+        }
+        stretchStart = i + 1;
     }
-
     if (stretchStart)
-      result += str.slice(stretchStart)+'"';
+        result += str.slice(stretchStart) + '"';
     else
-      result = '"'+str+'"';
-
+        result = '"' + str + '"';
     return result;
-  }
+}
 function jsStringLong(str) {
-    if (str===null) return 'null';
-    else if (typeof str==='undefined') return 'undefined';
+    if (str === null)
+        return 'null';
+    else if (typeof str === 'undefined')
+        return 'undefined';
     var wordCounts = {};
+    var singleWordSet = {};
     var wordArray = [];
-    str.replace(/[a-zA-Z0-9_]+/g, function(w) {
-      var key = '*'+w;
-      if (wordCounts[key]) {
-        wordCounts[key]++;
-      }
-      else {
-        wordCounts[key] = 1;
-        wordArray.push(w);
-      }
+    var dummy = {};
+    str.replace(/[a-zA-Z0-9_]+/g, function (w) {
+        var key = w in dummy ? '*' + w : w;
+        if (singleWordSet[key]) {
+            wordCounts[key] = 2;
+        }
+        else if (wordCounts[key]) {
+            wordCounts[key]++;
+        }
+        else {
+            singleWordSet[key] = 1;
+            wordArray.push(w);
+        }
     });
-    wordArray.sort(function(w1, w2) {
-      var n1 = wordCounts['*'+w1];
-      var n2 = wordCounts['*'+w2];
-      return n1 > n2 ? -1 : n2 > 1 ? +1 : 0;
+    wordArray.sort(function (w1, w2) {
+        var k1 = w1 in dummy ? '*' + w1 : w1;
+        var k2 = w2 in dummy ? '*' + w2 : w2;
+        var n1 = wordCounts[k1];
+        var n2 = wordCounts[k2];
+        return n1 > n2 ? -1 : n2 > 1 ? +1 : 0;
     });
     var replaceTable = {};
     for (var i = 0; i < wordArray.length; i++) {
-      replaceTable['*'+wordArray[i]] = toLetterNumber(i);
+        var k = wordArray[i] in dummy ? '*' + wordArray[i] : wordArray[i];
+        replaceTable[k] = toLetterNumber(i);
     }
-
-    var compressed = str.replace(/(\s+)|([a-zA-Z0-9_]+)/g, function(match, whitespace, word) {
-      if (word) return replaceTable['*'+word];
-      return whitespace.
-        replace(/ +/g, function(spaces) {
-          if(spaces.length<2) return spaces;
-          else return 'Z'+spaces.length;
+    var compressed = str.replace(/(\s+)|([a-zA-Z0-9_]+)/g, function (match, whitespace, word) {
+        if (word) {
+            var k = word in dummy ? '*' + word : word;
+            return replaceTable[k];
+        }
+        return whitespace.
+            replace(/  +/g, function (spaces) {
+            return 'Z' + spaces.length;
         }).
-        replace(/\n/g, 'Z');
+            replace(/\n/g, 'Z');
     });
-
     var wordarr = [];
     var lineLen = 0;
     for (var i = 0; i < wordArray.length; i++) {
-      var nextWord = wordArray[i];
-      if (lineLen) {
-        wordarr[wordarr.length-1] += ','+nextWord;
-      }
-      else {
-        if (i) nextWord = '"+\n"'+nextWord;
-        wordarr.push(nextWord);
-      }
-
-      lineLen+=nextWord.length+1;
-      if (lineLen>100)
-        lineLen = 0;
+        var nextWord = wordArray[i];
+        if (lineLen) {
+            wordarr[wordarr.length - 1] += ',' + nextWord;
+        }
+        else {
+            if (i)
+                nextWord = '"+\n"' + nextWord;
+            wordarr.push(nextWord);
+        }
+        lineLen += nextWord.length + 1;
+        if (lineLen > 100)
+            lineLen = 0;
     }
-
     return [
-      '(function(d,c,s,r,m,nn,n) { var k = 0;',
-      'return c.replace(/([a-zA-Y]+)|(Z[0-9]*)/g, function(x,t,w) {',
+        '(function(d,c,s,r,m,nn,n) { var k = 0;',
+        'return c.replace(/([a-zA-Y]+)|(Z[0-9]*)/g, function(x,t,w) {',
         'if (w=="Z") return "\\n";',
-        'else if (w&&w.charCodeAt(0)=='+('Z').charCodeAt(0)+') return s[m=parseInt(w.slice(1))] || (s[m] = Array(m+1).join(" "));',
+        'else if (w&&w.charCodeAt(0)==' + ('Z').charCodeAt(0) + ') return s[m=parseInt(w.slice(1))] || (s[m] = Array(m+1).join(" "));',
         'if (r.hasOwnProperty(w)) return r[w];',
         'nn=0,m=1;',
         'for(var i=0;i<t.length;i++){',
-          'var n=t.charCodeAt(i);',
-          'nn+=m*(n-(n>'+(('a').charCodeAt(0)-1)+' ? '+('a').charCodeAt(0)+':'+(('A').charCodeAt(0)-26)+'));',
-          'm*='+(25+26)+';',
+        'var n=t.charCodeAt(i);',
+        'nn+=m*(n-(n>' + (('a').charCodeAt(0) - 1) + ' ? ' + ('a').charCodeAt(0) + ':' + (('A').charCodeAt(0) - 26) + '));',
+        'm*=' + (25 + 26) + ';',
         '}',
-        'if (nn<100 && !r[nn]) return r[nn] = d[nn];', // cache word lookups for 100 most frequent words
+        'if (nn<100 && !r[nn]) return r[nn] = d[nn];',
         'else return d[nn];',
-      '});\n',
-      '}(("'+wordarr.join(',')+'").split(","),"'+compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r')+'",[],{}))'
+        '});\n',
+        '}(("' + wordarr.join(',') + '").split(","),"' + compressed.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\r/g, '\\r') + '",[],{}))'
     ].join('\n');
-
     function toLetterNumber(num) {
-      if (!num) return 'a';
-      var base = 26+25; // a-z A-Y (leave out uppercase Z)
-      var result = [];
-      while (num) {
-        var n = num % base;
-        if (n<26)
-          result.push(String.fromCharCode('a'.charCodeAt(0)+n));
-        else
-          result.push(String.fromCharCode('A'.charCodeAt(0)+n-26));
-        num = (num / base)|0;
-      }
-      return result.join('');
+        if (!num)
+            return 'a';
+        var base = 26 + 25; // a-z A-Y (leave out uppercase Z)
+        var result = [];
+        while (num) {
+            var n = num % base;
+            if (n < 26)
+                result.push(String.fromCharCode('a'.charCodeAt(0) + n));
+            else
+                result.push(String.fromCharCode('A'.charCodeAt(0) + n - 26));
+            num = (num / base) | 0;
+        }
+        return result.join('');
     }
-  }
-
-
-  // # sourceURL=/tests_scripts.js </script>
+}
+;
+    // # sourceURL=/tests_scripts.js </script>

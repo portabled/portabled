@@ -264,7 +264,7 @@ class CommanderShell {
 
   private _twoPanels_doubleclick(): boolean {
     var cursorPath = this._twoPanels.cursorPath();
-    return this._execute(cursorPath, null);
+    return this._execute(cursorPath, null, true);
   }
 
   private _keydown(e: KeyboardEvent) {
@@ -290,7 +290,7 @@ class CommanderShell {
     if (this._terminal.isInputEmpty()) {
       if (dispatchKeyEvent(e, this._twoPanels)) return true;
       var cursorPath = this._twoPanels.cursorPath();
-      return this._execute(cursorPath, null);
+      return this._execute(cursorPath, null, true);
     }
     else {
       var input = this._terminal.getInput().replace(/^\s*/, '').replace(/\s*$/, '');
@@ -349,6 +349,7 @@ class CommanderShell {
 
       if (forceStop) {
         eatKey = true;
+        this._terminal.writeSmall('Ctrl-C');
         if (this._runningProcesses.length) {
         	var procStop = this._runningProcesses.pop();
           procStop.proc.terminate();
@@ -610,12 +611,14 @@ class CommanderShell {
     if (!firstWord) firstWord = code;
     switch (firstWord) {
       case 'cd':
+      case 'cwd':
       case '@cd':
         return this._cd(moreArgs ? this._path.resolve(moreArgs) : null);
       case 'ls':
       case '@ls':
         return this._ls(moreArgs);
       case 'type':
+      case 'cat':
       case '@type':
         return this._type(moreArgs);
       case 'node':
@@ -734,13 +737,16 @@ class CommanderShell {
 
   private _ls(args) {
     var dir = args || this._twoPanels.currentPath();
-    var lead = dir;
+    var lead = this._path.resolve(dir);
     if (lead.slice(-1) !== '/') lead += '/';
     var allFiles = this._drive.files();
     var filtered: string[] = [];
     for (var i = 0; i < allFiles.length; i++) {
-      if (allFiles[i].length > lead && allFiles[i].slice(lead.length) === lead)
+      if (allFiles[i].length > lead.length && allFiles[i].slice(0, lead.length) === lead) {
+        var rest = allFiles[i].slice(lead.length);
+        if (/\/./.test(rest)) continue; // nested in a subdirectory
         filtered.push(allFiles[i]);
+      }
     }
     if (!filtered.length) {
       this._terminal.writeDirect('No files found at "' + args + '"');
@@ -748,8 +754,8 @@ class CommanderShell {
     }
     else {
       this._terminal.writeDirect(filtered.join(' '));
+      return true;
     }
-    this._terminal.writeDirect('ls command is not implemented yet');
   }
 
   private _type(args) {
@@ -777,20 +783,7 @@ class CommanderShell {
     if (typeof text !== 'undefined' && text !== null) {
 
       text = text + '';
-      if (text.charAt(0)==='#') {
-        // ignore leads
-        var posLineEnd = text.indexOf('\n');
-        if (posLineEnd>0 && posLineEnd<300) {
-          var firstLine = text.slice(0, posLineEnd);
-          if (posLineEnd===1)
-            firstLine = ' ';
-          else
-            firstLine = '//'+firstLine.slice(0, firstLine.length-2);
-          text = firstLine + text.slice(posLineEnd);
-        }
-      }
 
-      this._terminal.writeAsCommand('node ' + args);
       var ani = this._beginCommand();
       this._runningProcessCount++;
 
@@ -861,63 +854,6 @@ class CommanderShell {
     }
   }
 
-
-/*
-  private _tsc(args: string) {
-    var tscPath = '/src/imports/ts/tsc.js';
-    var text = this._drive.read(tscPath);
-    if (typeof text !== 'undefined' && text !== null) {
-      var argList = args ? args.split(/\s+/) : [];
-      this._terminal.writeAsCommand('@tsc' + (args ? ' ' + args : ''));
-      var ani = this._twoPanels.temporarilyHidePanels();
-      setTimeout(() => {
-        try {
-          var proc = new isolation.HostedProcess(
-            tscPath,
-            this._drive,
-            window);
-
-          proc.cwd = this._twoPanels.currentPath();
-          for (var i = 0; i < argList.length; i++) proc.argv.push(argList[i]);
-
-          this._applyConsole(proc);
-          this._enhanceNoprocess(proc);
-          proc.enhanceChildProcess = chProc => {
-            this._applyConsole(chProc);
-            this._enhanceNoprocess(chProc);
-          };
-
-          setTimeout(() => {
-            if (!finishedOK) {
-              var compileTime = +new Date() - start;
-              this._terminal.writeDirect('Compilation seems to have failed after ' + (Math.round(compileTime / 100) / 10) + ' sec.');
-              ani();
-            }
-          }, 100);
-
-          var start = +new Date();
-          var result = proc.eval(text);
-          this._terminal.writeSmall('@tsc ' + (Math.round((+new Date()-start)/100) / 10) + ' sec.');
-
-          if (typeof proc.exitCode == 'number')
-            result = proc.exitCode;
-          else
-            result = proc.mainModule.exports;
-          if (result)
-            this._terminal.log(result);
-        }
-        catch (error) {
-          this._terminal.log([error]);
-        }
-        var finishedOK = true;
-        ani();
-      }, 1);
-      return true;
-    }
-  }
-
-*/
-
   private _tryExtract(file: string, htmlContent: string) {
     var importedFiles = persistence.parseHTML(htmlContent);
     if (!importedFiles || !importedFiles.files || !importedFiles.files.length) return false;
@@ -952,14 +888,13 @@ class CommanderShell {
     return true;
   }
 
-  private _execute(cursorPath: string, callback: Function) {
+  private _execute(cursorPath: string, callback: Function, dumpCommandToTerminal?: boolean) {
 
     if (/\.js$/.test(cursorPath)) {
+      this._terminal.writeAsCommand('@node ' + cursorPath);
+      this._terminal.storeAsHistory('@node ' + cursorPath);
       return this._node(cursorPath);
     }
-    /*else if (/\.ts$/.test(cursorPath)) {
-      return this._tsc(cursorPath+' --pretty');
-    }*/
     else if (/\.html$/.test(cursorPath)) {
       var htmlContent = this._fs.readFileSync(cursorPath)+'';
       if (/\<\!\-\-\s*total /.test(htmlContent)) {
@@ -967,6 +902,8 @@ class CommanderShell {
         if (extractOK) return true;
       }
 
+      this._terminal.writeAsCommand('@window ' + cursorPath);
+      this._terminal.storeAsHistory('@window ' + cursorPath);
       return this._window(cursorPath);
     }
     else {
@@ -981,18 +918,10 @@ class CommanderShell {
 
   private _window(cursorPath: string) {
 
-    this._terminal.writeAsCommand('@window ' + cursorPath);
     var ani = this._beginCommand();
     setTimeout(() => {
 
-      var uiDoc: any = this._host;
-      while (true) {
-        var uiDocParent = uiDoc.parentElement || uiDoc.parentNode;
-        if (!uiDocParent) break;
-        uiDoc = uiDocParent;
-      }
-
-      //var html = this._drive.read(cursorPath);
+      var uiWindow = require('nowindow');
 
       var html = openBrowser({
         path: cursorPath,
@@ -1002,69 +931,18 @@ class CommanderShell {
             if (/^\//.test(path)) return this._drive.read(path);
             else return this._drive.read(this._path.resolve(cursorPath, '..', path));
           }
+        },
+        window: uiWindow,
+        showDialog: (dlgBody) => {
+        	var dlg = this._dialogHost.show(dlgBody);
+        },
+        onopen: () => {
         }
       });
 
-      try {
-      	var blankWindow = require('nowindow').open('about:blank');
-      }
-      catch (err) {
-        // cannot open a window
-      }
-
-      var showUsingBlob = () => {
-        var blob = new Blob([html], { type: 'text/html' });
-        var url = URL.createObjectURL(blob);
-        blankWindow.location.replace(url);
-      }
-
-      var showUsingDocumentWrite = () => {
-        blankWindow.document.open();
-        blankWindow.document.write(html);
-        blankWindow.document.close();
-      }
-
-      if (!blankWindow || (!blankWindow.location&&!blankWindow.document)) {
-        var dlgBody = document.createElement('div');
-        dlgBody.style.cssText =
-          'position: absolute; left: 10%; top: 10%; height: 80%; width: 80%; padding: 2px;'+
-          'background: white; color: black; border: solid 1px white;';
-
-        dlgBody.innerHTML =
-          '<iframe src="about:blank" style="width: 100%; height: 100%; opacity: 0.001;">'+
-          '</iframe>';
-
-        var hostIframe = dlgBody.getElementsByTagName('iframe')[0];
-
-        var dlg = this._dialogHost.show(dlgBody);
-
-        blankWindow = hostIframe.contentWindow || (<any>hostIframe).window;
-      }
-
-      // ensure fade out is there regardless
-      setTimeout(function() {
+      setTimeout(() => {
         ani();
       }, 1);
-
-
-      if (typeof Blob==='function'
-          && typeof URL!=='undefined'
-          && typeof URL.createObjectURL==='function') {
-        try {
-          showUsingBlob();
-        }
-        catch (blobError) {
-          showUsingDocumentWrite();
-        }
-      }
-      else {
-        showUsingDocumentWrite();
-      }
-
-      if (hostIframe) {
-        hostIframe.style.opacity = '1';
-        hostIframe.focus();
-      }
 
     }, 1);
 

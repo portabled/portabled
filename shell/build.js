@@ -1,7 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 
-var build = require('../build.js');
+var build = require('../lib/eq80.html');
 var buildStats = build.buildStats();
 
 
@@ -50,14 +50,8 @@ miOpts.files.filterFiles = function(source, target) {
 
 var html = build.wrapEQ80(miOpts);
 
-var link = build.createLink('mi.html', html);
-if (typeof link==='string') {
-  fs.writeFileSync(path.join(__dirname, '../mi.html'), html);
-  console.log('Built  '+html.length+' chars ('+miOpts.fileTotalCount+' files), taken '+((buildStats.taken)/1000)+' sec. into: '+path.resolve(__dirname, '../mi.html'));
-}
-else {
-  console.log('Built  '+html.length+' chars ('+miOpts.fileTotalCount+' files), taken '+((buildStats.taken)/1000)+' sec. into: ', link);
-}
+fs.writeFileSync(path.join(__dirname, '../mi.html'), html);
+console.log('Built  '+html.length+' chars ('+miOpts.fileTotalCount+' files), taken '+((buildStats.taken)/1000)+' sec. into: '+path.resolve(__dirname, '../mi.html'));
 
 
 console.log('Combining empty HTML...');
@@ -68,14 +62,8 @@ var html_empty = build.wrapEQ80({
   favicon: readLocal('favicon.base64.html')
 });
 
-var link = build.createLink('empty.html', html_empty);
-if (typeof link==='string') {
-  fs.writeFileSync(path.join(__dirname, '../empty.html'), html_empty);
-  console.log('Built  '+html_empty.length+' chars into: '+path.resolve(__dirname, '../empty.html'));
-}
-else {
-  console.log('Built  '+html_empty.length+' chars into: ', link);
-}
+fs.writeFileSync(path.join(__dirname, '../empty.html'), html_empty);
+console.log('Built  '+html_empty.length+' chars into: '+path.resolve(__dirname, '../empty.html'));
 
 
 

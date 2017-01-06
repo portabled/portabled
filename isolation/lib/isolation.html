@@ -5,8 +5,8 @@
 function isolation() {
 
 	isolation.build = {
-    timestamp: 1482915667490, // Wed Dec 28 2016 09:01:07 GMT+0000 (GMT Standard Time)
-    taken: 24107,
+    timestamp: 1483040181418, // Thu Dec 29 2016 19:36:21 GMT+0000 (GMT Standard Time)
+    taken: 32809,
     platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36"
 };
 
@@ -5392,8 +5392,10 @@ function jsStringLong(str) {
     else if (typeof str==='undefined') return 'undefined';
     var wordCounts = {};
     var wordArray = [];
+    var dummy = {};
+
     str.replace(/[a-zA-Z0-9_]+/g, function(w) {
-      var key = '*'+w;
+      var key = w in dummy ? '*'+w : w;
       if (wordCounts[key]) {
         wordCounts[key]++;
       }
@@ -5403,17 +5405,24 @@ function jsStringLong(str) {
       }
     });
     wordArray.sort(function(w1, w2) {
-      var n1 = wordCounts['*'+w1];
-      var n2 = wordCounts['*'+w2];
+      var k1 = w1 in dummy ? '*'+w1 : w1;
+      var k2 = w2 in dummy ? '*'+w2 : w2;
+      var n1 = wordCounts[k1];
+      var n2 = wordCounts[k2];
       return n1 > n2 ? -1 : n2 > 1 ? +1 : 0;
     });
     var replaceTable = {};
     for (var i = 0; i < wordArray.length; i++) {
-      replaceTable['*'+wordArray[i]] = toLetterNumber(i);
+      var k = wordArray[i] in dummy ? '*' + wordArray[i] : wordArray[i];
+      replaceTable[k] = toLetterNumber(i);
     }
 
     var compressed = str.replace(/(\s+)|([a-zA-Z0-9_]+)/g, function(match, whitespace, word) {
-      if (word) return replaceTable['*'+word];
+      if (word) {
+      	var k = word in dummy ? '*' + word : word;
+        return replaceTable[k];
+      }
+
       return whitespace.
         replace(/ +/g, function(spaces) {
           if(spaces.length<2) return spaces;

@@ -1,7 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 
-var build = require('../build.js');
+var build = require('../lib/eq80.html');
 var buildStats = build.buildStats();
 
 // fs.unlinkSync('lib/persistence.js');

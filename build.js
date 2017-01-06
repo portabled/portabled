@@ -1,5 +1,6 @@
 if (require.main===module) {
 
+
   var fs = require('fs');
   var path = require('path');
 
@@ -38,7 +39,7 @@ if (require.main===module) {
 }
 else {
   var persistence = require('./persistence/lib/persistence.html');
-  var loader = require('./loader/lib/loader.html');
+  var loader = require('./loader/lib/loader.html').loader;
 
   exportAll(module);
 }
@@ -72,7 +73,7 @@ function combineEQ80_module() {
 
   var eq80BuildStats = build.buildStats();
   var persistence = require('./persistence/lib/persistence.html');
-  var loader = require('./loader/lib/loader.html');
+  var loader = require('./loader/lib/loader.html').loader;
 
 
   eq80BuildStats = eq80BuildStats();
@@ -431,33 +432,46 @@ function exportAll(module) {
     if (str===null) return 'null';
     else if (typeof str==='undefined') return 'undefined';
     var wordCounts = {};
+    var singleWordSet = {};
     var wordArray = [];
+    var dummy = {};
+
     str.replace(/[a-zA-Z0-9_]+/g, function(w) {
-      var key = '*'+w;
-      if (wordCounts[key]) {
+      var key = w in dummy ? '*'+w : w;
+      if (singleWordSet[key]) {
+        wordCounts[key] = 2;
+      }
+      else if (wordCounts[key]) {
         wordCounts[key]++;
       }
       else {
-        wordCounts[key] = 1;
+        singleWordSet[key] = 1;
         wordArray.push(w);
       }
     });
+
     wordArray.sort(function(w1, w2) {
-      var n1 = wordCounts['*'+w1];
-      var n2 = wordCounts['*'+w2];
+      var k1 = w1 in dummy ? '*'+w1 : w1;
+      var k2 = w2 in dummy ? '*'+w2 : w2;
+      var n1 = wordCounts[k1];
+      var n2 = wordCounts[k2];
       return n1 > n2 ? -1 : n2 > 1 ? +1 : 0;
     });
     var replaceTable = {};
     for (var i = 0; i < wordArray.length; i++) {
-      replaceTable['*'+wordArray[i]] = toLetterNumber(i);
+      var k = wordArray[i] in dummy ? '*' + wordArray[i] : wordArray[i];
+      replaceTable[k] = toLetterNumber(i);
     }
 
     var compressed = str.replace(/(\s+)|([a-zA-Z0-9_]+)/g, function(match, whitespace, word) {
-      if (word) return replaceTable['*'+word];
+      if (word) {
+      	var k = word in dummy ? '*' + word : word;
+        return replaceTable[k];
+      }
+
       return whitespace.
-        replace(/ +/g, function(spaces) {
-          if(spaces.length<2) return spaces;
-          else return 'Z'+spaces.length;
+        replace(/  +/g, function(spaces) {
+          return 'Z'+spaces.length;
         }).
         replace(/\n/g, 'Z');
     });

@@ -97,11 +97,11 @@ namespace terminal {
 
 
       this._prompt = <any>elem('div', { className: 'terminal-prompt' }, this._host);
-      elem('span', { className: 'terminal-prompt-lead', text: String.fromCharCode(26410) }, this._prompt);
+      elem('pre', { className: 'terminal-prompt-lead', display: 'inline', text: String.fromCharCode(26410) }, this._prompt);
       this._promptText = <any>elem('span', { className: 'terminal-prompt-text' }, this._prompt);
-      this._promptDelim = <any>elem('span', { className: 'terminal-prompt-delim', text: '>' }, this._prompt);
+      this._promptDelim = <any>elem('pre', { className: 'terminal-prompt-delim', display: 'inline', text: '>' }, this._prompt);
 
-      this._input = <any>elem('textarea', { className: 'terminal-input', autofocus: true }, this._host);
+      this._input = <any>elem('textarea', { className: 'terminal-input', autofocus: true, font: 'inherit' }, this._host);
       this._input.setAttribute('autocorrect', 'off');
       this._input.setAttribute('autocapitalize', 'off');
 
@@ -201,23 +201,37 @@ namespace terminal {
     }
 
     setPath(path: string) {
-      if (path === '/')
-        setText(this._promptText, '');
-      else
-      	setText(this._promptText, path);
+      this._promptText.innerHTML = '';
+      var pathSplit = path.split('/');
+      for (var i = 0; i < pathSplit.length; i++) {
+        if (!pathSplit[i]) continue;
+        if (i)
+          elem('span', { opacity: 0.7, transform: 'scaleY(1.5) translateY(5%)', display: 'inline-block', text: '/' }, this._promptText);
+        elem('pre', { display: 'inline', text: pathSplit[i] }, this._promptText);
+      }
+
       this._queueRearrange();
     }
 
   	writeAsCommand(command: string) {
       var line = elem('div', this._historyContent);
       elem('span', { className: 'terminal-prompt-lead', text: String.fromCharCode(26410) }, line);
-      elem('span', { className: 'terminal-prompt-text', text: this._promptText.textContent || this._promptText.innerText }, line);
+
+      var promptTextElem = elem('span', { className: 'terminal-prompt-text' }, line);
+      var pathSplit = (this._promptText.textContent || this._promptText.innerText).split('/');
+      for (var i = 0; i < pathSplit.length; i++) {
+        if (!pathSplit[i]) continue;
+        if (i)
+          elem('span', { opacity: 0.7, transform: 'scaleY(1.5) translateY(5%)', display: 'inline-block', text: '/' }, promptTextElem);
+        elem('pre', { display: 'inline', text: pathSplit[i] }, promptTextElem);
+      }
+
       elem('span', { className: 'terminal-prompt-delim', text: '>' }, line);
       elem('span', { className: 'terminal-echo-command', text: command }, line);
     }
 
   	writeSmall(text: string) {
-      elem('div', { text, opacity: 0.4, fontSize: 0.8 }, this._historyContent);
+      elem('div', { text, opacity: 0.3, fontSize: '80%' }, this._historyContent);
       this._rearrangeNow();
     }
 
@@ -300,59 +314,72 @@ namespace terminal {
       this._commandHistory.persistAndStartNew(this._input);
     }
 
+    Escape() {
+      this._input.value = '';
+      return true;
+    }
+
+    Up() {
+      return this._commandHistory.scrollUp(this._input);
+    }
+
+    CtrlE() {
+      return this.Up();
+    }
+
+    Down() {
+      return this._commandHistory.scrollDown(this._input);
+    }
+
+  	private _enter() {
+      var code = this.getInput();
+      this._commandHistory.persistAndStartNew(this._input);
+
+      if (!code)
+        return false;
+
+      if (code.slice(-2) === '\r\n')
+        code = code.slice(0, code.length - 2);
+      this._input.value = '';
+      this.writeAsCommand(code);
+      this._queueRearrange();
+
+      this.onexecute(code);
+      return true;
+    }
+
+  	private _ctrlEnter(cursorPath: string) {
+      if ('selectionStart' in this._input) {
+        var lead = (this._input.value||'').slice(0, this._input.selectionStart);
+        var trail = (this._input.value||'').slice(this._input.selectionEnd);
+        var insert = (/\s$/.test(lead) ? '' : ' ') + cursorPath;
+        this._input.value =  lead + insert + trail;
+        this._input.selectionStart = lead.length + insert.length;
+        this._input.selectionEnd = lead.length + insert.length;
+        setTimeout(() => {
+          if (this._input.value === lead + insert + trail
+              && this._input.selectionStart != lead.length + insert.length)
+            this._input.selectionStart = lead.length + insert.length;
+          if (this._input.value === lead + insert + trail
+              && this._input.selectionEnd != lead.length + insert.length)
+            this._input.selectionEnd = lead.length + insert.length;
+        }, 10);
+      }
+      else {
+        this._input.value += (/\s$/.test(this._input.value) ? '' : ' ') + cursorPath;
+      }
+      return true;
+    }
+
     keydown(e: KeyboardEvent, cursorPath: string) {
-      if (e.keyCode === 27) {
-        this._input.value = '';
+      if (dispatchKeyEvent(e, this)) {
         return true;
       }
-      else if (e.keyCode === 38) {
-        return this._commandHistory.scrollUp(this._input);
-      }
-      else if (e.keyCode === 40) {
-        return this._commandHistory.scrollDown(this._input);
-      }
-      else if (e.keyCode === 13) {
 
-        if (e.ctrlKey || e.metaKey) {
-          if ('selectionStart' in this._input) {
-            var lead = (this._input.value||'').slice(0, this._input.selectionStart);
-            var trail = (this._input.value||'').slice(this._input.selectionEnd);
-            var insert = (/\s$/.test(lead) ? '' : ' ') + cursorPath;
-            this._input.value =  lead + insert + trail;
-            this._input.selectionStart = lead.length + insert.length;
-            this._input.selectionEnd = lead.length + insert.length;
-            setTimeout(() => {
-              if (this._input.value === lead + insert + trail
-                  && this._input.selectionStart != lead.length + insert.length)
-                this._input.selectionStart = lead.length + insert.length;
-              if (this._input.value === lead + insert + trail
-                  && this._input.selectionEnd != lead.length + insert.length)
-                this._input.selectionEnd = lead.length + insert.length;
-            }, 10);
-          }
-          else {
-            this._input.value += (/\s$/.test(this._input.value) ? '' : ' ') + cursorPath;
-          }
-          return true;
-        }
-
-        var code = this.getInput();
-        this._commandHistory.persistAndStartNew(this._input);
-
-        if (code) {
-          if (code.slice(-2) === '\r\n')
-            code = code.slice(0, code.length - 2);
-          this._input.value = '';
-          this.writeAsCommand(code);
-          this._queueRearrange();
-
-          this.onexecute(code);
-          return true;
-        }
-        else {
-          return false;
-        }
-      }
+      if (e.shellPressed.CtrlEnter || e.shellPressed.MetaEnter)
+        return this._ctrlEnter(cursorPath);
+      else if (e.shellPressed.Enter)
+        return this._enter();
     }
 
   	clearInput() {
