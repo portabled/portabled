@@ -106,62 +106,66 @@ function run() {
       }
     }
 
-    if (targetShells.length) {
-      var parsedShells = [];
-      var latestParsed;
-      for (var i = 0; i <targetShells.length; i++) {
+    if (!targetShells.length) {
+      console.log('No shell HTML files found in '+root);
+      return;
+    }
 
-        // HACK: limit the count for debugging
-        //if (parsedShells.length>=3 && !/(index|empty)\.html/.test(targetShells[i])) continue;
+    console.log('Processing '+targetShells.length+' shells...');
+    var parsedShells = [];
+    var latestParsed;
+    for (var i = 0; i <targetShells.length; i++) {
 
-        var content = fs.readFileSync(targetShells[i])+'';
-        var parsed = parseShell(content);
-        if (!parsed) continue;
+      // HACK: limit the count for debugging
+      //if (parsedShells.length>=3 && !/(index|empty)\.html/.test(targetShells[i])) continue;
 
-        parsed.content = content;
-        parsed.path = targetShells[i];
-        parsedShells.push(parsed);
-        if (!latestParsed
-            || (!latestParsed.totals && parsed.totals)
-            || (parsed.totals && parsed.totals.timestamp > latestParsed.totals.timestamp)) {
-          latestParsed = parsed;
-        }
+      var content = fs.readFileSync(targetShells[i])+'';
+      var parsed = parseShell(content);
+      if (!parsed) continue;
 
+      parsed.content = content;
+      parsed.path = targetShells[i];
+      parsedShells.push(parsed);
+      if (!latestParsed
+          || (!latestParsed.totals && parsed.totals)
+          || (parsed.totals && parsed.totals.timestamp > latestParsed.totals.timestamp)) {
+        latestParsed = parsed;
       }
 
-      if (parsedShells.length) {
-        if (parsedShells.length===1) {
-          console.log('Only one shell file detected: '+parsedShells[0].path);
-          return;
-        }
+    }
 
-        console.log(latestParsed.path+' ('+(latestParsed.totals ? new Date(latestParsed.totals.timestamp) : 'no timestamp')+') to be copied to '+(parsedShells.length-1)+' shells');
-        for (var i = 0; i < parsedShells.length; i++) {
-          if (parsedShells[i].path===latestParsed.path)continue;
-
-          console.log('  ...'+parsedShells[i].path+'   '+(parsedShells[i].totals && parsedShells[i].totals.timestamp ? new Date(parsedShells[i].totals.timestamp) : ''));
-          var allFiles = [];
-          for (var j = 0; j < parsedShells[i].files.length; j++) {
-            var entry = parsedShells[i].files[j];
-            allFiles.push(entry);
-          }
-
-
-          var updatedHTML = updateParsedHTMLContent(
-            latestParsed.content,
-            latestParsed,
-            allFiles,
-            function (entry) {
-              return entry.content;
-            },
-            true /* deleteExistingFiles */);
-
-          fs.writeFileSync(parsedShells[i].path+'.updated.html', updatedHTML);
-
-          parsedShells[i] = null;
-        }
-
+    if (parsedShells.length) {
+      if (parsedShells.length===1) {
+        console.log('Only one shell file detected: '+parsedShells[0].path);
+        return;
       }
+
+      console.log(latestParsed.path+' ('+(latestParsed.totals ? new Date(latestParsed.totals.timestamp) : 'no timestamp')+') to be copied to '+(parsedShells.length-1)+' shells');
+      for (var i = 0; i < parsedShells.length; i++) {
+        if (parsedShells[i].path===latestParsed.path)continue;
+
+        console.log('  ...'+parsedShells[i].path+'   '+(parsedShells[i].totals && parsedShells[i].totals.timestamp ? new Date(parsedShells[i].totals.timestamp) : ''));
+        var allFiles = [];
+        for (var j = 0; j < parsedShells[i].files.length; j++) {
+          var entry = parsedShells[i].files[j];
+          allFiles.push(entry);
+        }
+
+
+        var updatedHTML = updateParsedHTMLContent(
+          latestParsed.content,
+          latestParsed,
+          allFiles,
+          function (entry) {
+            return entry.content;
+          },
+          true /* deleteExistingFiles */);
+
+        fs.writeFileSync(parsedShells[i].path+'.updated.html', updatedHTML);
+
+        parsedShells[i] = null;
+      }
+
     }
   }
 
