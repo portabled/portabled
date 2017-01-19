@@ -1,7 +1,7 @@
 var fs = require('fs');
 var path = require('path');
-var persistence = require(path.resolve(__dirname, '../persistence/lib/persistence.html'));
-
+var build = require('../lib/eq80.html');
+var persistence = build.persistence;
 //
 run();
 
