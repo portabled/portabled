@@ -9,6 +9,8 @@ declare namespace openBrowser {
   	window: Window;
   	showDialog(elem: HTMLElement);
   	onopen();
+  	onprocessscript?(options: { original: string; processed: string; src: string; });
+  	onprocessstyle?(options: { original: string; processed: string; src: string; });
   }
 
 }
@@ -72,6 +74,37 @@ function openBrowser(options: openBrowser.Options) {
     hostIframe.focus();
   }
 
+  function defaultProcessScript(script: string, src: string) {
+
+    var escapeScriptEndTag = script.replace(/<\/(script)\b/gim, '<\\/$1');
+
+    var addSourceURL = escapeScriptEndTag + '\n//# sourceURL='+src.replace(/\r|\n|<\//g, '')
+    return addSourceURL;
+  }
+
+  function processScript(script: string, src: string) {
+    var processed = defaultProcessScript(script, src);
+    if (typeof options.onprocessscript==='function') {
+      var args = { original: script, processed, src };
+      options.onprocessscript(args);
+      return args.processed;
+    }
+    else {
+      return processed;
+    }
+  }
+
+  function processStyle(style: string, src: string) {
+    var processed = style;
+    if (typeof options.onprocessstyle==='function') {
+      var args = { original: style, processed, src };
+      options.onprocessstyle(args);
+      return args.processed;
+    }
+    else {
+      return processed;
+    }
+  }
 
 
   function resolveAndEmbed(): string {
@@ -86,8 +119,11 @@ function openBrowser(options: openBrowser.Options) {
         var src = (content[i] as htmlSpotExternals.Redirect).src;
         var inject = options.drive.read(src);
         if (typeof inject==='string') {
-          if ((content[i] as htmlSpotExternals.Redirect).type==='script' || (content[i] as htmlSpotExternals.Redirect).type==='style') {
-            inject += '\n//# sourceURL='+src.replace(/\r|\n|<\//g, '');
+          if ((content[i] as htmlSpotExternals.Redirect).type==='script') {
+            inject = processScript(inject, src);
+          }
+          else if ((content[i] as htmlSpotExternals.Redirect).type==='style') {
+            inject = processStyle(inject, src);
           }
 
           result +=

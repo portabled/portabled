@@ -1,6 +1,6 @@
 var fs = require('fs');
 var path = require('path');
-var build = require('../lib/eq80.html');
+var build = require('./lib/eq80.html');
 var persistence = build.persistence;
 //
 run();
@@ -64,7 +64,8 @@ function run() {
         function(file) { return fs.readFileSync(file.contentPath); });
 
       console.log('Saving ['+resultHTML.length+']...');
-      fs.writeFileSync(outputFile+'.updated.html', resultHTML);
+      fs.writeFileSync(outputFile+'.bak', fs.readFileSync(outputFile));
+      fs.writeFileSync(outputFile, resultHTML);
     }
     else {
       var totalSize= 0;
@@ -161,7 +162,8 @@ function run() {
           },
           true /* deleteExistingFiles */);
 
-        fs.writeFileSync(parsedShells[i].path+'.updated.html', updatedHTML);
+        fs.writeFileSync(parsedShells[i].path+'.bak', fs.readFileSync(parsedShells[i].path));
+        fs.writeFileSync(parsedShells[i].path, updatedHTML);
 
         parsedShells[i] = null;
       }
