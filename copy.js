@@ -87,7 +87,7 @@ function run() {
   }
 
   function copyAll() {
-    var root = path.resolve(__dirname, '..');
+    var root = path.resolve(__dirname);
     var sourcePath = path.join(root,'index.html');
     var srcDirPath = path.join(root, 'src');
     if (!fs.existsSync(sourcePath) || fs.statSync(sourcePath).isDirectory()) {
