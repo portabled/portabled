@@ -1,3 +1,9 @@
+if (typeof WScript!=='undefined' && typeof ActiveXObject!=='undefined') {
+  var sh = new ActiveXObject('WScript.Shell');
+  sh.Run('node '+WScript.ScriptFullName+' '+WScript.Arguments.join(' '));
+  WScript.Exit(0);
+}
+
 var fs = require('fs');
 var path = require('path');
 var build = require('./lib/eq80.html');
