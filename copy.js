@@ -427,7 +427,10 @@ function updateParsedHTMLContent(
     }
   }
 
-  var resultHTML = beforeInsertionPoint + resultBuf.join('');
+  var resultHTML = beforeInsertionPoint;
+  for (var i = 0; i < resultBuf.length; i++) {
+    resultHTML += resultBuf[i];
+  }
 
   return resultHTML;
 }
