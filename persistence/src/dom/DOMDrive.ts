@@ -62,7 +62,7 @@ class DOMDrive implements persistence.Drive {
       return f.contentLength;
   }
 
-  write(file: string, content: string) {
+  write(file: string, content: string, encoding?: string) {
 
     var totalDelta = 0;
 
@@ -81,13 +81,13 @@ class DOMDrive implements persistence.Drive {
     else {
       if (f) { // update
         var lengthBefore = f.contentLength;
-        if (!f.write(content)) return; // no changes - no update for timestamp/totals
+        if (!f.write(content, encoding)) return; // no changes - no update for timestamp/totals
         totalDelta += f.contentLength - lengthBefore;
       }
       else { // addition
         var comment = document.createComment('');
         var f = new DOMFile(comment, file, null, 0, 0);
-        f.write(content);
+        f.write(content, encoding);
 
         this._anchorNeeded();
 

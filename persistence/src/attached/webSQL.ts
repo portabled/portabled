@@ -101,7 +101,7 @@ namespace attached.webSQL {
       private _metadataTableIsValid: boolean) {
     }
 
-    applyTo(mainDrive: { timestamp: number; write(path: string, content: any); }, callback: persistence.Drive.Detached.CallbackWithShadow): void {
+    applyTo(mainDrive: persistence.Drive.Detached.DOMUpdater, callback: persistence.Drive.Detached.CallbackWithShadow): void {
       this._db.readTransaction(
         transaction => listAllTables(
           transaction,
@@ -141,7 +141,7 @@ namespace attached.webSQL {
     private _applyToWithFiles(
       transaction: SQLTransaction,
       ftab: { file: string; table: string; }[],
-      mainDrive: { timestamp: number; write(path: string, content: any); },
+      mainDrive: persistence.Drive.Detached.DOMUpdater,
       callback: persistence.Drive.Detached.CallbackWithShadow): void {
 
       if (!ftab.length) {
@@ -166,9 +166,9 @@ namespace attached.webSQL {
             if (result.rows.length) {
               var row = result.rows.item(0);
               if (row.value === null)
-                mainDrive.write(file, null);
+                mainDrive.write(file, null, null);
               else if (typeof row.value === 'string')
-                mainDrive.write(file, fromSqlText(row.value));
+                mainDrive.write(file, fromSqlText(row.value), fromSqlText(row.encoding));
             }
             completeOne();
           },
@@ -228,10 +228,10 @@ namespace attached.webSQL {
     constructor(private _db: Database, public timestamp: number, private _metadataTableIsValid: boolean) {
     }
 
-    write(file: string, content: string) {
+    write(file: string, content: string, encoding: string) {
 
       if (content || typeof content === 'string') {
-        this._updateCore(file, content);
+        this._updateCore(file, content, encoding);
       }
       else {
         this._deleteAllFromTable(file);
@@ -242,7 +242,7 @@ namespace attached.webSQL {
       this._dropFileTable(file);
     }
 
-    private _updateCore(file: string, content: string) {
+    private _updateCore(file: string, content: string, encoding: string) {
       var updateSQL = this._cachedUpdateStatementsByFile[file];
       if (!updateSQL) {
         var tableName = mangleDatabaseObjectName(file);
@@ -254,10 +254,10 @@ namespace attached.webSQL {
         transaction => {
           transaction.executeSql(
             updateSQL,
-            ['content', content],
+            ['content', content, encoding],
             this._closures.updateMetadata,
             (transaction, sqlError) => {
-              this._createTableAndUpdate(transaction, file, tableName, updateSQL, content)
+              this._createTableAndUpdate(transaction, file, tableName, updateSQL, content, encoding)
             });
         },
         sqlError => {
@@ -271,7 +271,7 @@ namespace attached.webSQL {
           // -- redo with a new transaction
       		this._db.transaction(
             transaction => {
-          		this._createTableAndUpdate(transaction, file, tableName, updateSQL, content);
+          		this._createTableAndUpdate(transaction, file, tableName, updateSQL, content, encoding);
             },
             sqlError_inner => {
               // failure might have been due to *metadata table ansence
@@ -282,10 +282,10 @@ namespace attached.webSQL {
                   // OK, once again for extremely confused browsers like Opera
                   transaction.executeSql(
                     updateSQL,
-                    ['content', content],
+                    ['content', content, encoding],
                     this._closures.updateMetadata,
                     (transaction, sqlError) => {
-                      this._createTableAndUpdate(transaction, file, tableName, updateSQL, content)
+                      this._createTableAndUpdate(transaction, file, tableName, updateSQL, content, encoding)
                     });
                 },
                 sqlError_ever_inner => {
@@ -301,17 +301,17 @@ namespace attached.webSQL {
         });
     }
 
-    private _createTableAndUpdate(transaction: SQLTransaction, file: string, tableName: string, updateSQL: string, content: string) {
+    private _createTableAndUpdate(transaction: SQLTransaction, file: string, tableName: string, updateSQL: string, content: string, encoding: string) {
       if (!tableName)
         tableName = mangleDatabaseObjectName(file);
 
       transaction.executeSql(
-        'CREATE TABLE "' + tableName + '" (name PRIMARY KEY, value)',
+        'CREATE TABLE "' + tableName + '" (name PRIMARY KEY, value, encoding)',
         [],
         (transaction, result) => {
           transaction.executeSql(
             updateSQL,
-            ['content', content],
+            ['content', content, encoding],
             this._closures.updateMetadata,
             (transaction, sqlError) => {
               reportSQLError('Failed to update table "' + tableName + '" for file "' + file + '" after creation.', sqlError);
@@ -397,7 +397,7 @@ namespace attached.webSQL {
 
     private _createUpdateStatement(file: string, tableName: string): string {
       return this._cachedUpdateStatementsByFile[file] =
-        'INSERT OR REPLACE INTO "' + tableName + '" VALUES (?,?)';
+        'INSERT OR REPLACE INTO "' + tableName + '" VALUES (?,?,?)';
     }
   }
 

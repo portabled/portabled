@@ -41,37 +41,33 @@ function wrapEQ80(options: wrapEQ80.Options) {
   var backgroundStyle = options.defaultBackground||'background:black;color:black;';
 
   return ''+
-    '<!doctype html><head><meta charset="utf-8"><title> '+(options.title||'mini shell')+' </title>\n'+
-    '<meta http-equiv="x-ua-compatible" content="IE=edge">'+
-    totalsComment+'\n'+
-    (options.favicon||'')+'\n'+
-    '<HTA:APPLICATION id="htaHeader" SINGLEINSTANCE="no"></HTA:APPLICATION>'+
-    '<style data-legit=mi> *{display:none;'+backgroundStyle+'} html,body{display:block;'+backgroundStyle+'margin:0;padding:0;height:100%;overflow:hidden;} </style>\n'+
-    '</head><body>\n'+
-    '<'+'script data-legit=mi>\n'+
+    '/* <script>document.write(\'<!doctype html><meta charset="utf-8">\')</script><title>'+(options.title||'mini shell')+' </title> '+
+    '<meta http-equiv="x-ua-compatible" content="IE=edge"><style data-legit=mi> *{display:none;'+backgroundStyle+'} html,body{display:block;'+backgroundStyle+'margin:0;padding:0;height:100%;overflow:hidden;color:transparent;} </style>\n'+
+    totalsComment+
+    (options.favicon ? '// '+options.favicon + '\n': '') +
+    //'<HTA:APPLICATION id="htaHeader" SINGLEINSTANCE="no"></HTA:APPLICATION>'+
+    '<'+'script data-legit=mi> /* EQ80 */\n'+
     loader+'\n\n\n'+
     persistence+'\n\n\n'+
-    'loader(window, document); //# sourceURL=/EQ80.js\n'+
-    '</'+'script>\n'+
+    'loader(window, document); //# sourceURL=/EQ80.js </'+'script>\n'+
     (options.early_html?options.early_html:'')+
 
-    '<'+'script data-legit=mi> // pushing BOOT\n'+
+    '<'+'script data-legit=mi> /* BOOT frame */ \n'+
     '(function(doc) {\n'+
     '  if (doc.open) doc.open();\n'+
     '  doc.write('+jsStringLong(options.boot_html)+');\n'+
     '  if (doc.close) doc.close();\n'+
     '})(loader.boot.contentWindow.document || loader.boot.window.document);\n'+
-    'loader.boot.style.display="block"; //# '+'sourceURL=/BOOT-docwrite.html\n'+
-    '</'+'script>\n'+
+    'loader.boot.style.display="block"; //# '+'sourceURL=/BOOT-docwrite.html </'+'script>\n'+
 
     (options.shell_html ?
-     '<'+'script data-legit=mi> // pushing SHELL\n'+
+     '<'+'script data-legit=mi> /* SHELL frame */ \n'+
      '(function(doc) {\n'+
      '  if (doc.open) doc.open();\n'+
      '  doc.write('+jsStringLong(options.shell_html)+');\n'+
      '  if (doc.close) doc.close();\n'+
      '})(loader.shell.contentWindow.document || loader.shell.window.document); //# '+'sourceURL=/SHELL-docwrite.html\n'+
-     '</'+'script>\n'
+     '//</'+'script>\n'
      : '')+
 
     (options.delayed_shell_html ?
@@ -84,10 +80,8 @@ function wrapEQ80(options: wrapEQ80.Options) {
      '    doc.write('+jsStringLong(options.delayed_shell_html)+');\n'+
      '    if (doc.close) doc.close();\n'+
      '  }\n'+
-     '})(); //# '+'sourceURL=/SHELL-docwrite.html\n'+
-     '</'+'script>\n'
+     '})(); //# '+'sourceURL=/SHELL-docwrite.html </'+'script>\n'
      : '')+
 
-    fileTotalHTML+
-    '</body></html>';
+    '/*'+fileTotalHTML+'*/';
 }

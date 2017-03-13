@@ -11,7 +11,7 @@ class BootState {
   newDOMFiles: string[] = [];
   newStorageFiles: string[] = [];
 
-	ondomnode: (node: any, recognizedKind: 'file' | 'totals', recognizedEntity: null) => void = null;
+	ondomnode: (node: any, recognizedKind: 'file' | 'totals', recognizedEntity: any) => void = null;
 
   private _byPath: { [path: string]: DOMFile; } = {};
 
@@ -21,7 +21,6 @@ class BootState {
 
   private _anticipationSize = 0;
   private _lastNode: Node = null;
-  private _parseHead = null;
 
   private _currentOptionalDriveIndex = 0;
   private _shadowFinished = false;
@@ -159,20 +158,17 @@ class BootState {
     this.domLoadedSize -= this._anticipationSize;
     this._anticipationSize = 0;
 
-    if (!this._lastNode) {
-      this._parseHead = this._document.head || this._document.getElementsByTagName('head')[0];
-      if (!this._parseHead
-          && (!this._document.body || !this._document.body.children.length)) return; // expect head before body
-      this._lastNode = this._parseHead.firstChild;
-      if (!this._lastNode) return;
-    }
-
     while (true) {
 
+      // keep very last node unprocessed until whole document loaded
+      // -- that means each iteration we find the next node, but process this._lastNode
       var nextNode = this._getNextNode();
+
       if (!nextNode && !toCompletion) {
-        // do not consume nodes at the very end of the document until whole document loaded
-        if (this._lastNode.nodeType===8) {
+
+        // no more nodes found, but more expected: no processing at this point
+        // -- but try to estimate what part of the last known node is loaded (for better progress precision)
+        if (this._lastNode && this._lastNode.nodeType===8) {
           var cmheader = new CommentHeader(<Comment>this._lastNode);
           var speculativeFile = DOMFile.tryParse(cmheader);
           if (speculativeFile) {
@@ -184,7 +180,7 @@ class BootState {
         return;
       }
 
-      if (this._lastNode.nodeType === 8) {
+      if (this._lastNode && this._lastNode.nodeType===8) {
         this._processNode(<Comment>this._lastNode);
       }
       else {
@@ -230,7 +226,8 @@ class BootState {
         else if (typeof content!=='undefined') {
           var f = this._byPath[path];
           if (f) {
-            var modified = f.write(content);
+            var entry = bestEncode(content);
+            var modified = f.write(entry.content, entry.encoding);
             if (!modified) {
               if (this._shadow) this._shadow.forget(path);
               else this._toForgetShadow.push(path);
@@ -240,7 +237,8 @@ class BootState {
             var anchor = this._findAnchor();
             var comment = document.createComment('');
             var f = new DOMFile(comment, path, null, 0, 0);
-            f.write(content);
+            var entry = bestEncode(content);
+            f.write(entry.content, entry.encoding);
             this._byPath[path] = f;
             this._newDOMFileCache[path] = true;
             this._document.body.insertBefore(f.node, anchor);
@@ -271,10 +269,24 @@ class BootState {
   }
 
   private _getNextNode() {
-    var nextNode = this._lastNode.nextSibling;
-    if (!nextNode && this._parseHead && this._document.body && (nextNode = this._document.body.firstChild))
-      this._parseHead = null;
+    if (!this._lastNode) {
+      var head = this._document.head || this._document.getElementsByTagName('head')[0] as HTMLElement;
+      if (head) {
+        var next = head.firstChild;
+        if (next) return next;
+      }
+      var body = this._document.body;
+      if (body)
+        return body.firstChild;
+      return null;
+    }
 
+    var nextNode = this._lastNode.nextSibling;
+    if (!nextNode) {
+      var body = this._document.body;
+      if (this._lastNode.parentElement!==body)
+        nextNode = body.firstChild;
+    }
     return nextNode;
   }
 
@@ -323,8 +335,8 @@ class BootState {
       this._toUpdateDOM = {};
       detached.applyTo({
         timestamp: this.domTimestamp,
-        write: (path: string, content: any) => {
-          this._applyShadowToDOM(path, content);
+        write: (path: string, content: any, encoding: string) => {
+          this._applyShadowToDOM(path, content, encoding);
         }
       }, shadow => {
         this._shadow = shadow;
@@ -333,7 +345,7 @@ class BootState {
     }
   }
 
-  private _applyShadowToDOM(path: string, content: any) {
+  private _applyShadowToDOM(path: string, content: any, encoding: string) {
     if (this._domFinished) {
 
       var file = this._byPath[path];
@@ -343,7 +355,7 @@ class BootState {
           delete this._byPath[path];
         }
         else {
-          var modified = file.write(content);
+          var modified = file.write(content, encoding);
           if (!modified)
             this._toForgetShadow.push(path);
         }
@@ -356,7 +368,7 @@ class BootState {
           var anchor = this._findAnchor();
           var comment = document.createComment('');
           var f = new DOMFile(comment, path, null, 0, 0);
-          f.write(content);
+          f.write(content, encoding);
           this._document.body.insertBefore(f.node, anchor);
           this._byPath[path] = f;
           this._newDOMFileCache[path] = true;

@@ -427,10 +427,7 @@ function updateParsedHTMLContent(
     }
   }
 
-  var resultHTML = beforeInsertionPoint;
-  for (var i = 0; i < resultBuf.length; i++) {
-    resultHTML += resultBuf[i];
-  }
+  var resultHTML = beforeInsertionPoint + resultBuf.join('');
 
   return resultHTML;
 }

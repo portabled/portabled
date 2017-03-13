@@ -1,11 +1,30 @@
 function bestEncode(content: any, escapePath?: boolean): { content: string; encoding: string; } {
 
-  if (content.length>1024*16) {
-    // TODO: consider packing tightly and using eval encoding to unpack
+  if (content.length>1024*2) {
+    var compressed = encodings.lzma.compress(content);
+    var str = '';
+    for (var i = 0; i < compressed.length; i++) {
+      str += String.fromCharCode((compressed[i] + 256) % 256);
+    }
+    var b64 = encodings.base64.btoa(str);
+    if (typeof content !== 'string')
+      b64 = '*' + b64;
+    else
+      b64 = 'A' + b64;
+    if (b64.length<content.length)
+      return {content:b64, encoding: 'lzma'};
   }
 
-  if (typeof content!=='string')
+  if (typeof content!=='string') {
+    if (typeof content==='object' && typeof content.length==='number'
+        && content.length>16 && typeof content[0]==='number') {
+      try {
+        return { content: _encodeNumberArrayToBase64(content), encoding: 'base64' };
+      }
+      catch (base64Error) { }
+    }
     return { content: _encodeArrayOrSimilarAsJSON(content), encoding: 'json' };
+  }
 
   var needsEscaping: boolean;
   if (escapePath) {
@@ -48,6 +67,15 @@ function _encodeUnusualStringAsJSON(content: string): string {
       '\\u00' + chr.charCodeAt(0).toString(16));
     return result;
   }
+}
+
+function _encodeNumberArrayToBase64(content: number[]): string {
+  var str = '';
+  for (var i = 0; i < content.length; i++) {
+    str += String.fromCharCode(content[i]);
+  }
+  var b64 = '*'+encodings.base64.btoa(str);
+  return b64;
 }
 
 function _encodeArrayOrSimilarAsJSON(content: any): string {

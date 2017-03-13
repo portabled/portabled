@@ -1,4 +1,17 @@
-//<script src="some.html">
-alert('ok')
-//</script>
-//<h2> SOME.HTML </h2>
+<head><script>
+  alert(
+  (document.head ? 'head '+document.head.outerHTML : 'head '+document.head) + '\n'+
+  (document.body ? 'body '+document.body.outerHTML : 'body '+document.body))
+</script>
+<script>
+  alert(
+  (document.head ? 'head '+document.head.outerHTML : 'head '+document.head) + '\n'+
+  (document.body ? 'body '+document.body.outerHTML : 'body '+document.body))
+</script>
+</head><body>
+<script>
+  alert(
+  (document.head ? 'head '+document.head.outerHTML : 'head '+document.head) + '\n'+
+  (document.body ? 'body '+document.body.outerHTML : 'body '+document.body))
+</script>
+</body>

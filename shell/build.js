@@ -1,7 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 
-var build = require('../lib/eq80.html');
+var build = require('eq80/index.html');
 var buildStats = build.buildStats();
 
 

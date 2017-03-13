@@ -1,11 +1,11 @@
 var fs = require('fs');
 var path = require('path');
 
-var build = require('../lib/eq80.html');
+var build = require('eq80/index.html');
 //var build = require('../build.js');
 var buildStats = build.buildStats();
 
-var outputPath = path.resolve(__dirname, '../lib/eq80.html')
+var outputPath = path.resolve(__dirname, 'eq80/index.html')
 
 console.log('Requesting persistence...');
 var persistence = require('../persistence/lib/persistence.html');

@@ -1,4 +1,4 @@
-export declare namespace nodeRunner {
+declare namespace nodeRunner {
 
   type Options = {
     drive: persistence.Drive;

@@ -1,0 +1,4 @@
+namespace keys {
+
+  var x;
+}

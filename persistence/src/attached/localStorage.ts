@@ -102,13 +102,24 @@ namespace attached.localStorage {
       }
     }
 
-    applyTo(mainDrive: { timestamp: number; write(path: string, content: any); }, callback: persistence.Drive.Detached.CallbackWithShadow): void {
+    applyTo(mainDrive: persistence.Drive.Detached.DOMUpdater, callback: persistence.Drive.Detached.CallbackWithShadow): void {
       var keys = this._access.keys();
       for (var i = 0; i < keys.length; i++) {
         var k = keys[i];
-        if (k.charAt(0)==='/') {
+        if (k.charCodeAt(0)===47 /* slash */) {
           var value = this._access.get(k);
-          mainDrive.write(k, value);
+          if (value.charCodeAt(0)===91 /* open square bracket [ */) {
+            var cl = value.indexOf(']');
+            if (cl>0 && cl < 10) {
+              var encoding = value.slice(1,cl);
+              var encFn = encodings[encoding];
+              if (typeof encFn==='function') {
+                mainDrive.write(k, value.slice(cl+1), encoding);
+                break;
+              }
+            }
+          }
+          mainDrive.write(k, value, 'LF');
         }
       }
 
@@ -136,8 +147,8 @@ namespace attached.localStorage {
     constructor(private _access: LocalStorageAccess, public timestamp: number) {
     }
 
-    write(file: string, content: string) {
-      this._access.set(file, content);
+    write(file: string, content: string, encoding: string) {
+      this._access.set(file, '['+encoding+']'+content);
       this._access.set('*timestamp', <any>this.timestamp);
     }
 

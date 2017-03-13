@@ -380,6 +380,8 @@ class CommanderShell {
       if (dispatchKeyEvent(e, this._twoPanels)) return true;
     }
 
+    var disp = dispatchKeyEvent(e, keys);
+
     var disp = dispatchKeyEvent(e, this);
     if (disp) return disp;
 
@@ -661,6 +663,10 @@ class CommanderShell {
       case '@md':
         return this._command(actions.mkDir, moreArgs);
 
+      case 'load':
+      case '@load':
+        return this._load(moreArgs);
+
       case 'F8':
       case 'remove':
       case '@remove':
@@ -680,10 +686,44 @@ class CommanderShell {
           return true;
         }
 
+        if (typeof commands[firstWord]==='function') {
+        	return this._command(commands[firstWord], moreArgs);
+        }
+
         this._evalRepl(code);
         return true;
     }
   }
+
+  private _load(moreArgs: string) {
+    if (!moreArgs || !/\S/.test(moreArgs)) {
+      this._terminal.writeDirect('load   [  script.js   ¦   <raw JavaScript>  ]   - to load code into shell');
+      return true;
+    }
+    else {
+      if (this._fs.existsSync(moreArgs) && this._fs.statSync(moreArgs).isFile()) {
+        var loadCode = this._fs.readFileSync(moreArgs)+'';
+      }
+      else {
+        var loadCode = moreArgs;
+      }
+
+      try {
+        var result = (this._loadCore as any)(loadCode);
+        if (typeof result !== 'undefined')
+          console.log(result);
+        return true;
+      }
+      catch (error) {
+        this._terminal.writeDirect(error);
+        return true;
+      }
+    }
+  }
+
+   private _loadCore() {
+     return eval(arguments[0]);
+   }
 
 	private _beginCommand() {
     var showPanels = this._twoPanels.temporarilyHidePanels();
@@ -789,8 +829,8 @@ class CommanderShell {
 
       setTimeout(() => {
 
-        var argv: string[] = [];
-        for (var i = 1; i<argList.length; i++) {
+        var argv: string[] = ['node'];
+        for (var i = 0; i<argList.length; i++) {
           argv.push(argList[i]);
         }
 

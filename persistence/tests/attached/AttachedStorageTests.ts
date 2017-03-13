@@ -62,7 +62,7 @@ namespace tests.attached {
 
             detached.applyTo({
                 timestamp: 0,
-                write: (name, content) => callback(new Error('Detached.apply: unexpected write('+name+','+content+'), the store should be empty.'))
+                write: (name, content, encoding) => callback(new Error('Detached.apply: unexpected write('+name+','+content+','+encoding+'), the store should be empty.'))
               },
               shadow => {
               	callback(null);
@@ -79,12 +79,12 @@ namespace tests.attached {
 
             detached.applyTo({
                 timestamp: 0,
-                write: (name, content) => callback(new Error('Detached.apply: unexpected write('+name+','+content+'), the store should be empty.'))
+                write: (name, content, encoding) => callback(new Error('Detached.apply: unexpected write('+name+','+content+','+encoding+'), the store should be empty.'))
               },
               shadow => {
               	var writeTime = +new Date();
                 shadow.timestamp = writeTime;
-                shadow.write('/file.txt', 'value');
+                shadow.write('/file.txt', 'value', 'LF');
               	setTimeout(() => {
                   opt.detect(
                     ukey,
@@ -99,6 +99,22 @@ namespace tests.attached {
                 }, 5);
               });
             });
+      },
+
+      write_loadAgain_sameValue_array20(callback: (error: Error) => void) {
+        var array20 = [];
+        for (var i = 0; i < 20; i++) array20[i] = 100 + i;
+        _write_loadAgain_sameValue_core(
+          'write_loadAgain_sameValue_array20.txt', array20 as any,
+          callback);
+      },
+
+      write_loadAgain_sameValue_array8K(callback: (error: Error) => void) {
+        var array8K = [];
+        for (var i = 0; i <  1024*8; i++) array8K[i] = (100 + i) % 256;
+        _write_loadAgain_sameValue_core(
+          'write_loadAgain_sameValue_array8K.txt', array8K as any,
+          callback);
       },
 
       write_loadAgain_sameValue(callback: (error: Error) => void) {
@@ -188,11 +204,11 @@ namespace tests.attached {
 
             detached.applyTo({
                 timestamp: 0,
-                write: (name, content) => callback(new Error('Detached.apply: unexpected write('+name+','+content+'), the store should be empty.'))
+                write: (name, content, encoding) => callback(new Error('Detached.apply: unexpected write('+name+','+content+','+encoding+'), the store should be empty.'))
               },
               shadow => {
-                shadow.write('/file.txt', 'value2');
-                shadow.write('/file.txt', 'value4');
+                shadow.write('/file.txt', 'value2', 'LF');
+                shadow.write('/file.txt', 'value4', 'LF');
               	setTimeout(() => {
                   opt.detect(
                     ukey,
@@ -200,7 +216,10 @@ namespace tests.attached {
                       var files: any = {};
                       detached.applyTo({
                           timestamp: 0,
-                          write: (name, content) => files[name] = content
+                          write: (name, content, encoding) => {
+                            var enc = persistence.encodings[encoding];
+                            files[name] = enc(content);
+                          }
                         },
                         shadow => {
                           var fileTxt = files['/file.txt'];
@@ -225,24 +244,33 @@ namespace tests.attached {
 
       var normFilename = /^\//.test(fileName) ? fileName : '/'+fileName;
 
+      var entry = persistence.bestEncode(content);
+
       var ukey = _generateKey();
       opt.detect(
         ukey,
         (error, detached) => {
+          if (error) return callback(typeof error === 'string' ? new Error('Detect failed: '+error) : error as any);
+
           detached.applyTo({
               timestamp: 0,
-              write: (name, content) => callback(new Error('Detached.apply: unexpected write('+name+','+content+'), the store should be empty.'))
+                write: (name, content, encoding) => callback(new Error('Detached.apply: unexpected write('+name+','+content+','+encoding+'), the store should be empty.'))
             },
             shadow => {
-              shadow.write(normFilename, content);
+              shadow.write(normFilename, entry.content, entry.encoding);
             	setTimeout(() => {
                 opt.detect(
                   ukey,
                   (error, detect) => {
+                    if (error) return callback(typeof error === 'string' ? new Error('Detect failed after shadow.write' + error) : error as any);
+
                     var files: any = {};
                     detect.applyTo({
                         timestamp: 0,
-                        write: (name, content) => files[name] = content
+                        write: (name, content, encoding) => {
+                          var enc = persistence.encodings[encoding];
+                          files[name] = enc(content);
+                        }
                       },
                       shadow => {
                         var fileTxt = files[normFilename];
@@ -250,7 +278,17 @@ namespace tests.attached {
                           callback(new Error('File '+fileName+' is not reported on subsequent load.'));
                         }
                         else if (fileTxt!==content) {
-                          callback(new Error('Wrong content on re-read '+fileTxt+', expected '+content+'.'));
+                          if (fileTxt.length == content.length) {
+                            for (var i = 0; i < fileTxt.length; i++) {
+                              if (fileTxt[i]!==content[i]) {
+                                callback(new Error('Wrong content on re-read at '+i+'  ['+fileTxt.length+'] '+fileTxt+', expected ['+content.length+'] '+content+'.'));
+                              }
+                            }
+                            callback(null);
+                            return;
+                          }
+
+                          callback(new Error('Wrong content on re-read ['+fileTxt.length+'] '+fileTxt+',\n expected ['+content.length+'] '+content+'.'));
                         }
                         else {
                           callback(null); // success!

@@ -8,6 +8,7 @@ function formatTotalsInner(timestamp: number, totalSize: number): string {
 function formatFileInner(path: string, content: any): string {
 
   var fi = new DOMFile(/*node*/null, path, null, 0, 0);
-  return <string>fi.write(content);
+  var entry = bestEncode(content);
+  return fi.write(entry.content, entry.encoding) as string;
 
 }

@@ -5,7 +5,7 @@ class MountedDrive implements persistence.Drive {
 
   private _cachedFiles: string[] = null;
 
-  constructor (private _dom: persistence.Drive, private _shadow: persistence.Drive.Shadow) {
+  constructor (private _dom: persistence.Drive.Detached.DOMDrive, private _shadow: persistence.Drive.Shadow) {
     this.timestamp = this._dom.timestamp;
   }
 
@@ -31,10 +31,14 @@ class MountedDrive implements persistence.Drive {
     this._cachedFiles = null;
 
     this._dom.timestamp = this.timestamp;
-    this._dom.write(file, content);
+
+    var encoded = bestEncode(content);
+
+    this._dom.write(file, encoded.content, encoded.encoding);
+
     if (this._shadow) {
       this._shadow.timestamp = this.timestamp;
-      this._shadow.write(file, content);
+      this._shadow.write(file, encoded.content, encoded.encoding);
     }
   }
 }

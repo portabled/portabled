@@ -82,9 +82,9 @@ class DOMFile {
     return decodedText;
   }
 
-  write(content: any): string | boolean {
+  write(content: any, encoding: string): string | boolean {
 
-    var encoded = bestEncode(content);
+    var encoded = encoding ? { content, encoding } : bestEncode(content);
     var protectedText = encoded.content.
     replace(/\-\-(\**)\>/g, '--*$1>').
     replace(/\<(\**)\!/g, '<*$1!');

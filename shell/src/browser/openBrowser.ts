@@ -74,9 +74,30 @@ function openBrowser(options: openBrowser.Options) {
     hostIframe.focus();
   }
 
+  var globalExported: string;
+
   function defaultProcessScript(script: string, src: string) {
 
     var escapeScriptEndTag = script.replace(/<\/(script)\b/gim, '<\\/$1');
+    var overrideWindow = '';
+    var persistence = '';
+
+    if (!globalExported) {
+      globalExported =
+        Math.random().toString().replace(/[^0-9]+/g, '') + '_' + new Date().toString().replace(/[^0-9a-zA-Z]+/g, '_')+'_'+Math.random().toString().replace(/[^0-9]+/g, '');
+
+      var lead = 'var '+globalExported+' = (function() {\n'+
+      '    '+overrideWindow+'\n'+
+      '    '+persistence+'\n'+
+      '    function onDriveLoaded(callback) {\n'+
+      '      callback();\n'+
+			'		}\n'+
+      '\n'+
+			'		return onDriveLoaded;\n'+
+      '  })();';
+    }
+
+    //var wrappedScript = globalExported + '(eval("' + jsStrin escapeScriptEndTag
 
     var addSourceURL = escapeScriptEndTag + '\n//# sourceURL='+src.replace(/\r|\n|<\//g, '')
     return addSourceURL;

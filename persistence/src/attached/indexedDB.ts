@@ -178,7 +178,7 @@ namespace attached.indexedDB {
               var result: FileData = (<any>cursor).value;
               if (result && result.path) {
                 mainDrive.timestamp = this.timestamp;
-                mainDrive.write(result.path, result.content);
+                mainDrive.write(result.path, result.content, result.encoding);
               }
 
               cursor['continue']();
@@ -255,7 +255,7 @@ namespace attached.indexedDB {
     constructor(private _db: IDBDatabase, public timestamp: number) {
     }
 
-    write(file: string, content: string) {
+    write(file: string, content: string, encoding: string) {
       var now = Date.now ? Date.now() : +new Date();
       if (this._conflatedWrites || now-this._lastWrite<10) {
         if (!this._conflatedWrites) {
@@ -266,11 +266,11 @@ namespace attached.indexedDB {
             this._writeCore(writes);
           }, 0);
         }
-        this._conflatedWrites[file] = content;
+        this._conflatedWrites[file] = { content, encoding };
       }
       else {
         var entry = {};
-        entry[file] = content;
+        entry[file] = {content,encoding};
         this._writeCore(entry);
       }
     }
@@ -282,12 +282,14 @@ namespace attached.indexedDB {
       var metadataStore = transaction.objectStore('metadata');
 
       for (var file in writes) if (writes.hasOwnProperty(file)) {
-      	var content = writes[file];
+
+      	var entry = writes[file];
 
         // no file deletion here: we need to keep account of deletions too!
         var fileData: FileData = {
           path: file,
-          content: content,
+          content: entry.content,
+          encoding: entry.encoding,
           state: null
         };
 
@@ -313,6 +315,7 @@ namespace attached.indexedDB {
   interface FileData {
     path: string;
     content: string;
+    encoding: string;
     state: string;
   }
 

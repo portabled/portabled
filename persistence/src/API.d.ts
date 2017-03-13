@@ -5,13 +5,16 @@ declare function persistence(
 
 declare namespace persistence {
 
-  export var build: {
+  var build: {
     timestamp: number;
     taken: number;
     platform: string;
   };
 
-  export interface BootState {
+  var encodings;
+  var bestEncode;
+
+  interface BootState {
 
     domTimestamp: number;
     domTotalSize: number;
@@ -26,21 +29,21 @@ declare namespace persistence {
 
 		read(path: string): any;
     continueLoading();
-    finishParsing(completion: (drive: persistence.Drive) => void);
+    finishParsing(completion: (drive: Drive.Detached.DOMDrive) => void);
   }
 
-  export function formatTotalsInner(timestamp: number, totalSize: number): string;
-  export function formatFileInner(path: string, content: any): string;
-  export function formatSize(totalSize: number): string;
-  export function formatDate(date: Date): string;
+  function formatTotalsInner(timestamp: number, totalSize: number): string;
+  function formatFileInner(path: string, content: any): string;
+  function formatSize(totalSize: number): string;
+  function formatDate(date: Date): string;
 
-	export function parseTotalsInner(content: string): { timestamp: number; totalSize: number; };
-	export function parseFileInner(content: string): { path: string; read(): string; };
-	export function parseHTML(html: string): { files: { path: string; content: string; start: number; end: number; }[]; totals: {size?: number; timestamp?: number; start: number; end: number;}; };
+	function parseTotalsInner(content: string): { timestamp: number; totalSize: number; };
+	function parseFileInner(content: string): { path: string; read(): string; };
+	function parseHTML(html: string): { files: { path: string; content: string; start: number; end: number; }[]; totals: {size?: number; timestamp?: number; start: number; end: number;}; };
 
 
 
-  export interface Drive {
+  interface Drive {
 
     timestamp: number;
 
@@ -54,19 +57,19 @@ declare namespace persistence {
 
   }
 
-  export module Drive {
+  namespace Drive {
 
-    export interface Shadow {
+    interface Shadow {
 
       timestamp: number;
 
-      write(file: string, content: string): void;
+      write(file: string, content: string, encoding: string): void;
 
       forget(file: string): void;
 
     }
 
-    export interface Optional {
+    interface Optional {
 
       name: string;
 
@@ -74,7 +77,7 @@ declare namespace persistence {
 
     }
 
-    export interface Detached {
+    interface Detached {
 
       timestamp: number;
       totalSize?: number;
@@ -85,20 +88,24 @@ declare namespace persistence {
 
     }
 
-    export module Detached {
+    namespace Detached {
 
-      export interface CallbackWithShadow {
+      interface CallbackWithShadow {
         (loaded: Shadow): void;
         progress?: (current: number, total: number) => void;
       }
 
-    export interface DOMUpdater {
+      interface DOMUpdater {
 
-      timestamp: number;
+        timestamp: number;
 
-      write(file: string, content: string): void;
+        write(file: string, content: string, encoding: string): void;
 
-    }
+      }
+
+      interface DOMDrive extends Drive {
+        write(file: string, content: string, encoding?: string): void;
+      }
 
     }
 

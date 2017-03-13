@@ -1,7 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 
-var build = require('../lib/eq80.html');
+var build = require('eq80/index.html');
 var buildStats = build.buildStats();
 
 // fs.unlinkSync('lib/persistence.js');
@@ -52,6 +52,8 @@ function persistence(document, uniqueKey, optionalDrives) {
   persistence.parseFileInner = parseFileInner;
   persistence.parseHTML = parseHTML;
   persistence.attached = attached;
+  persistence.encodings = encodings;
+  persistence.bestEncode = bestEncode;
   if (document) return new BootState(document, uniqueKey, optionalDrives); else return persistence;
 }
 }
