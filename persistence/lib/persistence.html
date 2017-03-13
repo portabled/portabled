@@ -3,9 +3,9 @@
 function persistence(document, uniqueKey, optionalDrives) {
 
 	persistence.build = {
-    timestamp: 1489442612890, // Mon Mar 13 2017 22:03:32 GMT+0000 (GMT Standard Time)
-    taken: 33904,
-    platform: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"
+    timestamp: 1489444980465, // Mon Mar 13 2017 22:43:00 GMT+0000 (GMT Standard Time)
+    taken: 25564,
+    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"
 }
 
 var BootState = (function () {
@@ -423,6 +423,7 @@ var MountedDrive = (function () {
 function bestEncode(content, escapePath) {
     if (content.length > 1024 * 2) {
         var compressed = encodings.lzma.compress(content);
+        console.log('compress arr -> ', compressed);
         var str = '';
         for (var i = 0; i < compressed.length; i++) {
             str += String.fromCharCode((compressed[i] + 256) % 256);
@@ -1862,9 +1863,10 @@ var encodings;
         var unbase64 = encodings.base64.atob(text.slice(1));
         var arr = [];
         for (var i = 0; i < unbase64.length; i++) {
-            arr[i] = unbase64.charCodeAt(i) > 0 ? unbase64.charCodeAt(i) :
-                (unbase64.charCodeAt(i) | 0xFFFFFF00);
+            var byte = unbase64.charCodeAt(i);
+            arr[i] = (byte & 127) - (byte & 128);
         }
+        console.log('decompress ', arr);
         var rawData = lzma.decompress(arr);
         if (arrMark) {
             return rawData;
