@@ -1,6 +1,7 @@
 function bestEncode(content: any, escapePath?: boolean): { content: string; encoding: string; } {
 
   if (content.length>1024*2) {
+    /*
     var compressed = encodings.lzma.compress(content);
     var str = '';
     for (var i = 0; i < compressed.length; i++) {
@@ -13,6 +14,7 @@ function bestEncode(content: any, escapePath?: boolean): { content: string; enco
       b64 = 'A' + b64;
     if (b64.length<content.length)
       return {content:b64, encoding: 'lzma'};
+      */
   }
 
   if (typeof content!=='string') {
@@ -26,24 +28,84 @@ function bestEncode(content: any, escapePath?: boolean): { content: string; enco
     return { content: _encodeArrayOrSimilarAsJSON(content), encoding: 'json' };
   }
 
-  var needsEscaping: boolean;
+  var maxEscape = ((content.length * 0.1) | 0) + 2;
+
+  var escape = 0;
+  var escapeHigh = 0;
+  var prevChar = 0;
+  var crCount = 0;
+  var lfCount = 0;
+  var crlfCount = 0;
+
   if (escapePath) {
-    // zero-char, newlines, leading/trailing spaces, quote and apostrophe
-    needsEscaping = /\u0000|\r|\n|^\s|\s$|\"|\'/.test(content);
+    for (var i = 0; i < content.length; i++) {
+      var c = content.charCodeAt(i);
+      if (c < 32 || c >126 || (c===32 && (!i || i===content.length-1))) {
+        escape = 1;
+        break;
+      }
+    }
   }
   else {
-    needsEscaping = /\u0000|\r/.test(content);
+    for (var i = 0; i < content.length; i++) {
+      var c = content.charCodeAt(i);
+
+      if (c===10) {
+        if (prevChar===13) {
+          crCount--;
+          crlfCount++;
+        }
+        else {
+          lfCount++;
+        }
+      }
+      else if (c===13) {
+        crCount++;
+      }
+      else if (c<32 && c!=9) { // tab is an OK character, no need to escape
+        escape++;
+      }
+      else if (c>126) {
+        escapeHigh++;
+      }
+
+      prevChar = c;
+
+      if ((escape+escapeHigh) > maxEscape)
+        break;
+    }
   }
 
-  if (needsEscaping) {
-    // ZERO character is officially unsafe in HTML,
-    // CR is contentious in IE (which converts any CR or LF into CRLF)
-
-    return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+  if (escapePath) {
+    if (escape)
+      return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+    else
+      return { content: content, encoding: 'LF' };
   }
   else {
-    return { content: content, encoding: 'LF' };
+    if (escape > maxEscape) {
+      return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+    }
+
+    else if (escape)
+      return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+    else if (crCount) {
+      if (lfCount)
+        return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+      else
+        return { content: content, encoding: 'CR' };
+    }
+    else if (crlfCount) {
+      if (lfCount)
+        return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+      else
+        return { content: content, encoding: 'CRLF' };
+    }
+    else {
+      return { content: content, encoding: 'LF' };
+    }
   }
+
 }
 
 function _encodeUnusualStringAsJSON(content: string): string {

@@ -9,10 +9,10 @@ declare var msRequestFileSystem;
 
 	var srz = createComplexSerializer();
 
-  module.createIsolateHost = createIsolateHost;
-  module.createIsolateHost.worker = createWebWorkerHost;
-  module.createIsolateHost.iframe = createIFrameHost;
-  module.createApiHost = createApiHost;
+  module.createIsolateHost = createIsolateHost as any;
+  module.createIsolateHost.worker = createWebWorkerHost as any;
+  module.createIsolateHost.iframe = createIFrameHost as any;
+  module.createApiHost = createApiHost as any;
 
   return createIsolateHost;
 
@@ -385,7 +385,7 @@ declare var msRequestFileSystem;
 
   function createIFrameHost(drive: persistence.Drive, callback: (hst: isolation.IsolatedProcess) => void) {
 
-  var cmpSer = createComplexSerializer();
+    var cmpSer = createComplexSerializer();
 
     var frm = createIFrame();
 

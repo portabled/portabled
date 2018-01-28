@@ -40,8 +40,8 @@ function wrapEQ80(options: wrapEQ80.Options) {
 
   var backgroundStyle = options.defaultBackground||'background:black;color:black;';
 
-  return ''+
-    '/* <script>document.write(\'<!doctype html><meta charset="utf-8">\')</script><title>'+(options.title||'mini shell')+' </title> '+
+  var result = ''+
+    '<!doctype html><meta charset="utf-8"><title>'+(options.title||'mini shell')+' </title> '+
     '<meta http-equiv="x-ua-compatible" content="IE=edge"><style data-legit=mi> *{display:none;'+backgroundStyle+'} html,body{display:block;'+backgroundStyle+'margin:0;padding:0;height:100%;overflow:hidden;color:transparent;} </style>\n'+
     totalsComment+
     (options.favicon ? '// '+options.favicon + '\n': '') +
@@ -84,4 +84,72 @@ function wrapEQ80(options: wrapEQ80.Options) {
      : '')+
 
     '/*'+fileTotalHTML+'*/';
+
+  checkBlownLines(result);
+
+  return result;
+
+  function checkBlownLines(html: string) {
+    const i: { alert: string } = null;
+    var lines = html.split('\n');
+    var strangeLines: string[] = [];
+    var strangeStretches: { start: number, length: number, char: string }[] = [];
+    for (var iLine = 0; iLine < lines.length; iLine++) {
+      var ln = lines[iLine];
+      if (ln.length > 200) {
+        var highCount = 0;
+        var firstBreak = -1;
+        for (var iChar = 0; iChar < ln.length; iChar++) {
+          if (ln.charCodeAt(iChar)>126) {
+            if (firstBreak<0)
+              firstBreak = iChar;
+            highCount++;
+          }
+        }
+
+        if (highCount > ln.length*0.3) {
+          strangeLines[iLine] = iChar+':'+ln.slice(Math.max(0, firstBreak-10), firstBreak+10);
+          continue;
+        }
+      }
+
+      if (strangeLines[iLine-1]) {
+        var foundStretch = false;
+        for (var iStretchLine = iLine; iStretchLine>=0; iStretchLine--) {
+          if (!strangeLines[iStretchLine-1]) {
+            strangeStretches.push({start:iStretchLine, length: iLine-iStretchLine, char: strangeLines[iStretchLine]});
+            foundStretch = true;
+            break;
+          }
+        }
+        if (!foundStretch) {
+          strangeStretches.push({start:iLine, length:1, char: strangeLines[iLine]});
+        }
+      }
+    }
+
+    if (strangeStretches.length) {
+      console.log('Unusually long lines with many non-ASCII symbols'+(strangeStretches.length>1 ? ' ('+strangeStretches.length+' separate places)' : '')+':');
+      for (var iStretch = 0; iStretch < strangeStretches.length; iStretch++) {
+        var stret = strangeStretches[iStretch];
+        var leadLength = Math.min(stret.start, 10);
+        for (var iLineBefore = 0; iLineBefore < leadLength; iLineBefore++) {
+          var lnum = stret.start - leadLength + iLineBefore;
+          console.log('['+lnum+'] ' + lines[lnum]);
+        }
+
+        for (var iLine = 0; iLine < stret.length; iLine++) {
+          var lnum = stret.start + iLine;
+          console.log('*'+lnum+'* ' + stret.char + ' ' + lines[lnum].slice(0, 50)+' ... '+lines[lnum].slice(-50));
+        }
+
+        for (var iLineAfter = 0; iLineAfter < 10; iLineAfter++) {
+          var lnum = stret.start + stret.length + iLineAfter;
+          if (lnum>lines.length) break;
+          if (iLineAfter+1<strangeStretches.length && lnum>=strangeStretches[iLineAfter+1].start-3) break;
+          console.log('['+lnum+'] ' + lines[lnum]);
+        }
+      }
+    }
+  }
 }

@@ -1,12 +1,392 @@
-// <script>document.body.innerHTML = '' </script> <script id=submodule_script>
+//<!-- EQ80 CLI 
+function cli() {
+    if (typeof WScript !== 'undefined' && typeof ActiveXObject !== 'undefined') {
+        var sh = new ActiveXObject('WScript.Shell');
+        var args = 'node ' + WScript.ScriptFullName;
+        for (var i = 0; i < WScript.Arguments.length; i++) {
+            args += ' ' + WScript.Arguments[i];
+        }
+        sh.Run(args);
+        WScript.Quit(0);
+    }
+    copy();
+}
+function copy() {
+    var fs = require('fs');
+    var path = require('path');
+    var build = typeof loader === 'undefined' ? require('eq80/index.html') : loader;
+    var persistence = build.persistence;
+    run();
+    function run() {
+        var input = collectInput();
+        if (!input)
+            return;
+        if (input === '*') {
+            copyAll();
+            return;
+        }
+        var file = input.file;
+        var inputAllFiles = input.allFiles;
+        var isInputDir = input.isInputDir;
+        var outputFile = process.argv[3] || path.basename(file) + '-files';
+        var isOutputDir = fs.existsSync(outputFile) ? fs.statSync(outputFile).isDirectory() : !isInputDir;
+        if (isOutputDir) {
+            console.log('Writing at ' + path.resolve(outputFile) + '...');
+            for (var i = 0; i < inputAllFiles.length; i++) {
+                var targetPath = inputAllFiles[i].path;
+                if (targetPath.slice(-1) === '/' || targetPath.slice(-1) === '\\')
+                    continue;
+                if (targetPath.charAt(0) === '/' || targetPath.charAt(0) === '\\')
+                    targetPath = targetPath.slice(1);
+                targetPath = path.join(process.argv[3], targetPath);
+                var writeDir = path.dirname(targetPath);
+                createDirRecursive(writeDir);
+                var content = inputAllFiles[i].content;
+                if (!content && typeof content !== 'string') {
+                    try {
+                        content = fs.readFileSync(inputAllFiles[i].contentPath) + '';
+                    }
+                    catch (err) {
+                        console.log('  ' + (i + 1) + '. ' + targetPath + ' ' + JSON.stringify(inputAllFiles[i]) + ' ...');
+                        content = fs.readFileSync(inputAllFiles[i].contentPath) + '';
+                    }
+                }
+                fs.writeFileSync(targetPath, content);
+                if ((i + 1) % 20 === 1) {
+                    console.log('  ' + (i + 1) + '. ' + targetPath + ' ...');
+                }
+            }
+            console.log('All ' + inputAllFiles.length + ' saved.');
+        }
+        else {
+            if (fs.existsSync(outputFile)) {
+                console.log('Extracting EQ80 files from ' + outputFile + '...');
+                var outputFileHTML = fs.readFileSync(outputFile) + '';
+                var parsedOutputFile = persistence.parseHTML(outputFileHTML);
+                console.log((parsedOutputFile.files.length || 'none') + ' found.');
+                var resultHTML = updateParsedHTMLContent(outputFileHTML, parsedOutputFile, inputAllFiles, function (file) { return fs.readFileSync(file.contentPath) + ''; });
+                console.log('Saving [' + resultHTML.length + ']...');
+                fs.writeFileSync(outputFile + '.bak', fs.readFileSync(outputFile) + '');
+                fs.writeFileSync(outputFile, resultHTML);
+            }
+            else {
+                var totalSize = 0;
+                var manufacturedHTML = '';
+                for (var i = 0; i < inputAllFiles.length; i++) {
+                    var content = inputAllFiles[i].content;
+                    if (!content && typeof content !== 'string')
+                        content = fs.readFileSync(inputAllFiles[i].contentPath) + '';
+                    totalSize += content.length;
+                    manufacturedHTML += '<!--' + persistence.formatFileInner(inputAllFiles[i].path, content) + '-->\n';
+                }
+                manufacturedHTML =
+                    '<!doctype html><html><head><meta charset="utf-8"><title>' + file + ' EXPORT</title>\n' +
+                        '<!--' + persistence.formatTotalsInner(+new Date(), totalSize) + '-->\n' +
+                        '</head><body>\n' +
+                        manufacturedHTML +
+                        '</body></html>';
+                fs.writeFileSync(outputFile, manufacturedHTML);
+            }
+        }
+        function copyAll() {
+            var root = path.resolve(__dirname);
+            var sourcePath = path.join(root, 'index.html');
+            var srcDirPath = path.join(root, 'src');
+            if (!fs.existsSync(sourcePath) || fs.statSync(sourcePath).isDirectory()) {
+                console.log('[EQ80] Run without parameters and not from original directory (looking for ' + sourcePath + '): the default action of shell extraction and update cannot be performed.');
+                return;
+            }
+            var targetShells = fs.readdirSync(root);
+            // leave only .html files in the list
+            for (var i = 0; i < targetShells.length; i++) {
+                if (/\.html\.updated\.html$/.test(targetShells[i]) || !/\.html$/.test(targetShells[i])) {
+                    targetShells.splice(i, 1);
+                    i--;
+                }
+                else {
+                    targetShells[i] = path.resolve(root, targetShells[i]);
+                }
+            }
+            if (!targetShells.length) {
+                console.log('No shell HTML files found in ' + root);
+                return;
+            }
+            console.log('Processing ' + targetShells.length + ' shells...');
+            var parsedShells = [];
+            var latestParsed;
+            for (var i = 0; i < targetShells.length; i++) {
+                // HACK: limit the count for debugging
+                //if (parsedShells.length>=3 && !/(index|empty)\.html/.test(targetShells[i])) continue;
+                var content = fs.readFileSync(targetShells[i]) + '';
+                var parsed = parseShell(content);
+                if (!parsed)
+                    continue;
+                parsed.content = content;
+                parsed.path = targetShells[i];
+                parsedShells.push(parsed);
+                if (!latestParsed
+                    || (!latestParsed.totals && parsed.totals)
+                    || (parsed.totals && parsed.totals.timestamp > latestParsed.totals.timestamp)) {
+                    latestParsed = parsed;
+                }
+            }
+            if (parsedShells.length) {
+                if (parsedShells.length === 1) {
+                    console.log('Only one shell file detected: ' + parsedShells[0].path);
+                    return;
+                }
+                console.log(latestParsed.path + ' (' + (latestParsed.totals ? new Date(latestParsed.totals.timestamp) : 'no timestamp') + ') to be copied to ' + (parsedShells.length - 1) + ' shells');
+                for (var i = 0; i < parsedShells.length; i++) {
+                    if (parsedShells[i].path === latestParsed.path)
+                        continue;
+                    console.log('  ...' + parsedShells[i].path + '   ' + (parsedShells[i].totals && parsedShells[i].totals.timestamp ? new Date(parsedShells[i].totals.timestamp) : ''));
+                    var allFiles = [];
+                    for (var j = 0; j < parsedShells[i].files.length; j++) {
+                        var entry = parsedShells[i].files[j];
+                        allFiles.push(entry);
+                    }
+                    var updatedHTML = updateParsedHTMLContent(latestParsed.content, latestParsed, allFiles, function (entry) {
+                        return entry.content;
+                    }, true /* deleteExistingFiles */);
+                    fs.writeFileSync(parsedShells[i].path + '.bak', fs.readFileSync(parsedShells[i].path) + '');
+                    fs.writeFileSync(parsedShells[i].path, updatedHTML);
+                    parsedShells[i] = null;
+                }
+            }
+        }
+        function parseShell(fileContent) {
+            var versions = {};
+            extractVersions(fileContent, function (name, details) { versions[name || 'shell'] = details; });
+            extractCompressedDocWrite(fileContent, function (decompressed) {
+                extractVersions(decompressed, function (name, details) { versions[name || 'shell'] = details; });
+            });
+            if (!versions.loader || !versions.persistence || !versions.isolation || !versions.shell)
+                return null;
+            var parsed = persistence.parseHTML(fileContent);
+            parsed.versions = versions;
+            return parsed;
+            function extractVersions(content, callback) {
+                var versionPattern = /(([a-zA-Z]+)\.|\s)build\s*=\s*(\{[^\}]+\})/gm;
+                while (true) {
+                    var versionMatch = versionPattern.exec(content);
+                    if (!versionMatch)
+                        break;
+                    try {
+                        var ver = eval('(' + versionMatch[3] + ')');
+                        if (ver && typeof ver === 'object' && ver.timestamp)
+                            callback(versionMatch[2], ver);
+                    }
+                    catch (error) { }
+                }
+            }
+            function extractCompressedDocWrite(content, callback) {
+                var pos = 0;
+                var docWritePattern = /\b([a-z]*doc)\.write\(/gm;
+                while (pos < content.length) {
+                    docWritePattern.lastIndex = pos;
+                    var docWriteMatch = docWritePattern.exec(content);
+                    if (!docWriteMatch)
+                        return;
+                    var posDocClose = content.indexOf(docWriteMatch[1] + '.close()', docWriteMatch.index);
+                    if (posDocClose < 0)
+                        return;
+                    pos = posDocClose + (docWriteMatch[1] + '.close()').length;
+                    try {
+                        var innerScript = content.slice(docWriteMatch.index, pos);
+                        var fn = new Function(docWriteMatch[1], innerScript);
+                        var result;
+                        var callCount = 0;
+                        fn({
+                            write: function (decompressed) { result = decompressed; callCount++; },
+                            close: function () { }
+                        });
+                        if (callCount && typeof result === 'string')
+                            callback(result);
+                    }
+                    catch (err) { }
+                }
+            }
+        }
+        function createDirRecursive(dir) {
+            if (fs.existsSync(writeDir))
+                return;
+            //console.log('...creating '+dir+'...');
+            var parent = path.dirname(dir);
+            if (parent && (parent !== dir)) {
+                //console.log(parent+'!=='+dir);
+                createDirRecursive(parent);
+            }
+            try {
+                fs.mkdirSync(dir);
+            }
+            catch (error) { }
+        }
+        function findScript(html, filter) {
+            var pos = 0;
+            var tolo = html.toLowerCase();
+            while (true) {
+                var spos = tolo.indexOf('<' + 'script', pos);
+                if (spos < pos)
+                    return;
+                pos = spos + ('<' + 'script').length;
+                var clpos = tolo.indexOf('>', pos);
+                if (clpos < pos)
+                    return;
+                pos = spos + 1;
+                var epos = tolo.indexOf('</' + 'script');
+                if (epos < pos)
+                    return;
+                pos = epos + ('</' + 'script').length;
+                var jsText = html.slice(clpos + 1, epos);
+                var pass = filter(jsText);
+                if (pass)
+                    return jsText;
+            }
+        }
+    }
+    function collectInput() {
+        var fileArg = process.argv[2];
+        var file = path.resolve(fileArg);
+        if (!file) {
+            console.log('EQ80  nonode-file|directory  [output-nonode-file|directory]');
+            return;
+        }
+        if (!fs.existsSync(file)) {
+            if (file === '*')
+                return '*';
+            console.log('File not found: ' + file);
+            return;
+        }
+        var isInputDir = fs.statSync(file).isDirectory();
+        if (!isInputDir) {
+            console.log('Loading ' + file + '...');
+            var fullHtml = fs.readFileSync(file) + '';
+            console.log('Extracting files...');
+            var parsedHTML = persistence.parseHTML(fullHtml);
+            var allFiles = parsedHTML.files;
+        }
+        else {
+            console.log('Searching for files in ' + file + '...');
+            var allFiles = [];
+            var scanDirs = [file];
+            var scannedDirCount = 0;
+            while (scanDirs.length) {
+                var dir = scanDirs.pop();
+                var dirFileList = fs.readdirSync(dir);
+                scannedDirCount++;
+                for (var i = 0; i < dirFileList.length; i++) {
+                    if (dirFileList[i] === '.' || dirFileList[i] === '..')
+                        continue;
+                    var dirFile = path.join(dir, dirFileList[i]);
+                    if (fs.statSync(dirFile).isFile()) {
+                        var addPath = dirFile.slice(file.length).replace(/\\/g, '/');
+                        if (addPath.charCodeAt(0) !== 47)
+                            addPath = '/' + addPath;
+                        allFiles.push({ path: addPath, contentPath: dirFile }); // don't try to read it all in, too much data
+                        if (allFiles.length % 500 === 0) {
+                            console.log('  ...' + allFiles.length + '. ' + allFiles[allFiles.length - 1].path + ' in ' + scannedDirCount + ' directories');
+                        }
+                    }
+                    if (fs.statSync(dirFile).isDirectory())
+                        scanDirs.push(dirFile);
+                }
+            }
+        }
+        console.log((allFiles.length || 'none') + ' found.');
+        return { file: file, allFiles: allFiles, isInputDir: isInputDir };
+    }
+    function updateParsedHTMLContent(outputCompleteHTML, outputParsed, inputAllFiles, readInputContent, deleteExistingFiles) {
+        // map to find matchings
+        var outputFileMap = {};
+        for (var i = 0; i < outputParsed.files.length; i++) {
+            outputFileMap[outputParsed.files[i].path] = outputParsed.files[i];
+        }
+        var inputFileMap = {};
+        for (var i = 0; i < inputAllFiles.length; i++) {
+            inputFileMap[inputAllFiles[i].path] = inputAllFiles[i];
+        }
+        var writtenFiles = 0;
+        var resultBuf = [];
+        // now go backwards through existing files, and patch (or delete) them
+        var reverseFiles = outputParsed.files.slice();
+        reverseFiles.sort(function (f1, f2) {
+            return f1.start > f2.start ? -1 : f1.start < f2.start ? +1 : 0;
+        });
+        var offset = outputCompleteHTML.length;
+        for (var i = 0; i < reverseFiles.length; i++) {
+            var outputFi = reverseFiles[i];
+            var matchingInputFile = inputFileMap[outputFi.path];
+            if (matchingInputFile) {
+                resultBuf.unshift(outputCompleteHTML.slice(outputFi.end, offset));
+                var content = matchingInputFile.content;
+                if (!content && typeof content !== 'string')
+                    content = readInputContent(matchingInputFile) + '';
+                resultBuf.unshift('<!--' +
+                    persistence.formatFileInner(matchingInputFile.path, content) +
+                    '-->');
+                offset = outputFi.start;
+                writtenFiles++;
+                if (writtenFiles % 500 === 0) {
+                    console.log('  ' + writtenFiles + '. ' + matchingInputFile.path + ' (overwrite)');
+                }
+            }
+            else if (deleteExistingFiles) {
+                var deleteChunk = outputCompleteHTML.slice(outputFi.start, outputFi.start + 5) + '...' + outputCompleteHTML.slice(outputFi.end - 5, outputFi.end);
+                resultBuf.unshift(outputCompleteHTML.slice(outputFi.end, offset));
+                // skip whole file
+                offset = outputFi.start;
+            }
+        }
+        if (reverseFiles.length) {
+            var beforeInsertionPoint = outputCompleteHTML.slice(0, offset);
+        }
+        else {
+            offset = outputCompleteHTML.lastIndexOf('-->');
+            if (offset >= 0) {
+                offset += 3; // the length of end-comment
+            }
+            else {
+                offset = outputCompleteHTML.lastIndexOf('</body');
+                if (offset < 0) {
+                    offset = outputCompleteHTML.lastIndexOf('<');
+                    if (offset < 0)
+                        offset = outputCompleteHTML.length;
+                }
+            }
+            var beforeInsertionPoint = outputCompleteHTML.slice(0, offset);
+            if (offset < outputCompleteHTML.length)
+                resultBuf.push(outputCompleteHTML.slice(offset));
+        }
+        // now add new files
+        for (var i = 0; i < inputAllFiles.length; i++) {
+            var newFile = inputAllFiles[i];
+            var matchingOutputFile = outputFileMap[newFile.path];
+            if (matchingOutputFile)
+                continue; // that's already taken care of
+            var content = newFile.content;
+            if (!content && typeof content !== 'string')
+                content = readInputContent(newFile); // fs.readFileSync(newFile.contentPath)+'';
+            var insertChunk = '\n<!--' + persistence.formatFileInner(newFile.path, content) + '-->';
+            resultBuf.unshift(insertChunk);
+            writtenFiles++;
+            if (writtenFiles % 500 === 0) {
+                console.log('  ' + writtenFiles + '. ' + newFile.path + ' (new)');
+            }
+        }
+        var resultHTML = beforeInsertionPoint + resultBuf.join('');
+        return resultHTML;
+    }
+}
+
+//-->// <script>document.body.innerHTML = '' </script> <script id=submodule_script>
     
 
 function loader(window, document) {
 
 	loader.build = {
-    timestamp: 1489438511084, // Mon Mar 13 2017 20:55:11 GMT+0000 (GMT Standard Time)
-    taken: 30018,
-    platform: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"
+    timestamp: 1510701320678, // Tue Nov 14 2017 23:15:20 GMT+0000 (GMT)
+    taken: 8366,
+    platform: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3256.0 Safari/537.36"
 }
 
 var bootState;
@@ -512,9 +892,9 @@ function window_onload() {
 function persistence(document, uniqueKey, optionalDrives) {
 
 	persistence.build = {
-    timestamp: 1489438460446, // Mon Mar 13 2017 20:54:20 GMT+0000 (GMT Standard Time)
-    taken: 30379,
-    platform: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"
+    timestamp: 1510701294330, // Tue Nov 14 2017 23:14:54 GMT+0000 (GMT)
+    taken: 4948,
+    platform: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3256.0 Safari/537.36"
 }
 
 var BootState = (function () {
@@ -689,9 +1069,13 @@ var BootState = (function () {
             // these are updates from attached storage that have not been written out
             // (because files with corresponding paths don't exist in DOM)
             for (var path in this._toUpdateDOM) {
+                var entry = void 0;
                 if (!path || path.charCodeAt(0) !== 47)
                     continue; // expect leading slash
                 var content = this._toUpdateDOM[path];
+                if (content && content.content && content.encoding) {
+                    entry = content; // content could be string or { content, encoding }
+                }
                 if (content === null) {
                     var f = this._byPath[path];
                     if (f) {
@@ -708,7 +1092,8 @@ var BootState = (function () {
                 else if (typeof content !== 'undefined') {
                     var f = this._byPath[path];
                     if (f) {
-                        var entry = bestEncode(content);
+                        if (!entry)
+                            entry = bestEncode(content); // it could already be { content, encoding }
                         var modified = f.write(entry.content, entry.encoding);
                         if (!modified) {
                             if (this._shadow)
@@ -721,7 +1106,7 @@ var BootState = (function () {
                         var anchor = this._findAnchor();
                         var comment = document.createComment('');
                         var f = new DOMFile(comment, path, null, 0, 0);
-                        var entry = bestEncode(content);
+                        entry = bestEncode(content);
                         f.write(entry.content, entry.encoding);
                         this._byPath[path] = f;
                         this._newDOMFileCache[path] = true;
@@ -763,8 +1148,9 @@ var BootState = (function () {
         }
         var nextNode = this._lastNode.nextSibling;
         if (!nextNode) {
-            var body = this._document.body;
-            if (this._lastNode.parentElement !== body)
+            var body = this._document.body || null;
+            var lastNodeParent = this._lastNode.parentNode || this._lastNode.parentElement || null;
+            if (lastNodeParent !== body)
                 nextNode = body.firstChild;
         }
         return nextNode;
@@ -854,7 +1240,7 @@ var BootState = (function () {
             this._newStorageFileCache[path] = true;
         }
         else {
-            this._toUpdateDOM[path] = content;
+            this._toUpdateDOM[path] = encoding ? { content: content, encoding: encoding } : content;
             this._newStorageFileCache[path] = true;
         }
     };
@@ -920,11 +1306,11 @@ var MountedDrive = (function () {
             this.timestamp = +new Date();
         this._cachedFiles = null;
         this._dom.timestamp = this.timestamp;
-        var encoded = bestEncode(content);
-        this._dom.write(file, encoded.content, encoded.encoding);
+        var encoded = content ? bestEncode(content) : null;
+        this._dom.write(file, encoded ? encoded.content : null, encoded ? encoded.encoding : null);
         if (this._shadow) {
             this._shadow.timestamp = this.timestamp;
-            this._shadow.write(file, encoded.content, encoded.encoding);
+            this._shadow.write(file, encoded ? encoded.content : null, encoded ? encoded.encoding : null);
         }
     };
     return MountedDrive;
@@ -935,7 +1321,7 @@ function bestEncode(content, escapePath) {
         var compressed = encodings.lzma.compress(content);
         var str = '';
         for (var i = 0; i < compressed.length; i++) {
-          str += String.fromCharCode(compressed[i]);
+          str += String.fromCharCode((compressed[i] + 256) % 256);
         }
         var b64 = encodings.base64.btoa(str);
         if (typeof content !== 'string')
@@ -956,21 +1342,75 @@ function bestEncode(content, escapePath) {
         }
         return { content: _encodeArrayOrSimilarAsJSON(content), encoding: 'json' };
     }
-    var needsEscaping;
+    var maxEscape = ((content.length * 0.1) | 0) + 2;
+    var escape = 0;
+    var escapeHigh = 0;
+    var prevChar = 0;
+    var crCount = 0;
+    var lfCount = 0;
+    var crlfCount = 0;
     if (escapePath) {
-        // zero-char, newlines, leading/trailing spaces, quote and apostrophe
-        needsEscaping = /\u0000|\r|\n|^\s|\s$|\"|\'/.test(content);
+        for (var i = 0; i < content.length; i++) {
+            var c = content.charCodeAt(i);
+            if (c < 32 || c > 126 || (c === 32 && (!i || i === content.length - 1))) {
+                escape = 1;
+                break;
+            }
+        }
     }
     else {
-        needsEscaping = /\u0000|\r/.test(content);
+        for (var i = 0; i < content.length; i++) {
+            var c = content.charCodeAt(i);
+            if (c === 10) {
+                if (prevChar === 13) {
+                    crCount--;
+                    crlfCount++;
+                }
+                else {
+                    lfCount++;
+                }
+            }
+            else if (c === 13) {
+                crCount++;
+            }
+            else if (c < 32 && c != 9) {
+                escape++;
+            }
+            else if (c > 126) {
+                escapeHigh++;
+            }
+            prevChar = c;
+            if ((escape + escapeHigh) > maxEscape)
+                break;
+        }
     }
-    if (needsEscaping) {
-        // ZERO character is officially unsafe in HTML,
-        // CR is contentious in IE (which converts any CR or LF into CRLF)
-        return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+    if (escapePath) {
+        if (escape)
+            return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+        else
+            return { content: content, encoding: 'LF' };
     }
     else {
-        return { content: content, encoding: 'LF' };
+        if (escape > maxEscape) {
+            return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+        }
+        else if (escape)
+            return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+        else if (crCount) {
+            if (lfCount)
+                return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+            else
+                return { content: content, encoding: 'CR' };
+        }
+        else if (crlfCount) {
+            if (lfCount)
+                return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+            else
+                return { content: content, encoding: 'CRLF' };
+        }
+        else {
+            return { content: content, encoding: 'LF' };
+        }
     }
 }
 function _encodeUnusualStringAsJSON(content) {
@@ -1309,6 +1749,27 @@ var attached;
                 var metadataStore = transaction.objectStore('metadata');
                 metadataStore.clear();
                 callback(new IndexedDBShadow(this._db, -1));
+            };
+            IndexedDBDetached.prototype._requestStores = function (storeNames, readwrite, callback) {
+                var stores = [];
+                var attemptPopulateStores = function () {
+                    for (var i = 0; i < storeNames.length; i++) {
+                        stores[i] = transaction.objectStore(storeNames[i]);
+                    }
+                };
+                try {
+                    var transaction = this._transaction;
+                    if (!transaction) {
+                        transaction = readwrite ? this._db.transaction(storeNames, readwrite) : this._db.transaction(storeNames);
+                        this._transaction = transaction;
+                    }
+                    attemptPopulateStores();
+                }
+                catch (error) {
+                    transaction = readwrite ? this._db.transaction(storeNames, readwrite) : this._db.transaction(storeNames);
+                    this._transaction = transaction;
+                    attemptPopulateStores();
+                }
             };
             return IndexedDBDetached;
         }());
@@ -2137,6 +2598,9 @@ var DOMFile = (function () {
         return decodedText;
     };
     DOMFile.prototype.write = function (content, encoding) {
+        content =
+            content === null || typeof content === 'undefined' ? content :
+                String(content);
         var encoded = encoding ? { content: content, encoding: encoding } : bestEncode(content);
         var protectedText = encoded.content.
             replace(/\-\-(\**)\>/g, '--*$1>').
@@ -2293,7 +2757,7 @@ var encodings;
 (function (encodings) {
     function CRLF(text) {
         return text.
-            replace(/\r|\n/g, '\r\n');
+            replace(/(\r\n)|\r|\n/g, '\r\n');
     }
     encodings.CRLF = CRLF;
 })(encodings || (encodings = {}));
@@ -2307,14 +2771,13 @@ var encodings;
 })(encodings || (encodings = {}));
 var encodings;
 (function (encodings) {
-    //if (!window['__enable']) throw new Error('a');
     var _btoa = base64.btoa = (typeof btoa === 'function' ? (function (text) { return btoa(text); }) : null);
     var _atob = base64.atob = (typeof atob === 'function' ? (function (text) { return atob(text); }) : null);
     if (!_btoa) {
         function t(t) { this.message = t; }
         var e = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
         t.prototype = new Error, t.prototype.name = "InvalidCharacterError";
-        _btoa = function (r) {
+        base64.btoa = _btoa = function (r) {
             for (var o, n, a = String(r), i = 0, c = e, d = ""; a.charAt(0 | i) || (c = "=", i % 1); d += c.charAt(63 & o >> 8 - i % 1 * 8)) {
                 if (n = a.charCodeAt(i += .75), n > 255)
                     throw new t("'btoa' failed: The string to be encoded contains characters outside of the Latin1 range.");
@@ -2322,7 +2785,7 @@ var encodings;
             }
             return d;
         };
-        _atob = function (r) {
+        base64.atob = _atob = function (r) {
             var o = String(r).replace(/=+$/, "");
             if (o.length % 4 == 1)
                 throw new t("'atob' failed: The string to be decoded is not correctly encoded.");
@@ -2334,7 +2797,7 @@ var encodings;
     function base64(text) {
         if (text && text.charCodeAt(0) === 42) {
             var bin = _atob(text.slice(1));
-            var buf = typeof Int8Array === 'function' ? new Int8Array(bin.length) : [];
+            var buf = typeof Uint8Array === 'function' ? new Uint8Array(bin.length) : [];
             for (var i = 0; i < bin.length; i++) {
                 buf[i] = bin.charCodeAt(i);
             }
@@ -2370,18 +2833,27 @@ var encodings;
     // https://github.com/LZMA-JS/LZMA-JS [MIT licensed]
     function lzma(text) {
         var arrMark = text.charCodeAt(0) === 42;
-        var rawData = lzma.decompress(encodings.base64.atob(text.slice(1)));
+        var unbase64 = encodings.base64.atob(text.slice(1));
+        var arr = [];
+        for (var i = 0; i < unbase64.length; i++) {
+            var byte = unbase64.charCodeAt(i);
+            arr[i] = (byte & 127) - (byte & 128);
+        }
+        var rawData = lzma.decompress(arr);
         if (arrMark) {
+            for (var i = 0; i < rawData.length; i++) {
+                rawData[i] = (rawData[i] + 256) % 256;
+            }
             return rawData;
         }
         var str = '';
         for (var i = 0; i < rawData.length; i++) {
-            str += String.fromCharCode(rawData[i]);
+            str += String.fromCharCode((rawData[i] + 256) % 256);
         }
         return str;
     }
     encodings.lzma = lzma;
-    /// © 2015 Nathan Rugg <nmrugg@gmail.com> | MIT
+    /// む 2015 Nathan Rugg <nmrugg@gmail.com> | MIT
     /// See LICENSE for more details.
     /* jshint noarg:true, boss:true, unused:strict, strict:true, undef:true, noarg: true, forin:true, evil:true, newcap:false, -W041, -W021, worker:true, browser:true, node:true */
     /* global setImmediate, setTimeout, window, onmessage */
@@ -4783,7 +5255,7 @@ var encodings;
                 }
                 on_progress(1);
                 res = $toByteArray(this$static.c.output);
-                /// delay so we don’t catch errors from the on_finish handler
+                /// delay so we don't catch errors from the on_finish handler
                 wait(on_finish.bind(null, res), 0);
             }
             catch (err) {
@@ -4852,7 +5324,7 @@ var encodings;
                 }
                 on_progress(1);
                 res = decode($toByteArray(this$static.d.output));
-                /// delay so we don’t catch errors from the on_finish handler
+                /// delay so we don't catch errors from the on_finish handler
                 wait(on_finish.bind(null, res), 0);
             }
             catch (err) {
@@ -4953,7 +5425,7 @@ var encodings;
 ;
     if (typeof module !== 'undefined' && module && module.exports) {
         function build_tools(exports) {
-var fs = require("fs"), path = require("path");function buildStats() {
+  var fs = require("fs"), path = require("path");function buildStats() {
     var buildStartTime = +new Date();
     return completeBuildStats;
     function completeBuildStats() {
@@ -5101,7 +5573,7 @@ function getFiles(filelist) {
                 content = content();
             }
             else if (typeof content !== 'string') {
-                content = fs.readFileSync(redirects[fi] || fi);
+                content = fs.readFileSync(redirects[fi] || fi) + '';
             }
             return content;
         }
@@ -5160,11 +5632,13 @@ function getFiles(filelist) {
             redirects[newPath] = file;
         }
         else {
+            var shortFilename = file.replace(/^.+(\/[^/]+)$/, '$1');
             if (filelist.filterFiles) {
-                if (!filelist.filterFiles(file, file))
+                if (!filelist.filterFiles(shortFilename, file))
                     return;
             }
             addFileContent(file);
+            redirects[shortFilename] = file;
         }
     }
     function addFileStr(file, skipPathStrLength, redirectRoot) {
@@ -5491,8 +5965,8 @@ function wrapEQ80(options) {
     options.fileTotalCount = fileTotalCount;
     var totalsComment = '<!--' + persistence.formatTotalsInner(options.timestamp || +new Date(), fileTotalSize) + '-->';
     var backgroundStyle = options.defaultBackground || 'background:black;color:black;';
-    return '' +
-        '/* <script>document.write(\'<!doctype html><meta charset="utf-8">\')</script><title>' + (options.title || 'mini shell') + ' </title> ' +
+    var result = '' +
+        '<!doctype html><meta charset="utf-8"><title>' + (options.title || 'mini shell') + ' </title> ' +
         '<meta http-equiv="x-ua-compatible" content="IE=edge"><style data-legit=mi> *{display:none;' + backgroundStyle + '} html,body{display:block;' + backgroundStyle + 'margin:0;padding:0;height:100%;overflow:hidden;color:transparent;} </style>\n' +
         totalsComment +
         (options.favicon ? '// ' + options.favicon + '\n' : '') +
@@ -5531,6 +6005,68 @@ function wrapEQ80(options) {
                 '})(); //# ' + 'sourceURL=/SHELL-docwrite.html </' + 'script>\n'
             : '') +
         '/*' + fileTotalHTML + '*/';
+    checkBlownLines(result);
+    return result;
+    function checkBlownLines(html) {
+        var i = null;
+        var lines = html.split('\n');
+        var strangeLines = [];
+        var strangeStretches = [];
+        for (var iLine = 0; iLine < lines.length; iLine++) {
+            var ln = lines[iLine];
+            if (ln.length > 200) {
+                var highCount = 0;
+                var firstBreak = -1;
+                for (var iChar = 0; iChar < ln.length; iChar++) {
+                    if (ln.charCodeAt(iChar) > 126) {
+                        if (firstBreak < 0)
+                            firstBreak = iChar;
+                        highCount++;
+                    }
+                }
+                if (highCount > ln.length * 0.3) {
+                    strangeLines[iLine] = iChar + ':' + ln.slice(Math.max(0, firstBreak - 10), firstBreak + 10);
+                    continue;
+                }
+            }
+            if (strangeLines[iLine - 1]) {
+                var foundStretch = false;
+                for (var iStretchLine = iLine; iStretchLine >= 0; iStretchLine--) {
+                    if (!strangeLines[iStretchLine - 1]) {
+                        strangeStretches.push({ start: iStretchLine, length: iLine - iStretchLine, char: strangeLines[iStretchLine] });
+                        foundStretch = true;
+                        break;
+                    }
+                }
+                if (!foundStretch) {
+                    strangeStretches.push({ start: iLine, length: 1, char: strangeLines[iLine] });
+                }
+            }
+        }
+        if (strangeStretches.length) {
+            console.log('Unusually long lines with many non-ASCII symbols' + (strangeStretches.length > 1 ? ' (' + strangeStretches.length + ' separate places)' : '') + ':');
+            for (var iStretch = 0; iStretch < strangeStretches.length; iStretch++) {
+                var stret = strangeStretches[iStretch];
+                var leadLength = Math.min(stret.start, 10);
+                for (var iLineBefore = 0; iLineBefore < leadLength; iLineBefore++) {
+                    var lnum = stret.start - leadLength + iLineBefore;
+                    console.log('[' + lnum + '] ' + lines[lnum]);
+                }
+                for (var iLine = 0; iLine < stret.length; iLine++) {
+                    var lnum = stret.start + iLine;
+                    console.log('*' + lnum + '* ' + stret.char + ' ' + lines[lnum].slice(0, 50) + ' ... ' + lines[lnum].slice(-50));
+                }
+                for (var iLineAfter = 0; iLineAfter < 10; iLineAfter++) {
+                    var lnum = stret.start + stret.length + iLineAfter;
+                    if (lnum > lines.length)
+                        break;
+                    if (iLineAfter + 1 < strangeStretches.length && lnum >= strangeStretches[iLineAfter + 1].start - 3)
+                        break;
+                    console.log('[' + lnum + '] ' + lines[lnum]);
+                }
+            }
+        }
+    }
 }
 function wrapScript(replacements) {
     var result = functionBody((template_content + '').replace(/\<\/\[script/g, '</' + 'script').replace(/\"\#build_functions\#\"/, functionBody + '\n' +
@@ -5630,7 +6166,8 @@ function template_content() {
                 t.testEntry.className = 'running';
                 t.run(function (error) {
                     var finish = +new Date();
-                    if (error) {
+                    var failed = error || (error !== null && typeof error !== 'undefined');
+                    if (failed) {
                         if (typeof console !== 'undefined' && console && console.error) {
                             console.error('  ', error, (finish - start) / 1000 + 's.' + (' ' + error.stack ? error.stack : ''));
                         }
@@ -5647,7 +6184,7 @@ function template_content() {
                         tm.innerText = ' ' + (finish - start) + 'ms';
                     tm.style.fontSize = '80%';
                     t.testEntry.appendChild(tm);
-                    if (!error) {
+                    if (!failed) {
                         t.testEntry.className = 'success';
                         successCount++;
                     }
@@ -5791,24 +6328,24 @@ function template_content() {
 
 
 
-exports.htmlSpotExternals = htmlSpotExternals;
-exports.compileTS = compileTS;
-exports.buildStats = buildStats;
-exports.jsString = jsString;
-exports.jsStringLong = jsStringLong;
-exports.functionBody = functionBody;
-exports.functionArgs = functionArgs;
-exports.wrapScript = wrapScript;
-exports.substitute = substitute;
-exports.wrapEQ80 = wrapEQ80;
-exports.getFiles = getFiles;
+  exports.htmlSpotExternals = htmlSpotExternals;
+  exports.compileTS = compileTS;
+  exports.buildStats = buildStats;
+  exports.jsString = jsString;
+  exports.jsStringLong = jsStringLong;
+  exports.functionBody = functionBody;
+  exports.functionArgs = functionArgs;
+  exports.wrapScript = wrapScript;
+  exports.substitute = substitute;
+  exports.wrapEQ80 = wrapEQ80;
+  exports.getFiles = getFiles;
 
-persistence();
-exports.loader = loader;
-exports.persistence = persistence;
+  persistence();
+  exports.loader = loader;
+  exports.persistence = persistence;
 }
 
-build_tools(module.exports);;
+build_tools(module.parent ? module.exports : loader);;
     }
     else {
         document.body.style.color = 'white';
@@ -5925,7 +6462,8 @@ var tests;
                 t.testEntry.className = 'running';
                 t.run(function (error) {
                     var finish = +new Date();
-                    if (error) {
+                    var failed = error || (error !== null && typeof error !== 'undefined');
+                    if (failed) {
                         if (typeof console !== 'undefined' && console && console.error) {
                             console.error('  ', error, (finish - start) / 1000 + 's.' + (' ' + error.stack ? error.stack : ''));
                         }
@@ -5942,7 +6480,7 @@ var tests;
                         tm.innerText = ' ' + (finish - start) + 'ms';
                     tm.style.fontSize = '80%';
                     t.testEntry.appendChild(tm);
-                    if (!error) {
+                    if (!failed) {
                         t.testEntry.className = 'success';
                         successCount++;
                     }
@@ -6247,4 +6785,5 @@ function jsStringLong(str) {
     }
 }
 ;
-    // # sourceURL=/tests_scripts.js </script>
+    // # sourceURL=/tests_scripts.js </script> <!--
+ if (!module.parent) cli(); // -->

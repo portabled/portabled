@@ -1,7 +1,7 @@
 declare var unescape;
 
 
-var version = '0.84j';
+var version = '0.85s';
 
 class CommanderShell {
 
@@ -77,7 +77,9 @@ class CommanderShell {
 
     elem(this._host, {
       background: 'black',
-      color: 'silver'
+      color: 'silver',
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
+      fontWeight: 300
     });
 
     this._metrics = new layout.MetricsCollector(window);
@@ -201,6 +203,9 @@ class CommanderShell {
         setTimeout(() => this._terminalExecute(hashCmd), 1);
       }, 1);
     }
+
+    this[String.fromCharCode(8984)+'E'] = this.AltE;
+    this[String.fromCharCode(8984)+'S'] = this.AltS;
   }
 
   measure() {
@@ -286,15 +291,28 @@ class CommanderShell {
     return true;
   }
 
+  AltEscape(e) {
+    this._twoPanels.toggleVisibility();
+    return true;
+  }
+  CtrlEscape = this.AltEscape;
+  ShiftEscape = this.ShiftEscape;
+  MetaEscape = this.AltEscape;
+
   Enter(e) {
     if (this._terminal.isInputEmpty()) {
       if (dispatchKeyEvent(e, this._twoPanels)) return true;
       var cursorPath = this._twoPanels.cursorPath();
-      return this._execute(cursorPath, null, true);
+      if (cursorPath)
+        return this._execute(cursorPath, null, true);
+
+      this._terminal.writeDirect('');
     }
     else {
       var input = this._terminal.getInput().replace(/^\s*/, '').replace(/\s*$/, '');
-      if (input !== 'Enter' && typeof this[input]==='function') {
+      var terminalTry = this._terminal.keydown(e, cursorPath);
+
+      if (!terminalTry && input !== 'Enter' && typeof this[input]==='function') {
         var direct = this[input](e);
         if (direct) {
           this._terminal.clearInput();
@@ -302,18 +320,24 @@ class CommanderShell {
         }
       }
 
-      return this._terminal.keydown(e, cursorPath);
+      return terminalTry;
     }
   }
 
   AltS() {
     return this._command(actions.save);
   }
+	AltShiftS = this.AltS;
+	MetaS = this.AltS;
+	MetaShiftS = this.AltS;
 
   AltE(e) {
     var cursorPath = this._twoPanels.cursorPath();
     return this._openEditor(cursorPath, false);
   }
+  AltShiftE = this.AltE;
+	MetaE = this.AltE;
+	MetaShiftE = this.AltE;
 
   AltF4(e) {
     var cursorPath = this._twoPanels.cursorPath();
@@ -325,10 +349,10 @@ class CommanderShell {
     return this._openEditor(cursorPath, true);
   }
 
-  MetaE(e) {
-    var cursorPath = this._twoPanels.cursorPath();
-    return this._openEditor(cursorPath, false);
-  }
+  private _noForceFocus = [
+    'Shift', 'Control', 'Alt', 'Win',
+    'ShiftUp', 'ShiftDown', 'ShiftLeft', 'ShiftRight'
+  ];
 
   private _keydownCore(e: KeyboardEvent) {
 
@@ -338,12 +362,12 @@ class CommanderShell {
     if (this._runningProcessCount) {
       var eatKey = false;
       var forceStop = false;
-      if (e.shellPressed.CtrlC) {
+      if (e.shellPressed.CtrlC || e.shellPressed.MetaC) {
         if (!this._terminal.hasAnyTextSelected()) {
           forceStop=true;
         }
       }
-      if (e.shellPressed.AltC || e.shellPressed.MetaC) {
+      if (e.shellPressed.AltC) {
         forceStop=true;
       }
 
@@ -388,8 +412,16 @@ class CommanderShell {
     var cursorPath = this._twoPanels.cursorPath();
 
     var refocusInput = true;
-    if (e.ctrlKey) refocusInput = false;
-    if (e.shellPressed['Ctrl-V']) refocusInput = true;
+
+    if (e.ctrlKey || e.metaKey) refocusInput = false;
+
+    for (var i = 0; i < this._noForceFocus.length; i++) {
+      if (e.shellPressed[this._noForceFocus[i]])
+        refocusInput = false;
+    }
+
+    if (e.shellPressed['Ctrl-V'] | e.shellPressed['Meta-V'])
+      refocusInput = true;
 
     if (refocusInput)
       this._terminal.focus();
@@ -697,7 +729,7 @@ class CommanderShell {
 
   private _load(moreArgs: string) {
     if (!moreArgs || !/\S/.test(moreArgs)) {
-      this._terminal.writeDirect('load   [  script.js   ¦   <raw JavaScript>  ]   - to load code into shell');
+      this._terminal.writeDirect('load   [  script.js  |  <raw JavaScript>  ]   - to load code into shell');
       return true;
     }
     else {
@@ -928,7 +960,7 @@ class CommanderShell {
     return true;
   }
 
-  private _execute(cursorPath: string, callback: Function, dumpCommandToTerminal?: boolean) {
+  private _execute(cursorPath: string, callback: Function, dumpCommandToTerminal?: boolean): boolean {
 
     if (/\.js$/.test(cursorPath)) {
       this._terminal.writeAsCommand('@node ' + cursorPath);
@@ -986,7 +1018,6 @@ class CommanderShell {
 
     }, 1);
 
-    this._terminal.storeAsHistory('@window ' + cursorPath);
     return true;
   }
 

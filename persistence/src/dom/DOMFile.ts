@@ -84,6 +84,10 @@ class DOMFile {
 
   write(content: any, encoding: string): string | boolean {
 
+    content =
+      content===null || typeof content === 'undefined' ? content :
+      String(content);
+
     var encoded = encoding ? { content, encoding } : bestEncode(content);
     var protectedText = encoded.content.
     replace(/\-\-(\**)\>/g, '--*$1>').

@@ -7,18 +7,21 @@ namespace encodings {
     var unbase64 = base64.atob(text.slice(1));
     var arr = [];
     for (var  i = 0; i < unbase64.length; i++) {
-      arr[i] = unbase64.charCodeAt(i) > 0 ? unbase64.charCodeAt(i) :
-      	(unbase64.charCodeAt(i) | 0xFFFFFF00);
+      var byte = unbase64.charCodeAt(i);
+      arr[i] = (byte & 127) - (byte & 128);
     }
 
     var rawData = lzma.decompress(arr);
     if (arrMark) {
+      for (var i = 0; i < rawData.length; i++) {
+        rawData[i] = (rawData[i] + 256) % 256;
+      }
       return rawData;
     }
 
     var str = '';
     for (var i = 0; i < rawData.length; i++) {
-      str += String.fromCharCode(rawData[i]);
+      str += String.fromCharCode((rawData[i] + 256) % 256);
     }
     return str;
   }
@@ -27,7 +30,7 @@ namespace encodings {
     var compress, decompress;
   }
 
-/// © 2015 Nathan Rugg <nmrugg@gmail.com> | MIT
+/// む 2015 Nathan Rugg <nmrugg@gmail.com> | MIT
 /// See LICENSE for more details.
 
 /* jshint noarg:true, boss:true, unused:strict, strict:true, undef:true, noarg: true, forin:true, evil:true, newcap:false, -W041, -W021, worker:true, browser:true, node:true */
@@ -2541,7 +2544,7 @@ function compress(str, mode, on_finish, on_progress) {
 
       res = $toByteArray(this$static.c.output);
 
-      /// delay so we don’t catch errors from the on_finish handler
+      /// delay so we don't catch errors from the on_finish handler
       wait(on_finish.bind(null, res), 0);
     } catch (err) {
       on_finish(null, err);
@@ -2627,7 +2630,7 @@ function decompress(byte_arr, on_finish, on_progress) {
 
       res = decode($toByteArray(this$static.d.output));
 
-      /// delay so we don’t catch errors from the on_finish handler
+      /// delay so we don't catch errors from the on_finish handler
       wait(on_finish.bind(null, res), 0);
     } catch (err) {
       on_finish(null, err);

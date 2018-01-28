@@ -1,0 +1,6 @@
+{
+    "compilerOptions": {
+        "out": "cli.js",
+        "sourceMap": false
+    }
+}

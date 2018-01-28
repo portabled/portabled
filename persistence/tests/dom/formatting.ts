@@ -24,7 +24,7 @@ namespace tests.dom.formatting {
       function test_parseFileInner() {
         var fi = persistence.parseFileInner(data.formatted);
         assert.equal(data.path, fi.path);
-        assert.equal(data.text, fi.read());
+        assert.equal(data.text, String(fi.read()));
       }
     }
 

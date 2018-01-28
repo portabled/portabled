@@ -83,7 +83,7 @@ namespace terminal {
       for (var fa in boot.storageLoadFailures) if (boot.storageLoadFailures.hasOwnProperty(fa)) {
         storageFailureStr.push(fa+': '+boot.storageLoadFailures[fa]);
       }
-      if (storageFailureStr) {
+      if (storageFailureStr && storageFailureStr.length) {
         buildMe.title = storageFailureStr.join('\n');
         buildMe.onclick = () => {
           this.writeDirect(

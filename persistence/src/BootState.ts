@@ -210,8 +210,13 @@ class BootState {
       // (because files with corresponding paths don't exist in DOM)
 
       for (var path in this._toUpdateDOM) {
+        let entry: { content, encoding };
         if (!path || path.charCodeAt(0)!==47) continue; // expect leading slash
         var content = this._toUpdateDOM[path];
+        if (content && content.content && content.encoding) {
+          entry = content; // content could be string or { content, encoding }
+        }
+
         if (content===null) {
           var f = this._byPath[path];
           if (f) {
@@ -226,7 +231,9 @@ class BootState {
         else if (typeof content!=='undefined') {
           var f = this._byPath[path];
           if (f) {
-            var entry = bestEncode(content);
+            if (!entry)
+              entry = bestEncode(content); // it could already be { content, encoding }
+
             var modified = f.write(entry.content, entry.encoding);
             if (!modified) {
               if (this._shadow) this._shadow.forget(path);
@@ -237,7 +244,7 @@ class BootState {
             var anchor = this._findAnchor();
             var comment = document.createComment('');
             var f = new DOMFile(comment, path, null, 0, 0);
-            var entry = bestEncode(content);
+            entry = bestEncode(content);
             f.write(entry.content, entry.encoding);
             this._byPath[path] = f;
             this._newDOMFileCache[path] = true;
@@ -283,8 +290,9 @@ class BootState {
 
     var nextNode = this._lastNode.nextSibling;
     if (!nextNode) {
-      var body = this._document.body;
-      if (this._lastNode.parentElement!==body)
+      var body = this._document.body || null;
+      var lastNodeParent = this._lastNode.parentNode || this._lastNode.parentElement || null;
+      if (lastNodeParent!==body)
         nextNode = body.firstChild;
     }
     return nextNode;
@@ -377,7 +385,7 @@ class BootState {
       this._newStorageFileCache[path] = true;
     }
     else {
-      this._toUpdateDOM[path] = content;
+      this._toUpdateDOM[path] = encoding ? { content, encoding } : content;
       this._newStorageFileCache[path] = true;
     }
   }

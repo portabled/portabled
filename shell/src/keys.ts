@@ -61,7 +61,11 @@ var keyNames: KeyInfo[] = (function(){
     45: 'Insert', 46: 'Delete',
     47: 'Help',
     59: ['Semicolon',';'], 61: ['Equal','='],
-    91: 'Win', 92: 'Win', 93: 'App',
+
+    91: ['LeftMeta', 'Win', 'LeftWin', 'Meta', 'LeftMeta', '\u2318', 'Left\u2318', 'Cmd', 'LeftCmd'],
+    92: ['RightMeta', 'Win', 'RightWin', 'Meta', '\u2318', 'Right\u2318', 'Cmd', 'RightCmd'],
+    93: 'App',
+
     96: '0', 97: '1', 98: '2', 99: '3', 100: '4', 101: '5', 102: '6', 103: '7', 104: '8', 105: '9',
     106: ['NumStar','Star','NumMultiply','Multiply','*'], 107: ['NumPlus','Plus','+'], 108: 'Separator', 109: ['NumMinus','Minus','-'], 110: ['NumDot','Dot','.'], 111: ['NumSlash','Slash','NumDivide','Divide','/'],
     112: 'F1', 113: 'F2', 114: 'F3', 115: 'F4', 116: 'F5', 117: 'F6', 118: 'F7', 119: 'F8', 120: 'F10', 121: 'F11', 122: 'F12',
@@ -93,13 +97,24 @@ function enrichWithModifier(info: KeyInfo, mod: Modifiers) {
   if (mod & Modifiers.Ctrl) prefix = 'Ctrl';
   if (mod & Modifiers.Alt) prefix = prefix ? (prefix+'-Alt') : 'Alt';
   if (mod & Modifiers.Shift) prefix = prefix ? (prefix+'-Shift') : 'Shift';
-  if (mod & Modifiers.Meta) prefix = prefix ? (prefix+'-\u2318') : '\u2318';
+  if (mod & Modifiers.Meta) {
+    prefix = prefix ? (prefix+'-\u2318') : '\u2318';
+    var extraPrefixes = prefix ? [prefix+'-Meta', prefix+'-Cmd'] : ['Meta', 'Cmd'];
+  }
+
   var modknames = [];
   var modmap: any = {};
   for (var i = 0; i < info.names.length; i++) {
     var modnm = prefix + info.names[i];
-    modknames[i] = modnm;
+    modknames.push(modnm);
     modmap[modnm] = true;
+    if (extraPrefixes) {
+      for (var j = 0; j < extraPrefixes.length; j++) {
+        var modnm = extraPrefixes[j] + info.names[i];
+        modknames.push(modnm);
+        modmap[modnm] = true;
+      }
+    }
   }
 
   return info.modified[mod] = { names: modknames, map: modmap };

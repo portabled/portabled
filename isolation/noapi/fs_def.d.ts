@@ -115,8 +115,8 @@ interface FS {
   readFile(filename: string, options: { encoding: string; flag?: string; }, callback: (err: ErrnoError, data: string) => void): void;
   readFile(filename: string, options: { flag?: string; }, callback: (err: ErrnoError, data: Buffer) => void): void;
   readFile(filename: string, callback: (err: ErrnoError, data: Buffer) => void): void;
-  readFileSync(filename: string, encoding: string): string;
-  readFileSync(filename: string, options: { encoding: string; flag?: string; }): string;
+  readFileSync(filename: string, encoding: string): Buffer;
+  readFileSync(filename: string, options: { encoding: string; flag?: string; }): Buffer;
   readFileSync(filename: string, options?: { flag?: string; }): Buffer;
 
   write(fd: number, buffer: Buffer, offset: number, length: number, position: number, callback?: (err: ErrnoError, written: number, buffer: Buffer) => void): void;

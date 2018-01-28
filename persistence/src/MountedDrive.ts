@@ -32,13 +32,13 @@ class MountedDrive implements persistence.Drive {
 
     this._dom.timestamp = this.timestamp;
 
-    var encoded = bestEncode(content);
+    var encoded = content ? bestEncode(content) : null;
 
-    this._dom.write(file, encoded.content, encoded.encoding);
+    this._dom.write(file, encoded ? encoded.content : null, encoded ? encoded.encoding : null);
 
     if (this._shadow) {
       this._shadow.timestamp = this.timestamp;
-      this._shadow.write(file, encoded.content, encoded.encoding);
+      this._shadow.write(file, encoded ? encoded.content : null, encoded ? encoded.encoding : null);
     }
   }
 }

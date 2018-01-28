@@ -285,11 +285,11 @@ function createFS(
 
 
 
-  function readFileSync(filename: string, options?: { encoding?: string; flag?: string; }): any {
+  function readFileSync(filename: string, options?: { encoding?: string; flag?: string; }): Buffer {
 
     // TODO: handle encoding and other
     var result = drive.read(modules.path.resolve(filename));
-    if (result || typeof result==='string') return result;
+    if (result || typeof result==='string') return new Buffer(result);
     else throw new Error('ENOENT: no such file or directory, open \''+filename+'\'');
   }
 
@@ -306,13 +306,32 @@ function createFS(
     drive.timestamp = Date.now ? Date.now() : +new Date();
   }
 
-  function writeFileSync(filename: string, content: string) {
+  function writeFileSync(filename: string, content: string | Buffer | number[]) {
+
+    var contentSimplified;
+    if (typeof content === 'string') {
+      contentSimplified = content;
+    }
+    else if (!content.length) {
+      contentSimplified = '';
+    }
+    else {
+      if (safeForString(content))
+        contentSimplified = new Buffer(content).toString();
+      else
+        contentSimplified = content;
+    }
 
     setDriveTimestamp();
-    drive.write(modules.path.resolve(filename), content);
+    drive.write(modules.path.resolve(filename), contentSimplified);
 
   }
 
+  function safeForString(content) {
+    var utf8 = typeof content.byteLength==='number' ? content.toString() : new Buffer(content).toString();
+    var utf8_roundtrip = new Buffer(utf8).toString();
+    return utf8 === utf8_roundtrip;
+  }
 
   function writeSync(fd: number, buffer: Buffer, offset: number, length: number, position: number): number {
 

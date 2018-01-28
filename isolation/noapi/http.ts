@@ -20,7 +20,7 @@ var createXHR = (function() {
     var cachedXMLHttpRequest = XMLHttpRequest;
     return () => {
       var xhr = new cachedXMLHttpRequest();
-      xhr.withCredentials = true; // is it right?
+      //xhr.withCredentials = true; <--- looks like this causes problem with CORS?
       return xhr;
   	};
   }

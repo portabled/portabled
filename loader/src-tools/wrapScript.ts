@@ -126,7 +126,9 @@ function template_content() {
         t.run(function(error) {
           var finish = +new Date();
 
-          if (error) {
+          var failed = error || (error !== null && typeof error !== 'undefined');
+
+          if (failed) {
             if (typeof console!=='undefined' && console && console.error) {
               console.error('  ', error, (finish-start)/1000+'s.'+(' '+error.stack?error.stack:''));
             }
@@ -142,7 +144,8 @@ function template_content() {
           else tm.innerText = ' '+(finish-start)+'ms';
           tm.style.fontSize = '80%';
           t.testEntry.appendChild(tm);
-          if (!error) {
+
+          if (!failed) {
             t.testEntry.className = 'success';
             successCount++;
           }

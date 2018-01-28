@@ -163,7 +163,7 @@ namespace tests {
         initNoapi({"/tmp": "dummy" }, (host, close_clean) => {
           host.remoteEval(
             'var opts = { drive: connection_to_parent.drive }; connection_to_parent.initApiContext(opts);\n '+
-            'return opts.coreModules.fs.readFileSync("/tmp"); ',
+            'return opts.coreModules.fs.readFileSync("/tmp")+""; ',
             null,
             '/tests/initApiContext_fs_readFileSync.js',
             (error, result) => {

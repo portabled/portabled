@@ -109,6 +109,14 @@ namespace tests.attached {
           callback);
       },
 
+      write_loadAgain_sameValue_array40(callback: (error: Error) => void) {
+        var array40 = [];
+        for (var i = 0; i < 40; i++) array40[i] = 100 + i;
+        _write_loadAgain_sameValue_core(
+          'write_loadAgain_sameValue_array20.txt', array40 as any,
+          callback);
+      },
+
       write_loadAgain_sameValue_array8K(callback: (error: Error) => void) {
         var array8K = [];
         for (var i = 0; i <  1024*8; i++) array8K[i] = (100 + i) % 256;
@@ -281,7 +289,8 @@ namespace tests.attached {
                           if (fileTxt.length == content.length) {
                             for (var i = 0; i < fileTxt.length; i++) {
                               if (fileTxt[i]!==content[i]) {
-                                callback(new Error('Wrong content on re-read at '+i+'  ['+fileTxt.length+'] '+fileTxt+', expected ['+content.length+'] '+content+'.'));
+                                callback(new Error('Wrong content on re-read at '+i+': '+fileTxt[i]+'!=='+content[i]+'  ['+fileTxt.length+'] '+fileTxt+', expected ['+content.length+'] '+content+'.'));
+                                return;
                               }
                             }
                             callback(null);

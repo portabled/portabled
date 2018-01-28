@@ -31,6 +31,10 @@ namespace panels {
   	private _titleHost: HTMLDivElement;
   	private _title: HTMLPreElement;
   	private _bottom: HTMLPreElement;
+    private _bottomContent: HTMLSpanElement = null;
+  	private _bottomPathLead: HTMLElement = null;
+  	private _bottomPathName: HTMLElement = null;
+  	private _bottomPathSize: HTMLElement = null;
 
     private _pages: Panel.PageData[] = [];
 
@@ -425,9 +429,9 @@ namespace panels {
 
       this._ensureTitleMeasured();
 
-      var titleHeight = titleHeightEms*this._metrics.windowMetrics.emHeight;
-      var bottomHeight = bottomHeightEms*this._metrics.windowMetrics.emHeight;
-      var bottomShadowHeight = bottomShadowEms*this._metrics.windowMetrics.emHeight;
+      var titleHeight = Math.round(titleHeightEms*this._metrics.windowMetrics.emHeight);
+      var bottomHeight = Math.round(bottomHeightEms*this._metrics.windowMetrics.emHeight);
+      var bottomShadowHeight = Math.round(bottomShadowEms*this._metrics.windowMetrics.emHeight);
       this._availableHeight = this._metrics.hostHeight - titleHeight - bottomHeight - bottomShadowHeight;
 
       var adjTitleWidth = Math.min(this._metrics.hostWidth-this._metrics.windowMetrics.emWidth*4, this._titleWidth)|0;
@@ -682,31 +686,7 @@ namespace panels {
 
       setText(this._title, this._path);
 
-      var bottomText = this._cursorPath;
-      if (cursorEntry) {
-        if (cursorEntry.flags&Panel.EntryFlags.Directory) {
-          bottomText = '[ '+bottomText+' ]';
-        }
-        else {
-          if (cursorEntry.size) {
-            var str = cursorEntry.size+'';
-            var fmtStr = '';
-            for (var i = 0; i < str.length; i++) {
-              var ch = str.charAt(str.length-i-1);
-              if (i>0 && (i%3===0)) fmtStr = ch+','+fmtStr;
-              else fmtStr = ch + fmtStr;
-            }
-          	bottomText = bottomText + ' ['+fmtStr+']';
-          }
-          else {
-          	bottomText = bottomText + ' [empty]';
-          }
-        }
-      }
-
-      setText(this._bottom, bottomText);
-
-
+      this._updateBottomText(cursorEntry);
 
       this._redrawRequested = 0;
       var endRedraw = Date.now ? Date.now() : + new Date();
@@ -724,9 +704,67 @@ namespace panels {
         (<any>window).__redraw.hcount++;
       }
 
-
-
       // end of _redrawNow()
+    }
+
+  	private _updateBottomText(cursorEntry: Panel.PageEntry) {
+      var pathLeadText, nameText, sizeText;
+      var isDirectory: boolean;
+      if (cursorEntry) {
+        nameText = cursorEntry.name;
+        pathLeadText = cursorEntry.path.slice(0, cursorEntry.path.length - nameText.length);
+        if (cursorEntry.path.slice(cursorEntry.path.length - nameText.length) !== nameText) {
+          nameText = ' ' + nameText;
+          pathLeadText = cursorEntry.path;
+        }
+
+        if (cursorEntry.flags&Panel.EntryFlags.Directory) {
+          sizeText = '';
+          isDirectory = true;
+        }
+        else {
+          if (cursorEntry.size) {
+            var str = cursorEntry.size+'';
+            var fmtStr = '';
+            for (var i = 0; i < str.length; i++) {
+              var ch = str.charAt(str.length-i-1);
+              if (i>0 && (i%3===0)) fmtStr = ch+','+fmtStr;
+              else fmtStr = ch + fmtStr;
+            }
+          	sizeText = '[' + fmtStr + ']';
+          }
+          else {
+          	sizeText = '[empty]';
+          }
+        }
+      }
+      else {
+        pathLeadText = '';
+        nameText = '';
+        sizeText = '';
+      }
+
+  		if (!this._bottomContent) {
+        this._bottomContent = document.createElement('span');
+        this._bottomPathLead = document.createElement('span');
+        this._bottomPathLead.style.opacity = '0.6';
+        this._bottomPathName = document.createElement('span');
+        this._bottomPathSize = document.createElement('span');
+        this._bottomPathSize.style.opacity = '0.6';
+        this._bottomPathSize.style.position = 'absolute';
+        this._bottomPathSize.style.right = '0.3em';
+
+        this._bottomContent.appendChild(this._bottomPathLead);
+        this._bottomContent.appendChild(this._bottomPathName);
+        this._bottomContent.appendChild(this._bottomPathSize);
+        this._bottom.appendChild(this._bottomContent);
+      }
+
+      setText(this._bottomPathLead, pathLeadText);
+      setText(this._bottomPathName, nameText);
+      setText(this._bottomPathSize, sizeText);
+
+      this._bottomContent.className = isDirectory ? 'panels-entry-dir panels-entry-dir-plain' : 'panels-entry-file panels-entry-file-plain';
     }
 
     private _getExtraClass(path: string, handlerList: handlers.Handler[]): string {
@@ -797,7 +835,7 @@ namespace panels {
 
       var entryClassName = this._getEntryClass(dentry, extraClass, indexInDirectory);
 
-      var adjHeight = this._metrics.windowMetrics.emHeight+1;
+      var adjHeight = this._metrics.windowMetrics.emHeight+3;
 
      	var heightStr = this._heightCacheKey == adjHeight ? this._heightCache :
       	(heightStr = this._heightCache = adjHeight + 'px');

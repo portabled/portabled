@@ -3,9 +3,9 @@
 function persistence(document, uniqueKey, optionalDrives) {
 
 	persistence.build = {
-    timestamp: 1489444980465, // Mon Mar 13 2017 22:43:00 GMT+0000 (GMT Standard Time)
-    taken: 25564,
-    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"
+    timestamp: 1510701294330, // Tue Nov 14 2017 23:14:54 GMT+0000 (GMT)
+    taken: 4948,
+    platform: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3256.0 Safari/537.36"
 }
 
 var BootState = (function () {
@@ -180,9 +180,13 @@ var BootState = (function () {
             // these are updates from attached storage that have not been written out
             // (because files with corresponding paths don't exist in DOM)
             for (var path in this._toUpdateDOM) {
+                var entry = void 0;
                 if (!path || path.charCodeAt(0) !== 47)
                     continue; // expect leading slash
                 var content = this._toUpdateDOM[path];
+                if (content && content.content && content.encoding) {
+                    entry = content; // content could be string or { content, encoding }
+                }
                 if (content === null) {
                     var f = this._byPath[path];
                     if (f) {
@@ -199,7 +203,8 @@ var BootState = (function () {
                 else if (typeof content !== 'undefined') {
                     var f = this._byPath[path];
                     if (f) {
-                        var entry = bestEncode(content);
+                        if (!entry)
+                            entry = bestEncode(content); // it could already be { content, encoding }
                         var modified = f.write(entry.content, entry.encoding);
                         if (!modified) {
                             if (this._shadow)
@@ -212,7 +217,7 @@ var BootState = (function () {
                         var anchor = this._findAnchor();
                         var comment = document.createComment('');
                         var f = new DOMFile(comment, path, null, 0, 0);
-                        var entry = bestEncode(content);
+                        entry = bestEncode(content);
                         f.write(entry.content, entry.encoding);
                         this._byPath[path] = f;
                         this._newDOMFileCache[path] = true;
@@ -254,8 +259,9 @@ var BootState = (function () {
         }
         var nextNode = this._lastNode.nextSibling;
         if (!nextNode) {
-            var body = this._document.body;
-            if (this._lastNode.parentElement !== body)
+            var body = this._document.body || null;
+            var lastNodeParent = this._lastNode.parentNode || this._lastNode.parentElement || null;
+            if (lastNodeParent !== body)
                 nextNode = body.firstChild;
         }
         return nextNode;
@@ -345,7 +351,7 @@ var BootState = (function () {
             this._newStorageFileCache[path] = true;
         }
         else {
-            this._toUpdateDOM[path] = content;
+            this._toUpdateDOM[path] = encoding ? { content: content, encoding: encoding } : content;
             this._newStorageFileCache[path] = true;
         }
     };
@@ -411,30 +417,31 @@ var MountedDrive = (function () {
             this.timestamp = +new Date();
         this._cachedFiles = null;
         this._dom.timestamp = this.timestamp;
-        var encoded = bestEncode(content);
-        this._dom.write(file, encoded.content, encoded.encoding);
+        var encoded = content ? bestEncode(content) : null;
+        this._dom.write(file, encoded ? encoded.content : null, encoded ? encoded.encoding : null);
         if (this._shadow) {
             this._shadow.timestamp = this.timestamp;
-            this._shadow.write(file, encoded.content, encoded.encoding);
+            this._shadow.write(file, encoded ? encoded.content : null, encoded ? encoded.encoding : null);
         }
     };
     return MountedDrive;
 }());
 function bestEncode(content, escapePath) {
     if (content.length > 1024 * 2) {
+        /*
         var compressed = encodings.lzma.compress(content);
-        console.log('compress arr -> ', compressed);
         var str = '';
         for (var i = 0; i < compressed.length; i++) {
-            str += String.fromCharCode((compressed[i] + 256) % 256);
+          str += String.fromCharCode((compressed[i] + 256) % 256);
         }
         var b64 = encodings.base64.btoa(str);
         if (typeof content !== 'string')
-            b64 = '*' + b64;
+          b64 = '*' + b64;
         else
-            b64 = 'A' + b64;
-        if (b64.length < content.length)
-            return { content: b64, encoding: 'lzma' };
+          b64 = 'A' + b64;
+        if (b64.length<content.length)
+          return {content:b64, encoding: 'lzma'};
+          */
     }
     if (typeof content !== 'string') {
         if (typeof content === 'object' && typeof content.length === 'number'
@@ -446,21 +453,75 @@ function bestEncode(content, escapePath) {
         }
         return { content: _encodeArrayOrSimilarAsJSON(content), encoding: 'json' };
     }
-    var needsEscaping;
+    var maxEscape = ((content.length * 0.1) | 0) + 2;
+    var escape = 0;
+    var escapeHigh = 0;
+    var prevChar = 0;
+    var crCount = 0;
+    var lfCount = 0;
+    var crlfCount = 0;
     if (escapePath) {
-        // zero-char, newlines, leading/trailing spaces, quote and apostrophe
-        needsEscaping = /\u0000|\r|\n|^\s|\s$|\"|\'/.test(content);
+        for (var i = 0; i < content.length; i++) {
+            var c = content.charCodeAt(i);
+            if (c < 32 || c > 126 || (c === 32 && (!i || i === content.length - 1))) {
+                escape = 1;
+                break;
+            }
+        }
     }
     else {
-        needsEscaping = /\u0000|\r/.test(content);
+        for (var i = 0; i < content.length; i++) {
+            var c = content.charCodeAt(i);
+            if (c === 10) {
+                if (prevChar === 13) {
+                    crCount--;
+                    crlfCount++;
+                }
+                else {
+                    lfCount++;
+                }
+            }
+            else if (c === 13) {
+                crCount++;
+            }
+            else if (c < 32 && c != 9) {
+                escape++;
+            }
+            else if (c > 126) {
+                escapeHigh++;
+            }
+            prevChar = c;
+            if ((escape + escapeHigh) > maxEscape)
+                break;
+        }
     }
-    if (needsEscaping) {
-        // ZERO character is officially unsafe in HTML,
-        // CR is contentious in IE (which converts any CR or LF into CRLF)
-        return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+    if (escapePath) {
+        if (escape)
+            return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+        else
+            return { content: content, encoding: 'LF' };
     }
     else {
-        return { content: content, encoding: 'LF' };
+        if (escape > maxEscape) {
+            return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+        }
+        else if (escape)
+            return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+        else if (crCount) {
+            if (lfCount)
+                return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+            else
+                return { content: content, encoding: 'CR' };
+        }
+        else if (crlfCount) {
+            if (lfCount)
+                return { content: _encodeUnusualStringAsJSON(content), encoding: 'json' };
+            else
+                return { content: content, encoding: 'CRLF' };
+        }
+        else {
+            return { content: content, encoding: 'LF' };
+        }
     }
 }
 function _encodeUnusualStringAsJSON(content) {
@@ -799,6 +860,27 @@ var attached;
                 var metadataStore = transaction.objectStore('metadata');
                 metadataStore.clear();
                 callback(new IndexedDBShadow(this._db, -1));
+            };
+            IndexedDBDetached.prototype._requestStores = function (storeNames, readwrite, callback) {
+                var stores = [];
+                var attemptPopulateStores = function () {
+                    for (var i = 0; i < storeNames.length; i++) {
+                        stores[i] = transaction.objectStore(storeNames[i]);
+                    }
+                };
+                try {
+                    var transaction = this._transaction;
+                    if (!transaction) {
+                        transaction = readwrite ? this._db.transaction(storeNames, readwrite) : this._db.transaction(storeNames);
+                        this._transaction = transaction;
+                    }
+                    attemptPopulateStores();
+                }
+                catch (error) {
+                    transaction = readwrite ? this._db.transaction(storeNames, readwrite) : this._db.transaction(storeNames);
+                    this._transaction = transaction;
+                    attemptPopulateStores();
+                }
             };
             return IndexedDBDetached;
         }());
@@ -1627,6 +1709,9 @@ var DOMFile = (function () {
         return decodedText;
     };
     DOMFile.prototype.write = function (content, encoding) {
+        content =
+            content === null || typeof content === 'undefined' ? content :
+                String(content);
         var encoded = encoding ? { content: content, encoding: encoding } : bestEncode(content);
         var protectedText = encoded.content.
             replace(/\-\-(\**)\>/g, '--*$1>').
@@ -1783,7 +1868,7 @@ var encodings;
 (function (encodings) {
     function CRLF(text) {
         return text.
-            replace(/\r|\n/g, '\r\n');
+            replace(/(\r\n)|\r|\n/g, '\r\n');
     }
     encodings.CRLF = CRLF;
 })(encodings || (encodings = {}));
@@ -1797,14 +1882,13 @@ var encodings;
 })(encodings || (encodings = {}));
 var encodings;
 (function (encodings) {
-    //if (!window['__enable']) throw new Error('a');
     var _btoa = base64.btoa = (typeof btoa === 'function' ? (function (text) { return btoa(text); }) : null);
     var _atob = base64.atob = (typeof atob === 'function' ? (function (text) { return atob(text); }) : null);
     if (!_btoa) {
         function t(t) { this.message = t; }
         var e = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
         t.prototype = new Error, t.prototype.name = "InvalidCharacterError";
-        _btoa = function (r) {
+        base64.btoa = _btoa = function (r) {
             for (var o, n, a = String(r), i = 0, c = e, d = ""; a.charAt(0 | i) || (c = "=", i % 1); d += c.charAt(63 & o >> 8 - i % 1 * 8)) {
                 if (n = a.charCodeAt(i += .75), n > 255)
                     throw new t("'btoa' failed: The string to be encoded contains characters outside of the Latin1 range.");
@@ -1812,7 +1896,7 @@ var encodings;
             }
             return d;
         };
-        _atob = function (r) {
+        base64.atob = _atob = function (r) {
             var o = String(r).replace(/=+$/, "");
             if (o.length % 4 == 1)
                 throw new t("'atob' failed: The string to be decoded is not correctly encoded.");
@@ -1824,7 +1908,7 @@ var encodings;
     function base64(text) {
         if (text && text.charCodeAt(0) === 42) {
             var bin = _atob(text.slice(1));
-            var buf = typeof Int8Array === 'function' ? new Int8Array(bin.length) : [];
+            var buf = typeof Uint8Array === 'function' ? new Uint8Array(bin.length) : [];
             for (var i = 0; i < bin.length; i++) {
                 buf[i] = bin.charCodeAt(i);
             }
@@ -1866,19 +1950,21 @@ var encodings;
             var byte = unbase64.charCodeAt(i);
             arr[i] = (byte & 127) - (byte & 128);
         }
-        console.log('decompress ', arr);
         var rawData = lzma.decompress(arr);
         if (arrMark) {
+            for (var i = 0; i < rawData.length; i++) {
+                rawData[i] = (rawData[i] + 256) % 256;
+            }
             return rawData;
         }
         var str = '';
         for (var i = 0; i < rawData.length; i++) {
-            str += String.fromCharCode(rawData[i]);
+            str += String.fromCharCode((rawData[i] + 256) % 256);
         }
         return str;
     }
     encodings.lzma = lzma;
-    /// © 2015 Nathan Rugg <nmrugg@gmail.com> | MIT
+    /// む 2015 Nathan Rugg <nmrugg@gmail.com> | MIT
     /// See LICENSE for more details.
     /* jshint noarg:true, boss:true, unused:strict, strict:true, undef:true, noarg: true, forin:true, evil:true, newcap:false, -W041, -W021, worker:true, browser:true, node:true */
     /* global setImmediate, setTimeout, window, onmessage */
@@ -4280,7 +4366,7 @@ var encodings;
                 }
                 on_progress(1);
                 res = $toByteArray(this$static.c.output);
-                /// delay so we don’t catch errors from the on_finish handler
+                /// delay so we don't catch errors from the on_finish handler
                 wait(on_finish.bind(null, res), 0);
             }
             catch (err) {
@@ -4349,7 +4435,7 @@ var encodings;
                 }
                 on_progress(1);
                 res = decode($toByteArray(this$static.d.output));
-                /// delay so we don’t catch errors from the on_finish handler
+                /// delay so we don't catch errors from the on_finish handler
                 wait(on_finish.bind(null, res), 0);
             }
             catch (err) {
@@ -4555,6 +4641,12 @@ var tests;
                         array20[i] = 100 + i;
                     _write_loadAgain_sameValue_core('write_loadAgain_sameValue_array20.txt', array20, callback);
                 },
+                write_loadAgain_sameValue_array40: function (callback) {
+                    var array40 = [];
+                    for (var i = 0; i < 40; i++)
+                        array40[i] = 100 + i;
+                    _write_loadAgain_sameValue_core('write_loadAgain_sameValue_array20.txt', array40, callback);
+                },
                 write_loadAgain_sameValue_array8K: function (callback) {
                     var array8K = [];
                     for (var i = 0; i < 1024 * 8; i++)
@@ -4671,7 +4763,8 @@ var tests;
                                         if (fileTxt.length == content.length) {
                                             for (var i = 0; i < fileTxt.length; i++) {
                                                 if (fileTxt[i] !== content[i]) {
-                                                    callback(new Error('Wrong content on re-read at ' + i + '  [' + fileTxt.length + '] ' + fileTxt + ', expected [' + content.length + '] ' + content + '.'));
+                                                    callback(new Error('Wrong content on re-read at ' + i + ': ' + fileTxt[i] + '!==' + content[i] + '  [' + fileTxt.length + '] ' + fileTxt + ', expected [' + content.length + '] ' + content + '.'));
+                                                    return;
                                                 }
                                             }
                                             callback(null);
@@ -4791,6 +4884,66 @@ var tests;
 (function (tests) {
     var dom;
     (function (dom) {
+        var base64Encoding;
+        (function (base64Encoding) {
+            function generateTests() {
+                return {
+                    parseBase64: parseBase64,
+                    parseBase64Star: parseBase64Star
+                };
+                /*
+                    fileContentBase64: data(' /path.txt [base64]\nYmFzZTY0', '/path.txt', 'base64'),
+                    fileContentBase64Star: data(' /path.txt [base64]\n*YmFzZTY0', '/path.txt', 'base64')
+                */
+                function parseBase64() {
+                    var html = '<!doctype html>' +
+                        '<html><head><title>Dummy page</title></head>' +
+                        '<body>' +
+                        '<!-- total 12Mb, saved 4 Apr 2016 -->' +
+                        '<!-- /path.txt [base64]\nYmFzZTY0-->' +
+                        '</body>' +
+                        '</html>';
+                    var dt = persistence.parseHTML(html);
+                    assert.equal(1024 * 1024 * 12, dt.totals.size);
+                    assert.equal(1459724400000, dt.totals.timestamp);
+                    assert.equal(1, dt.files.length);
+                    assert.equal('/path.txt', dt.files[0].path);
+                    assert.equal('base64', dt.files[0].content);
+                }
+                function parseBase64Star() {
+                    var html = '<!doctype html>' +
+                        '<html><head><title>Dummy page</title></head>' +
+                        '<body>' +
+                        '<!-- total 12Mb, saved 4 Apr 2016 -->' +
+                        '<!-- /path.txt [base64]\n*YmFzZTY0-->' +
+                        '</body>' +
+                        '</html>';
+                    var dt = persistence.parseHTML(html);
+                    assert.equal(1024 * 1024 * 12, dt.totals.size);
+                    assert.equal(1459724400000, dt.totals.timestamp);
+                    assert.equal(1, dt.files.length);
+                    assert.equal('/path.txt', dt.files[0].path);
+                    var expectedContentStr = 'base64';
+                    var expectedContent = [];
+                    for (var i = 0; i < expectedContentStr.length; i++) {
+                        expectedContent.push(expectedContentStr.charCodeAt(i));
+                    }
+                    var actualContent = [];
+                    var actualContentSrc = dt.files[0].content;
+                    for (var i = 0; i < actualContentSrc.length; i++) {
+                        actualContent.push(actualContentSrc[i]);
+                    }
+                    assert.equal(expectedContent.join(','), actualContent.join(','));
+                }
+            }
+            base64Encoding.generateTests = generateTests;
+        })(base64Encoding = dom.base64Encoding || (dom.base64Encoding = {}));
+    })(dom = tests.dom || (tests.dom = {}));
+})(tests || (tests = {}));
+var tests;
+(function (tests) {
+    var dom;
+    (function (dom) {
         function data(formatted, path, text) {
             return {
                 formatted: formatted,
@@ -4800,16 +4953,38 @@ var tests;
         }
         dom._formattedData = {
             fileContentLF: data(' /path.txt\nbla\nbla', '/path.txt', 'bla\nbla'),
-            fileContentCR: data(' /path.txt [json]\n"bla\\rbla"', '/path.txt', 'bla\rbla'),
+            fileContentCR: data(' /path.txt [CR]\nbla\rbla', '/path.txt', 'bla\rbla'),
+            fileContentCRLF: data(' /path.txt [CRLF]\nbla\r\nbla', '/path.txt', 'bla\r\nbla'),
+            fileContentCRmixLF: data(' /path.txt [json]\n"bla\\rbla\\nbla"', '/path.txt', 'bla\rbla\nbla'),
             fileNameWhitespaceInner: data(' /path is.txt\ntext', '/path is.txt', 'text'),
             fileNameWhitespaceLead: data(' / path.txt\ntext', '/ path.txt', 'text'),
             fileNameWhitespaceTrail: data(' "/path.txt "\ntext', '/path.txt ', 'text'),
             fileNameLFInner: data(' "/path\\nis.txt"\ntext', '/path\nis.txt', 'text'),
             fileNameLFLead: data(' "/\\npath.txt"\ntext', '/\npath.txt', 'text'),
             fileNameLFTrail: data(' "/path.txt\\n"\ntext', '/path.txt\n', 'text'),
-            fileNameWhithLeftSqBracket: data(' /path[.txt\ntext', '/path[.txt', 'text'),
-            fileNameWhithRightSqBracket: data(' /path].txt\ntext', '/path].txt', 'text')
+            fileNameWithLeftSqBracket: data(' /path[.txt\ntext', '/path[.txt', 'text'),
+            fileNameWithRightSqBracket: data(' /path].txt\ntext', '/path].txt', 'text'),
+            fileContentWithZeroJSON: data(' /path.txt [json]\n"base\\u000064"', '/path.txt', 'base' + String.fromCharCode(0) + '64'),
+            fileContentWithCopyright: data(' /path.txt\ncopyright-' + String.fromCharCode(169), '/path.txt', 'copyright-' + String.fromCharCode(169)),
+            fileContentWith127: data(' /path.txt\ncopyright-' + String.fromCharCode(127), '/path.txt', 'copyright-' + String.fromCharCode(127)),
+            fileContentBinaryJSON: data(' /path.txt [json]\n[98,97,115,101,0,54,52]', '/path.txt', asBinary('base' + String.fromCharCode(0) + '64')),
+            fileContentBinaryWithZeroJSON: data(' /path.txt [json]\n[98,97,115,101,54,52]', '/path.txt', asBinary('base64')),
+            filteContentBase64Binary: data(' /path.txt [base64]\n*YmFzZTY0LUFCQ0RFRkdISUpLTA==', '/path.txt', asBinary('base64-ABCDEFGHIJKL'))
         };
+        function longBinaryString(length) {
+            var str = '';
+            for (var i = 0; i < length; i++) {
+                str += String.fromCharCode(0);
+            }
+            return str;
+        }
+        function asBinary(txt) {
+            var nums = [];
+            for (var i = 0; i < txt.length; i++) {
+                nums.push(txt.charCodeAt(i));
+            }
+            return nums;
+        }
     })(dom = tests.dom || (tests.dom = {}));
 })(tests || (tests = {}));
 var tests;
@@ -4835,7 +5010,7 @@ var tests;
                     function test_parseFileInner() {
                         var fi = persistence.parseFileInner(data.formatted);
                         assert.equal(data.path, fi.path);
-                        assert.equal(data.text, fi.read());
+                        assert.equal(data.text, String(fi.read()));
                     }
                 }
             }
@@ -4856,6 +5031,10 @@ var tests;
                     testsMyFile: testsMyFile,
                     testsWithSpace: testsWithSpace
                 };
+                /*
+                    fileContentBase64: data(' /path.txt [base64]\nYmFzZTY0', '/path.txt', 'base64'),
+                    fileContentBase64Star: data(' /path.txt [base64]\n*YmFzZTY0', '/path.txt', 'base64')
+                */
                 function withFile(options) {
                     var fileMarkup = options.fileMarkup, filePath = options.filePath, content = options.content;
                     var tests = {
@@ -5021,7 +5200,8 @@ var tests;
                 t.testEntry.className = 'running';
                 t.run(function (error) {
                     var finish = +new Date();
-                    if (error) {
+                    var failed = error || (error !== null && typeof error !== 'undefined');
+                    if (failed) {
                         if (typeof console !== 'undefined' && console && console.error) {
                             console.error('  ', error, (finish - start) / 1000 + 's.' + (' ' + error.stack ? error.stack : ''));
                         }
@@ -5038,7 +5218,7 @@ var tests;
                         tm.innerText = ' ' + (finish - start) + 'ms';
                     tm.style.fontSize = '80%';
                     t.testEntry.appendChild(tm);
-                    if (!error) {
+                    if (!failed) {
                         t.testEntry.className = 'success';
                         successCount++;
                     }

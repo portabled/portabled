@@ -104,7 +104,7 @@ function initApiContext(options: initApiContext.Options) {
   function require(moduleName: string) {
     if (options.finished) throw new Error('Process is terminated'); // TODO: check if this is intended behaviour
 
-    return options.requireModule(moduleName, dirname(options.scriptPath), null);
+    return options.requireModule(moduleName, dirname(options.scriptPath), options.mainModule);
   }
 
   options.global.require = <any>(moduleName => require(moduleName));
@@ -471,7 +471,7 @@ function initApiContext(options: initApiContext.Options) {
       script + '\n//# '+'sourceURL='+path :
     	script;
 
-    return (0,_eval)(scriptWrapped);
+    return [_eval][0](scriptWrapped);
 
   }
 

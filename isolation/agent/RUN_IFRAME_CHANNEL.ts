@@ -128,7 +128,7 @@ function RUN_IFRAME_CHANNEL(drive: persistence.Drive) {
    	callback: (error: Error, result?) => any) {
     try {
       // keep that double-function enclosure, as IE treats a function inside round brackets as a declaration rather than a value
-      var fn = (0, _eval)('(function(){ return function(){'+fnScript+'\n}})()'+(path ? '//# '+'sourceURL='+path : ''));
+      var fn = [_eval][0]('(function(){ return function(){'+fnScript+'\n}})()'+(path ? '//# '+'sourceURL='+path : ''));
       var result = fn(arg);
     }
     catch (error) {

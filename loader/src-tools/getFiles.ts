@@ -1,4 +1,5 @@
-function getFiles(filelist) {
+function getFiles(
+  filelist: (string | (string[]) | {[file: string]: any} | (() => string | string[])) & { filterFiles?: (logicalName: string, file: string) => void }) {
 
   var list = [];
   var map = {};
@@ -17,13 +18,13 @@ function getFiles(filelist) {
         content=content();
       }
       else if (typeof content!=='string') {
-        content = fs.readFileSync(redirects[fi] || fi);
+        content = fs.readFileSync(redirects[fi] || fi)+'';
       }
       return content;
     }
   };
 
-  function addFiles(files) {
+  function addFiles(files: (string | (string[]) | {[file: string]: any} | (() => string | string[])) & { filterFiles?: (logicalName: string, file: string) => void }) {
     if (!files) return;
 
     if (typeof files==='string') {
@@ -36,8 +37,8 @@ function getFiles(filelist) {
       return;
     }
 
-    if (files.length && typeof files.length==='number') {
-      for (var i = 0; i < files.length; i++) {
+    if ((files as any[]).length && typeof (files as any[]).length==='number') {
+      for (var i = 0; i < (files as any[]).length; i++) {
         addFiles(files[i]);
       }
     }
@@ -48,8 +49,8 @@ function getFiles(filelist) {
         if (typeof content==='string' || typeof content==='function') {
           addFileContent(k,content);
         }
-        else if (content && typeof content.length==='number') {
-          for (var i = 0; i < content.length; i++) {
+        else if (content && typeof (content as any[]).length==='number') { // array inside property
+          for (var i = 0; i < (content as any).length; i++) {
             var subcontent = content[i];
             if (typeof subcontent==='string') {
               subcontent = path.resolve(subcontent);
@@ -79,10 +80,14 @@ function getFiles(filelist) {
       redirects[newPath] = file;
     }
     else {
+      var shortFilename = file.replace(/^.+(\/[^/]+)$/, '$1');
+
       if (filelist.filterFiles) {
-        if (!filelist.filterFiles(file, file)) return;
+        if (!filelist.filterFiles(shortFilename, file)) return;
       }
+
       addFileContent(file);
+      redirects[shortFilename] = file;
     }
   }
 

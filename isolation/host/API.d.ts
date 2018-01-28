@@ -3,7 +3,7 @@ declare namespace isolation {
   /**
    * Full of debug and rich integration features
    */
-  export interface IsolatedProcess {
+  interface IsolatedProcess {
     type: 'iframe'|'worker-sync'|'worker-async';
     remoteEval(fnScript: string, arg: any, path: string, callback: (error: Error, result) => any);
     pushMessage(msg: any);
@@ -14,7 +14,7 @@ declare namespace isolation {
     onconsole: (level: string, args: any[]) => void;
   }
 
-  export interface LoadedApiProcess extends IsolatedProcess {
+  interface LoadedApiProcess extends IsolatedProcess {
     runGlobal(script: string, path: string, callback: (error: Error, result: any) => void);
     keepAlive(): () => void;
 
@@ -23,17 +23,17 @@ declare namespace isolation {
     exitCode: number;
   }
 
-  export function createIsolateHost(drive: persistence.Drive, callback: (hst: IsolatedProcess) => void): void;
-  export function createApiHost(drive: persistence.Drive, options: any, callback: (api?: LoadedApiProcess) => void);
+  function createIsolateHost(drive: persistence.Drive, callback: (hst: IsolatedProcess) => void): void;
+  function createApiHost(drive: persistence.Drive, options: any, callback: (api?: LoadedApiProcess) => void);
 
   export namespace createIsolateHost {
-    export var iframe: typeof createIsolateHost;
-    export var worker: typeof createIsolateHost;
+    var iframe: typeof createIsolateHost;
+    var worker: typeof createIsolateHost;
   }
 
   export namespace createApiHost {
-    export var iframe: typeof createApiHost;
-    export var worker: typeof createApiHost;
+    var iframe: typeof createApiHost;
+    var worker: typeof createApiHost;
   }
 
   export var build: any;

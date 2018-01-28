@@ -244,6 +244,31 @@ namespace attached.indexedDB {
       callback(new IndexedDBShadow(this._db, -1));
     }
 
+    private _requestStores(storeNames: string[], readwrite: 'readwrite' | null, callback: (stores: IDBObjectStore[]) => void) {
+
+      var stores: IDBObjectStore[] = [];
+
+      var attemptPopulateStores = () => {
+        for (var i = 0; i < storeNames.length; i++) {
+          stores[i] = transaction.objectStore(storeNames[i]);
+        }
+      };
+
+      try {
+        var transaction = this._transaction;
+        if (!transaction) {
+          transaction = readwrite ? this._db.transaction(storeNames, readwrite) : this._db.transaction(storeNames);
+          this._transaction = transaction;
+        }
+        attemptPopulateStores();
+      }
+      catch (error) {
+        transaction = readwrite ? this._db.transaction(storeNames, readwrite) : this._db.transaction(storeNames);
+        this._transaction = transaction;
+        attemptPopulateStores();
+      }
+    }
+
   }
 
 

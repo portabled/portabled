@@ -180,6 +180,13 @@ function createComplexSerializer(self?: any) {
   }
 
   function deserializeObject(obj) {
+
+    if (!obj || typeof obj!=='object')
+      return obj;
+
+    if ('@__cache' in obj)
+      return obj['@__cache'];
+
     var fnDeclText = obj['@function'];
     var fnDeclName = obj['@function.name'];
 
@@ -193,6 +200,7 @@ function createComplexSerializer(self?: any) {
         	var fnDeclFn = Function('return '+fnDeclText);
         fnDecl = fnDeclFn();
         deserializedFnCache[fnDeclText] = fnDecl;
+        obj['@__cache'] = fnDecl;
         return fnDecl;
       }
       catch (error) {
@@ -202,16 +210,20 @@ function createComplexSerializer(self?: any) {
     var ctorName = obj['@constructor'];
     var result = createInstance_uncachedCtorName(ctorName);
     for (var k in obj) {
-      if (k!=='@constructor' && !(k in dummy)) result[k] = obj[k];
+      if (k!=='@constructor' && !(k in dummy) && k!=='@__cache') {
+        result[k] = deserializeObject(obj[k]);
+      }
     }
+    obj['@__cache'] = result;
     return result;
   }
 
   function deserializeArray(obj) {
     var result = [];
-    for (var k in obj) if (!(k in dummyArray)) {
-      result[k] = obj[k];
+    for (var k in obj) if (!(k in dummyArray) && k!=='@__cache') {
+      result[k] = deserialize(obj[k]);
     }
+    obj['@__cache'] = obj;
     return result;
   }
 

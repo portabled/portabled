@@ -4,6 +4,7 @@ namespace tests.dom.parsing {
 
     var testsMyFile = withFile({fileMarkup:'/myfile', content: 'Abc'});
     var testsWithSpace = withFile({fileMarkup:'"/with space"', filePath: '/with space', content: 'Abc'});
+
     return {
       testsMyFile: testsMyFile,
       testsWithSpace: testsWithSpace
@@ -14,6 +15,11 @@ namespace tests.dom.parsing {
       filePath?: string;
       content: string;
     }
+
+/*
+    fileContentBase64: data(' /path.txt [base64]\nYmFzZTY0', '/path.txt', 'base64'),
+    fileContentBase64Star: data(' /path.txt [base64]\n*YmFzZTY0', '/path.txt', 'base64')
+*/
 
     function withFile(options: Options) {
       var {fileMarkup, filePath, content} = options;

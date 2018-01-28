@@ -119,7 +119,7 @@ namespace panels {
 
     measure(metrics: CommanderShell.Metrics) {
 
-      if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {
+      if (metrics.hostWidth < metrics.emWidth * 80 && metrics.hostWidth < metrics.hostHeight * 1) {
         this._flippableLayout = true;
         var contentWidth = metrics.hostWidth * 1.6;
       }

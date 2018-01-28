@@ -130,7 +130,7 @@ namespace tests {
             assert.equal('trace', level);
             assert.equal(1, args.length);
             assert.equal(1, args[0].a);
-            assert.equal('function Object() { /*...*/ }', args[0].b['@function']);
+            assert.equal('function', typeof args[0].b);
           }
           catch (error) {
             callback(error);

@@ -4,9 +4,9 @@
 function isolation() {
 
 	isolation.build = {
-    timestamp: 1486888398318, // Sun Feb 12 2017 08:33:18 GMT+0000 (GMT Standard Time)
-    taken: 32621,
-    platform: "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36"
+    timestamp: 1510701014940, // Tue Nov 14 2017 23:10:14 GMT+0000 (GMT)
+    taken: 9176,
+    platform: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3256.0 Safari/537.36"
 };
 
 (function (module) {
@@ -496,6 +496,7 @@ function isolation() {
                         keepAlive_onToken(msg.keepAlive_addRef_response.token);
                     }
                     else if (msg.keepAlive_release_response) {
+                        // ignore, who cares
                     }
                 }
                 function api_keepAlive() {
@@ -775,7 +776,7 @@ function isolation() {
   "    function remoteEval_iframe(fnScript, arg, path, callback) {\n"+
   "        try {\n"+
   "            // keep that double-function enclosure, as IE treats a function inside round brackets as a declaration rather than a value\n"+
-  "            var fn = (0, _eval)('(function(){ return function(){' + fnScript + '\\n}})()' + (path ? '//# ' + 'sourceURL=' + path : ''));\n"+
+  "            var fn = [_eval][0]('(function(){ return function(){' + fnScript + '\\n}})()' + (path ? '//# ' + 'sourceURL=' + path : ''));\n"+
   "            var result = fn(arg);\n"+
   "        }\n"+
   "        catch (error) {\n"+
@@ -1318,6 +1319,10 @@ function isolation() {
   "        return deserializeObject(obj);\n"+
   "    }\n"+
   "    function deserializeObject(obj) {\n"+
+  "        if (!obj || typeof obj !== 'object')\n"+
+  "            return obj;\n"+
+  "        if ('@__cache' in obj)\n"+
+  "            return obj['@__cache'];\n"+
   "        var fnDeclText = obj['@function'];\n"+
   "        var fnDeclName = obj['@function.name'];\n"+
   "        if (fnDeclText) {\n"+
@@ -1331,6 +1336,7 @@ function isolation() {
   "                    var fnDeclFn = Function('return ' + fnDeclText);\n"+
   "                fnDecl = fnDeclFn();\n"+
   "                deserializedFnCache[fnDeclText] = fnDecl;\n"+
+  "                obj['@__cache'] = fnDecl;\n"+
   "                return fnDecl;\n"+
   "            }\n"+
   "            catch (error) {\n"+
@@ -1339,17 +1345,20 @@ function isolation() {
   "        var ctorName = obj['@constructor'];\n"+
   "        var result = createInstance_uncachedCtorName(ctorName);\n"+
   "        for (var k in obj) {\n"+
-  "            if (k !== '@constructor' && !(k in dummy))\n"+
-  "                result[k] = obj[k];\n"+
+  "            if (k !== '@constructor' && !(k in dummy) && k !== '@__cache') {\n"+
+  "                result[k] = deserializeObject(obj[k]);\n"+
+  "            }\n"+
   "        }\n"+
+  "        obj['@__cache'] = result;\n"+
   "        return result;\n"+
   "    }\n"+
   "    function deserializeArray(obj) {\n"+
   "        var result = [];\n"+
   "        for (var k in obj)\n"+
-  "            if (!(k in dummyArray)) {\n"+
-  "                result[k] = obj[k];\n"+
+  "            if (!(k in dummyArray) && k !== '@__cache') {\n"+
+  "                result[k] = deserialize(obj[k]);\n"+
   "            }\n"+
+  "        obj['@__cache'] = obj;\n"+
   "        return result;\n"+
   "    }\n"+
   "    function createInstance_uncachedCtorName(ctorName) {\n"+
@@ -1604,40 +1613,46 @@ function isolation() {
         return worker_body;
     }
     function getApiScript() {
-        var script = "var __extends = (this && this.__extends) || function (d, b) {\n"+
-  "    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];\n"+
-  "    function __() { this.constructor = d; }\n"+
-  "    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());\n"+
-  "};\n"+
+        var script = "var __extends = (this && this.__extends) || (function () {\n"+
+  "    var extendStatics = Object.setPrototypeOf ||\n"+
+  "        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||\n"+
+  "        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };\n"+
+  "    return function (d, b) {\n"+
+  "        extendStatics(d, b);\n"+
+  "        function __() { this.constructor = d; }\n"+
+  "        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());\n"+
+  "    };\n"+
+  "})();\n"+
   "var Buffer;\n"+
   "Buffer = (function () {\n"+
+  "    var NewUnit8Array = typeof Uint8Array === 'function' ? Uint8Array : Array;\n"+
   "    return Buffer;\n"+
   "    function Buffer(data, encoding, offset) {\n"+
   "        var buf;\n"+
   "        if (typeof data === 'number') {\n"+
-  "            buf = new Uint8Array(data);\n"+
+  "            buf = new NewUnit8Array(data);\n"+
   "        }\n"+
   "        else if (typeof data === 'string') {\n"+
   "            if (encoding == 'base64') {\n"+
   "                var len = decodeBase64(data, null, 0);\n"+
-  "                buf = new Uint8Array(len);\n"+
+  "                buf = new NewUnit8Array(len);\n"+
   "                decodeBase64(data, buf, 0);\n"+
   "            }\n"+
   "            else if (encoding == 'utf8' || !encoding) {\n"+
   "                var len = encodeUTF8(data, null, 0);\n"+
-  "                buf = new Uint8Array(len);\n"+
+  "                buf = new NewUnit8Array(len);\n"+
   "                encodeUTF8(data, buf, 0);\n"+
   "            }\n"+
   "        }\n"+
   "        else if (typeof data === 'object' && data && typeof data.length === 'number') {\n"+
-  "            buf = new Uint8Array(data.length - (offset | 0));\n"+
+  "            buf = new NewUnit8Array(data.length - (offset | 0));\n"+
   "            for (var i = offset | 0; i < data.length; i++) {\n"+
   "                buf[i - (offset | 0)] = data[i];\n"+
   "            }\n"+
   "        }\n"+
   "        else if (typeof data === 'object' && data && typeof data.byteLength === 'number') {\n"+
   "            var dataAccess = new Uint8Array(data);\n"+
-  "            buf = new Uint8Array(data.byteLength - (offset | 0));\n"+
+  "            buf = new NewUnit8Array(data.byteLength - (offset | 0));\n"+
   "            for (var i = offset | 0; i < data.byteLength; i++) {\n"+
   "                buf[i - (offset | 0)] = dataAccess[i];\n"+
   "            }\n"+
@@ -1645,9 +1660,74 @@ function isolation() {
   "        else {\n"+
   "            throw new Error('Buffer only supports initialization from length, array or string at the moment.');\n"+
   "        }\n"+
-  "        buf.toString = toString;\n"+
-  "        // TODO: add Buffer methods\n"+
+  "        attachBufferMethods(buf);\n"+
   "        return buf;\n"+
+  "    }\n"+
+  "    function attachBufferMethods(buf) {\n"+
+  "        buf.toString = toString;\n"+
+  "        buf.byteLength = buf.length;\n"+
+  "        buf.slice = slice;\n"+
+  "    }\n"+
+  "    // Buffer methods (from node/index.d.ts of typescript 2.5.2\n"+
+  "    /*\n"+
+  "      write(string: string, offset?: number, length?: number, encoding?: string): number;\n"+
+  "      toString(encoding?: string, start?: number, end?: number): string;\n"+
+  "      toJSON(): { type: 'Buffer', data: any[] };\n"+
+  "      equals(otherBuffer: Buffer): boolean;\n"+
+  "      compare(otherBuffer: Buffer, targetStart?: number, targetEnd?: number, sourceStart?: number, sourceEnd?: number): number;\n"+
+  "      copy(targetBuffer: Buffer, targetStart?: number, sourceStart?: number, sourceEnd?: number): number;\n"+
+  "      slice(start?: number, end?: number): Buffer;\n"+
+  "      writeUIntLE(value: number, offset: number, byteLength: number, noAssert?: boolean): number;\n"+
+  "      writeUIntBE(value: number, offset: number, byteLength: number, noAssert?: boolean): number;\n"+
+  "      writeIntLE(value: number, offset: number, byteLength: number, noAssert?: boolean): number;\n"+
+  "      writeIntBE(value: number, offset: number, byteLength: number, noAssert?: boolean): number;\n"+
+  "      readUIntLE(offset: number, byteLength: number, noAssert?: boolean): number;\n"+
+  "      readUIntBE(offset: number, byteLength: number, noAssert?: boolean): number;\n"+
+  "      readIntLE(offset: number, byteLength: number, noAssert?: boolean): number;\n"+
+  "      readIntBE(offset: number, byteLength: number, noAssert?: boolean): number;\n"+
+  "      readUInt8(offset: number, noAssert?: boolean): number;\n"+
+  "      readUInt16LE(offset: number, noAssert?: boolean): number;\n"+
+  "      readUInt16BE(offset: number, noAssert?: boolean): number;\n"+
+  "      readUInt32LE(offset: number, noAssert?: boolean): number;\n"+
+  "      readUInt32BE(offset: number, noAssert?: boolean): number;\n"+
+  "      readInt8(offset: number, noAssert?: boolean): number;\n"+
+  "      readInt16LE(offset: number, noAssert?: boolean): number;\n"+
+  "      readInt16BE(offset: number, noAssert?: boolean): number;\n"+
+  "      readInt32LE(offset: number, noAssert?: boolean): number;\n"+
+  "      readInt32BE(offset: number, noAssert?: boolean): number;\n"+
+  "      readFloatLE(offset: number, noAssert?: boolean): number;\n"+
+  "      readFloatBE(offset: number, noAssert?: boolean): number;\n"+
+  "      readDoubleLE(offset: number, noAssert?: boolean): number;\n"+
+  "      readDoubleBE(offset: number, noAssert?: boolean): number;\n"+
+  "      swap16(): Buffer;\n"+
+  "      swap32(): Buffer;\n"+
+  "      swap64(): Buffer;\n"+
+  "      writeUInt8(value: number, offset: number, noAssert?: boolean): number;\n"+
+  "      writeUInt16LE(value: number, offset: number, noAssert?: boolean): number;\n"+
+  "      writeUInt16BE(value: number, offset: number, noAssert?: boolean): number;\n"+
+  "      writeUInt32LE(value: number, offset: number, noAssert?: boolean): number;\n"+
+  "      writeUInt32BE(value: number, offset: number, noAssert?: boolean): number;\n"+
+  "      writeInt8(value: number, offset: number, noAssert?: boolean): number;\n"+
+  "      writeInt16LE(value: number, offset: number, noAssert?: boolean): number;\n"+
+  "      writeInt16BE(value: number, offset: number, noAssert?: boolean): number;\n"+
+  "      writeInt32LE(value: number, offset: number, noAssert?: boolean): number;\n"+
+  "      writeInt32BE(value: number, offset: number, noAssert?: boolean): number;\n"+
+  "      writeFloatLE(value: number, offset: number, noAssert?: boolean): number;\n"+
+  "      writeFloatBE(value: number, offset: number, noAssert?: boolean): number;\n"+
+  "      writeDoubleLE(value: number, offset: number, noAssert?: boolean): number;\n"+
+  "      writeDoubleBE(value: number, offset: number, noAssert?: boolean): number;\n"+
+  "      fill(value: any, offset?: number, end?: number): this;\n"+
+  "      indexOf(value: string | number | Buffer, byteOffset?: number, encoding?: string): number;\n"+
+  "      lastIndexOf(value: string | number | Buffer, byteOffset?: number, encoding?: string): number;\n"+
+  "      entries(): IterableIterator<[number, number]>;\n"+
+  "      includes(value: string | number | Buffer, byteOffset?: number, encoding?: string): boolean;\n"+
+  "      keys(): IterableIterator<number>;\n"+
+  "      values(): IterableIterator<number>;\n"+
+  "    */\n"+
+  "    function slice() {\n"+
+  "        var newBuf = this.constructor.prototype.slice.apply(this, arguments);\n"+
+  "        attachBufferMethods(newBuf);\n"+
+  "        return newBuf;\n"+
   "    }\n"+
   "    function encodeUTF8(text, buf, start) {\n"+
   "        var pos = start | 0;\n"+
@@ -1823,7 +1903,7 @@ function isolation() {
   "    function require(moduleName) {\n"+
   "        if (options.finished)\n"+
   "            throw new Error('Process is terminated'); // TODO: check if this is intended behaviour\n"+
-  "        return options.requireModule(moduleName, dirname(options.scriptPath), null);\n"+
+  "        return options.requireModule(moduleName, dirname(options.scriptPath), options.mainModule);\n"+
   "    }\n"+
   "    options.global.require = (function (moduleName) { return require(moduleName); });\n"+
   "    options.global.require.resolve = function (id) { return options.resolve(id, options.cwd); };\n"+
@@ -2091,6 +2171,7 @@ function isolation() {
   "                    continue;\n"+
   "            }\n"+
   "            catch (error) {\n"+
+  "                // for failures (probably security-related), obscure such global members\n"+
   "            }\n"+
   "            if (k in scope || _nativeObjects[k] || obscureNameCache[k])\n"+
   "                continue;\n"+
@@ -2106,6 +2187,7 @@ function isolation() {
   "                        continue;\n"+
   "                }\n"+
   "                catch (error) {\n"+
+  "                    // for failures (probably security-related), obscure such global members\n"+
   "                }\n"+
   "                if (k in scope || _nativeObjects[k] || obscureNameCache[k])\n"+
   "                    continue;\n"+
@@ -2140,7 +2222,7 @@ function isolation() {
   "        var scriptWrapped = path ?\n"+
   "            script + '\\n//# ' + 'sourceURL=' + path :\n"+
   "            script;\n"+
-  "        return (0, _eval)(scriptWrapped);\n"+
+  "        return [_eval][0](scriptWrapped);\n"+
   "    }\n"+
   "    function sanitizeGlobalScope(globalScope) {\n"+
   "        var obscureNames = [];\n"+
@@ -2153,6 +2235,7 @@ function isolation() {
   "                    continue;\n"+
   "            }\n"+
   "            catch (error) {\n"+
+  "                // for failures (probably security-related), obscure such global members\n"+
   "            }\n"+
   "            if (k in obscureNameCache || _nativeObjects[k])\n"+
   "                continue;\n"+
@@ -2170,6 +2253,7 @@ function isolation() {
   "                        continue;\n"+
   "                }\n"+
   "                catch (error) {\n"+
+  "                    // for failures (probably security-related), obscure such global members\n"+
   "                }\n"+
   "                if (k in obscureNameCache || _nativeObjects[k])\n"+
   "                    continue;\n"+
@@ -2645,7 +2729,7 @@ function isolation() {
   "        // TODO: handle encoding and other\n"+
   "        var result = drive.read(modules.path.resolve(filename));\n"+
   "        if (result || typeof result === 'string')\n"+
-  "            return result;\n"+
+  "            return new Buffer(result);\n"+
   "        else\n"+
   "            throw new Error('ENOENT: no such file or directory, open \\'' + filename + '\\'');\n"+
   "    }\n"+
@@ -2658,8 +2742,26 @@ function isolation() {
   "        drive.timestamp = Date.now ? Date.now() : +new Date();\n"+
   "    }\n"+
   "    function writeFileSync(filename, content) {\n"+
+  "        var contentSimplified;\n"+
+  "        if (typeof content === 'string') {\n"+
+  "            contentSimplified = content;\n"+
+  "        }\n"+
+  "        else if (!content.length) {\n"+
+  "            contentSimplified = '';\n"+
+  "        }\n"+
+  "        else {\n"+
+  "            if (safeForString(content))\n"+
+  "                contentSimplified = new Buffer(content).toString();\n"+
+  "            else\n"+
+  "                contentSimplified = content;\n"+
+  "        }\n"+
   "        setDriveTimestamp();\n"+
-  "        drive.write(modules.path.resolve(filename), content);\n"+
+  "        drive.write(modules.path.resolve(filename), contentSimplified);\n"+
+  "    }\n"+
+  "    function safeForString(content) {\n"+
+  "        var utf8 = typeof content.byteLength === 'number' ? content.toString() : new Buffer(content).toString();\n"+
+  "        var utf8_roundtrip = new Buffer(utf8).toString();\n"+
+  "        return utf8 === utf8_roundtrip;\n"+
   "    }\n"+
   "    function writeSync(fd, buffer, offset, length, position) {\n"+
   "        if (fd === 1) {\n"+
@@ -2732,7 +2834,7 @@ function isolation() {
   "        var cachedXMLHttpRequest = XMLHttpRequest;\n"+
   "        return function () {\n"+
   "            var xhr = new cachedXMLHttpRequest();\n"+
-  "            xhr.withCredentials = true; // is it right?\n"+
+  "            //xhr.withCredentials = true; <--- looks like this causes problem with CORS?\n"+
   "            return xhr;\n"+
   "        };\n"+
   "    }\n"+
@@ -2741,23 +2843,24 @@ function isolation() {
   "    var ClientRequest = (function (_super) {\n"+
   "        __extends(ClientRequest, _super);\n"+
   "        function ClientRequest(options, callback) {\n"+
-  "            _super.call(this);\n"+
-  "            this._finished = false;\n"+
-  "            this._data = null;\n"+
+  "            var _this = _super.call(this) || this;\n"+
+  "            _this._finished = false;\n"+
+  "            _this._data = null;\n"+
   "            if (typeof options === 'string') {\n"+
-  "                this._url = options;\n"+
-  "                this._options = {};\n"+
+  "                _this._url = options;\n"+
+  "                _this._options = {};\n"+
   "            }\n"+
   "            else {\n"+
-  "                this._url =\n"+
+  "                _this._url =\n"+
   "                    (options.protocol || https ? 'https' : 'http') + '://' +\n"+
   "                        (options.host || options.hostname || 'localhost') +\n"+
   "                        (options.port ? ':' + options.port : '') +\n"+
   "                        (options.path || '/');\n"+
-  "                this._options = options;\n"+
+  "                _this._options = options;\n"+
   "            }\n"+
-  "            this._method = options.method || 'GET';\n"+
-  "            this._callback = callback || options.callback;\n"+
+  "            _this._method = options.method || 'GET';\n"+
+  "            _this._callback = callback || options.callback;\n"+
+  "            return _this;\n"+
   "        }\n"+
   "        ClientRequest.prototype.write = function (data) {\n"+
   "            if (data == null || typeof data === 'undefined')\n"+
@@ -2826,11 +2929,12 @@ function isolation() {
   "    var IncomingMessage = (function (_super) {\n"+
   "        __extends(IncomingMessage, _super);\n"+
   "        function IncomingMessage(_req) {\n"+
-  "            _super.call(this);\n"+
-  "            this._req = _req;\n"+
-  "            this._responseReported = false;\n"+
-  "            this._offset = 0;\n"+
-  "            this.statusCode = 0;\n"+
+  "            var _this = _super.call(this) || this;\n"+
+  "            _this._req = _req;\n"+
+  "            _this._responseReported = false;\n"+
+  "            _this._offset = 0;\n"+
+  "            _this.statusCode = 0;\n"+
+  "            return _this;\n"+
   "        }\n"+
   "        IncomingMessage.prototype._handleStatus = function (error, status, chunk, finish) {\n"+
   "            this.statusCode = status;\n"+
@@ -2894,7 +2998,8 @@ function isolation() {
   "            'UNBIND',\n"+
   "            'UNLINK',\n"+
   "            'UNLOCK',\n"+
-  "            'UNSUBSCRIBE'],\n"+
+  "            'UNSUBSCRIBE'\n"+
+  "        ],\n"+
   "        STATUS_CODES: {\n"+
   "            '100': 'Continue',\n"+
   "            '101': 'Switching Protocols',\n"+
@@ -2957,7 +3062,8 @@ function isolation() {
   "            '508': 'Loop Detected',\n"+
   "            '509': 'Bandwidth Limit Exceeded',\n"+
   "            '510': 'Not Extended',\n"+
-  "            '511': 'Network Authentication Required' },\n"+
+  "            '511': 'Network Authentication Required'\n"+
+  "        },\n"+
   "        createClient: function (port, host) {\n"+
   "            var req = new ClientRequest({ port: port, host: host }, null);\n"+
   "            return req;\n"+
@@ -3039,6 +3145,7 @@ function isolation() {
   "            finish = true;\n"+
   "        var chunk = getChunk();\n"+
   "        if ((xhr.readyState | 0) !== lastState.readyState) {\n"+
+  "            // TODO: any extra logic on readyState change??\n"+
   "        }\n"+
   "        if ((chunk && chunk.length)\n"+
   "            || (xhr.status | 0) !== lastState.status\n"+
@@ -3182,7 +3289,7 @@ function isolation() {
   "    function join() {\n"+
   "        var paths = [];\n"+
   "        for (var _i = 0; _i < arguments.length; _i++) {\n"+
-  "            paths[_i - 0] = arguments[_i];\n"+
+  "            paths[_i] = arguments[_i];\n"+
   "        }\n"+
   "        return join_core(paths);\n"+
   "    }\n"+
@@ -3225,7 +3332,7 @@ function isolation() {
   "    function resolve() {\n"+
   "        var pathSegments = [];\n"+
   "        for (var _i = 0; _i < arguments.length; _i++) {\n"+
-  "            pathSegments[_i - 0] = arguments[_i];\n"+
+  "            pathSegments[_i] = arguments[_i];\n"+
   "        }\n"+
   "        var path = join_core(pathSegments);\n"+
   "        if (typeof path !== 'string')\n"+
@@ -3666,6 +3773,10 @@ function createComplexSerializer(self) {
         return deserializeObject(obj);
     }
     function deserializeObject(obj) {
+        if (!obj || typeof obj !== 'object')
+            return obj;
+        if ('@__cache' in obj)
+            return obj['@__cache'];
         var fnDeclText = obj['@function'];
         var fnDeclName = obj['@function.name'];
         if (fnDeclText) {
@@ -3679,6 +3790,7 @@ function createComplexSerializer(self) {
                     var fnDeclFn = Function('return ' + fnDeclText);
                 fnDecl = fnDeclFn();
                 deserializedFnCache[fnDeclText] = fnDecl;
+                obj['@__cache'] = fnDecl;
                 return fnDecl;
             }
             catch (error) {
@@ -3687,17 +3799,20 @@ function createComplexSerializer(self) {
         var ctorName = obj['@constructor'];
         var result = createInstance_uncachedCtorName(ctorName);
         for (var k in obj) {
-            if (k !== '@constructor' && !(k in dummy))
-                result[k] = obj[k];
+            if (k !== '@constructor' && !(k in dummy) && k !== '@__cache') {
+                result[k] = deserializeObject(obj[k]);
+            }
         }
+        obj['@__cache'] = result;
         return result;
     }
     function deserializeArray(obj) {
         var result = [];
         for (var k in obj)
-            if (!(k in dummyArray)) {
-                result[k] = obj[k];
+            if (!(k in dummyArray) && k !== '@__cache') {
+                result[k] = deserialize(obj[k]);
             }
+        obj['@__cache'] = obj;
         return result;
     }
     function createInstance_uncachedCtorName(ctorName) {
@@ -4135,7 +4250,7 @@ var tests;
                         assert.equal('trace', level);
                         assert.equal(1, args.length);
                         assert.equal(1, args[0].a);
-                        assert.equal('function Object() { /*...*/ }', args[0].b['@function']);
+                        assert.equal('function', typeof args[0].b);
                     }
                     catch (error) {
                         callback(error);
@@ -4805,7 +4920,7 @@ var tests;
             initApiContext_fs_readFileSync: function (callback) {
                 initNoapi({ "/tmp": "dummy" }, function (host, close_clean) {
                     host.remoteEval('var opts = { drive: connection_to_parent.drive }; connection_to_parent.initApiContext(opts);\n ' +
-                        'return opts.coreModules.fs.readFileSync("/tmp"); ', null, '/tests/initApiContext_fs_readFileSync.js', function (error, result) {
+                        'return opts.coreModules.fs.readFileSync("/tmp")+""; ', null, '/tests/initApiContext_fs_readFileSync.js', function (error, result) {
                         try {
                             assert(!error, error);
                             assert.equal('dummy', result);
@@ -4888,33 +5003,34 @@ var tests;
 })(tests || (tests = {}));
 var Buffer;
 Buffer = (function () {
+    var NewUnit8Array = typeof Uint8Array === 'function' ? Uint8Array : Array;
     return Buffer;
     function Buffer(data, encoding, offset) {
         var buf;
         if (typeof data === 'number') {
-            buf = new Uint8Array(data);
+            buf = new NewUnit8Array(data);
         }
         else if (typeof data === 'string') {
             if (encoding == 'base64') {
                 var len = decodeBase64(data, null, 0);
-                buf = new Uint8Array(len);
+                buf = new NewUnit8Array(len);
                 decodeBase64(data, buf, 0);
             }
             else if (encoding == 'utf8' || !encoding) {
                 var len = encodeUTF8(data, null, 0);
-                buf = new Uint8Array(len);
+                buf = new NewUnit8Array(len);
                 encodeUTF8(data, buf, 0);
             }
         }
         else if (typeof data === 'object' && data && typeof data.length === 'number') {
-            buf = new Uint8Array(data.length - (offset | 0));
+            buf = new NewUnit8Array(data.length - (offset | 0));
             for (var i = offset | 0; i < data.length; i++) {
                 buf[i - (offset | 0)] = data[i];
             }
         }
         else if (typeof data === 'object' && data && typeof data.byteLength === 'number') {
             var dataAccess = new Uint8Array(data);
-            buf = new Uint8Array(data.byteLength - (offset | 0));
+            buf = new NewUnit8Array(data.byteLength - (offset | 0));
             for (var i = offset | 0; i < data.byteLength; i++) {
                 buf[i - (offset | 0)] = dataAccess[i];
             }
@@ -4922,9 +5038,74 @@ Buffer = (function () {
         else {
             throw new Error('Buffer only supports initialization from length, array or string at the moment.');
         }
-        buf.toString = toString;
-        // TODO: add Buffer methods
+        attachBufferMethods(buf);
         return buf;
+    }
+    function attachBufferMethods(buf) {
+        buf.toString = toString;
+        buf.byteLength = buf.length;
+        buf.slice = slice;
+    }
+    // Buffer methods (from node/index.d.ts of typescript 2.5.2
+    /*
+      write(string: string, offset?: number, length?: number, encoding?: string): number;
+      toString(encoding?: string, start?: number, end?: number): string;
+      toJSON(): { type: 'Buffer', data: any[] };
+      equals(otherBuffer: Buffer): boolean;
+      compare(otherBuffer: Buffer, targetStart?: number, targetEnd?: number, sourceStart?: number, sourceEnd?: number): number;
+      copy(targetBuffer: Buffer, targetStart?: number, sourceStart?: number, sourceEnd?: number): number;
+      slice(start?: number, end?: number): Buffer;
+      writeUIntLE(value: number, offset: number, byteLength: number, noAssert?: boolean): number;
+      writeUIntBE(value: number, offset: number, byteLength: number, noAssert?: boolean): number;
+      writeIntLE(value: number, offset: number, byteLength: number, noAssert?: boolean): number;
+      writeIntBE(value: number, offset: number, byteLength: number, noAssert?: boolean): number;
+      readUIntLE(offset: number, byteLength: number, noAssert?: boolean): number;
+      readUIntBE(offset: number, byteLength: number, noAssert?: boolean): number;
+      readIntLE(offset: number, byteLength: number, noAssert?: boolean): number;
+      readIntBE(offset: number, byteLength: number, noAssert?: boolean): number;
+      readUInt8(offset: number, noAssert?: boolean): number;
+      readUInt16LE(offset: number, noAssert?: boolean): number;
+      readUInt16BE(offset: number, noAssert?: boolean): number;
+      readUInt32LE(offset: number, noAssert?: boolean): number;
+      readUInt32BE(offset: number, noAssert?: boolean): number;
+      readInt8(offset: number, noAssert?: boolean): number;
+      readInt16LE(offset: number, noAssert?: boolean): number;
+      readInt16BE(offset: number, noAssert?: boolean): number;
+      readInt32LE(offset: number, noAssert?: boolean): number;
+      readInt32BE(offset: number, noAssert?: boolean): number;
+      readFloatLE(offset: number, noAssert?: boolean): number;
+      readFloatBE(offset: number, noAssert?: boolean): number;
+      readDoubleLE(offset: number, noAssert?: boolean): number;
+      readDoubleBE(offset: number, noAssert?: boolean): number;
+      swap16(): Buffer;
+      swap32(): Buffer;
+      swap64(): Buffer;
+      writeUInt8(value: number, offset: number, noAssert?: boolean): number;
+      writeUInt16LE(value: number, offset: number, noAssert?: boolean): number;
+      writeUInt16BE(value: number, offset: number, noAssert?: boolean): number;
+      writeUInt32LE(value: number, offset: number, noAssert?: boolean): number;
+      writeUInt32BE(value: number, offset: number, noAssert?: boolean): number;
+      writeInt8(value: number, offset: number, noAssert?: boolean): number;
+      writeInt16LE(value: number, offset: number, noAssert?: boolean): number;
+      writeInt16BE(value: number, offset: number, noAssert?: boolean): number;
+      writeInt32LE(value: number, offset: number, noAssert?: boolean): number;
+      writeInt32BE(value: number, offset: number, noAssert?: boolean): number;
+      writeFloatLE(value: number, offset: number, noAssert?: boolean): number;
+      writeFloatBE(value: number, offset: number, noAssert?: boolean): number;
+      writeDoubleLE(value: number, offset: number, noAssert?: boolean): number;
+      writeDoubleBE(value: number, offset: number, noAssert?: boolean): number;
+      fill(value: any, offset?: number, end?: number): this;
+      indexOf(value: string | number | Buffer, byteOffset?: number, encoding?: string): number;
+      lastIndexOf(value: string | number | Buffer, byteOffset?: number, encoding?: string): number;
+      entries(): IterableIterator<[number, number]>;
+      includes(value: string | number | Buffer, byteOffset?: number, encoding?: string): boolean;
+      keys(): IterableIterator<number>;
+      values(): IterableIterator<number>;
+    */
+    function slice() {
+        var newBuf = this.constructor.prototype.slice.apply(this, arguments);
+        attachBufferMethods(newBuf);
+        return newBuf;
     }
     function encodeUTF8(text, buf, start) {
         var pos = start | 0;
@@ -5140,7 +5321,8 @@ Buffer = (function () {
                 t.testEntry.className = 'running';
                 t.run(function (error) {
                     var finish = +new Date();
-                    if (error) {
+                    var failed = error || (error !== null && typeof error !== 'undefined');
+                    if (failed) {
                         if (typeof console !== 'undefined' && console && console.error) {
                             console.error('  ', error, (finish - start) / 1000 + 's.' + (' ' + error.stack ? error.stack : ''));
                         }
@@ -5157,7 +5339,7 @@ Buffer = (function () {
                         tm.innerText = ' ' + (finish - start) + 'ms';
                     tm.style.fontSize = '80%';
                     t.testEntry.appendChild(tm);
-                    if (!error) {
+                    if (!failed) {
                         t.testEntry.className = 'success';
                         successCount++;
                     }
@@ -5245,6 +5427,7 @@ Buffer = (function () {
             for (var k in obj)
                 if (!(k in _dummy) && obj[k]) {
                     if (/^[A-Z]/.test(k) && typeof obj[k] === 'function') {
+                        // TODO: should we construct here?
                     }
                     else if (/^[a-z]/.test(k)) {
                         if (typeof obj[k] === 'function') {
