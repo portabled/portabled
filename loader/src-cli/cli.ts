@@ -1,4 +1,4 @@
-declare var fs, path, require, process, __dirname, __filename;
+declare var fs: typeof import('fs'), path: typeof import('path');
 
 function cli() {
   if (typeof WScript!=='undefined' && typeof ActiveXObject!=='undefined') {

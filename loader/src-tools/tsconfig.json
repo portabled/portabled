@@ -2,6 +2,6 @@
     "compilerOptions": {
         "out": "loader-tools.js",
         "sourceMap": false
-    }
-
+    },
+    "include": ["**/*.ts"]
 }

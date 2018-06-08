@@ -1,5 +1,3 @@
-declare var require, process;
-
 declare namespace buildStats {
 
   interface Values {
@@ -19,8 +17,8 @@ function buildStats() {
     var platform;
     try { platform = require('nowindow').navigator.userAgent }
     catch (error) {
-      if (process.versions.navigator)
-        platform = process.versions.navigator;
+      if ((process.versions as any).navigator)
+        platform = (process.versions as any).navigator;
       else
         platform = 'node '+process.version+' on '+process.platform+'/'+process.arch;
     }

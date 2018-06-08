@@ -11,20 +11,27 @@ console.log('Requesting persistence...');
 var persistence = require('../persistence/lib/persistence.html');
 console.log((persistence+'').length+' chars');
 
+
+var useBuiltFiles = false;
+
 console.log('Building loader TypeScript...');
-var builtContent = build.compileTS('--project', path.join(__dirname, 'src/tsconfig.json'), '--pretty')['loader.js'];
+var builtContent = useBuiltFiles ? fs.readFileSync(path.join(__dirname, 'loader.js')) + '' :
+  build.compileTS('--project', path.join(__dirname, 'src/tsconfig.json'), '--pretty')['loader.js'];
 console.log(builtContent.length+' chars');
 
 console.log('Building tools TypeScript...');
-var builtToolsContent = build.compileTS('--project', path.join(__dirname, 'src-tools/tsconfig.json'), '--pretty')['loader-tools.js'];
+var builtToolsContent = useBuiltFiles ? fs.readFileSync(path.join(__dirname, 'loader-tools.js')) + '' :
+  build.compileTS('--project', path.join(__dirname, 'src-tools/tsconfig.json'), '--pretty')['loader-tools.js'];
 console.log(builtToolsContent.length+' chars');
 
 console.log('Building cli TypeScript...');
-var builtCLIContent = build.compileTS('--project', path.join(__dirname, 'src-cli/tsconfig.json'), '--pretty')['cli.js'];
+var builtCLIContent = useBuiltFiles ? fs.readFileSync(path.join(__dirname, 'cli.js')) + '' :
+  build.compileTS('--project', path.join(__dirname, 'src-cli/tsconfig.json'), '--pretty')['cli.js'];
 console.log(builtCLIContent.length+' chars');
 
 console.log('Building tests TypeScript...');
-var builtTests = build.compileTS('--project', path.join(__dirname, 'tests/tsconfig.json'), '--pretty')['loader-tests.js'];
+var builtTests = useBuiltFiles ? fs.readFileSync(path.join(__dirname, 'loader-tests.js')) + '' :
+  build.compileTS('--project', path.join(__dirname, 'tests/tsconfig.json'), '--pretty')['loader-tests.js'];
 console.log(builtTests.length+' chars');
 
 var buildStats = buildStats();

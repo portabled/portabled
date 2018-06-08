@@ -1,7 +1,7 @@
 declare namespace substitute {
 
   type Replacements =
-    { [token: string]: string }
+    { [token: string]: string | (() => string) }
     |
     { (token: string): string };
 

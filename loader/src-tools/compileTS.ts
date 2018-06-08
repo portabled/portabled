@@ -17,8 +17,8 @@ declare namespace compileTS {
 function compileTS(...args: string[]): compileTS.CompileResult {
    function readDirectory(dir, extensions, basePaths, excludePattern,  includeFilePattern, includeDirectoryPattern) {
         var result = [];
-     		var incReg = new RegExp(includeFilePattern);
-        var excReg = new RegExp(excludePattern);
+     		var incReg = includeFilePattern ? new RegExp(includeFilePattern) : { test: (file: string) => true };
+        var excReg = excludePattern ? new RegExp(excludePattern) : { test: (file: string) => false };
         var seen = {};
         for (var i = 0; i < basePaths.length; i++) {
           addDir(basePaths[i]);
@@ -113,8 +113,12 @@ function compileTS(...args: string[]): compileTS.CompileResult {
       result[file] = data;
       result.files.push({file:file, data:data});
     },
-    resolvePath: function(file) { return path.resolve(file); },
-    fileExists: function (file) { return fs.existsSync(file) && fs.statSync(file).isFile(); },
+    resolvePath: function (file) {
+      return path.resolve(file);
+    },
+    fileExists: function (file) {
+      return fs.existsSync(file) && fs.statSync(file).isFile();
+    },
     realpath: (path: string) => {
       return fs.realpathSync(path);
     },

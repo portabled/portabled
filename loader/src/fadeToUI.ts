@@ -11,7 +11,7 @@ function fadeToUI() {
   var start = +new Date();
   var fadeintTime = Math.min(500, (start-timings.domStarted)/2);
 
-  var animateFadeIn = setInterval(animateStep, 20);
+  var animateFadeIn: any = setInterval(animateStep, 20);
 
   function animateStep() {
     var passed = (+new Date()) - start;

@@ -384,9 +384,9 @@ function copy() {
 function loader(window, document) {
 
 	loader.build = {
-    timestamp: 1527716363860, // Wed May 30 2018 22:39:23 GMT+0100 (BST)
-    taken: 3481,
-    platform: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/604.3.5 (KHTML, like Gecko) Version/11.0.1 Safari/604.3.5"
+    timestamp: 1528491543457, // Fri Jun 08 2018 21:59:03 GMT+0100 (BST)
+    taken: 7356,
+    platform: "node v8.10.0 on darwin/x64"
 }
 
 var bootState;
@@ -5461,8 +5461,8 @@ function compileTS() {
     }
     function readDirectory(dir, extensions, basePaths, excludePattern, includeFilePattern, includeDirectoryPattern) {
         var result = [];
-        var incReg = new RegExp(includeFilePattern);
-        var excReg = new RegExp(excludePattern);
+        var incReg = includeFilePattern ? new RegExp(includeFilePattern) : { test: function (file) { return true; } };
+        var excReg = excludePattern ? new RegExp(excludePattern) : { test: function (file) { return false; } };
         var seen = {};
         for (var i = 0; i < basePaths.length; i++) {
             addDir(basePaths[i]);
@@ -5516,20 +5516,38 @@ function compileTS() {
         echo: function (text) {
             console.log(text);
         },
-        readFile: function (path, encoding) {
+        readFile: function (path) {
             return fs.readFileSync(path) + '';
         },
-        writeFile: function (file, data, writeByteOrderMark) {
+        writeFile: function (file, data) {
             //console.log('writeFile(',file,',',data.length);
             result[file] = data;
             result.files.push({ file: file, data: data });
         },
-        resolvePath: function (file) { return path.resolve(file); },
-        fileExists: function (file) { return fs.existsSync(file) && fs.statSync(file).isFile(); },
+        resolvePath: function (file) {
+            return path.resolve(file);
+        },
+        fileExists: function (file) {
+            return fs.existsSync(file) && fs.statSync(file).isFile();
+        },
+        realpath: function (path) {
+            return fs.realpathSync(path);
+        },
         directoryExists: function (file) {
             return path.resolve(file) === '/' || fs.existsSync(file) && fs.statSync(file).isDirectory();
         },
-        createDirectory: function () { },
+        createDirectory: function (dir) {
+            fs.mkdirSync(dir);
+        },
+        getDirectories: function (dir) {
+            var dirFiles = fs.readdirSync(dir);
+            var result = [];
+            for (var i = 0; i < dirFiles.length; i++) {
+                if (fs.statSync(path.resolve(dir, dirFiles[i])).isDirectory())
+                    result.push(dirFiles[i]);
+            }
+            return result;
+        },
         executingFile: tscPath,
         currentDirectory: process.cwd(),
         readDirectory: readDirectory,
@@ -5596,12 +5614,12 @@ function getFiles(filelist) {
         }
         if (typeof files === 'object') {
             for (var k in files)
-                if (k.charCodeAt(0) === 47 && files.hasOwnProperty(k)) {
+                if (k.charCodeAt(0) === 47 && files.hasOwnProperty(k)) { // k is path thus starts with slash
                     var content = files[k];
                     if (typeof content === 'string' || typeof content === 'function') {
                         addFileContent(k, content);
                     }
-                    else if (content && typeof content.length === 'number') {
+                    else if (content && typeof content.length === 'number') { // array inside property
                         for (var i = 0; i < content.length; i++) {
                             var subcontent = content[i];
                             if (typeof subcontent === 'string') {
@@ -5708,7 +5726,7 @@ function htmlSpotExternals(html) {
                 result.push({
                     original: html.slice(match.index, scriptEndTagMatch.index + scriptEndTagMatch[0].length),
                     substituteLead: openingTagText.slice(0, srcMatch.index +
-                        (srcMatch.index + srcMatch[0].length === openingTagText.length ? 0 : 1)) +
+                        (srcMatch.index + srcMatch[0].length === openingTagText.length ? 0 : 1)) + // <-- keep whitespace in place of src="..." attribute or not?
                         openingTagText.slice(srcMatch.index + srcMatch[0].length) +
                         '>',
                     substituteTrail: scriptEndTagMatch[0],
@@ -5737,7 +5755,7 @@ function htmlSpotExternals(html) {
             if (href && /\srel=((\"stylesheet\")|(\'stylesheet\')|(stylesheet\b))/i.test(linkTagText)) {
                 var styleLead = '<style' +
                     linkTagText.slice(5 /* "<link".length */, hrefMatch.index +
-                        (hrefMatch.index + hrefMatch[0].length === linkTagText.length ? 0 : 1)) +
+                        (hrefMatch.index + hrefMatch[0].length === linkTagText.length ? 0 : 1)) + // <-- keep whitespace in place of href="..." attribute or not?
                     linkTagText.slice(hrefMatch.index + hrefMatch[0].length) +
                     '>';
                 styleLead = styleLead.replace(/\srel=((\"stylesheet\")|(\'stylesheet\')|(stylesheet\b))/gi, '');
@@ -5816,8 +5834,8 @@ function jsString(str) {
                 fix = '\\t';
                 break;
             default:
-                if (code < 32 ||
-                    ((code & 0xFF00) === 0xFD00) || ((code & 0xFF00) == 0xFF00)) {
+                if (code < 32 || // transcribe control codes
+                    ((code & 0xFF00) === 0xFD00) || ((code & 0xFF00) == 0xFF00)) { // transcribe potentially corrupt Unicode
                     fix = '\\u' + (0x10000 + code).toString(16).slice(1);
                     break;
                 }
@@ -6669,8 +6687,8 @@ function jsString(str) {
                 fix = '\\t';
                 break;
             default:
-                if (code < 32 ||
-                    ((code & 0xFF00) === 0xFD00) || ((code & 0xFF00) == 0xFF00)) {
+                if (code < 32 || // transcribe control codes
+                    ((code & 0xFF00) === 0xFD00) || ((code & 0xFF00) == 0xFF00)) { // transcribe potentially corrupt Unicode
                     fix = '\\u' + (0x10000 + code).toString(16).slice(1);
                     break;
                 }

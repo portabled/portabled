@@ -1,4 +1,4 @@
-declare var module, tests;
+declare var tests;
 
 function wrapScript(replacements: substitute.Replacements) {
   var result = functionBody(
@@ -75,7 +75,7 @@ function template_content() {
     summary.style.color = 'black';
 
     if ('textContent' in summary) summary.textContent = 'Tests (total '+tests.length+'):';
-    else summary.innerText = tests.length+'Tests (total '+tests.length+'):';
+    else (summary as HTMLElement).innerText = tests.length+'Tests (total '+tests.length+'):';
     var successCount = 0;
     var failCount = 0;
     document.body.appendChild(summary);
@@ -141,7 +141,7 @@ function template_content() {
 
           var tm = document.createElement('span');
           if ('textContent' in tm) tm.textContent = ' '+(finish-start)+'ms';
-          else tm.innerText = ' '+(finish-start)+'ms';
+          else (tm as HTMLElement).innerText = ' '+(finish-start)+'ms';
           tm.style.fontSize = '80%';
           t.testEntry.appendChild(tm);
 
@@ -153,7 +153,7 @@ function template_content() {
             t.testEntry.className = 'fail';
             var errorOutput = document.createElement('pre');
             if ('textContent' in errorOutput) errorOutput.textContent = error;
-            else errorOutput.innerText = error;
+            else (errorOutput as HTMLElement).innerText = error;
             t.testEntry.appendChild(errorOutput);
             failCount++;
           }
@@ -165,7 +165,7 @@ function template_content() {
               (testsToRun.length>failCount+successCount?', '+(testsToRun.length-failCount-successCount)+' to finish':'')+'):';
 
           if ('textContent' in summary) summary.textContent = summaryText;
-          else summary.innerText = summaryText;
+          else (summary as HTMLElement).innerText = summaryText;
 
           if (stillWithinCycle) {
             completedSynchronously = true;
@@ -205,7 +205,7 @@ function template_content() {
       }
 
       if ('textContent' in testEntry) testEntry.textContent = t.name;
-      else testEntry.innerText = t.name;
+      else (testEntry as HTMLElement).innerText = t.name;
       t.testEntry = testEntry;
     }
   }

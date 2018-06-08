@@ -32,7 +32,7 @@ var uniqueKey: string;
 var bootDrive: any; // BootState
 var drive: any; // Drive
 
-var keepLoading: number;
+var keepLoading: any;
 
 function startBoot() {
   if (typeof timings==='undefined' || !timings) timings = <any>{ domStarted: + new Date() }
