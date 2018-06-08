@@ -1,4 +1,5 @@
-declare var fs, path, require, process;
+declare var fs: typeof import('fs'), path: typeof import('path');
+//, require, process;
 
 
 
@@ -69,27 +70,69 @@ function compileTS(...args: string[]): compileTS.CompileResult {
   var result = {files:[]} as compileTS.CompileResult;
 
   var ts: any = {};
-  var chakraHost = {
+
+  type FileWatcherCallback =
+    (fileName: string, eventKind: typeof import('typescript').FileWatcherEventKind) => void;
+  type FileWatcher = import('typescript').FileWatcher;
+  type DirectoryWatcherCallback = (fileName: string) => void
+
+  interface ChakraHost {
+    args: string[];
+    currentDirectory: string;
+    executingFile: string;
+    newLine?: string;
+    useCaseSensitiveFileNames?: boolean;
+    echo(s: string): void;
+    quit(exitCode?: number): void;
+    fileExists(path: string): boolean;
+    directoryExists(path: string): boolean;
+    createDirectory(path: string): void;
+    resolvePath(path: string): string;
+    readFile(path: string): string | undefined;
+    writeFile(path: string, contents: string): void;
+    getDirectories(path: string): string[];
+    readDirectory(path: string, extensions?: ReadonlyArray<string>, basePaths?: ReadonlyArray<string>, excludeEx?: string, includeFileEx?: string, includeDirEx?: string): string[];
+    watchFile?(path: string, callback: FileWatcherCallback): FileWatcher;
+    watchDirectory?(path: string, callback: DirectoryWatcherCallback, recursive?: boolean): FileWatcher;
+    realpath(path: string): string;
+    getEnvironmentVariable?(name: string): string;
+  }
+
+  var chakraHost: ChakraHost = {
     newLine: '\n',
     args: args,
     useCaseSensitiveFileNames: true,
     echo: function(text) {
       console.log(text);
     },
-    readFile: function (path, encoding) {
+    readFile: function (path) {
       return fs.readFileSync(path)+'';
     },
-    writeFile: function (file, data, writeByteOrderMark) {
+    writeFile: function (file, data) {
       //console.log('writeFile(',file,',',data.length);
       result[file] = data;
       result.files.push({file:file, data:data});
     },
     resolvePath: function(file) { return path.resolve(file); },
-    fileExists: function(file) { return fs.existsSync(file) && fs.statSync(file).isFile(); },
+    fileExists: function (file) { return fs.existsSync(file) && fs.statSync(file).isFile(); },
+    realpath: (path: string) => {
+      return fs.realpathSync(path);
+    },
     directoryExists: function(file) {
       return path.resolve(file) === '/' || fs.existsSync(file) && fs.statSync(file).isDirectory();
     },
-    createDirectory: function() { },
+    createDirectory: (dir) => {
+      fs.mkdirSync(dir);
+    },
+    getDirectories: (dir: string) => {
+      var dirFiles = fs.readdirSync(dir);
+      var result: string[] = [];
+      for (let i = 0; i < dirFiles.length; i++) {
+        if (fs.statSync(path.resolve(dir, dirFiles[i])).isDirectory())
+          result.push(dirFiles[i]);
+      }
+      return result;
+    },
     executingFile: tscPath,
     currentDirectory: process.cwd(),
     readDirectory: readDirectory,
