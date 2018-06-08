@@ -139,12 +139,29 @@ namespace attached.indexedDB {
       var metadataStore = transaction.objectStore('metadata');
       var filesStore = transaction.objectStore('files');
 
-      var countRequest = filesStore.count();
-      countRequest.onerror = (errorEvent) => {
+      var onerror = (errorEvent) => {
         if (typeof console!=='undefined' && console && typeof console.error==='function')
           console.error('Could not count files store: ', errorEvent);
         callback(new IndexedDBShadow(this._db, this.timestamp));
       };
+
+      try {
+	      var countRequest = filesStore.count();
+      }
+      catch (error) {
+        try {
+          transaction = this._db.transaction(['files', 'metadata']); // try to reuse the original opening _transaction
+          metadataStore = transaction.objectStore('metadata');
+          filesStore = transaction.objectStore('files');
+          countRequest = filesStore.count();
+        }
+        catch (error) {
+          onerror(error);
+          return;
+        }
+      }
+
+      countRequest.onerror = onerror;
 
       countRequest.onsuccess = (event) => {
 
