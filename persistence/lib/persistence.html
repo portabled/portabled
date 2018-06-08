@@ -3,12 +3,12 @@
 function persistence(document, uniqueKey, optionalDrives) {
 
 	persistence.build = {
-    timestamp: 1510701294330, // Tue Nov 14 2017 23:14:54 GMT+0000 (GMT)
-    taken: 4948,
-    platform: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3256.0 Safari/537.36"
+    timestamp: 1528491644901, // Fri Jun 08 2018 22:00:44 GMT+0100 (BST)
+    taken: 4387,
+    platform: "node v8.10.0 on darwin/x64"
 }
 
-var BootState = (function () {
+var BootState = /** @class */ (function () {
     function BootState(_document, _uniqueKey, _optionalDrives) {
         if (_optionalDrives === void 0) { _optionalDrives = [attached.indexedDB, attached.webSQL, attached.localStorage]; }
         this._document = _document;
@@ -118,7 +118,7 @@ var BootState = (function () {
         }
     };
     BootState.prototype._processFileNode = function (file) {
-        if (this._byPath[file.path]) {
+        if (this._byPath[file.path]) { // a file with this name was encountered before
             // prefer earlier nodes
             this._removeNode(file.node);
             return;
@@ -392,7 +392,7 @@ var BootState = (function () {
     };
     return BootState;
 }());
-var MountedDrive = (function () {
+var MountedDrive = /** @class */ (function () {
     function MountedDrive(_dom, _shadow) {
         this._dom = _dom;
         this._shadow = _shadow;
@@ -484,7 +484,7 @@ function bestEncode(content, escapePath) {
             else if (c === 13) {
                 crCount++;
             }
-            else if (c < 32 && c != 9) {
+            else if (c < 32 && c != 9) { // tab is an OK character, no need to escape
                 escape++;
             }
             else if (c > 126) {
@@ -600,7 +600,7 @@ function formatFileInner(path, content) {
 function normalizePath(path) {
     if (!path)
         return '/'; // empty paths converted to root
-    if (path.charAt(0) !== '/')
+    if (path.charAt(0) !== '/') // ensuring leading slash
         path = '/' + path;
     path = path.replace(/\/\/*/g, '/'); // replacing duplicate slashes with single
     return path;
@@ -631,7 +631,7 @@ function parseHTML(html) {
         if (!next)
             break;
         pos = next.index + next[0].length;
-        if (next[1]) {
+        if (next[1]) { // script
             scriptEnd.lastIndex = pos;
             next = scriptEnd.exec(html);
             if (!next)
@@ -761,7 +761,7 @@ var attached;
                 return event.target.errorCode;
             return event + '';
         }
-        var IndexedDBDetached = (function () {
+        var IndexedDBDetached = /** @class */ (function () {
             function IndexedDBDetached(_db, _transaction, timestamp) {
                 var _this = this;
                 this._db = _db;
@@ -780,12 +780,27 @@ var attached;
                 var transaction = this._transaction || this._db.transaction(['files', 'metadata']); // try to reuse the original opening _transaction
                 var metadataStore = transaction.objectStore('metadata');
                 var filesStore = transaction.objectStore('files');
-                var countRequest = filesStore.count();
-                countRequest.onerror = function (errorEvent) {
+                var onerror = function (errorEvent) {
                     if (typeof console !== 'undefined' && console && typeof console.error === 'function')
                         console.error('Could not count files store: ', errorEvent);
                     callback(new IndexedDBShadow(_this._db, _this.timestamp));
                 };
+                try {
+                    var countRequest = filesStore.count();
+                }
+                catch (error) {
+                    try {
+                        transaction = this._db.transaction(['files', 'metadata']); // try to reuse the original opening _transaction
+                        metadataStore = transaction.objectStore('metadata');
+                        filesStore = transaction.objectStore('files');
+                        countRequest = filesStore.count();
+                    }
+                    catch (error) {
+                        onerror(error);
+                        return;
+                    }
+                }
+                countRequest.onerror = onerror;
                 countRequest.onsuccess = function (event) {
                     try {
                         var storeCount = countRequest.result;
@@ -884,7 +899,7 @@ var attached;
             };
             return IndexedDBDetached;
         }());
-        var IndexedDBShadow = (function () {
+        var IndexedDBShadow = /** @class */ (function () {
             function IndexedDBShadow(_db, timestamp) {
                 this._db = _db;
                 this.timestamp = timestamp;
@@ -970,7 +985,7 @@ var attached;
             var dt = new LocalStorageDetached(access);
             callback(null, dt);
         }
-        var LocalStorageAccess = (function () {
+        var LocalStorageAccess = /** @class */ (function () {
             function LocalStorageAccess(_localStorage, _prefix) {
                 this._localStorage = _localStorage;
                 this._prefix = _prefix;
@@ -1023,7 +1038,7 @@ var attached;
             };
             return LocalStorageAccess;
         }());
-        var LocalStorageDetached = (function () {
+        var LocalStorageDetached = /** @class */ (function () {
             function LocalStorageDetached(_access) {
                 this._access = _access;
                 this.timestamp = 0;
@@ -1072,7 +1087,7 @@ var attached;
             };
             return LocalStorageDetached;
         }());
-        var LocalStorageShadow = (function () {
+        var LocalStorageShadow = /** @class */ (function () {
             function LocalStorageShadow(_access, timestamp) {
                 this._access = _access;
                 this.timestamp = timestamp;
@@ -1169,7 +1184,7 @@ var attached;
                 });
             });
         }
-        var WebSQLDetached = (function () {
+        var WebSQLDetached = /** @class */ (function () {
             function WebSQLDetached(_db, timestamp, _metadataTableIsValid) {
                 this._db = _db;
                 this.timestamp = timestamp;
@@ -1255,7 +1270,7 @@ var attached;
             };
             return WebSQLDetached;
         }());
-        var WebSQLShadow = (function () {
+        var WebSQLShadow = /** @class */ (function () {
             function WebSQLShadow(_db, timestamp, _metadataTableIsValid) {
                 var _this = this;
                 this._db = _db;
@@ -1448,7 +1463,7 @@ var attached;
         }
     })(webSQL = attached.webSQL || (attached.webSQL = {}));
 })(attached || (attached = {}));
-var CommentHeader = (function () {
+var CommentHeader = /** @class */ (function () {
     function CommentHeader(node) {
         this.node = node;
         var headerLine;
@@ -1468,7 +1483,7 @@ var CommentHeader = (function () {
                     }
                     this.header = headerChunks.join('') + nextChunk.slice(0, posEOL);
                     this.contentOffset = this.header.length + 1; // if header is separated by a single CR or LF
-                    if (posEOL === nextChunk.length - 1) {
+                    if (posEOL === nextChunk.length - 1) { // we may have LF part of CRLF in the next chunk!
                         if (nextChunk.charAt(nextChunk.length - 1) === '\r'
                             && node.substringData((headerChunks.length + 1) * chunkSize, 1) === '\n')
                             this.contentOffset++;
@@ -1494,14 +1509,14 @@ var CommentHeader = (function () {
             return;
         }
         this.contentOffset = wholeCommentText.slice(posEOL, posEOL + 2) === '\r\n' ?
-            posEOL + 2 :
+            posEOL + 2 : // ends with CRLF
             posEOL + 1; // ends with singular CR or LF
         this.header = wholeCommentText.slice(0, posEOL),
             this.contentLength = wholeCommentText.length - this.contentOffset;
     }
     return CommentHeader;
 }());
-var DOMDrive = (function () {
+var DOMDrive = /** @class */ (function () {
     function DOMDrive(_totals, files, _document) {
         this._totals = _totals;
         this._document = _document;
@@ -1566,13 +1581,13 @@ var DOMDrive = (function () {
             }
         }
         else {
-            if (f) {
+            if (f) { // update
                 var lengthBefore = f.contentLength;
                 if (!f.write(content, encoding))
                     return; // no changes - no update for timestamp/totals
                 totalDelta += f.contentLength - lengthBefore;
             }
-            else {
+            else { // addition
                 var comment = document.createComment('');
                 var f = new DOMFile(comment, file, null, 0, 0);
                 f.write(content, encoding);
@@ -1645,7 +1660,7 @@ var DOMDrive = (function () {
     };
     return DOMDrive;
 }());
-var DOMFile = (function () {
+var DOMFile = /** @class */ (function () {
     function DOMFile(node, path, _encoding, _contentOffset, contentLength) {
         this.node = node;
         this.path = path;
@@ -1677,7 +1692,7 @@ var DOMFile = (function () {
                 return null; // quoted path but wrong format (JSON expected)
             }
         }
-        else {
+        else { // filePath NOT started with quote
             if (encodingName) {
                 // regex above won't strip trailing whitespace from filePath if encoding is specified
                 // (because whitespace matches 'non-bracket' class too)
@@ -1739,7 +1754,7 @@ var DOMFile = (function () {
 }());
 var monthsPrettyCase = ('Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec').split('|');
 var monthsUpperCaseStr = monthsPrettyCase.join('').toUpperCase();
-var DOMTotals = (function () {
+var DOMTotals = /** @class */ (function () {
     function DOMTotals(timestamp, totalSize, node) {
         this.timestamp = timestamp;
         this.totalSize = totalSize;
@@ -5407,8 +5422,8 @@ function jsString(str) {
                 fix = '\\t';
                 break;
             default:
-                if (code < 32 ||
-                    ((code & 0xFF00) === 0xFD00) || ((code & 0xFF00) == 0xFF00)) {
+                if (code < 32 || // transcribe control codes
+                    ((code & 0xFF00) === 0xFD00) || ((code & 0xFF00) == 0xFF00)) { // transcribe potentially corrupt Unicode
                     fix = '\\u' + (0x10000 + code).toString(16).slice(1);
                     break;
                 }

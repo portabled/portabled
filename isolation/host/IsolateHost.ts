@@ -278,7 +278,7 @@ declare var msRequestFileSystem;
           return;
         }
 
-        var timeoutReqFS = setTimeout(function() {
+        var timeoutReqFS: any = setTimeout(function() {
           clearTimeout(timeoutReqFS);
           timeoutReqFS = 0;
           callback(new Error('Waiting for '+reqFS_name+' timed out.'));

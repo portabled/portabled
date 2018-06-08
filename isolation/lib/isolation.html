@@ -4,9 +4,9 @@
 function isolation() {
 
 	isolation.build = {
-    timestamp: 1527717102058, // Wed May 30 2018 22:51:42 GMT+0100 (British Summer Time)
-    taken: 131509,
-    platform: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3380.0 Safari/537.36"
+    timestamp: 1528492108940, // Fri Jun 08 2018 22:08:28 GMT+0100 (BST)
+    taken: 7857,
+    platform: "node v8.10.0 on darwin/x64"
 };
 
 (function (module) {
@@ -1389,7 +1389,7 @@ function isolation() {
   "    }\n"+
   "    function validateCtorName(ctorName) {\n"+
   "        if (ctorName) {\n"+
-  "            if (!/^A-Za-z0-9_$/.test(ctorName)) {\n"+
+  "            if (!/^A-Za-z0-9_$/.test(ctorName)) { // looks having non-Latin characters, let's check thoroughly\n"+
   "                for (var i = 0; i < ctorName.length; i++) {\n"+
   "                    var ctorChar = ctorName.charAt(i);\n"+
   "                    if (/^A-Za-z0-9_$/.test(ctorChar))\n"+
@@ -1804,7 +1804,7 @@ function isolation() {
   "        for (var i = 0; i < b64.length; i++) {\n"+
   "            var ch = b64.charCodeAt(i);\n"+
   "            var co = b64Code(ch);\n"+
-  "            if (phase >= 0) {\n"+
+  "            if (phase >= 0) { // processing normal base64 codes\n"+
   "                if (co >= 0) {\n"+
   "                    phase = (phase + 1) % 4;\n"+
   "                    accum = (accum << 6) | co;\n"+
@@ -1823,31 +1823,31 @@ function isolation() {
   "                else if (co == -3)\n"+
   "                    throw new Error('The string to be decoded is not correctly encoded.');\n"+
   "            }\n"+
-  "            else if (phase == -1) {\n"+
+  "            else if (phase == -1) { // met single filler, allow second filler or space\n"+
   "                if (co == -1)\n"+
   "                    phase = -2;\n"+
   "                else if (co != -2)\n"+
   "                    throw new Error('The string to be decoded is not correctly encoded.');\n"+
   "            }\n"+
-  "            else if (phase == -2) {\n"+
+  "            else if (phase == -2) { // met second filler, allow spaces only\n"+
   "                if (co != -2)\n"+
   "                    throw new Error('The string to be decoded is not correctly encoded.');\n"+
   "            }\n"+
   "        }\n"+
-  "        if (phase == -1) {\n"+
+  "        if (phase == -1) { // ended with single filler\n"+
   "            if (buf) {\n"+
   "                buf[pos] = (accum >> 10) & 0xFF;\n"+
   "                buf[pos + 1] = (accum >> 2) & 0xFF;\n"+
   "            }\n"+
   "            pos += 2;\n"+
   "        }\n"+
-  "        else if (phase == -2) {\n"+
+  "        else if (phase == -2) { // ended with double filler\n"+
   "            if (buf) {\n"+
   "                buf[pos] = (accum >> 4) & 0xFF;\n"+
   "            }\n"+
   "            pos++;\n"+
   "        }\n"+
-  "        else if (phase)\n"+
+  "        else if (phase) // ended on non-4 block without a filler\n"+
   "            throw new Error('The string to be decoded is not correctly encoded.');\n"+
   "        return pos;\n"+
   "    }\n"+
@@ -2386,7 +2386,7 @@ function isolation() {
   "        EventEmitter: EventEmitter\n"+
   "    };\n"+
   "}\n"+
-  "var EventEmitter = (function () {\n"+
+  "var EventEmitter = /** @class */ (function () {\n"+
   "    function EventEmitter() {\n"+
   "        this._listeners = {};\n"+
   "    }\n"+
@@ -2484,7 +2484,7 @@ function isolation() {
   "        while (true) {\n"+
   "            var nextSlash = fi.indexOf('/', parentSlash + 1);\n"+
   "            if (nextSlash < 0) {\n"+
-  "                if (parentSlash < fi.length - 1)\n"+
+  "                if (parentSlash < fi.length - 1) // Names like /empty/ are used to denote a directory, so don't read it as a '' file in /empty dir\n"+
   "                    all[fi] = parent[fi] = fi.slice(parentSlash + 1);\n"+
   "                return;\n"+
   "            }\n"+
@@ -2840,7 +2840,7 @@ function isolation() {
   "    }\n"+
   "})();\n"+
   "function createHTTP(https) {\n"+
-  "    var ClientRequest = (function (_super) {\n"+
+  "    var ClientRequest = /** @class */ (function (_super) {\n"+
   "        __extends(ClientRequest, _super);\n"+
   "        function ClientRequest(options, callback) {\n"+
   "            var _this = _super.call(this) || this;\n"+
@@ -2926,7 +2926,7 @@ function isolation() {
   "        };\n"+
   "        return ClientRequest;\n"+
   "    }(EventEmitter));\n"+
-  "    var IncomingMessage = (function (_super) {\n"+
+  "    var IncomingMessage = /** @class */ (function (_super) {\n"+
   "        __extends(IncomingMessage, _super);\n"+
   "        function IncomingMessage(_req) {\n"+
   "            var _this = _super.call(this) || this;\n"+
@@ -3343,7 +3343,7 @@ function isolation() {
   "            return '/';\n"+
   "        if (/^\\.\\//.test(path))\n"+
   "            path = path.replace(/^\\.\\//, '');\n"+
-  "        if (path.charCodeAt(0) !== 47) {\n"+
+  "        if (path.charCodeAt(0) !== 47) { // starts with NO slash, neither . or ..\n"+
   "            var cwd = process.cwd();\n"+
   "            if (cwd.slice(-1) === '/')\n"+
   "                path = cwd + path;\n"+
@@ -3843,7 +3843,7 @@ function createComplexSerializer(self) {
     }
     function validateCtorName(ctorName) {
         if (ctorName) {
-            if (!/^A-Za-z0-9_$/.test(ctorName)) {
+            if (!/^A-Za-z0-9_$/.test(ctorName)) { // looks having non-Latin characters, let's check thoroughly
                 for (var i = 0; i < ctorName.length; i++) {
                     var ctorChar = ctorName.charAt(i);
                     if (/^A-Za-z0-9_$/.test(ctorChar))
@@ -5182,7 +5182,7 @@ Buffer = (function () {
         for (var i = 0; i < b64.length; i++) {
             var ch = b64.charCodeAt(i);
             var co = b64Code(ch);
-            if (phase >= 0) {
+            if (phase >= 0) { // processing normal base64 codes
                 if (co >= 0) {
                     phase = (phase + 1) % 4;
                     accum = (accum << 6) | co;
@@ -5201,31 +5201,31 @@ Buffer = (function () {
                 else if (co == -3)
                     throw new Error('The string to be decoded is not correctly encoded.');
             }
-            else if (phase == -1) {
+            else if (phase == -1) { // met single filler, allow second filler or space
                 if (co == -1)
                     phase = -2;
                 else if (co != -2)
                     throw new Error('The string to be decoded is not correctly encoded.');
             }
-            else if (phase == -2) {
+            else if (phase == -2) { // met second filler, allow spaces only
                 if (co != -2)
                     throw new Error('The string to be decoded is not correctly encoded.');
             }
         }
-        if (phase == -1) {
+        if (phase == -1) { // ended with single filler
             if (buf) {
                 buf[pos] = (accum >> 10) & 0xFF;
                 buf[pos + 1] = (accum >> 2) & 0xFF;
             }
             pos += 2;
         }
-        else if (phase == -2) {
+        else if (phase == -2) { // ended with double filler
             if (buf) {
                 buf[pos] = (accum >> 4) & 0xFF;
             }
             pos++;
         }
-        else if (phase)
+        else if (phase) // ended on non-4 block without a filler
             throw new Error('The string to be decoded is not correctly encoded.');
         return pos;
     }
@@ -5528,8 +5528,8 @@ function jsString(str) {
                 fix = '\\t';
                 break;
             default:
-                if (code < 32 ||
-                    ((code & 0xFF00) === 0xFD00) || ((code & 0xFF00) == 0xFF00)) {
+                if (code < 32 || // transcribe control codes
+                    ((code & 0xFF00) === 0xFD00) || ((code & 0xFF00) == 0xFF00)) { // transcribe potentially corrupt Unicode
                     fix = '\\u' + (0x10000 + code).toString(16).slice(1);
                     break;
                 }

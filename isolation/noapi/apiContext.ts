@@ -1,5 +1,3 @@
- declare var global;
-
 namespace initApiContext {
 
   export interface Options {

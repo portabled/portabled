@@ -24,7 +24,7 @@ function createFS(
 
 
 
-    readFileSync: readFileSync,
+    readFileSync: readFileSync as any,
     readFile: wrapAsync(readFileSync),
     createReadStream: null,
 
