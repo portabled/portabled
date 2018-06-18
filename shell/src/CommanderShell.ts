@@ -1,6 +1,3 @@
-declare var unescape;
-
-
 var version = '0.85s';
 
 class CommanderShell {

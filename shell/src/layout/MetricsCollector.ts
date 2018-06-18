@@ -54,7 +54,7 @@ namespace layout {
       this._scrollWChildElem.style.width = '100%'; // this will give us inner width, without the scrollbar
       this._scrollWChildElem.style.height = '200px';
       if ('textContent' in this._scrollWChildElem) this._scrollWChildElem.textContent = '.';
-      else this._scrollWChildElem.innerText = '.';
+      else (this._scrollWChildElem as HTMLElement).innerText = '.';
       this._scrollWElem.appendChild(this._scrollWChildElem);
       window.document.body.appendChild(this._scrollWElem);
 
@@ -70,7 +70,7 @@ namespace layout {
       this._scrollHChildElem.style.height = '100%'; // this will give us inner width, without the scrollbar
       this._scrollHChildElem.style.width = '200px';
       if ('textContent' in this._scrollHChildElem) this._scrollHChildElem.textContent = '.';
-      else this._scrollHChildElem.innerText = '.';
+      else (this._scrollHChildElem as HTMLElement).innerText = '.';
       this._scrollHElem.appendChild(this._scrollHChildElem);
       window.document.body.appendChild(this._scrollHElem);
 

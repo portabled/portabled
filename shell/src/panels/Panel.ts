@@ -388,7 +388,7 @@ namespace panels {
         this._redrawRequested = mozRequestAnimationFrame(this._redrawNowClosure);
       }
       else {
-      	this._redrawRequested = setTimeout(this._redrawNowClosure, 1);
+      	this._redrawRequested = setTimeout(this._redrawNowClosure, 1) as any;
       }
     }
 
@@ -842,9 +842,9 @@ namespace panels {
 
       if (!entry) {
 
-        var entryDIV = <HTMLElementWithFlags><HTMLElement>document.createElement('pre');
+        var entryDIV = document.createElement('pre') as HTMLElement as HTMLElementWithFlags;
         if ('textContent' in entryDIV) entryDIV.textContent = dentry.name;
-        else entryDIV.innerText = dentry.name;
+        else (entryDIV as HTMLElementWithFlags).innerText = dentry.name;
         entryDIV.className = entryClassName;
         entryDIV.style.height = heightStr;
         entryDIV.style.marginBottom = '-1px';

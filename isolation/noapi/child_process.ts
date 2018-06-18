@@ -16,7 +16,7 @@ function createChildProcess(
         { spawnChildProcess: sanitizedOptions },
       	(error, result) => {
       		// TODO: invokeAsync-based implementation
-          
+
         });
     }
 

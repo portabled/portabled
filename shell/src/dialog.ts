@@ -47,7 +47,7 @@ class DialogHost {
     document.body.appendChild(dialogBody);
     this._animationLastTime =+new Date();
     if (!this._animateInterval)
-      this._animateInterval = setInterval(() => this._processAnimation(), 2);
+      this._animateInterval = setInterval(() => this._processAnimation(), 2) as any;
 
     this._processAnimation();
 
@@ -167,7 +167,7 @@ class DialogHost {
     this._animationLastTime = +new Date();
 
     if (!this._animateInterval)
-      this._animateInterval = setInterval(() => this._processAnimation(), 2);
+      this._animateInterval = setInterval(() => this._processAnimation(), 2) as any;
 
     this._processAnimation();
   }

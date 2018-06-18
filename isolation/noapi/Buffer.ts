@@ -1,9 +1,8 @@
-var Buffer;
-Buffer = (function() {
+(function() {
 
   var NewUnit8Array: typeof Uint8Array = typeof Uint8Array === 'function' ? Uint8Array : Array as any;
 
-  return Buffer as any;
+  (this as any).Buffer  = Buffer;
 
   function Buffer(data: any, encoding?: string, offset?: number) {
     var buf: Uint8Array;

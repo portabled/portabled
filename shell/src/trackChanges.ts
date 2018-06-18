@@ -35,7 +35,7 @@ function trackChanges(drive: persistence.Drive): { drive: persistence.Drive; onc
           if (now - _reportChangesFirst < 1) {
             clearTimeout(_reportChangesTimeout);
             if (!_reportChangesFirst) _reportChangesFirst = +new Date();
-            _reportChangesTimeout = setTimeout(reportChanges, delayTimeout);
+            _reportChangesTimeout = setTimeout(reportChanges, delayTimeout) as any;
           }
         }
       }

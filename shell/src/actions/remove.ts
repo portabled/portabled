@@ -39,7 +39,7 @@ namespace actions {
 
     var deleting_text = 'Deleting '+(filesToRemove.length ==1 ? ' this file:' : ' these '+filesToRemove.length+' files:');
     if ('textContent' in deleting_header) deleting_header.textContent = deleting_text;
-    else deleting_header.innerText = deleting_text;
+    else (deleting_header as HTMLElement).innerText = deleting_text;
 
     var fileList: string[] = [];
     for (var i = 0; i < filesToRemove.length; i++) {
@@ -53,7 +53,7 @@ namespace actions {
     }
 
     if ('textContent' in delete_list) delete_list.textContent = fileList.join('\n');
-    else delete_list.innerText = fileList.join('\n');
+    else (delete_list as HTMLElement).innerText = fileList.join('\n');
 
     delete_button.onclick = commit;
 

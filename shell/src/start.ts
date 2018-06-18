@@ -1,5 +1,3 @@
-declare var require;
-
 var buildTime: number;
 
 function start(complete: () => string) {

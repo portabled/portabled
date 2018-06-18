@@ -366,7 +366,7 @@ namespace terminal {
         }, 10);
       }
       else {
-        this._input.value += (/\s$/.test(this._input.value) ? '' : ' ') + cursorPath;
+        (this._input as HTMLInputElement).value += (/\s$/.test((this._input as HTMLInputElement).value) ? '' : ' ') + cursorPath;
       }
       return true;
     }

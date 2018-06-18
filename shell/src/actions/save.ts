@@ -58,7 +58,7 @@ namespace actions {
       }
 
       if ('textContent' in savingHeader) savingHeader.textContent = savingHeaderText;
-      else savingHeader.innerText = savingHeaderText;
+      else (savingHeader as HTMLElement).innerText = savingHeaderText;
 
     }
 
@@ -106,7 +106,7 @@ namespace actions {
       var saveGithubUpload = dlgBody.getElementsByClassName('save-github-upload')[0] as HTMLInputElement;
       if (saveGithubUpload && saveGithubUpload.checked) {
         var req = env.http.request({
-          
+
         });
       }
 
