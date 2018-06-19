@@ -37,15 +37,24 @@ console.log('  '+shell_html.length+' chars');
 
 console.log('Combining full HTML...');
 
+var rootDir = path.resolve(__dirname, '..');
 var miOpts = {
   boot_html: boot_html,
   shell_html: shell_html,
-  files: [path.resolve(__dirname, '..')],
+  files: [rootDir],
   favicon: readLocal('favicon.base64.html')
 };
-miOpts.files.filterFiles = function(source, target) {
-  if (target==='/mi.html'|| target==='/empty.html') return false;
-  else return true;
+miOpts.files.filterFiles = function (source, target) {
+  var targetTest = target.slice(0, rootDir.length);
+  if (!/^\//.test(targetTest)) targetTest = '/' + targetTest;
+  if (/^\/[^\/]+\.html$/.test(targetTest) || /\/.git\//.test(targetTest)) {
+    console.log('   ...skip ' + targetTest + ' at ' + target);
+    return false;
+  }
+  else {
+    console.log('   ...add ' + target);
+    return true;
+  }
 };
 
 var html = build.wrapEQ80(miOpts);
