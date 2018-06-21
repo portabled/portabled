@@ -44,15 +44,14 @@ var miOpts = {
   files: [rootDir],
   favicon: readLocal('favicon.base64.html')
 };
-miOpts.files.filterFiles = function (source, target) {
-  var targetTest = target.slice(0, rootDir.length);
-  if (!/^\//.test(targetTest)) targetTest = '/' + targetTest;
-  if (/^\/[^\/]+\.html$/.test(targetTest) || /\/.git\//.test(targetTest)) {
-    console.log('   ...skip ' + targetTest + ' at ' + target);
+miOpts.files.filterFiles = function (target, source) {
+  if (/^\/[^\/]+\.html$/.test(target)
+    || /\/\.[a-z0-9]/i.test(source)) {
+    //console.log('   ...skip ' + target + ' from ' + source);
     return false;
   }
   else {
-    console.log('   ...add ' + target);
+    console.log('   ...ADD ' + target +' from ' + source);
     return true;
   }
 };

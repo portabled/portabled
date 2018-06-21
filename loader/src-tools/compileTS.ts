@@ -120,7 +120,7 @@ function compileTS(...args: string[]): compileTS.CompileResult {
       return fs.existsSync(file) && fs.statSync(file).isFile();
     },
     realpath: (path: string) => {
-      return fs.realpathSync(path);
+      return fs.realpathSync ? fs.realpathSync(path) : path;
     },
     directoryExists: function(file) {
       return path.resolve(file) === '/' || fs.existsSync(file) && fs.statSync(file).isDirectory();

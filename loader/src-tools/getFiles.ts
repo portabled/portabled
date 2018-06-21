@@ -1,34 +1,38 @@
 function getFiles(
   filelist: (string | (string[]) | {[file: string]: any} | (() => string | string[])) & { filterFiles?: (logicalName: string, file: string) => void }) {
 
-  var list = [];
+  var logicalPathList: string[] = [];
   var map = {};
-  var redirects = {};
+  var logicalPathToFilesystemPath: { [logicalFile: string]: string } = {};
 
   // iterate and populate list/map
   // (this also eliminates duplicates)
   addFiles(filelist);
 
+  var filesList: string[] = [];
 
   return {
-    files: function() { return list; },
+    files: function() { return logicalPathList; },
     read: function(fi) {
       var content = map[fi];
       if (typeof content==='function') {
         content=content();
       }
       else if (typeof content!=='string') {
-        content = fs.readFileSync(redirects[fi] || fi)+'';
+        content = fs.readFileSync(logicalPathToFilesystemPath[fi] || fi)+'';
       }
       return content;
     }
   };
 
-  function addFiles(files: (string | (string[]) | {[file: string]: any} | (() => string | string[])) & { filterFiles?: (logicalName: string, file: string) => void }) {
+  function addFiles(
+    files: (string | (string[]) | { [file: string]: any } | (() => string | string[])) & { filterFiles?: (logicalName: string, file: string) => void },
+    skipPathStrLength?: number) {
     if (!files) return;
 
-    if (typeof files==='string') {
-      addFileStr(files);
+    if (typeof files === 'string') {
+      addFileStr(files, skipPathStrLength);
+
       return;
     }
 
@@ -39,7 +43,7 @@ function getFiles(
 
     if ((files as any[]).length && typeof (files as any[]).length==='number') {
       for (var i = 0; i < (files as any[]).length; i++) {
-        addFiles(files[i]);
+        addFiles(files[i], skipPathStrLength);
       }
     }
 
@@ -62,33 +66,32 @@ function getFiles(
     }
   }
 
-  function addFileContent(file: string, content?: any) {
-    delete redirects[file];
-    if (!map[file]) list.push(file);
-    map[file] = content;
+  function addFileContent(logicalPath: string, content?: any) {
+    delete logicalPathToFilesystemPath[logicalPath];
+    if (!map[logicalPath]) logicalPathList.push(logicalPath);
+    map[logicalPath] = content;
   }
 
   function addFileContentRead(file: string, skipPathStrLength: number, redirectRoot: string) {
+    let newPath: string;
     if (redirectRoot) {
-      var newPath = path.join(redirectRoot, file.slice(skipPathStrLength));
-      if (newPath.charCodeAt(0)!==47) newPath = '/'+newPath;
-      if (filelist.filterFiles) {
-        if (!filelist.filterFiles(file, newPath)) return;
-      }
-
-      addFileContent(newPath);
-      redirects[newPath] = file;
+      newPath = path.join(redirectRoot, file.slice(skipPathStrLength || 0));
+    }
+    else if (skipPathStrLength) {
+      newPath = file.slice(skipPathStrLength);
     }
     else {
-      var shortFilename = file.replace(/^.+(\/[^/]+)$/, '$1');
-
-      if (filelist.filterFiles) {
-        if (!filelist.filterFiles(shortFilename, file)) return;
-      }
-
-      addFileContent(file);
-      redirects[shortFilename] = file;
+      newPath = file.replace(/^.+(\/[^/]+)$/, '$1');
     }
+
+    if (newPath.charCodeAt(0) !== 47) newPath = '/' + newPath;
+
+    if (filelist.filterFiles) {
+      if (!filelist.filterFiles(newPath, file)) return;
+    }
+
+    addFileContent(newPath);
+    logicalPathToFilesystemPath[newPath] = file;
   }
 
   function addFileStr(file: string, skipPathStrLength?: number, redirectRoot?: string) {
@@ -103,6 +106,10 @@ function getFiles(
     }
 
     if (stat && !stat.isDirectory()) return;
+
+    if (!skipPathStrLength && !redirectRoot) {
+      skipPathStrLength = /\/$/.test(file) ? file.length - 1 : file.length;
+    }
 
     var dirs = [file];
     while (dirs.length) {
