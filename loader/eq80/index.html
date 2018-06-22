@@ -384,8 +384,8 @@ function copy() {
 function loader(window, document) {
 
 	loader.build = {
-    timestamp: 1529566663714, // Thu Jun 21 2018 08:37:43 GMT+0100 (BST)
-    taken: 7452,
+    timestamp: 1529567444926, // Thu Jun 21 2018 08:50:44 GMT+0100 (BST)
+    taken: 7537,
     platform: "node v8.10.0 on darwin/x64"
 }
 
@@ -5658,7 +5658,7 @@ function getFiles(filelist) {
         if (redirectRoot) {
             newPath = path.join(redirectRoot, file.slice(skipPathStrLength || 0));
         }
-        else if (skipPathStrLength) {
+        else if (typeof skipPathStrLength === 'number') {
             newPath = file.slice(skipPathStrLength);
         }
         else {

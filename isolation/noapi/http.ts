@@ -182,7 +182,7 @@ function createHTTP(https?: boolean): any {
       req.end();
       return req;
     },
-    METHODS: [ 
+    METHODS: [
       'ACL',
       'BIND',
       'CHECKOUT',
@@ -414,11 +414,15 @@ function xhr_request(options: xhr_request.Options) {
 
     if (!response || response.length<=lastState.offset) return null;
 
-    if (typeof response==='string') {
-      var chunk = new Buffer(response.slice(lastState.offset), 'utf8');
+    let chunk: Buffer;
+    if (typeof response==='string' || typeof response.byteLength === 'number') {
+      chunk = new Buffer(response.slice(lastState.offset), 'utf8');
     }
     else {
-      var chunk: any = new Buffer(response, lastState.offset);
+      chunk = new Buffer(response.length - lastState.offset);
+      for (var i = lastState.offset; i < response.length; i++) {
+        chunk[i - lastState.offset] = response[i];
+      }
     }
 
     lastState.offset = response.length;

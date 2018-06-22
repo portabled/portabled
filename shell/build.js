@@ -51,7 +51,7 @@ miOpts.files.filterFiles = function (target, source) {
     return false;
   }
   else {
-    console.log('   ...ADD ' + target +' from ' + source);
+    //console.log('   ...ADD ' + target +' from ' + source);
     return true;
   }
 };

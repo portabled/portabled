@@ -77,7 +77,7 @@ function getFiles(
     if (redirectRoot) {
       newPath = path.join(redirectRoot, file.slice(skipPathStrLength || 0));
     }
-    else if (skipPathStrLength) {
+    else if (typeof skipPathStrLength === 'number') {
       newPath = file.slice(skipPathStrLength);
     }
     else {
