@@ -21,6 +21,11 @@ function copy() {
       return;
     }
 
+    if (input === 'apply') {
+      applyToAll();
+      return;
+    }
+
     var file = input.file;
     var inputAllFiles = input.allFiles;
     var isInputDir = input.isInputDir;
@@ -90,6 +95,10 @@ function copy() {
           '</body></html>';
         fs.writeFileSync(outputFile, manufacturedHTML);
       }
+    }
+
+    function applyToAll() {
+      throw new Error('Apply function is not implemented in this version.');
     }
 
     function copyAll() {
@@ -273,8 +282,9 @@ function copy() {
   }
 
 
-  function collectInput(): '*' | { file: string; allFiles: FileDescriptor[]; isInputDir: boolean; } {
+  function collectInput(): '*' | 'apply' | { file: string; allFiles: FileDescriptor[]; isInputDir: boolean; } {
     var fileArg = process.argv[2];
+    if (fileArg === '*' || /^apply$/i.test(fileArg)) return fileArg.toLowerCase() as '*' | 'apply';
     var file = path.resolve(fileArg);
 
     if (!file) {

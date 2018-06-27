@@ -72,7 +72,7 @@ function createHTTP(https?: boolean): any {
           this._data+=data;
         }
         else {
-          this._data = Buffer.concat(this._data, new Buffer(data));
+          this._data = Buffer.concat([this._data, new Buffer(data)]);
         }
       }
       else {
@@ -80,10 +80,10 @@ function createHTTP(https?: boolean): any {
           this._data = data;
         }
         else if (typeof this._data==='string') {
-          this._data = Buffer.concat(new Buffer(this._data), data);
+          this._data = Buffer.concat([new Buffer(this._data), data]);
         }
         else {
-          this._data = Buffer.concat(this._data, data);
+          this._data = Buffer.concat([this._data, data]);
         }
       }
     }
@@ -298,7 +298,7 @@ declare namespace xhr_request {
     headers?: any;
   	body?: string | any[];
     withCredentials?: boolean;
-  	statusChanged(error, status: number, chunk:any[], finish: boolean);
+  	statusChanged(error, status: number, chunk: Buffer | any[], finish: boolean);
     fallback(error);
   }
 
@@ -363,7 +363,7 @@ function xhr_request(options: xhr_request.Options) {
     return;
   }
 
-  function reportStatusChanged(error, status: number, chunk:any[], finish: boolean) {
+  function reportStatusChanged(error, status: number, chunk: Buffer | any[], finish: boolean) {
     if (error || finish) {
       if (error || !status){
         if (canFallback || options.fallback) {

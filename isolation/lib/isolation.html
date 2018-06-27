@@ -4,8 +4,8 @@
 function isolation() {
 
 	isolation.build = {
-    timestamp: 1528492108940, // Fri Jun 08 2018 22:08:28 GMT+0100 (BST)
-    taken: 7857,
+    timestamp: 1530083816701, // Wed Jun 27 2018 08:16:56 GMT+0100 (BST)
+    taken: 7603,
     platform: "node v8.10.0 on darwin/x64"
 };
 
@@ -1623,10 +1623,9 @@ function isolation() {
   "        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());\n"+
   "    };\n"+
   "})();\n"+
-  "var Buffer;\n"+
-  "Buffer = (function () {\n"+
+  "(function () {\n"+
   "    var NewUnit8Array = typeof Uint8Array === 'function' ? Uint8Array : Array;\n"+
-  "    return Buffer;\n"+
+  "    this.Buffer = Buffer;\n"+
   "    function Buffer(data, encoding, offset) {\n"+
   "        var buf;\n"+
   "        if (typeof data === 'number') {\n"+
@@ -2873,7 +2872,7 @@ function isolation() {
   "                    this._data += data;\n"+
   "                }\n"+
   "                else {\n"+
-  "                    this._data = Buffer.concat(this._data, new Buffer(data));\n"+
+  "                    this._data = Buffer.concat([this._data, new Buffer(data)]);\n"+
   "                }\n"+
   "            }\n"+
   "            else {\n"+
@@ -2881,10 +2880,10 @@ function isolation() {
   "                    this._data = data;\n"+
   "                }\n"+
   "                else if (typeof this._data === 'string') {\n"+
-  "                    this._data = Buffer.concat(new Buffer(this._data), data);\n"+
+  "                    this._data = Buffer.concat([new Buffer(this._data), data]);\n"+
   "                }\n"+
   "                else {\n"+
-  "                    this._data = Buffer.concat(this._data, data);\n"+
+  "                    this._data = Buffer.concat([this._data, data]);\n"+
   "                }\n"+
   "            }\n"+
   "        };\n"+
@@ -3163,11 +3162,15 @@ function isolation() {
   "        catch (err) { }\n"+
   "        if (!response || response.length <= lastState.offset)\n"+
   "            return null;\n"+
-  "        if (typeof response === 'string') {\n"+
-  "            var chunk = new Buffer(response.slice(lastState.offset), 'utf8');\n"+
+  "        var chunk;\n"+
+  "        if (typeof response === 'string' || typeof response.byteLength === 'number') {\n"+
+  "            chunk = new Buffer(response.slice(lastState.offset), 'utf8');\n"+
   "        }\n"+
   "        else {\n"+
-  "            var chunk = new Buffer(response, lastState.offset);\n"+
+  "            chunk = new Buffer(response.length - lastState.offset);\n"+
+  "            for (var i = lastState.offset; i < response.length; i++) {\n"+
+  "                chunk[i - lastState.offset] = response[i];\n"+
+  "            }\n"+
   "        }\n"+
   "        lastState.offset = response.length;\n"+
   "        return chunk;\n"+
@@ -5001,10 +5004,9 @@ var tests;
         };
     }
 })(tests || (tests = {}));
-var Buffer;
-Buffer = (function () {
+(function () {
     var NewUnit8Array = typeof Uint8Array === 'function' ? Uint8Array : Array;
-    return Buffer;
+    this.Buffer = Buffer;
     function Buffer(data, encoding, offset) {
         var buf;
         if (typeof data === 'number') {

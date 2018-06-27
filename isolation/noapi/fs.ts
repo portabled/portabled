@@ -317,7 +317,7 @@ function createFS(
     }
     else {
       if (safeForString(content))
-        contentSimplified = new Buffer(content).toString();
+        contentSimplified = new Buffer(content as any).toString();
       else
         contentSimplified = content;
     }
