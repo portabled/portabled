@@ -350,13 +350,8 @@ function copy() {
             var beforeInsertionPoint = outputCompleteHTML.slice(0, offset);
         }
         else {
-            offset = outputCompleteHTML.lastIndexOf('<');
-            if (offset >= 0) {
-                offset++; // the length of end-comment
-            }
-            else {
-                offset = outputCompleteHTML.length;
-            }
+            var endBodyMatch = /<\/body\s*>/i.exec(outputCompleteHTML);
+            offset = endBodyMatch ? endBodyMatch.index : outputCompleteHTML.length;
             var beforeInsertionPoint = outputCompleteHTML.slice(0, offset);
             if (offset < outputCompleteHTML.length)
                 resultBuf.push(outputCompleteHTML.slice(offset));
@@ -388,8 +383,8 @@ function copy() {
 function loader(window, document) {
 
 	loader.build = {
-    timestamp: 1530084615491, // Wed Jun 27 2018 08:30:15 GMT+0100 (BST)
-    taken: 7608,
+    timestamp: 1530134445638, // Wed Jun 27 2018 22:20:45 GMT+0100 (BST)
+    taken: 7537,
     platform: "node v8.10.0 on darwin/x64"
 }
 

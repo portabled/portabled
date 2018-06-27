@@ -404,13 +404,8 @@ function copy() {
       var beforeInsertionPoint = outputCompleteHTML.slice(0, offset);
     }
     else {
-      offset = outputCompleteHTML.lastIndexOf('<');
-      if (offset>=0) {
-        offset ++; // the length of end-comment
-      }
-      else {
-        offset = outputCompleteHTML.length;
-      }
+      let endBodyMatch = /<\/body\s*>/i.exec(outputCompleteHTML);
+      offset = endBodyMatch ? endBodyMatch.index : outputCompleteHTML.length;
 
       var beforeInsertionPoint = outputCompleteHTML.slice(0, offset);
       if (offset<outputCompleteHTML.length)
