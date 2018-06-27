@@ -25,6 +25,10 @@ function copy() {
             copyAll();
             return;
         }
+        if (input === 'apply') {
+            applyToAll();
+            return;
+        }
         var file = input.file;
         var inputAllFiles = input.allFiles;
         var isInputDir = input.isInputDir;
@@ -87,6 +91,9 @@ function copy() {
                         '</body></html>';
                 fs.writeFileSync(outputFile, manufacturedHTML);
             }
+        }
+        function applyToAll() {
+            throw new Error('Apply function is not implemented in this version.');
         }
         function copyAll() {
             var root = path.resolve(__dirname);
@@ -246,6 +253,8 @@ function copy() {
     }
     function collectInput() {
         var fileArg = process.argv[2];
+        if (fileArg === '*' || /^apply$/i.test(fileArg))
+            return fileArg.toLowerCase();
         var file = path.resolve(fileArg);
         if (!file) {
             console.log('EQ80  nonode-file|directory  [output-nonode-file|directory]');
@@ -341,17 +350,12 @@ function copy() {
             var beforeInsertionPoint = outputCompleteHTML.slice(0, offset);
         }
         else {
-            offset = outputCompleteHTML.lastIndexOf('-->');
+            offset = outputCompleteHTML.lastIndexOf('<');
             if (offset >= 0) {
-                offset += 3; // the length of end-comment
+                offset++; // the length of end-comment
             }
             else {
-                offset = outputCompleteHTML.lastIndexOf('</body');
-                if (offset < 0) {
-                    offset = outputCompleteHTML.lastIndexOf('<');
-                    if (offset < 0)
-                        offset = outputCompleteHTML.length;
-                }
+                offset = outputCompleteHTML.length;
             }
             var beforeInsertionPoint = outputCompleteHTML.slice(0, offset);
             if (offset < outputCompleteHTML.length)
@@ -384,8 +388,8 @@ function copy() {
 function loader(window, document) {
 
 	loader.build = {
-    timestamp: 1529567444926, // Thu Jun 21 2018 08:50:44 GMT+0100 (BST)
-    taken: 7537,
+    timestamp: 1530084615491, // Wed Jun 27 2018 08:30:15 GMT+0100 (BST)
+    taken: 7608,
     platform: "node v8.10.0 on darwin/x64"
 }
 

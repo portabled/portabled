@@ -404,18 +404,14 @@ function copy() {
       var beforeInsertionPoint = outputCompleteHTML.slice(0, offset);
     }
     else {
-      offset = outputCompleteHTML.lastIndexOf('-->');
+      offset = outputCompleteHTML.lastIndexOf('<');
       if (offset>=0) {
-        offset += 3; // the length of end-comment
+        offset ++; // the length of end-comment
       }
       else {
-        offset = outputCompleteHTML.lastIndexOf('</body');
-        if (offset<0) {
-            offset = outputCompleteHTML.lastIndexOf('<');
-          if (offset<0)
-            offset = outputCompleteHTML.length;
-        }
+        offset = outputCompleteHTML.length;
       }
+
       var beforeInsertionPoint = outputCompleteHTML.slice(0, offset);
       if (offset<outputCompleteHTML.length)
         resultBuf.push(outputCompleteHTML.slice(offset));
