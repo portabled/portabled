@@ -25,10 +25,6 @@ function copy() {
             copyAll();
             return;
         }
-        if (input === 'apply') {
-            applyToAll();
-            return;
-        }
         var file = input.file;
         var inputAllFiles = input.allFiles;
         var isInputDir = input.isInputDir;
@@ -92,11 +88,8 @@ function copy() {
                 fs.writeFileSync(outputFile, manufacturedHTML);
             }
         }
-        function applyToAll() {
-            throw new Error('Apply function is not implemented in this version.');
-        }
         function copyAll() {
-            var root = path.resolve(__dirname);
+            var root = path.resolve(process.cwd());
             var sourcePath = path.join(root, 'index.html');
             var srcDirPath = path.join(root, 'src');
             if (!fs.existsSync(sourcePath) || fs.statSync(sourcePath).isDirectory()) {
@@ -253,16 +246,14 @@ function copy() {
     }
     function collectInput() {
         var fileArg = process.argv[2];
-        if (fileArg === '*' || /^apply$/i.test(fileArg))
-            return fileArg.toLowerCase();
+        if (fileArg === '*' || fileArg === '\'*\'' || fileArg === '"*"')
+            return '*';
         var file = path.resolve(fileArg);
         if (!file) {
             console.log('EQ80  nonode-file|directory  [output-nonode-file|directory]');
             return;
         }
         if (!fs.existsSync(file)) {
-            if (file === '*')
-                return '*';
             console.log('File not found: ' + file);
             return;
         }
@@ -383,8 +374,8 @@ function copy() {
 function loader(window, document) {
 
 	loader.build = {
-    timestamp: 1530206343722, // Thu Jun 28 2018 18:19:03 GMT+0100 (BST)
-    taken: 7804,
+    timestamp: 1530221150442, // Thu Jun 28 2018 22:25:50 GMT+0100 (BST)
+    taken: 7842,
     platform: "node v8.10.0 on darwin/x64"
 }
 

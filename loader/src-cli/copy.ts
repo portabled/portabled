@@ -21,10 +21,6 @@ function copy() {
       return;
     }
 
-    if (input === 'apply') {
-      applyToAll();
-      return;
-    }
 
     var file = input.file;
     var inputAllFiles = input.allFiles;
@@ -97,12 +93,8 @@ function copy() {
       }
     }
 
-    function applyToAll() {
-      throw new Error('Apply function is not implemented in this version.');
-    }
-
     function copyAll() {
-      var root = path.resolve(__dirname);
+      var root = path.resolve(process.cwd());
       var sourcePath = path.join(root,'index.html');
       var srcDirPath = path.join(root, 'src');
       if (!fs.existsSync(sourcePath) || fs.statSync(sourcePath).isDirectory()) {
@@ -282,9 +274,9 @@ function copy() {
   }
 
 
-  function collectInput(): '*' | 'apply' | { file: string; allFiles: FileDescriptor[]; isInputDir: boolean; } {
+  function collectInput(): '*'  | { file: string; allFiles: FileDescriptor[]; isInputDir: boolean; } {
     var fileArg = process.argv[2];
-    if (fileArg === '*' || /^apply$/i.test(fileArg)) return fileArg.toLowerCase() as '*' | 'apply';
+    if (fileArg === '*' || fileArg === '\'*\'' || fileArg === '"*"') return '*';
     var file = path.resolve(fileArg);
 
     if (!file) {
@@ -292,8 +284,6 @@ function copy() {
       return;
     }
     if (!fs.existsSync(file)) {
-      if (file==='*')
-        return '*';
 
       console.log('File not found: '+file);
       return;
