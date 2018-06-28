@@ -3,17 +3,37 @@ declare var persistence, loader;
 declare namespace wrapEQ80 {
 
   type Options = {
-    title: string;
-    early_html: string;
+
+    /** Wrapper document's title */
+    title?: string;
+
+    /** Wrapper document can have a chunk of HTML embedded directly */
+    early_html?: string;
+
+    /** During document/content load a temporary IFRAME is created to cover the whole of the page, and this content will be injected there */
     boot_html: string;
+
+    /** Upon document load complete, a long-term IFRAME is created to render actual UI, and this content will be injected */
     shell_html: string;
+
     delayed_shell_html?: string;
+
+    /** Files to populate */
     files: string[] | { [file: string]: any; };
+
     timestamp: number;
+
+    /** CSS background value */
     defaultBackground: string;
-    favicon: string;
-  	fileTotalSize: number;
-  	fileTotalCount: number;
+
+    /** header injection */
+    favicon?: string;
+
+    /** value to be populated AFTER wrap complete */
+    fileTotalSize?: number;
+
+    /** value to be populated AFTER wrap complete */
+  	fileTotalCount?: number;
   };
 }
 
@@ -66,12 +86,12 @@ function wrapEQ80(options: wrapEQ80.Options) {
      '  if (doc.open) doc.open();\n'+
      '  doc.write('+jsStringLong(options.shell_html)+');\n'+
      '  if (doc.close) doc.close();\n'+
-     '})(loader.shell.contentWindow.document || loader.shell.window.document); //# '+'sourceURL=/SHELL-docwrite.html\n'+
+     '})(loader.shell.contentWindow.document || loader.shell.window.document); //# '+'sourceURL=/SHELL-frame.html\n'+
      '//</'+'script>\n'
      : '')+
 
     (options.delayed_shell_html ?
-     '<'+'script data-legit=mi> // pushing SHELL: delayed\n'+
+     '<'+'script data-legit=mi> /* SHELL: delayed */ \n'+
      'loader.delayed_shell_html = (function() {\n'+
      '  var doc = loader.shell.contentWindow.document || loader.shell.window.document;\n'+
      '  return delayed_shell_html;\n'+
@@ -80,7 +100,7 @@ function wrapEQ80(options: wrapEQ80.Options) {
      '    doc.write('+jsStringLong(options.delayed_shell_html)+');\n'+
      '    if (doc.close) doc.close();\n'+
      '  }\n'+
-     '})(); //# '+'sourceURL=/SHELL-docwrite.html </'+'script>\n'
+     '})(); //# '+'sourceURL=/SHELL-delayed.html </'+'script>\n'
      : '')+
 
     '/*'+fileTotalHTML+'*/';

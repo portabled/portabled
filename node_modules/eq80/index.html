@@ -383,8 +383,8 @@ function copy() {
 function loader(window, document) {
 
 	loader.build = {
-    timestamp: 1530134445638, // Wed Jun 27 2018 22:20:45 GMT+0100 (BST)
-    taken: 7537,
+    timestamp: 1530206343722, // Thu Jun 28 2018 18:19:03 GMT+0100 (BST)
+    taken: 7804,
     platform: "node v8.10.0 on darwin/x64"
 }
 
@@ -6023,11 +6023,11 @@ function wrapEQ80(options) {
                 '  if (doc.open) doc.open();\n' +
                 '  doc.write(' + jsStringLong(options.shell_html) + ');\n' +
                 '  if (doc.close) doc.close();\n' +
-                '})(loader.shell.contentWindow.document || loader.shell.window.document); //# ' + 'sourceURL=/SHELL-docwrite.html\n' +
+                '})(loader.shell.contentWindow.document || loader.shell.window.document); //# ' + 'sourceURL=/SHELL-frame.html\n' +
                 '//</' + 'script>\n'
             : '') +
         (options.delayed_shell_html ?
-            '<' + 'script data-legit=mi> // pushing SHELL: delayed\n' +
+            '<' + 'script data-legit=mi> /* SHELL: delayed */ \n' +
                 'loader.delayed_shell_html = (function() {\n' +
                 '  var doc = loader.shell.contentWindow.document || loader.shell.window.document;\n' +
                 '  return delayed_shell_html;\n' +
@@ -6036,7 +6036,7 @@ function wrapEQ80(options) {
                 '    doc.write(' + jsStringLong(options.delayed_shell_html) + ');\n' +
                 '    if (doc.close) doc.close();\n' +
                 '  }\n' +
-                '})(); //# ' + 'sourceURL=/SHELL-docwrite.html </' + 'script>\n'
+                '})(); //# ' + 'sourceURL=/SHELL-delayed.html </' + 'script>\n'
             : '') +
         '/*' + fileTotalHTML + '*/';
     checkBlownLines(result);
