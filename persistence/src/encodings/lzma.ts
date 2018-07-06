@@ -30,7 +30,7 @@ namespace encodings {
     var compress, decompress;
   }
 
-/// む 2015 Nathan Rugg <nmrugg@gmail.com> | MIT
+/// (c) 2015 Nathan Rugg <nmrugg@gmail.com> | MIT
 /// See LICENSE for more details.
 
 /* jshint noarg:true, boss:true, unused:strict, strict:true, undef:true, noarg: true, forin:true, evil:true, newcap:false, -W041, -W021, worker:true, browser:true, node:true */
@@ -50,9 +50,9 @@ namespace encodings {
 
 /* SLASH
 var LZMA = (function () {
-    
+
     "use strict";
-    
+
 */
 var /** cs */
   action_compress   = 1,
@@ -971,7 +971,7 @@ function $CodeOneChunk(this$static) {
             return -1;
           }
         }
-      } else 
+      } else
         this$static.rep0 = posSlot;
     }
     if (compare(fromInt(this$static.rep0), this$static.nowPos64) >= 0 || this$static.rep0 >= this$static.m_DictionarySizeCheck) {

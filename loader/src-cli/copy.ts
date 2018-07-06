@@ -95,8 +95,8 @@ function copy() {
 
     function copyAll() {
       var root = path.resolve(process.cwd());
-      var sourcePath = path.join(root,'index.html');
-      var srcDirPath = path.join(root, 'src');
+      var sourcePath = path.resolve(root,'index.html');
+      var srcDirPath = path.resolve(root, 'src');
       if (!fs.existsSync(sourcePath) || fs.statSync(sourcePath).isDirectory()) {
         console.log('[EQ80] Run without parameters and not from original directory (looking for '+sourcePath+'): the default action of shell extraction and update cannot be performed.');
         return;
@@ -105,12 +105,16 @@ function copy() {
       var targetShells = fs.readdirSync(root);
       // leave only .html files in the list
       for (var i = 0; i < targetShells.length; i++) {
-        if (/\.html\.updated\.html$/.test(targetShells[i]) || !/\.html$/.test(targetShells[i])) {
+        let targetShellPath = path.resolve(root, targetShells[i]);
+
+        if (/\.html\.updated\.html$/.test(targetShellPath)
+          || !/\.html$/.test(targetShellPath)
+          || targetShellPath === sourcePath) {
           targetShells.splice(i,1);
           i--;
         }
         else {
-          targetShells[i] = path.resolve(root, targetShells[i]);
+          targetShells[i] = targetShellPath;
         }
       }
 
@@ -119,16 +123,22 @@ function copy() {
         return;
       }
 
+      interface ParseShellEntry extends ParseShellResult {
+        content?: string;
+        path?: string;
+      }
+
       console.log('Processing '+targetShells.length+' shells...');
-      var parsedShells = [];
-      var latestParsed;
+      var parsedShells: ParseShellEntry[] = [];
+      var latestParsed: ParseShellEntry;
       for (var i = 0; i <targetShells.length; i++) {
 
         // HACK: limit the count for debugging
         //if (parsedShells.length>=3 && !/(index|empty)\.html/.test(targetShells[i])) continue;
 
         var content = fs.readFileSync(targetShells[i])+'';
-        var parsed = parseShell(content);
+        var parsed: ParseShellEntry = parseShell(content);
+
         if (!parsed) continue;
 
         parsed.content = content;
@@ -148,14 +158,17 @@ function copy() {
           return;
         }
 
-        console.log(latestParsed.path+' ('+(latestParsed.totals ? new Date(latestParsed.totals.timestamp) : 'no timestamp')+') to be copied to '+(parsedShells.length-1)+' shells');
+        var now = Date.now();
+        console.log(latestParsed.path+' ('+(latestParsed.totals ? agoText(now - latestParsed.totals.timestamp) : 'no timestamp')+') to be copied to '+(parsedShells.length-1)+' shells');
         for (var i = 0; i < parsedShells.length; i++) {
-          if (parsedShells[i].path===latestParsed.path)continue;
 
-          console.log('  ...'+parsedShells[i].path+'   '+(parsedShells[i].totals && parsedShells[i].totals.timestamp ? new Date(parsedShells[i].totals.timestamp) : ''));
+          let parsedShellEntry = parsedShells[i];
+          if (parsedShellEntry.path===latestParsed.path)continue;
+
+          process.stdout.write('  ...' + parsedShellEntry.path + '   ' + (parsedShellEntry.totals && parsedShellEntry.totals.timestamp ? agoText(now - parsedShellEntry.totals.timestamp) : ''));
           var allFiles: FileDescriptor[] = [];
-          for (var j = 0; j < parsedShells[i].files.length; j++) {
-            var entry = parsedShells[i].files[j];
+          for (var j = 0; j < parsedShellEntry.files.length; j++) {
+            var entry = parsedShellEntry.files[j];
             allFiles.push(entry);
           }
 
@@ -169,8 +182,37 @@ function copy() {
             },
             true /* deleteExistingFiles */);
 
-          fs.writeFileSync(parsedShells[i].path+'.bak', fs.readFileSync(parsedShells[i].path)+'');
-          fs.writeFileSync(parsedShells[i].path, updatedHTML);
+          fs.writeFileSync(parsedShellEntry.path + '.bak', parsedShellEntry.content);
+          fs.writeFileSync(parsedShellEntry.path, updatedHTML);
+
+          var formatSizeApprox = (size) => {
+            let totalStr = persistence.formatTotalsInner(0, size);
+            // total 0, saved 28 Jun 2018 22:26:07.651 GMT+0100
+            return /total\s*([^\,\s]+)/.exec(totalStr)[1];
+          };
+
+          let parsedShellLengthStr = formatSizeApprox(parsedShellEntry.content.length);
+          let updatedLengthStr = formatSizeApprox(updatedHTML.length);
+
+          if (parsedShellLengthStr !== updatedLengthStr) {
+            let changeRatio = 100 * (updatedHTML.length - parsedShellEntry.content.length) / parsedShellEntry.content.length;
+            let changeSign = changeRatio > 0 ? '+' : changeRatio < 0 ? '-' : '';
+            changeRatio = Math.abs(changeRatio);
+            console.log(' ' + parsedShellLengthStr + '->' + updatedLengthStr +
+              (changeRatio > 2 ? ' (' + changeSign + changeRatio.toFixed() + '%  L A R G E   C H A N G E )' :
+              changeRatio > 0.2 ? ' (' + changeSign + changeRatio.toFixed(1) + '%)' :
+                changeRatio > 0.02 ? ' (' + changeSign + changeRatio.toFixed(2) + '%)' :
+                  ''));
+          }
+          else {
+            let changeSize = parsedShellEntry.content.length - updatedHTML.length;
+            if (changeSize > 0)
+              console.log(' ' + parsedShellLengthStr + ': saved larger by +' + formatSizeApprox(changeSize));
+            else if (changeSize < 0)
+              console.log(' ' + parsedShellLengthStr + ': saved smaller by ' + formatSizeApprox(changeSize));
+            else
+              console.log(' ' + parsedShellLengthStr + ' (exact same size)');
+          }
 
           parsedShells[i] = null;
         }
@@ -178,8 +220,41 @@ function copy() {
       }
     }
 
-    function parseShell(fileContent) {
-      var versions = {} as any;
+    function agoText(ago: number) {
+      if (ago <= 5000)
+        return 'just now';
+      else if (ago <= 2 * 60 * 1000)
+        return Math.round(ago / 1000) + ' seconds ago';
+      else if (ago < 2 * 60 * 60 * 1000)
+        return Math.round(ago / 60 / 1000) + ' minutes ago';
+      else if (ago < 48 * 60 * 60 * 1000)
+        return Math.round(ago / 60 / 60 / 1000) + ' hours ago';
+      else if (ago < 356 * 24 * 60 * 60 * 1000)
+        return Math.round(ago / 24 / 60 / 60 / 1000) + ' days ago';
+      else
+        return Math.round(ago / 365.2 / 24 / 60 / 60 / 1000) + ' years ago';
+    }
+
+    interface PersistenceParseResult {
+      files: { path: string; content: string; start: number; end: number; }[]; totals: { size?: number; timestamp?: number; start: number; end: number; };
+    }
+    interface ParseShellResult extends PersistenceParseResult {
+      versions?: {
+        loader?: string,
+        persistence?: string,
+        isolation?: string,
+        shell?: string
+      }
+    }
+
+    function parseShell(fileContent: string) {
+      var versions = {} as {
+        loader?: string,
+        persistence?: string,
+        isolation?: string,
+        shell?: string
+      };
+
       extractVersions(fileContent, function(name, details) { versions[name||'shell'] = details; });
       extractCompressedDocWrite(fileContent, function(decompressed) {
         extractVersions(decompressed, function(name, details) { versions[name||'shell'] = details; });
@@ -188,7 +263,7 @@ function copy() {
       if (!versions.loader || !versions.persistence || !versions.isolation || !versions.shell)
         return null;
 
-      var parsed = persistence.parseHTML(fileContent);
+      var parsed = persistence.parseHTML(fileContent) as ParseShellResult;
       parsed.versions = versions;
 
       return parsed;
@@ -336,7 +411,10 @@ function copy() {
     outputParsed,
     inputAllFiles: FileDescriptor[],
     readInputContent: (file: FileDescriptor) => string,
-    deleteExistingFiles?: boolean) {
+    deleteExistingFiles?: boolean,
+    _console?: typeof console) {
+
+    if (!_console) _console = console;
 
     // map to find matchings
     var outputFileMap = {};
@@ -378,7 +456,7 @@ function copy() {
 
         writtenFiles++;
         if (writtenFiles%500===0) {
-          console.log('  '+writtenFiles+'. '+matchingInputFile.path+' (overwrite)');
+          _console.log('  '+writtenFiles+'. '+matchingInputFile.path+' (overwrite)');
         }
       }
       else if (deleteExistingFiles) {
@@ -416,11 +494,14 @@ function copy() {
 
       writtenFiles++;
       if (writtenFiles%500===0) {
-        console.log('  '+writtenFiles+'. '+newFile.path+' (new)');
+        _console.log('  '+writtenFiles+'. '+newFile.path+' (new)');
       }
     }
 
     var resultHTML = beforeInsertionPoint + resultBuf.join('');
+
+    build.checkBlownLines(resultHTML);
+
 
     return resultHTML;
   }

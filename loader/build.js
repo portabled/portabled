@@ -61,7 +61,8 @@ var wrapped = build.wrapScript({
     	'  exports.functionArgs = functionArgs;\n'+
     	'  exports.wrapScript = wrapScript;\n'+
     	'  exports.substitute = substitute;\n'+
-    	'  exports.wrapEQ80 = wrapEQ80;\n'+
+      '  exports.wrapEQ80 = wrapEQ80;\n' +
+      '  exports.checkBlownLines = checkBlownLines;\n' +
     	'  exports.getFiles = getFiles;\n'+
   		'\n'+
   		'  persistence();\n'+

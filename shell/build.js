@@ -46,6 +46,7 @@ var miOpts = {
 };
 miOpts.files.filterFiles = function (target, source) {
   if (/^\/[^\/]+\.html$/.test(target)
+    || /^\/[^\/]+\.bak$/.test(target)
     || /\/\.[a-z0-9]/i.test(source)) {
     //console.log('   ...skip ' + target + ' from ' + source);
     return false;

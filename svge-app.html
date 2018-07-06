@@ -2765,7 +2765,7 @@ svgEditor.addExtension('ClosePath', function() {'use strict';
  * Copyright(c) 2010 Alexis Deveria
  *
  */
- 
+
 svgEditor.addExtension("Connector", function(S) {
 	var svgcontent = S.svgcontent,
 		svgroot = S.svgroot,
@@ -2786,7 +2786,7 @@ svgEditor.addExtension("Connector", function(S) {
 //		connect_str = "-SE_CONNECT-",
 		selElems = [],
 		elData = $.data;
-		
+
 	var lang_list = {
 		"en":[
 			{"id": "mode_connect", "title": "Connect two objects" }
@@ -2805,23 +2805,23 @@ svgEditor.addExtension("Connector", function(S) {
 			bb.x -= offset/2;
 			bb.y -= offset/2;
 		}
-	
+
 		var mid_x = bb.x + bb.width/2;
 		var mid_y = bb.y + bb.height/2;
 		var len_x = x - mid_x;
 		var len_y = y - mid_y;
-		
+
 		var slope = Math.abs(len_y/len_x);
-		
+
 		var ratio;
-		
+
 		if(slope < bb.height/bb.width) {
 			ratio = (bb.width/2) / Math.abs(len_x);
 		} else {
 			ratio = (bb.height/2) / Math.abs(len_y);
 		}
-		
-		
+
+
 		return {
 			x: mid_x + len_x * ratio,
 			y: mid_y + len_y * ratio
@@ -2836,16 +2836,16 @@ svgEditor.addExtension("Connector", function(S) {
 		var size = line.getAttribute('stroke-width') * 5;
 		return give_offset ? size : 0;
 	}
-	
+
 	function showPanel(on) {
 		var conn_rules = $('#connector_rules');
 		if(!conn_rules.length) {
 			conn_rules = $('<style id="connector_rules"></style>').appendTo('head');
-		} 
+		}
 		conn_rules.text(!on?"":"#tool_clone, #tool_topath, #tool_angle, #xy_panel { display: none !important; }");
 		$('#connector_panel').toggle(on);
 	}
-	
+
 	function setPoint(elem, pos, x, y, setMid) {
 		var i, pts = elem.points;
 		var pt = svgroot.createSVGPoint();
@@ -2863,9 +2863,9 @@ svgEditor.addExtension("Connector", function(S) {
 					pt_arr[i] = x + ',' + y;
 				}
 			}
-			elem.setAttribute("points",pt_arr.join(" ")); 
+			elem.setAttribute("points",pt_arr.join(" "));
 		}
-		
+
 		if(setMid) {
 			// Add center point
 			var pt_start = pts.getItem(0);
@@ -2873,7 +2873,7 @@ svgEditor.addExtension("Connector", function(S) {
 			setPoint(elem, 1, (pt_end.x + pt_start.x)/2, (pt_end.y + pt_start.y)/2);
 		}
 	}
-	
+
 	function updateLine(diff_x, diff_y) {
 		// Update line with element
 		var i = connections.length;
@@ -2881,34 +2881,34 @@ svgEditor.addExtension("Connector", function(S) {
 			var conn = connections[i];
 			var line = conn.connector;
 			var elem = conn.elem;
-			
+
 			var pre = conn.is_start?'start':'end';
 //						var sw = line.getAttribute('stroke-width') * 5;
-			
+
 			// Update bbox for this element
 			var bb = elData(line, pre+'_bb');
 			bb.x = conn.start_x + diff_x;
 			bb.y = conn.start_y + diff_y;
 			elData(line, pre+'_bb', bb);
-			
+
 			var alt_pre = conn.is_start?'end':'start';
-			
+
 			// Get center pt of connected element
 			var bb2 = elData(line, alt_pre+'_bb');
 			var src_x = bb2.x + bb2.width/2;
 			var src_y = bb2.y + bb2.height/2;
-			
+
 			// Set point of element being moved
 			var pt = getBBintersect(src_x, src_y, bb, getOffset(pre, line)); // $(line).data(pre+'_off')?sw:0
 			setPoint(line, conn.is_start ? 0 : 'end', pt.x, pt.y, true);
-			
+
 			// Set point of connected element
 			var pt2 = getBBintersect(pt.x, pt.y, elData(line, alt_pre + '_bb'), getOffset(alt_pre, line));
 			setPoint(line, conn.is_start ? 'end' : 0, pt2.x, pt2.y, true);
 
 		}
 	}
-	
+
 	function findConnectors(elems) {
 		var i;
 		if (!elems) {elems = selElems;}
@@ -2926,14 +2926,14 @@ svgEditor.addExtension("Connector", function(S) {
 			}
 			var start = elData(this, "c_start");
 			var end = elData(this, "c_end");
-			
+
 			var parts = [getElem(start), getElem(end)];
 			for (i = 0; i < 2; i++) {
 				var c_elem = parts[i];
 				add_this = false;
 				// The connected element might be part of a selected group
 				$(c_elem).parents().each(add);
-				
+
 				if(!c_elem || !c_elem.parentNode) {
 					$(this).remove();
 					continue;
@@ -2946,12 +2946,12 @@ svgEditor.addExtension("Connector", function(S) {
 						is_start: (i === 0),
 						start_x: bb.x,
 						start_y: bb.y
-					});	
+					});
 				}
 			}
 		});
 	}
-	
+
 	function updateConnectors(elems) {
 		// Updates connector lines based on selected elements
 		// Is not used on mousemove, as it runs getStrokedBBox every time,
@@ -2968,29 +2968,29 @@ svgEditor.addExtension("Connector", function(S) {
 
 				var sw = line.getAttribute('stroke-width') * 5;
 				var pre = conn.is_start?'start':'end';
-				
+
 				// Update bbox for this element
 				var bb = svgCanvas.getStrokedBBox([elem]);
 				bb.x = conn.start_x;
 				bb.y = conn.start_y;
 				elData(line, pre+'_bb', bb);
 				var add_offset = elData(line, pre+'_off');
-			
+
 				var alt_pre = conn.is_start?'end':'start';
-				
+
 				// Get center pt of connected element
 				var bb2 = elData(line, alt_pre+'_bb');
 				var src_x = bb2.x + bb2.width/2;
 				var src_y = bb2.y + bb2.height/2;
-				
+
 				// Set point of element being moved
 				var pt = getBBintersect(src_x, src_y, bb, getOffset(pre, line));
 				setPoint(line, conn.is_start ? 0 : 'end', pt.x, pt.y, true);
-				
+
 				// Set point of connected element
 				var pt2 = getBBintersect(pt.x, pt.y, elData(line, alt_pre + '_bb'), getOffset(alt_pre, line));
 				setPoint(line, conn.is_start ? 'end' : 0, pt2.x, pt2.y, true);
-				
+
 				// Update points attribute manually for webkit
 				if (navigator.userAgent.indexOf('AppleWebKit') !== -1) {
 					var pts = line.points;
@@ -3000,37 +3000,37 @@ svgEditor.addExtension("Connector", function(S) {
 						pt = pts.getItem(j);
 						pt_arr[j] = pt.x + ',' + pt.y;
 					}
-					line.setAttribute('points', pt_arr.join(' ')); 
+					line.setAttribute('points', pt_arr.join(' '));
 				}
 			}
 		}
 	}
-	
+
 	// Do once
 	(function() {
 		var gse = svgCanvas.groupSelectedElements;
-		
+
 		svgCanvas.groupSelectedElements = function() {
 			svgCanvas.removeFromSelection($(conn_sel).toArray());
 			return gse.apply(this, arguments);
 		};
-		
+
 		var mse = svgCanvas.moveSelectedElements;
-		
+
 		svgCanvas.moveSelectedElements = function() {
 			svgCanvas.removeFromSelection($(conn_sel).toArray());
 			var cmd = mse.apply(this, arguments);
 			updateConnectors();
 			return cmd;
 		};
-		
+
 		se_ns = svgCanvas.getEditorNS();
 	}());
-	
+
 	// Do on reset
 	function init() {
 		// Make sure all connectors have data set
-		$(svgcontent).find('*').each(function() { 
+		$(svgcontent).find('*').each(function() {
 			var conn = this.getAttributeNS(se_ns, "connector");
 			if(conn) {
 				this.setAttribute('class', conn_sel.substr(1));
@@ -3048,13 +3048,13 @@ svgEditor.addExtension("Connector", function(S) {
 	}
 
 //		$(svgroot).parent().mousemove(function(e) {
-// //			if(started 
+// //			if(started
 // //				|| svgCanvas.getMode() != "connector"
 // //				|| e.target.parentNode.parentNode != svgcontent) return;
 //
 //			console.log('y')
 // //			if(e.target.parentNode.parentNode === svgcontent) {
-// //					
+// //
 // //			}
 //		});
 
@@ -3087,27 +3087,27 @@ svgEditor.addExtension("Connector", function(S) {
 			start_x = opts.start_x;
 			start_y = opts.start_y;
 			var mode = svgCanvas.getMode();
-			
+
 			if (mode == "connector") {
-				
+
 				if (started) {return;}
 
 				var mouse_target = e.target;
-				
+
 				var parents = $(mouse_target).parents();
-				
+
 				if($.inArray(svgcontent, parents) !== -1) {
 					// Connectable element
-					
+
 					// If child of foreignObject, use parent
 					var fo = $(mouse_target).closest("foreignObject");
 					start_elem = fo.length ? fo[0] : mouse_target;
-					
+
 					// Get center of source element
 					var bb = svgCanvas.getStrokedBBox([start_elem]);
 					var x = bb.x + bb.width/2;
 					var y = bb.y + bb.height/2;
-					
+
 					started = true;
 					cur_line = addElem({
 						"element": "polyline",
@@ -3136,27 +3136,27 @@ svgEditor.addExtension("Connector", function(S) {
 			var e = opts.event;
 			var x = opts.mouse_x/zoom;
 			var y = opts.mouse_y/zoom;
-			
+
 			var	diff_x = x - start_x,
 				diff_y = y - start_y;
-								
+
 			var mode = svgCanvas.getMode();
-			
+
 			if (mode == "connector" && started) {
-				
+
 				var sw = cur_line.getAttribute('stroke-width') * 3;
 				// Set start point (adjusts based on bb)
 				var pt = getBBintersect(x, y, elData(cur_line, 'start_bb'), getOffset('start', cur_line));
 				start_x = pt.x;
 				start_y = pt.y;
-				
+
 				setPoint(cur_line, 0, pt.x, pt.y, true);
-				
+
 				// Set end point
 				setPoint(cur_line, 'end', x, y, true);
 			} else if (mode == "select") {
 				var slen = selElems.length;
-				
+
 				while(slen--) {
 					var elem = selElems[slen];
 					// Look for selected connector elements
@@ -3170,9 +3170,9 @@ svgEditor.addExtension("Connector", function(S) {
 				if(connections.length) {
 					updateLine(diff_x, diff_y);
 
-					
+
 				}
-			} 
+			}
 		},
 		mouseUp: function(opts) {
 			var zoom = svgCanvas.getZoom();
@@ -3180,11 +3180,11 @@ svgEditor.addExtension("Connector", function(S) {
 				x = opts.mouse_x/zoom,
 				y = opts.mouse_y/zoom,
 				mouse_target = e.target;
-			
+
 			if(svgCanvas.getMode() == "connector") {
 				var fo = $(mouse_target).closest("foreignObject");
 				if (fo.length) {mouse_target = fo[0];}
-				
+
 				var parents = $(mouse_target).parents();
 
 				if (mouse_target == start_elem) {
@@ -3208,7 +3208,7 @@ svgEditor.addExtension("Connector", function(S) {
 				}
 				// Valid end element
 				end_elem = mouse_target;
-					
+
 				var start_id = start_elem.id, end_id = end_elem.id;
 				var conn_str = start_id + " " + end_id;
 				var alt_str = end_id + " " + start_id;
@@ -3225,9 +3225,9 @@ svgEditor.addExtension("Connector", function(S) {
 						started: false
 					};
 				}
-				
+
 				var bb = svgCanvas.getStrokedBBox([end_elem]);
-				
+
 				var pt = getBBintersect(start_x, start_y, bb, getOffset('start', cur_line));
 				setPoint(cur_line, 'end', pt.x, pt.y, true);
 				$(cur_line)
@@ -3252,16 +3252,16 @@ svgEditor.addExtension("Connector", function(S) {
 		selectedChanged: function(opts) {
 			// TODO: Find better way to skip operations if no connectors are in use
 			if(!$(svgcontent).find(conn_sel).length) {return;}
-			
+
 			if(svgCanvas.getMode() == 'connector') {
 				svgCanvas.setMode('select');
 			}
-			
+
 			// Use this to update the current selected elements
 			selElems = opts.elems;
-			
+
 			var i = selElems.length;
-			
+
 			while(i--) {
 				var elem = selElems[i];
 				if(elem && elData(elem, 'c_start')) {
@@ -3285,7 +3285,7 @@ svgEditor.addExtension("Connector", function(S) {
 				svgcontent = elem;
 				init();
 			}
-			
+
 			// Has marker, so change offset
 			var start;
 			if (elem && (
@@ -3300,16 +3300,16 @@ svgEditor.addExtension("Connector", function(S) {
 				$(elem)
 					.data("start_off", !!start)
 					.data("end_off", !!end);
-				
+
 				if (elem.tagName === 'line' && mid) {
 					// Convert to polyline to accept mid-arrow
-					
+
 					var x1 = Number(elem.getAttribute('x1'));
 					var x2 = Number(elem.getAttribute('x2'));
 					var y1 = Number(elem.getAttribute('y1'));
 					var y2 = Number(elem.getAttribute('y2'));
 					var id = elem.id;
-					
+
 					var mid_pt = (' '+((x1+x2)/2)+','+((y1+y2)/2) + ' ');
 					var pline = addElem({
 						"element": "polyline",
@@ -3376,7 +3376,7 @@ svgEditor.addExtension("eyedropper", function(S) {'use strict';
 		addToHistory = function(cmd) { svgCanvas.undoMgr.addCommandToHistory(cmd); },
 		currentStyle = {
 			fillPaint: "red", fillOpacity: 1.0,
-			strokePaint: "black", strokeOpacity: 1.0, 
+			strokePaint: "black", strokeOpacity: 1.0,
 			strokeWidth: 5, strokeDashArray: null,
 			opacity: 1.0,
 			strokeLinecap: 'butt',
@@ -3413,7 +3413,7 @@ svgEditor.addExtension("eyedropper", function(S) {'use strict';
 		}
 
 	}
-	
+
 	return {
 		name: "eyedropper",
 		svgicons: svgEditor.curConfig.extPath + "eyedropper-icon.xml",
@@ -3428,11 +3428,11 @@ svgEditor.addExtension("eyedropper", function(S) {'use strict';
 				}
 			}
 		}],
-		
+
 		// if we have selected an element, grab its paint and enable the eye dropper button
 		selectedChanged: getStyle,
 		elementChanged: getStyle,
-		
+
 		mouseDown: function(opts) {
 			var mode = svgCanvas.getMode();
 			if (mode == "eyedropper") {
@@ -3445,7 +3445,7 @@ svgEditor.addExtension("eyedropper", function(S) {'use strict';
 						changes[attrname] = elem.getAttribute(attrname);
 						elem.setAttribute(attrname, newvalue);
 					};
-					
+
 					if (currentStyle.fillPaint) {change(target, "fill", currentStyle.fillPaint);}
 					if (currentStyle.fillOpacity) {change(target, "fill-opacity", currentStyle.fillOpacity);}
 					if (currentStyle.strokePaint) {change(target, "stroke", currentStyle.strokePaint);}
@@ -3455,7 +3455,7 @@ svgEditor.addExtension("eyedropper", function(S) {'use strict';
 					if (currentStyle.opacity) {change(target, "opacity", currentStyle.opacity);}
 					if (currentStyle.strokeLinecap) {change(target, "stroke-linecap", currentStyle.strokeLinecap);}
 					if (currentStyle.strokeLinejoin) {change(target, "stroke-linejoin", currentStyle.strokeLinejoin);}
-					
+
 					addToHistory(new ChangeElementCommand(target, changes));
 				}
 			}
@@ -3471,8 +3471,8 @@ svgEditor.addExtension("eyedropper", function(S) {'use strict';
  *
  * Licensed under the Apache License, Version 2
  *
- * Copyright(c) 2010 Jacques Distler 
- * Copyright(c) 2010 Alexis Deveria 
+ * Copyright(c) 2010 Jacques Distler
+ * Copyright(c) 2010 Alexis Deveria
  *
  */
 
@@ -3643,7 +3643,7 @@ svgEditor.addExtension("foreignObject", function(S) {
 						} else {
 							endChanges();
 						}
-						// setSelectMode();	
+						// setSelectMode();
 					});
 
 				var cancel = $('#tool_source_cancel').clone()
@@ -3908,13 +3908,13 @@ svgEditor.addExtension('view_grid', function() { 'use strict';
  * Copyright(c) 2010 Alexis Deveria
  *
  */
- 
-/* 
+
+/*
 	This is a very basic SVG-Edit extension. It adds a "Hello World" button in
 	the left panel. Clicking on the button, and then the canvas will show the
 	user the point on the canvas that was clicked on.
 */
- 
+
 svgEditor.addExtension("Hello World", function() {'use strict';
 
 		return {
@@ -3922,55 +3922,55 @@ svgEditor.addExtension("Hello World", function() {'use strict';
 			// For more notes on how to make an icon file, see the source of
 			// the helloworld-icon.xml
 			svgicons: svgEditor.curConfig.extPath + "helloworld-icon.xml",
-			
+
 			// Multiple buttons can be added in this array
 			buttons: [{
 				// Must match the icon ID in helloworld-icon.xml
-				id: "hello_world", 
-				
+				id: "hello_world",
+
 				// This indicates that the button will be added to the "mode"
 				// button panel on the left side
-				type: "mode", 
-				
+				type: "mode",
+
 				// Tooltip text
-				title: "Say 'Hello World'", 
-				
+				title: "Say 'Hello World'",
+
 				// Events
 				events: {
 					'click': function() {
 						// The action taken when the button is clicked on.
-						// For "mode" buttons, any other button will 
+						// For "mode" buttons, any other button will
 						// automatically be de-pressed.
 						svgCanvas.setMode("hello_world");
 					}
 				}
 			}],
-			// This is triggered when the main mouse button is pressed down 
+			// This is triggered when the main mouse button is pressed down
 			// on the editor canvas (not the tool panels)
 			mouseDown: function() {
 				// Check the mode on mousedown
 				if(svgCanvas.getMode() == "hello_world") {
-				
-					// The returned object must include "started" with 
+
+					// The returned object must include "started" with
 					// a value of true in order for mouseUp to be triggered
 					return {started: true};
 				}
 			},
-			
+
 			// This is triggered from anywhere, but "started" must have been set
 			// to true (see above). Note that "opts" is an object with event info
 			mouseUp: function(opts) {
 				// Check the mode on mouseup
 				if(svgCanvas.getMode() == "hello_world") {
 					var zoom = svgCanvas.getZoom();
-					
+
 					// Get the actual coordinate by dividing by the zoom value
 					var x = opts.mouse_x / zoom;
 					var y = opts.mouse_y / zoom;
-					
-					var text = "Hello World!\n\nYou clicked here: " 
+
+					var text = "Hello World!\n\nYou clicked here: "
 						+ x + ", " + y;
-						
+
 					// Show the text using the custom alert function
 					$.alert(text);
 				}
@@ -3991,19 +3991,19 @@ svgEditor.addExtension("Hello World", function() {'use strict';
  *
  * Licensed under the Apache License, Version 2
  *
- * Copyright(c) 2010 Will Schleter 
+ * Copyright(c) 2010 Will Schleter
  *   based on ext-arrows.js by Copyright(c) 2010 Alexis Deveria
  *
  * This extension provides for the addition of markers to the either end
- * or the middle of a line, polyline, path, polygon. 
- * 
+ * or the middle of a line, polyline, path, polygon.
+ *
  * Markers may be either a graphic or arbitary text
- * 
+ *
  * to simplify the coding and make the implementation as robust as possible,
  * markers are not shared - every object has its own set of markers.
  * this relationship is maintained by a naming convention between the
  * ids of the markers and the ids of the object
- * 
+ *
  * The following restrictions exist for simplicty of use and programming
  *    objects and their markers to have the same color
  *    marker size is fixed
@@ -4027,15 +4027,15 @@ svgEditor.addExtension("Markers", function(S) {
 
 	var marker_prefix = 'se_marker_';
 	var id_prefix = 'mkr_';
-		
+
 	// note - to add additional marker types add them below with a unique id
 	// and add the associated icon(s) to marker-icons.svg
 	// the geometry is normallized to a 100x100 box with the origin at lower left
 	// Safari did not like negative values for low left of viewBox
 	// remember that the coordinate system has +y downward
 	var marker_types = {
-		nomarker: {},  
-		leftarrow:  
+		nomarker: {},
+		leftarrow:
 			{element:'path', attr:{d:'M0,50 L100,90 L70,50 L100,10 Z'}},
 		rightarrow:
 			{element:'path', attr:{d:'M100,50 L0,90 L30,50 L0,10 Z'}},
@@ -4057,10 +4057,10 @@ svgEditor.addExtension("Markers", function(S) {
 		triangle:
 			{element:'path', attr:{d:'M10,80 L50,20 L80,80 Z'}},
 		mcircle:
-			{element:'circle', attr:{r:30, cx:50, cy:50}}			
+			{element:'circle', attr:{r:30, cx:50, cy:50}}
 	};
-	
-	
+
+
 	var lang_list = {
 		"en":[
 			{id: "start_marker_list", title: "Select start marker type" },
@@ -4092,7 +4092,7 @@ svgEditor.addExtension("Markers", function(S) {
 	$.each(['leftarrow','rightarrow','box','star','mcircle','triangle'],function(i,v) {
 		marker_types[v+'_o'] = marker_types[v];
 	});
-	
+
 	// elem = a graphic element will have an attribute like marker-start
 	// attr - marker-start, marker-mid, or marker-end
 	// returns the marker element that is linked to the graphic element
@@ -4141,24 +4141,24 @@ svgEditor.addExtension("Markers", function(S) {
 						txtbox.hide(); // hide text box
 					}
 				}
-				txtbox.val(val);				
+				txtbox.val(val);
 				setIcon(pos,ci);
 			});
 		}
-	}	
+	}
 
 	function addMarker(id, val) {
 		var txt_box_bg = '#ffffff';
 		var txt_box_border = 'none';
 		var txt_box_stroke_width = 0;
-		
+
 		var marker = S.getElem(id);
 
 		if (marker) {return;}
 
 		if (val == '' || val == '\\nomarker') {return;}
 
-		var el = selElems[0];		 
+		var el = selElems[0];
 		var color = el.getAttribute('stroke');
 		//NOTE: Safari didn't like a negative value in viewBox
 		//so we use a standardized 0 0 100 100
@@ -4174,7 +4174,7 @@ svgEditor.addExtension("Markers", function(S) {
 		else {se_type = 'textmarker';}
 
 		if (!marker_types[se_type]) {return;} // an unknown type!
-		
+
 		// create a generic marker
 		marker = addElem({
 			"element": "marker",
@@ -4232,7 +4232,7 @@ svgEditor.addExtension("Markers", function(S) {
 			marker.setAttribute("orient",0);
 			marker.appendChild(box);
 			marker.appendChild(text);
-		} 
+		}
 
 		marker.setAttribute("viewBox",viewBox);
 		marker.setAttribute("markerWidth", markerWidth);
@@ -4273,11 +4273,11 @@ svgEditor.addExtension("Markers", function(S) {
 			var m = elem.getAttribute(nam);
 			if (m) {pline.setAttribute(nam,elem.getAttribute(nam));}
 		});
-		
+
 		var batchCmd = new S.BatchCommand();
 		batchCmd.addSubCommand(new S.RemoveElementCommand(elem, elem.parentNode));
 		batchCmd.addSubCommand(new S.InsertElementCommand(pline));
-		
+
 		$(elem).after(pline).remove();
 		svgCanvas.clearSelection();
 		pline.id = id;
@@ -4393,19 +4393,19 @@ svgEditor.addExtension("Markers", function(S) {
 	*/
 	// callback function for a toolbar button click
 	function setArrowFromButton(obj) {
-		
+
 		var parts = this.id.split('_');
 		var pos = parts[1];
 		var val = parts[2];
 		if (parts[3]) { val += '_' + parts[3];}
-		
+
 		if (val != 'textmarker') {
 			triggerTextEntry(pos, '\\'+val);
 		} else {
 			showTextPrompt(pos);
 		}
 	}
-	
+
 	function getTitle(lang, id) {
 		var i, list = lang_list[lang];
 		for (i in list) {
@@ -4415,8 +4415,8 @@ svgEditor.addExtension("Markers", function(S) {
 		}
 		return id;
 	}
-	
-	
+
+
 	// build the toolbar button array from the marker definitions
 	// TODO: need to incorporate language specific titles
 	function buildButtonList() {
@@ -4520,7 +4520,7 @@ svgEditor.addExtension("Markers", function(S) {
 		} ],
 		callback: function() {
 			$('#marker_panel').addClass('toolset').hide();
-			
+
 		},
 		addLangData: function(lang) {
 			return { data: lang_list[lang] };
@@ -4548,7 +4548,7 @@ svgEditor.addExtension("Markers", function(S) {
 		}
 	},
 
-	elementChanged: function(opts) {		
+	elementChanged: function(opts) {
 		//console.log('elementChanged',opts);
 		var elem = opts.elems[0];
 		if (elem && (
@@ -4629,15 +4629,15 @@ svgEditor.addExtension("mathjax", function() {'use strict';
     MathJax.Hub.queue.Push(['Text', math, '\\displaystyle{' + code + '}']);
 
     /*
-     * The MathJax library doesn't want to bloat your webpage so it creates 
-     * every symbol (glymph) you need only once. These are saved in a <svg> on  
+     * The MathJax library doesn't want to bloat your webpage so it creates
+     * every symbol (glymph) you need only once. These are saved in a <svg> on
      * the top of your html document, just under the body tag. Each glymph has
      * its unique id and is saved as a <path> in the <defs> tag of the <svg>
-     * 
+     *
      * Then when the symbols are needed in the rest of your html document they
      * are refferd to by a <use> tag.
-     * Because of bug 1076 we can't just grab the defs tag on the top and add it 
-     * to your formula's <svg> and copy the lot. So we have to replace each 
+     * Because of bug 1076 we can't just grab the defs tag on the top and add it
+     * to your formula's <svg> and copy the lot. So we have to replace each
      * <use> tag by it's <path>.
      */
     MathJax.Hub.queue.Push(
@@ -4690,7 +4690,7 @@ svgEditor.addExtension("mathjax", function() {'use strict';
         title: "Add Mathematics",
         events: {
           click: function() {
-            // Only load Mathjax when needed, we don't want to strain Svg-Edit any more. 
+            // Only load Mathjax when needed, we don't want to strain Svg-Edit any more.
             // From this point on it is very probable that it will be needed, so load it.
             if (mathjaxLoaded === false) {
 
@@ -4759,7 +4759,7 @@ svgEditor.addExtension("mathjax", function() {'use strict';
           }
         }
       }],
-    
+
     mouseDown: function() {
       if (svgCanvas.getMode() === "mathjax") {
         return {started: true};
@@ -4888,12 +4888,12 @@ svgEditor.addExtension("overview_window", function() {	'use strict';
 		var windowHeight=parseFloat($("#svgcanvas").css("height"));
 		var overviewWidth=$("#overviewMiniView").attr("width");
 		var overviewHeight=$("#overviewMiniView").attr("height");
-		
+
 		var viewBoxX=portX/windowWidth*overviewWidth;
 		var viewBoxY=portY/windowHeight*overviewHeight;
 		var viewBoxWidth=portWidth/windowWidth*overviewWidth;
 		var viewBoxHeight=portHeight/windowHeight*overviewHeight;
-		
+
 		$("#overview_window_view_box").css("min-width",viewBoxWidth+"px");
 		$("#overview_window_view_box").css("min-height",viewBoxHeight+"px");
 		$("#overview_window_view_box").css("top",viewBoxY+"px");
@@ -4906,26 +4906,26 @@ svgEditor.addExtension("overview_window", function() {	'use strict';
 	});
 	$("#workarea").resize(updateViewBox);
 	updateViewBox();
-	
+
 	// Compensate for changes in zoom and canvas size.
 	var updateViewDimensions= function(){
 		var viewWidth=$("#svgroot").attr("width");
 		var viewHeight=$("#svgroot").attr("height");
 		var viewX=640;
 		var viewY=480;
-		
+
 		if(svgedit.browser.isIE())
 		{
 			// This has only been tested with Firefox 10 and IE 9 (without chrome frame).
 			// I am not sure if if is Firefox or IE that is being non compliant here.
 			// Either way the one that is noncompliant may become more compliant later.
-			//TAG:HACK  
+			//TAG:HACK
 			//TAG:VERSION_DEPENDENT
 			//TAG:BROWSER_SNIFFING
 			viewX=0;
 			viewY=0;
 		}
-		
+
 		var svgWidth_old=$("#overviewMiniView").attr("width");
 		var svgHeight_new=viewHeight/viewWidth*svgWidth_old;
 		$("#overviewMiniView").attr("viewBox",viewX+" "+viewY+" "+viewWidth+" "+viewHeight);
@@ -4933,18 +4933,18 @@ svgEditor.addExtension("overview_window", function() {	'use strict';
 		updateViewBox();
 	};
 	updateViewDimensions();
-	
+
 	// Set up the overview window as a controller for the view port.
 	overviewWindowGlobals.viewBoxDragging=false;
 	var updateViewPortFromViewBox = function(){
-	
+
 		var windowWidth =parseFloat($("#svgcanvas").css("width" ));
 		var windowHeight=parseFloat($("#svgcanvas").css("height"));
 		var overviewWidth =$("#overviewMiniView").attr("width" );
 		var overviewHeight=$("#overviewMiniView").attr("height");
 		var viewBoxX=parseFloat($("#overview_window_view_box").css("left"));
 		var viewBoxY=parseFloat($("#overview_window_view_box").css("top" ));
-		
+
 		var portX=viewBoxX/overviewWidth *windowWidth;
 		var portY=viewBoxY/overviewHeight*windowHeight;
 
@@ -4955,7 +4955,7 @@ svgEditor.addExtension("overview_window", function() {	'use strict';
 		,drag: updateViewPortFromViewBox
 		,start:function(){overviewWindowGlobals.viewBoxDragging=true; }
 		,stop :function(){overviewWindowGlobals.viewBoxDragging=false;}
-	});  
+	});
 	$("#overviewMiniView").click(function(evt){
 		// Firefox doesn't support evt.offsetX and evt.offsetY.
 		var mouseX=(evt.offsetX || evt.originalEvent.layerX);
@@ -4964,7 +4964,7 @@ svgEditor.addExtension("overview_window", function() {	'use strict';
 		var overviewHeight=$("#overviewMiniView").attr("height");
 		var viewBoxWidth =parseFloat($("#overview_window_view_box").css("min-width" ));
 		var viewBoxHeight=parseFloat($("#overview_window_view_box").css("min-height"));
- 
+
 		var viewBoxX=mouseX - 0.5 * viewBoxWidth;
 		var viewBoxY=mouseY- 0.5 * viewBoxHeight;
 		//deal with constraints
@@ -4980,12 +4980,12 @@ svgEditor.addExtension("overview_window", function() {	'use strict';
 		if(viewBoxY+viewBoxHeight>overviewHeight){
 			viewBoxY=overviewHeight-viewBoxHeight;
 		}
-		
+
 		$("#overview_window_view_box").css("top",viewBoxY+"px");
 		$("#overview_window_view_box").css("left",viewBoxX+"px");
 		updateViewPortFromViewBox();
 	});
-	
+
 	return {
 		name: "overview window",
 		canvasUpdated: updateViewDimensions,
@@ -5004,8 +5004,8 @@ svgEditor.addExtension("overview_window", function() {	'use strict';
  * Copyright(c) 2013 Luis Aguirre
  *
  */
- 
-/* 
+
+/*
 	This is a very basic SVG-Edit extension to let tablet/mobile devices panning without problem
 */
 
@@ -5091,7 +5091,7 @@ svgEditor.addExtension("polygon", function(S) {'use strict';
 		// edg = 0,
 		// undoCommand = "Not image";
 		started, newFO;
-    
+
     // var ccZoom;
     // var wEl, hEl;
     // var wOffset, hOffset;
@@ -5100,9 +5100,9 @@ svgEditor.addExtension("polygon", function(S) {'use strict';
     // var ccOpacity;
     // var brushW, brushH;
 	var shape;
-    
+
     // var ccDebug = document.getElementById('debugpanel');
-    
+
     /* var properlySourceSizeTextArea = function(){
      // TODO: remove magic numbers here and get values from CSS
      var height = $('#svg_source_container').height() - 80;
@@ -5116,23 +5116,23 @@ svgEditor.addExtension("polygon", function(S) {'use strict';
         fc_rules.text(!on ? "" : " #tool_topath { display: none !important; }");
         $('#polygon_panel').toggle(on);
     }
-    
+
 	/*
     function toggleSourceButtons(on){
         $('#tool_source_save, #tool_source_cancel').toggle(!on);
         $('#polygon_save, #polygon_cancel').toggle(on);
     }
 	*/
-    
+
     function setAttr(attr, val){
         svgCanvas.changeSelectedAttribute(attr, val);
         S.call("changed", selElems);
     }
-    
+
     function cot(n){
         return 1 / Math.tan(n);
     }
-    
+
     function sec(n){
         return 1 / Math.cos(n);
     }
@@ -5197,7 +5197,7 @@ svgEditor.addExtension("polygon", function(S) {'use strict';
                 }
             }
         }],
-        
+
         context_tools: [{
             type: "input",
             panel: "polygon_panel",
@@ -5212,19 +5212,19 @@ svgEditor.addExtension("polygon", function(S) {'use strict';
                 }
             }
         }],
-        
+
         callback: function(){
-        
+
             $('#polygon_panel').hide();
-            
+
             var endChanges = function(){
             };
-            
+
             // TODO: Needs to be done after orig icon loads
             setTimeout(function(){
                 // Create source save/cancel buttons
                 var save = $('#tool_source_save').clone().hide().attr('id', 'polygon_save').unbind().appendTo("#tool_source_back").click(function(){
-                
+
                     if (!editingitex) {
 						return;
 					}
@@ -5240,13 +5240,13 @@ svgEditor.addExtension("polygon", function(S) {'use strict';
                     else {
                         endChanges();
                     }
-                    // setSelectMode();	
+                    // setSelectMode();
                 });
-                
+
                 var cancel = $('#tool_source_cancel').clone().hide().attr('id', 'polygon_cancel').unbind().appendTo("#tool_source_back").click(function(){
                     endChanges();
                 });
-                
+
             }, 3000);
         },
         mouseDown: function(opts){
@@ -5256,10 +5256,10 @@ svgEditor.addExtension("polygon", function(S) {'use strict';
             var sRgb = svgCanvas.getColor("stroke");
             // ccSRgbEl = sRgb.substring(1, rgb.length);
             var sWidth = svgCanvas.getStrokeWidth();
-            
+
             if (svgCanvas.getMode() == "polygon") {
                 started = true;
-                
+
                 newFO = S.addSvgElementFromJson({
                     "element": "polygon",
                     "attr": {
@@ -5275,7 +5275,7 @@ svgEditor.addExtension("polygon", function(S) {'use strict';
                         "strokeWidth": sWidth
                     }
                 });
-                
+
                 return {
                     started: true
                 };
@@ -5294,7 +5294,7 @@ svgEditor.addExtension("polygon", function(S) {'use strict';
 					// orient = c.orient,
 					edg = (Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy))) / 1.5;
                 newFO.setAttributeNS(null, "edge", edg);
-                
+
                 var inradius = (edg / 2) * cot(Math.PI / sides);
                 var circumradius = inradius * sec(Math.PI / sides);
                 var points = '';
@@ -5303,10 +5303,10 @@ svgEditor.addExtension("polygon", function(S) {'use strict';
                     var angle = 2.0 * Math.PI * s / sides;
                     x = (circumradius * Math.cos(angle)) + cx;
                     y = (circumradius * Math.sin(angle)) + cy;
-                    
+
                     points += x + ',' + y + ' ';
                 }
-                
+
                 //var poly = newFO.createElementNS(NS.SVG, 'polygon');
                 newFO.setAttributeNS(null, 'points', points);
                 newFO.setAttributeNS(null, 'fill', fill);
@@ -5320,9 +5320,9 @@ svgEditor.addExtension("polygon", function(S) {'use strict';
                     started: true
                 };
             }
-            
+
         },
-        
+
         mouseUp: function(opts){
             if (svgCanvas.getMode() == "polygon") {
                 var attrs = $(newFO).attr("edge");
@@ -5333,20 +5333,20 @@ svgEditor.addExtension("polygon", function(S) {'use strict';
                     element: newFO
                 };
             }
-            
+
         },
         selectedChanged: function(opts){
             // Use this to update the current selected elements
             selElems = opts.elems;
-            
+
             var i = selElems.length;
-            
+
             while (i--) {
                 var elem = selElems[i];
                 if (elem && elem.getAttributeNS(null, 'shape') === 'regularPoly') {
                     if (opts.selectedElement && !opts.multiselected) {
                         $('#polySides').val(elem.getAttribute("sides"));
-                        
+
                         showPanel(true);
                     }
                     else {
@@ -5383,10 +5383,10 @@ svgEditor.addExtension("server_opensave", {
 	callback: function() {'use strict';
 		var Utils = svgedit.utilities;
 		var save_svg_action = '/+modify';
-		
+
 		// Create upload target (hidden iframe)
 		var target = $('<iframe name="output_frame" src="#"/>').hide().appendTo('body');
-	
+
 		svgEditor.setCustomHandlers({
 			save: function(win, data) {
 				var svg = "<?xml version=\"1.0\"?>\n" + data;
@@ -5420,7 +5420,7 @@ svgEditor.addExtension("server_opensave", {
 				top.window.location = '/'+name;
 			}
 		});
-	
+
 	}
 });
 
@@ -5464,7 +5464,7 @@ svgEditor.addExtension("server_opensave", {
 			// Create upload target (hidden iframe)
 			cancelled = false,
 			Utils = svgedit.utilities;
-	
+
 		$('<iframe name="output_frame" src="#"/>').hide().appendTo('body');
 		svgEditor.setCustomHandlers({
 			save: function(win, data) {
@@ -5506,12 +5506,12 @@ svgEditor.addExtension("server_opensave", {
 					issues = data.issues,
 					mimeType = data.mimeType,
 					quality = data.quality;
-				
+
 				if(!$('#export_canvas').length) {
 					$('<canvas>', {id: 'export_canvas'}).hide().appendTo('body');
 				}
 				c = $('#export_canvas')[0];
-				
+
 				c.width = svgCanvas.contentW;
 				c.height = svgCanvas.contentH;
 				Utils.buildCanvgCallback(function () {
@@ -5520,20 +5520,20 @@ svgEditor.addExtension("server_opensave", {
 							datauri = quality ? c.toDataURL(mimeType, quality) : c.toDataURL(mimeType),
 							// uiStrings = svgEditor.uiStrings,
 							note = '';
-						
+
 						// Check if there are issues
 						if (issues.length) {
 							pre = "\n \u2022 ";
 							note += ("\n\n" + pre + issues.join(pre));
-						} 
-						
+						}
+
 						if(note.length) {
 							alert(note);
 						}
-						
+
 						filename = getFileNameFromTitle();
 						suffix = '.' + data.type.toLowerCase();
-						
+
 						if (clientDownloadSupport(filename, suffix, datauri)) {
 							return;
 						}
@@ -5554,12 +5554,12 @@ svgEditor.addExtension("server_opensave", {
 
 		// Do nothing if client support is found
 		if (window.FileReader) {return;}
-		
+
 		// Change these to appropriate script file
 		open_svg_action = svgEditor.curConfig.extPath + 'fileopen.php?type=load_svg';
 		import_svg_action = svgEditor.curConfig.extPath + 'fileopen.php?type=import_svg';
 		import_img_action = svgEditor.curConfig.extPath + 'fileopen.php?type=import_img';
-		
+
 		// Set up function for PHP uploader to use
 		svgEditor.processFile = function(str64, type) {
 			var xmlstr;
@@ -5567,13 +5567,13 @@ svgEditor.addExtension("server_opensave", {
 				cancelled = false;
 				return;
 			}
-		
+
 			$('#dialog_box').hide();
 
 			if (type !== 'import_img') {
 				xmlstr = Utils.decode64(str64);
 			}
-			
+
 			switch (type) {
 				case 'load_svg':
 					svgCanvas.clear();
@@ -5582,14 +5582,14 @@ svgEditor.addExtension("server_opensave", {
 					break;
 				case 'import_svg':
 					svgCanvas.importSvgString(xmlstr);
-					svgEditor.updateCanvas();					
+					svgEditor.updateCanvas();
 					break;
 				case 'import_img':
 					svgCanvas.setGoodImage(str64);
 					break;
 			}
 		};
-	
+
 		// Create upload form
 		open_svg_form = $('<form>');
 		open_svg_form.attr({
@@ -5598,31 +5598,31 @@ svgEditor.addExtension("server_opensave", {
 			action: open_svg_action,
 			target: 'output_frame'
 		});
-		
+
 		// Create import form
 		import_svg_form = open_svg_form.clone().attr('action', import_svg_action);
 
 		// Create image form
 		import_img_form = open_svg_form.clone().attr('action', import_img_action);
-		
-		// It appears necessary to rebuild this input every time a file is 
+
+		// It appears necessary to rebuild this input every time a file is
 		// selected so the same file can be picked and the change event can fire.
 		function rebuildInput(form) {
 			form.empty();
 			var inp = $('<input type="file" name="svg_file">').appendTo(form);
-			
-			
+
+
 			function submit() {
 				// This submits the form, which returns the file data using svgEditor.processFile()
 				form.submit();
-				
+
 				rebuildInput(form);
 				$.process_cancel("Uploading...", function() {
 					cancelled = true;
 					$('#dialog_box').hide();
 				});
 			}
-			
+
 			if(form[0] == open_svg_form[0]) {
 				inp.change(function() {
 					// This takes care of the "are you sure" dialog box
@@ -5641,7 +5641,7 @@ svgEditor.addExtension("server_opensave", {
 				});
 			}
 		}
-		
+
 		// Create the input elements
 		rebuildInput(open_svg_form);
 		rebuildInput(import_svg_form);
@@ -5906,7 +5906,7 @@ svgEditor.addExtension('shapes', function() {'use strict';
 			start_y = opts.start_y;
 			var y = start_y;
 			var cur_style = canv.getStyle();
-		 
+
 			startClientPos.x = opts.event.clientX;
 			startClientPos.y = opts.event.clientY;
 
@@ -6326,15 +6326,15 @@ svgEditor.addExtension('storage', function() {
 			}
 		}
 	}
-	
+
 	function expireCookie (cookie) {
 		document.cookie = encodeURIComponent(cookie) + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
 	}
-	
+
 	function removeStoragePrefCookie () {
 		expireCookie('store');
 	}
-	
+
 	function emptyStorage() {
 		setSVGContentStorage('');
 		var name;
@@ -6348,7 +6348,7 @@ svgEditor.addExtension('storage', function() {
 			}
 		}
 	}
-	
+
 //	emptyStorage();
 
 	/**
@@ -6367,7 +6367,7 @@ svgEditor.addExtension('storage', function() {
 			}
 			var key;
 			if (document.cookie.match(/(?:^|;\s*)store=prefsAndContent/)) {
-				setSVGContentStorage(svgCanvas.getSvgString());			
+				setSVGContentStorage(svgCanvas.getSvgString());
 			}
 
 			svgEditor.setConfig({no_save_warning: true}); // No need for explicit saving at all once storage is on
@@ -6516,21 +6516,21 @@ svgEditor.addExtension('storage', function() {
 
 						// Reset width/height of dialog (e.g., for use by Export)
 						$('#dialog_container')[0].style.width = oldContainerWidth;
-						$('#dialog_container')[0].style.marginLeft = oldContainerMarginLeft;				
+						$('#dialog_container')[0].style.marginLeft = oldContainerMarginLeft;
 						$('#dialog_content')[0].style.height = oldContentHeight;
 						$('#dialog_container')[0].style.height = oldContainerHeight;
-						
+
 						// It should be enough to (conditionally) add to storage on
 						//   beforeunload, but if we wished to update immediately,
 						//   we might wish to try setting:
 						//       svgEditor.setConfig({noStorageOnLoad: true});
 						//   and then call:
 						//       svgEditor.loadContentAndPrefs();
-						
+
 						// We don't check for noStorageOnLoad here because
 						//   the prompt gives the user the option to store data
 						setupBeforeUnloadListener();
-						
+
 						svgEditor.storagePromptClosed = true;
 					},
 					null,
@@ -6576,10 +6576,10 @@ window.addEventListener('message', function(e) {
         case 'webapp-view':
             // Populate the contents
             pathID = e.data[1];
-            
+
             svgString = e.data[2];
             svgEditor.loadFromString(svgString);
-            
+
             /*if ($('#tool_save_file')) {
                 $('#tool_save_file').disabled = false;
             }*/
@@ -6600,7 +6600,7 @@ svgEditor.addExtension('WebAppFind', function() {
         name: 'WebAppFind',
         svgicons: svgEditor.curConfig.extPath + 'webappfind-icon.svg',
         buttons: [{
-            id: 'webappfind_save', // 
+            id: 'webappfind_save', //
             type: 'app_menu',
             title: 'Save Image back to Disk',
             position: 4, // Before 0-based index position 4 (after the regular "Save Image (S)")
@@ -6652,7 +6652,7 @@ svgEditor.addExtension('WebAppFind', function() {
  </g>
 </svg>
 </g>
-	
+
 	<g id="svg_eof"/>
 </svg>-->
 <!-- /editor/extensions/eyedropper.png [json]
@@ -6671,7 +6671,7 @@ svgEditor.addExtension('WebAppFind', function() {
  */
 	// Very minimal PHP file, all we do is Base64 encode the uploaded file and
 	// return it to the editor
-	
+
 	if (!isset($_REQUEST['type'])) {
 		echo "No type given";
 		exit;
@@ -6683,11 +6683,11 @@ svgEditor.addExtension('WebAppFind', function() {
 	}
 
 	require('allowedMimeTypes.php');
-	
+
 	$file = $_FILES['svg_file']['tmp_name'];
-	
+
 	$output = file_get_contents($file);
-	
+
 	$prefix = '';
 
 	// Make Data URL prefix for import image
@@ -6705,7 +6705,7 @@ svgEditor.addExtension('WebAppFind', function() {
 <meta charset="utf-8" />
 <script>
 
-top.svgEditor.processFile("<?php 
+top.svgEditor.processFile("<?php
 
 // This should be safe since SVG edit does its own filtering (e.g., if an SVG file contains scripts)
 echo $prefix . base64_encode($output);
@@ -6774,7 +6774,7 @@ header("Content-Type: " .  $mime);
 header("Content-Transfer-Encoding: binary");
 
 echo $contents;
- 
+
 ?>-->
 <!-- /editor/extensions/foreignobject-icons.xml
 <svg xmlns="http://www.w3.org/2000/svg">
@@ -6810,7 +6810,7 @@ echo $contents;
 		  </g>
 		</svg>
 	</g>
-	
+
 	<g id="edit_foreign">
 		<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="34 38 170 170" overflow="hidden">
 		<g fill="#000088">
@@ -6870,17 +6870,17 @@ echo $contents;
 		  </g>
 		</svg>
 	</g>
-	
+
 	<g id="svg_eof"/>
 </svg>-->
 <!-- /editor/extensions/grid-icon.xml
 <svg xmlns="http://www.w3.org/2000/svg">
-<*!-- 
+<*!--
 	Sample icons file. This file looks like an SVG file with groups as its
 	children. Each group element has an ID that must match the ID of the button given
 	in the extension. The SVG inside the group makes up the actual icon, and
 	needs use a viewBox instead of width/height for it to scale	properly.
-	
+
 	Multiple icons can be included, each within their own group.
 --*>
 	<g id="view_grid">
@@ -6907,12 +6907,12 @@ echo $contents;
 -->
 <!-- /editor/extensions/helloworld-icon.xml
 <svg xmlns="http://www.w3.org/2000/svg">
-<*!-- 
+<*!--
 	Sample icons file. This file looks like an SVG file with groups as its
 	children. Each group element has an ID that must match the ID of the button given
 	in the extension. The SVG inside the group makes up the actual icon, and
 	needs use a viewBox instead of width/height for it to scale	properly.
-	
+
 	Multiple icons can be included, each within their own group.
 --*>
 	<g id="hello_world">
@@ -7017,7 +7017,7 @@ echo $contents;
     </g>
    <g id="textmarker">
         <svg viewBox="-60 -60 120 120" xmlns="http://www.w3.org/2000/svg">
-			<text xml:space="preserve" text-anchor="middle" font-family="serif" font-size="120"  y="40" x="0" stroke-width="0" stroke="#ff7f00" fill="#ff7f00">T</text>	
+			<text xml:space="preserve" text-anchor="middle" font-family="serif" font-size="120"  y="40" x="0" stroke-width="0" stroke="#ff7f00" fill="#ff7f00">T</text>
         </svg>
     </g>
 	<g id="mkr_markers_off">
@@ -9525,7 +9525,7 @@ zoom.png                        http://tango.freedesktop.org/static/cvs/tango-ar
   <line id="svg_64" stroke-width="3" fill="none" stroke="#aa0000" y2="8" x2="39" y1="26" x1="51"/>
  </svg>
 </g>
- 
+
 <g id="wireframe">
  <svg xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
   <circle stroke="#000000" fill="none" id="svg_49" r="8" cy="9.5" cx="9.5"/>
@@ -10102,10 +10102,6 @@ zoom.png                        http://tango.freedesktop.org/static/cvs/tango-ar
 
 </svg>
 -->
-<!-- /editor/images/svg_edit_icons.svgz [json]
-"\u001f�\b\b���J\u0000\u0003svg_edit_icons.svg\u0000�][s۸�~��\u0015\\�e���Ѹcʙ���p^v��j_S2E9�C[^Y�3���\r\u0002$H�\u0012%����XN$�$\u001a����\u0017�7�_��o\u000f���ǫϻ��o��///ŋ(6ۻk�\u0018��;�~�����f[��=�c���\u001ew�����sUW�\u000e��t���۷���_c��s��_��A2�z_������+���K�%B�Ϳ-\u0016�?��rW���������矋ju��\u0016Y�\u000f��%��fs�Mܬ���<\\g�������nv�����?�T�\fn������\u0012�}�m7��>^}X���l}_������f\u0004��}\u0002q���\u0007S\b\u000b�漐�I[��\u0019�x\u000e�`�+[�B0fE����\u001aLM�J�\\��QP˂3`��a�<���,,� �\u0016e4�|�\n���-\u0000�4ƚ|\u0001���I����w���yC����7����������V8��5�����fU���=���T��?���}�!� ��\u0003$[\b-�����_���x��\u0002,�oTKv���<e�������W\u0019}_��z�M��\u0017n�����\u000fz�z�Y\u0018<+nM�n'����7�zv\u001d�F\u001c;ɰxa�b���B��+���~�����c\u000f>�<�5�[��\f�e[����ӯW\u001d�\u0007.����\ft\n\u001fm\u001b���hd����|�{[.j8���\u001e��\\�q[�\tÙ\u001e祎׮g?\u001by����p�n�||�\u0019}@���m���\u0002y��o�0�%c���Yd?`=��^ib���g��������Pg)��Wi^\u0019�\u00116�I�t�\u0015\u001a\u0004���D�5&u�3wB�܊su^�n�jM�wi)�c��`\u0011�w.ǫ��U���0���\n�M�FBᘐ�_SF�\u0010D�\u001c��^X$�s�\u0014j�?�\u001aP�\u0010\"����P�,�\u001f�eŖ.�+\u000b�\u001dV�m��\u0005�\u0015���\u0005P\u0003r\u0002(��!B1�DԂm�V\nlU!%4p%6��\u0017F�|�Q�+5���\t���\u0002��� 1��0�P\u0000\u0019�#����j�!Ĳ`�;\u0014�1j\u001b0\u0004S�����9JiT+��۲~\u000f �$����}�y8��\n\u0016t\u0014}\b�l=[6�M�-΅|��*N���Z�O\"���\u0019��\fx䙔\u00041ɀ扒&�M���J��\u001b|����\\����z��SޏS�\u000f�|kxeK��K�\fB�\u0001ی���c�cv��C�\u001eDH�C\u0007)��[\u0001\u001d�coEt0�ޚ��L\u0019�\u000e$�\u001d\r���\u00177 \u00072qQ~\u0017}~\u000f\u000b��p%\u0005;#P�(d\u001b\u0012\rb���\u00014:�!\u0017F,CPt\u001c�&��L��T=��uTF�\n��LҾ�f�Tӥu�P�����P��\u001e?���U�u��#\u0007�W#GY*HY��,\u0011��b�4�R�)���Q޲\u0019\u0002�]V��h�@*�S�2{�\\�h�Pv�\u000e\u0014\u0002Y:����d%N�t�R��u���K�]n\n�ܞ���\u0005\u000e�Q�\u001d�+\u000bY0%\\�O��,W����W\u001080J��\u0011<܎<h����r2�qd h�i�D����\u001e7���&�d���/��Qy��E�\u0001~��v�:��F1j��Ҽ��8A��Sx�7�(z��j\u0002��?<�/ 5���4��\u000e��U�`�r��\u00145᱇�\u0018!c\u0017��\u0012�uq\u001a�\u001d�\"�$��)]�\n}N\\��\u000e�FY�ab\u0001%�i\u0013�(I�v\u0001��\u0014\u0002���a�&1�\u0017��$\u0000F�\u0004H���$��\u001a�k\u0014dd*\u0005�9\u0014�X�w\b��/t!�2�Rҭ�[2z��\u0017���\n�\u0016�ia�J\u000b�]��&\u0007j�2\u0019\u0016hf��8\u001b���\u0002�$\u00139*$D�\u0012���\u0016�� \u0015/I\u0006@\t\u001f1c��\f��#�d@\u0018h����\u0019$>L��6�����\u0007M`\u0002U\u001e��1n)��q�Tn��\\�������\u0006K�kLM��P`�\u0014��t��~\u0013�T\u0013Ή���o]�v\u001a������[����ù�Kr�*�D�F�`s\u0017f�\u0017\u001c���������\u000b%���}��?/\u001f�\u0017���\u001e�\b�^,\u001f�Ϥ\u001d\u001e�W������\u001a_�\u001b�vS��~�w�\u0014V7P\u0005 \u0002��\n���\u0000z8����jR\u001cTd��%<8�dh�\n���:}\u0012G�W�ܰ���Z\u0003|�\u001e_r�f$ނ냂8\u000eDP}���'x��?\u0019�h�O\u001a3�\u0016x�8D���e������R\tq�hQ\u001a=Y-�?/��%R~�R�C�\u001a����\u0014ZM4.��V\b��)i���D���s��\b����Y ,g��\u0015c�w�����d}��^�u�6T�\u0019��jY��pJ\u0018�\\�\"�j���\"v��y�K��.i^�UpN��)e�>G��$\u0015�\b��,\u0004\tc��x�'`\u00121h!�\u0007���HQ���\u000b���\bo|\u0006\n>Ro�+��i�T�T���L\u0012��*D�1ry�QVOs\u00183\u0016i\u00047I�A��s�Ԭ\n�%)x�2a8����F9P�J+�]�\b׹p�_�`��F\u0002�&Ia���\u0010Z�N\u0017�!�n��>\"\u0006q>���\n�\u001a�7~_TS\b~��퉖��N��$��\u0019D����)\u0001�p3�N��X����\u0002Rt�d�v�$��\f\u00007l�*��A\u0003�\u0016�\b���\u0006ɜ\u0015L\u000b���.y88�\u0014ڛ h��ذ�m:��1 ɦ@�os��\u0002+��\u0013�si\u000f�y=8Cχ�߈�\u0003����:<DP��S�]X��2�W�^g��(��z+���T��$Q\\\u0010\u0014�u)�cM�苤@AV\\�\n�Ά;��-\u001a��\n\u0000r�s�h�9�� \n\u0003��%e\u0001�^84[\u0015��\u0002��$g��Lj�'{J\t�r�\u0007]D//���\u0013\u001f^�^����'~YH�g\u0000��C�\u0013F,��2Xm�T�\u001d�Z��^�C�P2z\u001dm�:N@&NJ���rY��b3I`�\u001f�\nm5��&ω\u0002(�E�蔤�`m���lKp��֊̪\u0002\u0007�T\b\u000bOA�w\bT��F���&J�2\u0007rR\u0013\u0005�-$�.�p�����ʅ��\u001aG����\u001e�D�i_�:Z!5\u0019ȥ��-���]�\u001f�s<\u0012\b�7/���V�Kb��T�\u000f���\u00039F\b�k�+VS삫zѼ?b�Mww�y�pC�Z�o��Co��ѱ<�$�\u0004N�u�bF��=�:9�\u000e~�^>�̑\u001f$}xf�6A\t�x��֚>F f�D�Dɩ�\u0015��Z�+\u0019g����i{��������\u001c��;Zy�'R$�\u000b.�v\r�C}\u0003ڂ8\u0017~</�V?�n�I��`�\u0011K3q/\u000eb\u000e�m+��5���>���\u001a\u0018fs�*�����0\u0002�]܈1A\u0001��u�$w�1$�\t\u001d�p{�\u001e\u001a�s\u001f\u0016FW�f^\u0007OAWw]_d�K)��\\�BF�d}\f�\u001a(\u0014\u0002*�s\\Lɠ����\bo\u0016>\u000b\u001c\u0000��B�M�\r\u001a7���:\u001f\t��XWS����9޾�����A\u001c�p!�\u0014P���\u001d�~�r��׾w\t\u0012�P��$4\n�M,Y�&\u001aC�\u0012\u0007,' \u0014�\u00176��{p�T�d���,e4�\u0014c*\u0007\u001c\u001f΅O�a��\u0010�\u0015�\u0002k�\t�D\u001cD�l������R<�)�p���Q�ZJ����l�\u0018\u0019���\u0002�@\b���q�(Fe\u0018a\u001f�b����[��d��q��媻1T�-��~҄���R�|�!\f$�\u001ag�HGN<�\u0004\u0010���8D��]1ph5��Z�<O(�\u0018�\u0018��\u00051\f�5�@�$Ğ�wzN9K�\r�H\u000b\u0003mI�c������H���0V��n�Ӯ��\b���[�JJԝd�zS\u0015ᦶ\u0019�`0PT�?�}��P]3���\u001cW4�\\�=���}y(��b��M��+v��6��v���\u0017[W��s���\u001b\u0004�\u000f�΀\u0013�)ޡe�*z]^���Vl�\u0000��((EG\thJ�T�����h�IDC-�\u00107�ȴF�h��l\u001eJi����\u0012\u00104�N�A�4d(\blY\fM���\u001a\u0013#y��@F�3�؆\u000e\u0019�\\F~R�,�@��\u0014��3l.\u0006�\n���\u0019�\u0002��e*���kq�\u001c�N��㏦\u0017L+�M�\u0014�\u0005QI���TL�5��C���\tN���>�\u000eU�>����pR��� �~��uߦ��M���k{\u0004$��]p���\b'%.'^\u0003\u001bY#5!�#\u0005l��Yh�RܖH\u001f1���P�s�J='����\u001d���<�O���\nH�\u000b\u0001����\f-\u000b�opN\u001bJ��N��\u0002D\u000fBӊ\f�K��2\u0000���4�����y2��E<�\u0013�\f\u0007g�\u0010�dLw���EO��\u0015�\u0001�\f(\u0017�:*���\u0000 u\u001a\u000e�>��\"���\u0007�@B�\u0013f��\u0003*u�+�B-�Ӝ��-���\by\t\b\u0014\u001a�>q�d����Y;�7_���l/Qqw��\u001b�M>�C��3N(��Ӷz��h[N�[��\u0019\u000f�Ǎ����%\u0004�\u00107\u0004m��x��\u000f�}}�\u0016�\\��o<���?a\u0017L\u0013�cG���O܅\u0006\tHy�\u000bwI\u0017�zЧ(&�R�ˆz+�a��!�<��1�!\u0006�<�vU��\u000e\u001e#G$쀂>DA�C!vB�A'�(��i:�\u0017-�؋9�\u000e�Q��r�����C���\u000f��pD���x\u0013�Z-�;ﳳ1��\u001aO��\u0007�gU��xX�Y�lةo�ߩ��q�����Ƕ��6�:���\u000e��+�u���$f�N�\u0007#��\"W�\u0014p®��r�F@\u0013�\f�y���+�B\u001d�\u0007\u001a�,XK鼆+�k�W���� ��X��\u0001>h\u0010t9�\u0014�7\bU���\u0000'\u001a�ʹr\u001ehJ�\f\u0015H$F��hĈ�*�@\fJ�\u001cK��\\\u0017��P�\u0002!�U��A(]�k��FIʡ2�J\u0005�~�\t ͒v\u0001\u0019��\u0015\u001ao�\u0010�b�ȋa�p&Sh�!1��u`)K\u00004�\"���^\u0012P\f\b�b- �\u0002�ꀕ\r���1�^Z�U�Ke�j\u000fG�^���Y�ל���\u0011�99^\u0006�'D9�.�>3�K/���\u0015o-hޙ醂�\n\u0000�dN�|\u0004����&\u0019ZB\u001amT�5ə\u0014>Iߡ\u001cJ/g6ė\u0019\nOdO�$\r�Q��v��\u001c�B��q1* �1X��9\u001ac������\f��\fڐ�2�]#k\u0006-g\u0014s\u00004\t��QL��#��\t^ظ\b\u00193�\u001cI�f̛rJ0%���&�\u001f\u0018S�\u0004�)E\u0002�-��~��\u0001�h�9\u0014J�m�\r�;&n\u0006Rq���˹�Vִ���݅\u00067��/yK�\u000e��#_�bU�'oey���\u0012\u0010��\\�\u001c6.δ�ة.��N�9�K�5.\u0005g���\u000fNصrl?8�ӓbhG��uL�%\u0006�:ڵ�4P>\u0010\b��*P�@�@\t#���c\u001c��q\u0015\u0007@y�Y\u001d�P�(��P�$�\u0001'�\u001e\u0010\u0005*\n-b>򌨸��8�B~�`��M����~�JH�\u0004 ��\u001e\u0019�[5��l���m\u0002��H{b\u0000E\u001a�\u0011M��S֤\u000b[�Q�X�˪��\u0000�$N,'�+�J�\n�:D�P�[�,�r��Qå�b��5�Y�V�oD\t��\u001bZ\n����83��\u001b�\u000f(2+�w�\f\u001dIH�\u0018!\f�sL%�~\u0014W��\u001d�@%�\u0003�c\u0017�U\\Uu��ђ��d�\u0010\u0003��\u001d��0���\u0018�\u001b�\u0014��\u0018?�\t��h�oR�:�B\f.�2\u001c2�3��\r>D~�ƥSM��\tyJ@C���x�\u0006\b�\u0018�,+\u0017�Ŝ!S��0q���q\u0010#�-�\u0010�@meQ6��ߠ���~���\u000f�4W\u000eQn�\";Ҋ}�ӄ!�|\u0006��m>}yz�`f�\r��$��aj�5��`�r]�rqf\u0016��Ko\u001d_:�9L\u001e�ca\u0001�n�\u0011��X\u0004�V:N+�1L�\u001a9\b�2�I��\u0018s�\u0000\u0019�8(a�q)����N\u001a`MaWԖt���}_�+��Ȕ!E����!,:��N��3�O�a��m);�Ij��\b�\u00011\u0003#_�\u0013\b9\u0002\u000f�=�\u0005m�F\u001e\u000bl��˧�X��Ob�\"�t7{F�5����a���t����\u0016�7_�E�숚�G�6�e����4kv�1��r]��6UMr�\t�mDw���m���\u0018\u001a\u001f\u001e\u000e��m\u001a\n+F�\u000ff/�p�&��-\u001dH�5�\t5���(��\"�P\u0004�#�b\u0007��hR�\u0018Mu\u0016M9ASN�<��o��e�\u001e0)F,���]�m\u0010�\u001e�\u0007��<\u0014t\u001b������I�(U��8^a\u0000\u001d�P�*��'�P6���\u0017�KX�����+(L��M�\u0006��(<��\u000e�G:\u001a\u0001p�U�\u001e?H�h\u0004@���[\u001c\u0013�m�/BF�-�a���\u0014pz[�ꔃQ��C�\u0012�<9��\u000f��p���N\"���\u0011ҝ��=��5�^;��<H\u001a��I�ݵ3I�́��(y;~��(x_�\f5��A%Y��\u0014+$�SF��hF[<���\u0002\u001d\u0015�Tƒ'�J#�.Q\bf�\u0006A��u%����QBT����:�ďsm���˸^\u0002��3�~��K{�ޡ���\u000e�,����\u00030�u�j5_�Mw���\u001b�-�:�`Ry�o�SCp�?\u0004!�_�`�_�H����LJ5��V��P5ĺ�\u000f����A���u�A�<�͓��=W愪��rn��)��vٮ4=Fޚ\u0001\u0011\u0015��I\"��ݦx#�[�\tZ�c?�3-Oأcuv���J�o��&J�/!�G5�\u001b�\u0013@\u0017R��j{y�<���^�zB�-�6��@�{un\u0017������_���`�oR�����19�72~N6DT�5=\u0013n�?��\u0016��n\u0000\u0000"-->
-<!-- /editor/images/text.png [json]
-"�PNG\r\n\u001a\n\u0000\u0000\u0000\rIHDR\u0000\u0000\u0000\u0016\u0000\u0000\u0000\u0016\b\u0006\u0000\u0000\u0000Ĵl;\u0000\u0000\u0000\u0004sBIT\b\b\b\b|\bd�\u0000\u0000\u0000\u0019tEXtSoftware\u0000www.inkscape.org��<\u001a\u0000\u0000\u0003�IDAT8����o\u0014U\u001c�?ߙ���0mh�R��\u0011\n\u0001k�`���\u0003F\u0012=y�`�\u001e�D\u0003h\f\u0007�\u000b�\u0017\u000f&&&�x�?��&r �\u0001OT)�ۆ=L��v�;;�y���n��\u0016}�73��|?�}���\u000f�\u001c;I�'����[�y�\u000b�`aW�s��F\u0010\u0004�׮]{�����9�\u001c�\u0018�_���z���sm���\u0004�t�СC{ggg�y�&�Z�<�Z��Ç9~�x����\u001f\u0003_l��vI{�ܹs�f��1f��߿���l\u0000|$i�pۂ%�Hz�ĉ\u0013^���\u0018C�e\f\u0006\u0003�1�Z-�,#\fC\u000fx��$~���Ӯ����v1�p�޽|aa!\u001d����`������_���J�r�ԩS��\u000f\u001f���h4Rc�{���h\u0005q\u001cS\u0014�k�\u000e<\u0013,��z�>3==M��$�2�$�Z�\u0000_5�M3|���8�\u000b��g�+���3g�D���dY�1���՞��k��w�V�\r��1DQT����`I{%]8v�����\u0003�1�iJ����\u001f�s\u0003K���\u0018c���0\f�<oR���\u0012_�����n��t0Ɛ$\t�~wέ\u0001\u0014E�M����X������v\u0004����ɓ�����\u0006%I�Q\u0014ŷ�BI!��`0\b��#_\u001cǞs����^�������0~v�<\u000f����R\r@�`��\t��\u0002��x�%�������߉�ػ{�.�Z��*���O�\u000b\u0000+++�����~�����bQ\u0014sP�+$M���֑#G�\u001b7n`�A\u0012�^�[�n!�)p��[�Z���\u0017$����s���w��Q���#:�\u000e����$I�\u001cx�Z�(��z�\u001e����8�v���K\u001e��y����E���#S���\u0002\u001f\u0002�\u000e:�����(F�8�+ι��&<I�LMM=g���n\u0003`�e0\u0018T�_�s�\u001d�x�w'M�\u00118\b\u0002�ժ\u0003��$]޷o_m}}�0\f\u0001H�\u0014���\u0000��1�$�c�$M\u0014E�}����w�8�cIW$��s�eI<�M�\u0004~\u0003&���h\u0001\u000eȁ�\b�\u0019�3�s��U���ػ�S*\u001a�\u001f�U�\u0000}�7��z\u0003�l�y��2]�L\u001a�i�LlJ\r���\u000e��s�\u0000�\u0017;x\u001c[\\f\u0017�\u0000\u0000\u0000\u0000IEND�B`�"-->
 <!-- /editor/images/text.svg
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <*!-- Created with Inkscape (http://www.inkscape.org/) --*>
@@ -10305,10 +10301,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Spaar",
 		"cancel": "Annuleer",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -10316,7 +10312,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Klik om te verander vul kleur, verskuiwing klik om &#39;n beroerte kleur verander",
@@ -10368,7 +10364,7 @@ svgEditor.readLang({
 		"bold": "Vetgedrukte teks",
 		"italic": "Italic Text"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Verander agtergrondkleur / opaciteit",
 		"connector_no_arrow": "No arrow",
@@ -10557,10 +10553,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "حفظ",
 		"cancel": "إلغاء",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -10568,7 +10564,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "انقر لتغيير لون التعبئة ، تحولا مزدوجا فوق لتغيير لون السكتة الدماغية",
@@ -10620,7 +10616,7 @@ svgEditor.readLang({
 		"bold": "نص جريء",
 		"italic": "مائل نص"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "تغير لون الخلفية / غموض",
 		"connector_no_arrow": "No arrow",
@@ -10809,10 +10805,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "OK",
 		"cancel": "Cancel",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -10820,7 +10816,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Click to change fill color, shift-click to change stroke color",
@@ -10872,7 +10868,7 @@ svgEditor.readLang({
 		"bold": "Bold Text",
 		"italic": "Italic Text"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Change background color/opacity",
 		"connector_no_arrow": "No arrow",
@@ -11060,10 +11056,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Захаваць",
 		"cancel": "Адмена",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -11071,7 +11067,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Націсніце для змены колеру залівання, Shift-Click змяніць обводка",
@@ -11123,7 +11119,7 @@ svgEditor.readLang({
 		"bold": "Тоўсты тэкст",
 		"italic": "Нахілены тэкст"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Змяненне колеру фону / непразрыстасць",
 		"connector_no_arrow": "No arrow",
@@ -11312,10 +11308,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Спасявам",
 		"cancel": "Отказ",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -11323,7 +11319,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Кликнете, за да промени попълнете цвят, на смени, кликнете да променят цвета си удар",
@@ -11375,7 +11371,7 @@ svgEditor.readLang({
 		"bold": "Получер текст",
 		"italic": "Курсив текст"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Промяна на цвета на фона / непрозрачност",
 		"connector_no_arrow": "No arrow",
@@ -11564,10 +11560,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Salvar",
 		"cancel": "Cancel",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -11575,7 +11571,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Feu clic per canviar el color de farciment, shift-clic per canviar el color del traç",
@@ -11627,7 +11623,7 @@ svgEditor.readLang({
 		"bold": "Text en negreta",
 		"italic": "Text en cursiva"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Color de fons / opacitat",
 		"connector_no_arrow": "No arrow",
@@ -11816,10 +11812,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Uložit",
 		"cancel": "Storno",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "šipka dolů", 
-		"key_up": "šipka nahoru", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "šipka dolů",
+		"key_up": "šipka nahoru",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -11827,7 +11823,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Běží na"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Zobrazit/schovat více možností",
 		"palette_info": "Kliknutím změníte barvu výplně, kliknutím současně s klávesou shift změníte barvu čáry",
@@ -11879,7 +11875,7 @@ svgEditor.readLang({
 		"bold": "Tučně",
 		"italic": "Kurzíva"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Hlavní menu",
 		"bkgnd_color_opac": "Změnit barvu a průhlednost pozadí",
 		"connector_no_arrow": "Bez šipky",
@@ -12068,10 +12064,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Cadw",
 		"cancel": "Canslo",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -12079,7 +12075,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Cliciwch yma i lenwi newid lliw, sifft-cliciwch i newid lliw strôc",
@@ -12131,7 +12127,7 @@ svgEditor.readLang({
 		"bold": "Testun Bras",
 		"italic": "Italig Testun"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Newid lliw cefndir / Didreiddiad",
 		"connector_no_arrow": "No arrow",
@@ -12320,10 +12316,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Gemme",
 		"cancel": "Annuller",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -12331,7 +12327,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Klik for at ændre fyldfarve, shift-klik for at ændre stregfarve",
@@ -12383,7 +12379,7 @@ svgEditor.readLang({
 		"bold": "Fed tekst",
 		"italic": "Italic Text"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Skift baggrundsfarve / uigennemsigtighed",
 		"connector_no_arrow": "No arrow",
@@ -12572,10 +12568,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "OK",
 		"cancel": "Abbrechen",
-		"key_backspace": "Rücktaste", 
-		"key_del": "Löschen", 
-		"key_down": "nach unten", 
-		"key_up": "nach oben", 
+		"key_backspace": "Rücktaste",
+		"key_del": "Löschen",
+		"key_down": "nach unten",
+		"key_up": "nach oben",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Breite",
@@ -12583,7 +12579,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "angetrieben durch"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Zeige/Verberge weitere Linien Werkzeuge",
 		"palette_info": "Klick zum Ändern der Füllfarbe, Shift-Klick zum Ändern der Linienfarbe",
@@ -12635,7 +12631,7 @@ svgEditor.readLang({
 		"bold": "Fetter Text",
 		"italic": "Kursiver Text"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Hauptmenü",
 		"bkgnd_color_opac": "Hintergrundfarbe ändern / Opazität",
 		"connector_no_arrow": "Kein Pfeil",
@@ -12824,10 +12820,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Αποθηκεύω",
 		"cancel": "Άκυρο",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -12835,7 +12831,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Κάντε κλικ για να συμπληρώσετε την αλλαγή χρώματος, στροφή κλικ για να αλλάξετε το χρώμα εγκεφαλικό",
@@ -12887,7 +12883,7 @@ svgEditor.readLang({
 		"bold": "Bold Text",
 		"italic": "Πλάγιους"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Αλλαγή χρώματος φόντου / αδιαφάνεια",
 		"connector_no_arrow": "No arrow",
@@ -13076,10 +13072,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "OK",
 		"cancel": "Cancel",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -13087,7 +13083,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Click to change fill color, shift-click to change stroke color",
@@ -13139,7 +13135,7 @@ svgEditor.readLang({
 		"bold": "Bold Text",
 		"italic": "Italic Text"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Change background color/opacity",
 		"connector_no_arrow": "No arrow",
@@ -13327,10 +13323,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "OK",
 		"cancel": "Cancelar",
-		"key_backspace": "retroceso", 
-		"key_del": "suprimir", 
-		"key_down": "abajo", 
-		"key_up": "arriba", 
+		"key_backspace": "retroceso",
+		"key_del": "suprimir",
+		"key_down": "abajo",
+		"key_up": "arriba",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -13338,7 +13334,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Mostrar/ocultar herramientas de trazo adicionales",
 		"palette_info": "Haga clic para cambiar el color de relleno. Pulse Mayús y haga clic para cambiar el color del contorno.",
@@ -13390,7 +13386,7 @@ svgEditor.readLang({
 		"bold": "Texto en negrita",
 		"italic": "Texto en cursiva"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Menú principal",
 		"bkgnd_color_opac": "Cambiar color de fondo / opacidad",
 		"connector_no_arrow": "Sin flecha",
@@ -13579,10 +13575,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Salvestama",
 		"cancel": "Tühista",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -13590,7 +13586,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Click muuta täitke värvi, Shift-nuppu, et muuta insult värvi",
@@ -13642,7 +13638,7 @@ svgEditor.readLang({
 		"bold": "Rasvane kiri",
 		"italic": "Kursiiv"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Muuda tausta värvi / läbipaistmatus",
 		"connector_no_arrow": "No arrow",
@@ -13831,10 +13827,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "‫تأیید‬",
 		"cancel": "‫لغو‬",
-		"key_backspace": "‫پس بر ‬", 
-		"key_del": "‫حذف ‬", 
-		"key_down": "‫پایین ‬", 
-		"key_up": "‫بالا ‬", 
+		"key_backspace": "‫پس بر ‬",
+		"key_del": "‫حذف ‬",
+		"key_down": "‫پایین ‬",
+		"key_up": "‫بالا ‬",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -13842,7 +13838,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "‫برای تغییر رنگ، کلیک کنید. برای تغییر رنگ لبه، کلید تبدیل (shift) را فشرده و کلیک کنید‬",
@@ -13894,7 +13890,7 @@ svgEditor.readLang({
 		"bold": "‫متن توپر ‬",
 		"italic": "‫متن کج ‬"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "‫تغییر رنگ پس زمینه / تاری‬",
 		"connector_no_arrow": "No arrow",
@@ -14083,10 +14079,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Tallentaa",
 		"cancel": "Peruuta",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -14094,7 +14090,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Klikkaa muuttaa täyttöväri, Shift-click vaihtaa aivohalvauksen väriä",
@@ -14146,7 +14142,7 @@ svgEditor.readLang({
 		"bold": "Lihavoitu teksti",
 		"italic": "Kursivoitu"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Vaihda taustaväri / sameuden",
 		"connector_no_arrow": "No arrow",
@@ -14335,10 +14331,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "OK",
 		"cancel": "Annuler",
-		"key_backspace": "Suppr.", 
-		"key_del": "Retour Arr.", 
-		"key_down": "Bas", 
-		"key_up": "Haut", 
+		"key_backspace": "Suppr.",
+		"key_del": "Retour Arr.",
+		"key_down": "Bas",
+		"key_up": "Haut",
 		"more_opts": "Plus d'options",
 		"url": "URL",
 		"width": "Largeur",
@@ -14346,7 +14342,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Propulsé par"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Montrer/Cacher plus d'outils de Contour",
 		"palette_info": "Cliquer pour changer la couleur de remplissage, Maj-Clic pour changer la couleur de contour",
@@ -14398,7 +14394,7 @@ svgEditor.readLang({
 		"bold": "Texte en gras",
 		"italic": "Texte en italique"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Menu principal",
 		"bkgnd_color_opac": "Changer la couleur d'arrière-plan / l'opacité",
 		"connector_no_arrow": "Sans flèches",
@@ -14587,10 +14583,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Ok",
 		"cancel": "Ôfbrekke",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "omleech", 
-		"key_up": "omheech", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "omleech",
+		"key_up": "omheech",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -14598,7 +14594,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Klik om de folkleur te feroarjen, shift-klik om de linekleur te feroarjen.",
@@ -14650,7 +14646,7 @@ svgEditor.readLang({
 		"bold": "Fet",
 		"italic": "Skean"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Eftergrûnkleur/trochsichtigens oanpasse",
 		"connector_no_arrow": "No arrow",
@@ -14839,10 +14835,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Sábháil",
 		"cancel": "Cealaigh",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -14850,7 +14846,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Cliceáil chun athrú a líonadh dath, aistriú-cliceáil chun dath a athrú stróc",
@@ -14902,7 +14898,7 @@ svgEditor.readLang({
 		"bold": "Trom Téacs",
 		"italic": "Iodálach Téacs"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Dath cúlra Athraigh / teimhneacht",
 		"connector_no_arrow": "No arrow",
@@ -15091,10 +15087,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Gardar",
 		"cancel": "Cancelar",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -15102,7 +15098,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Preme aquí para cambiar a cor de recheo, Shift-clic para cambiar a cor do curso",
@@ -15154,7 +15150,7 @@ svgEditor.readLang({
 		"bold": "Bold Text",
 		"italic": "Texto en cursiva"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Mudar a cor de fondo / Opacidade",
 		"connector_no_arrow": "No arrow",
@@ -15343,10 +15339,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "לשמור",
 		"cancel": "ביטול",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -15354,7 +15350,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "לחץ כדי לשנות צבע מילוי, לחץ על Shift-לשנות צבע שבץ",
@@ -15406,7 +15402,7 @@ svgEditor.readLang({
 		"bold": "טקסט מודגש",
 		"italic": "טקסט נטוי"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "שנה את צבע הרקע / אטימות",
 		"connector_no_arrow": "No arrow",
@@ -15595,10 +15591,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "बचाना",
 		"cancel": "रद्द करें",
-		"key_backspace": "बैकस्पेस", 
-		"key_del": "हटायें", 
-		"key_down": "नीचे", 
-		"key_up": "ऊपर", 
+		"key_backspace": "बैकस्पेस",
+		"key_del": "हटायें",
+		"key_down": "नीचे",
+		"key_up": "ऊपर",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -15606,7 +15602,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "रंग बदलने पर क्लिक करें, बदलाव भरने के क्लिक करने के लिए स्ट्रोक का रंग बदलने के लिए",
@@ -15658,7 +15654,7 @@ svgEditor.readLang({
 		"bold": "मोटा पाठ",
 		"italic": "इटैलिक पाठ"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "पृष्ठभूमि का रंग बदल / अस्पष्टता",
 		"connector_no_arrow": "No arrow",
@@ -15847,10 +15843,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Spremiti",
 		"cancel": "Odustani",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -15858,7 +15854,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Kliknite promijeniti boju ispune, shift-click to promijeniti boju moždanog udara",
@@ -15910,7 +15906,7 @@ svgEditor.readLang({
 		"bold": "Podebljani tekst",
 		"italic": "Italic Text"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Promijeni boju pozadine / neprozirnost",
 		"connector_no_arrow": "No arrow",
@@ -16099,10 +16095,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Ment",
 		"cancel": "Szakítani",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -16110,7 +16106,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Kattints ide a változások töltse szín, shift-click változtatni stroke color",
@@ -16162,7 +16158,7 @@ svgEditor.readLang({
 		"bold": "Félkövér szöveg",
 		"italic": "Dőlt szöveg"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Change background color / homályosság",
 		"connector_no_arrow": "No arrow",
@@ -16351,10 +16347,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Save",
 		"cancel": "Cancel",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -16362,7 +16358,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Click to change fill color, shift-click to change stroke color",
@@ -16414,7 +16410,7 @@ svgEditor.readLang({
 		"bold": "Bold Text",
 		"italic": "Italic Text"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Change background color/opacity",
 		"connector_no_arrow": "No arrow",
@@ -16602,10 +16598,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Simpan",
 		"cancel": "Batal",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -16613,7 +16609,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Klik untuk mengubah warna mengisi, shift-klik untuk mengubah warna stroke",
@@ -16665,7 +16661,7 @@ svgEditor.readLang({
 		"bold": "Bold Teks",
 		"italic": "Italic Teks"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Mengubah warna latar belakang / keburaman",
 		"connector_no_arrow": "No arrow",
@@ -16854,10 +16850,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Vista",
 		"cancel": "Hætta",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -16865,7 +16861,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Smelltu hér til að breyta fylla lit, Shift-smelltu til að breyta högg lit",
@@ -16917,7 +16913,7 @@ svgEditor.readLang({
 		"bold": "Bold Text",
 		"italic": "Italic Text"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Breyta bakgrunnslit / opacity",
 		"connector_no_arrow": "No arrow",
@@ -17106,10 +17102,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Salva",
 		"cancel": "Annulla",
-		"key_backspace": "backspace", 
-		"key_del": "Canc", 
-		"key_down": "giù", 
-		"key_up": "su", 
+		"key_backspace": "backspace",
+		"key_del": "Canc",
+		"key_down": "giù",
+		"key_up": "su",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -17117,7 +17113,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Mostra/nascondi strumenti per il tratto",
 		"palette_info": "Fare clic per cambiare il colore di riempimento, shift-click per cambiare colore del tratto",
@@ -17169,7 +17165,7 @@ svgEditor.readLang({
 		"bold": "Grassetto",
 		"italic": "Corsivo"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Menù principale",
 		"bkgnd_color_opac": "Cambia colore/opacità dello sfondo",
 		"connector_no_arrow": "No freccia",
@@ -17358,10 +17354,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "OK",
 		"cancel": "キャンセル",
-		"key_backspace": "backspace", 
-		"key_del": "削除", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "削除",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -17369,7 +17365,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "クリックで塗りの色を選択、Shift+クリックで線の色を選択",
@@ -17421,7 +17417,7 @@ svgEditor.readLang({
 		"bold": "太字",
 		"italic": "イタリック体"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "背景色/不透明度の変更",
 		"connector_no_arrow": "No arrow",
@@ -17518,7 +17514,7 @@ svgEditor.readLang({
 		"doc_title": "タイトル",
 		"doc_dims": "キャンバスの大きさ",
 		"included_images": "挿入された画像の扱い",
-		"image_opt_embed": "SVGファイルに埋め込む",
+		"image_opt_embed": "SVGファイルに埋め込(c)",
 		"image_opt_ref": "画像を参照する",
 		"editor_prefs": "エディタの設定",
 		"icon_size": "アイコンの大きさ",
@@ -17610,10 +17606,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "저장",
 		"cancel": "취소",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -17621,7 +17617,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "색상을 클릭, 근무 시간 채우기 스트로크 색상을 변경하려면 변경하려면",
@@ -17673,7 +17669,7 @@ svgEditor.readLang({
 		"bold": "굵은 텍스트",
 		"italic": "기울임꼴 텍스트"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "배경 색상 변경 / 투명도",
 		"connector_no_arrow": "No arrow",
@@ -17862,10 +17858,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Saugoti",
 		"cancel": "Atšaukti",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -17873,7 +17869,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Spustelėkite norėdami keisti užpildo spalvą, perėjimo spustelėkite pakeisti insultas spalva",
@@ -17925,7 +17921,7 @@ svgEditor.readLang({
 		"bold": "Pusjuodis",
 		"italic": "Kursyvas"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Pakeisti fono spalvą / drumstumas",
 		"connector_no_arrow": "No arrow",
@@ -18115,10 +18111,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Glābt",
 		"cancel": "Atcelt",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -18126,7 +18122,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Noklikšķiniet, lai mainītu aizpildījuma krāsu, shift-click to mainīt stroke krāsa",
@@ -18178,7 +18174,7 @@ svgEditor.readLang({
 		"bold": "Bold Text",
 		"italic": "Kursīvs"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Change background color / necaurredzamība",
 		"connector_no_arrow": "No arrow",
@@ -18370,10 +18366,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Зачувува",
 		"cancel": "Откажи",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -18381,7 +18377,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Кликни за да внесете промени бојата, промена клик да се промени бојата удар",
@@ -18433,7 +18429,7 @@ svgEditor.readLang({
 		"bold": "Задебелен текст",
 		"italic": "Italic текст"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Смени позадина / непроѕирноста",
 		"connector_no_arrow": "No arrow",
@@ -18622,10 +18618,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Simpan",
 		"cancel": "Batal",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -18633,7 +18629,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Klik untuk menukar warna mengisi, shift-klik untuk menukar warna stroke",
@@ -18685,7 +18681,7 @@ svgEditor.readLang({
 		"bold": "Bold Teks",
 		"italic": "Italic Teks"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Mengubah warna latar belakang / keburaman",
 		"connector_no_arrow": "No arrow",
@@ -18874,10 +18870,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Save",
 		"cancel": "Ikkanċella",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -18885,7 +18881,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Ikklikkja biex timla l-bidla fil-kulur, ikklikkja-bidla għall-bidla color stroke",
@@ -18937,7 +18933,7 @@ svgEditor.readLang({
 		"bold": "Bold Test",
 		"italic": "Test korsiv"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Bidla fil-kulur fl-isfond / opaċità",
 		"connector_no_arrow": "No arrow",
@@ -19126,10 +19122,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Ok",
 		"cancel": "Annuleren",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "omlaag", 
-		"key_up": "omhoog", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "omlaag",
+		"key_up": "omhoog",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -19137,7 +19133,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Mogelijk gemaakt door"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Toon/verberg meer lijn gereedschap",
 		"palette_info": "Klik om de vul kleur te veranderen, shift-klik om de lijn kleur te veranderen",
@@ -19189,7 +19185,7 @@ svgEditor.readLang({
 		"bold": "Vet",
 		"italic": "Cursief"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Hoofdmenu",
 		"bkgnd_color_opac": "Verander achtergrond kleur/doorzichtigheid",
 		"connector_no_arrow": "Geen pijl",
@@ -19378,10 +19374,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Lagre",
 		"cancel": "Avbryt",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -19389,7 +19385,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Click å endre fyllfarge, shift-klikke for å endre slag farge",
@@ -19441,7 +19437,7 @@ svgEditor.readLang({
 		"bold": "Fet tekst",
 		"italic": "Kursiv tekst"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Endre bakgrunnsfarge / opacity",
 		"connector_no_arrow": "No arrow",
@@ -19631,10 +19627,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "OK",
 		"cancel": "Anuluj",
-		"key_backspace": "usuń", 
-		"key_del": "usuń", 
-		"key_down": "w dół", 
-		"key_up": "w górę", 
+		"key_backspace": "usuń",
+		"key_del": "usuń",
+		"key_down": "w dół",
+		"key_up": "w górę",
 		"more_opts": "więcej opcji",
 		"url": "adres url",
 		"width": "Szerokość",
@@ -19642,7 +19638,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Pokaż/ukryj więcej opcji obramowania",
 		"palette_info": "Kliknij aby zmienić kolor wypełnienia, przytrzymaj shift aby zmienić kolor obramowania",
@@ -19694,7 +19690,7 @@ svgEditor.readLang({
 		"bold": "Pogrubienie textu",
 		"italic": "Kursywa"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Menu główne",
 		"bkgnd_color_opac": "Zmiana koloru/przezroczystości tła",
 		"connector_no_arrow": "Brak strzałek",
@@ -19882,10 +19878,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "OK",
 		"cancel": "Cancelar",
-		"key_backspace": "Tecla backspace", 
-		"key_del": "Tecla delete", 
-		"key_down": "Seta para baixo", 
-		"key_up": "Seta para cima", 
+		"key_backspace": "Tecla backspace",
+		"key_del": "Tecla delete",
+		"key_down": "Seta para baixo",
+		"key_up": "Seta para cima",
 		"more_opts": "Mais opções",
 		"url": "URL",
 		"width": "Largura",
@@ -19893,7 +19889,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Tecnologia"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Mais opções de traço",
   	"palette_info": "Click para mudar a cor de preenchimento, shift-click para mudar a cor do traço",
@@ -19945,7 +19941,7 @@ svgEditor.readLang({
 		"bold": "Negrito",
 		"italic": "Italico"
 	},
-	tools: { 
+	tools: {
 	 	"main_menu": "Menu Principal",
 		"bkgnd_color_opac": "Mudar cor/opacidade do fundo",
 		"connector_no_arrow": "Sem flecha",
@@ -20132,10 +20128,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Salvar",
 		"cancel": "Cancelar",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -20143,7 +20139,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Clique para mudar a cor de preenchimento, shift-clique para mudar a cor do curso",
@@ -20195,7 +20191,7 @@ svgEditor.readLang({
 		"bold": "Bold Text",
 		"italic": "Texto em itálico"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Mudar a cor de fundo / opacidade",
 		"connector_no_arrow": "No arrow",
@@ -20384,10 +20380,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Ok",
 		"cancel": "Anulaţi",
-		"key_backspace": "backspace", 
-		"key_del": "ştergere", 
-		"key_down": "jos", 
-		"key_up": "sus", 
+		"key_backspace": "backspace",
+		"key_del": "ştergere",
+		"key_down": "jos",
+		"key_up": "sus",
 		"more_opts": "Mai multe opţiuni",
 		"url": "URL",
 		"width": "Lăţime",
@@ -20395,7 +20391,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Arătaţi/ascundeţi mai multe unelte de contur",
 		"palette_info": "Faceţi clic pentru a schimba culoarea de umplere, Shift-clic pentru a schimba culoarea de contur",
@@ -20447,7 +20443,7 @@ svgEditor.readLang({
 		"bold": "Text Îngroşat",
 		"italic": "Text Înclinat"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Menu Principal",
 		"bkgnd_color_opac": "Schimbare culoare de fundal / opacitate",
 		"connector_no_arrow": "Fără săgeată",
@@ -20635,10 +20631,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Сохранить",
 		"cancel": "Отменить",
-		"key_backspace": "Backspace", 
-		"key_del": "Delete", 
-		"key_down": "Вниз", 
-		"key_up": "Вверх", 
+		"key_backspace": "Backspace",
+		"key_del": "Delete",
+		"key_down": "Вниз",
+		"key_up": "Вверх",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -20646,7 +20642,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Нажмите для изменения цвета заливки, Shift-Click изменить цвета обводки",
@@ -20698,7 +20694,7 @@ svgEditor.readLang({
 		"bold": "Жирный",
 		"italic": "Курсив"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Изменить цвет фона или прозрачность",
 		"connector_no_arrow": "No arrow",
@@ -20887,10 +20883,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Uložiť",
 		"cancel": "Zrušiť",
-		"key_backspace": "Backspace", 
-		"key_del": "Delete", 
-		"key_down": "šípka dole", 
-		"key_up": "šípka hore", 
+		"key_backspace": "Backspace",
+		"key_del": "Delete",
+		"key_down": "šípka dole",
+		"key_up": "šípka hore",
 		"more_opts": "Viac možností",
 		"url": "URL",
 		"width": "Šírka",
@@ -20898,7 +20894,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Beží na"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Skryť/ukázať viac nástrojov pre krivku",
 		"palette_info": "Kliknutím zmeníte farbu výplne, so Shiftom zmeníte farbu obrysu",
@@ -20950,7 +20946,7 @@ svgEditor.readLang({
 		"bold": "Tučné",
 		"italic": "Kurzíva"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Hlavné menu",
 		"bkgnd_color_opac": "Zmeniť farbu a priehľadnosť pozadia",
 		"connector_no_arrow": "Spojnica bez šípok",
@@ -21388,10 +21384,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Ruaj",
 		"cancel": "Anulo",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -21399,7 +21395,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Klikoni për të ndryshuar mbushur me ngjyra, shift-klikoni për të ndryshuar ngjyrën pash",
@@ -21451,7 +21447,7 @@ svgEditor.readLang({
 		"bold": "Bold Text",
 		"italic": "Italic Text"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Change color background / patejdukshmëri",
 		"connector_no_arrow": "No arrow",
@@ -21640,10 +21636,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Сачувати",
 		"cancel": "Откажи",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -21651,7 +21647,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Кликните да бисте променили боју попуне, Схифт-кликните да промените боју удар",
@@ -21703,7 +21699,7 @@ svgEditor.readLang({
 		"bold": "Подебљан текст",
 		"italic": "Италиц текст"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Промена боје позадине / непрозирност",
 		"connector_no_arrow": "No arrow",
@@ -21892,10 +21888,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Spara",
 		"cancel": "Avbryt",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -21903,7 +21899,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Klicka för att ändra fyllningsfärg, shift-klicka för att ändra färgar",
@@ -21955,7 +21951,7 @@ svgEditor.readLang({
 		"bold": "Fet text",
 		"italic": "Kursiv text"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Ändra bakgrundsfärg / opacitet",
 		"connector_no_arrow": "No arrow",
@@ -22144,10 +22140,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Okoa",
 		"cancel": "Cancel",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -22155,7 +22151,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Click kubadili kujaza color, skiftarbete-click kubadili kiharusi color",
@@ -22207,7 +22203,7 @@ svgEditor.readLang({
 		"bold": "Bold Nakala",
 		"italic": "Italiki Nakala"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Change background color / opacity",
 		"connector_no_arrow": "No arrow",
@@ -22396,10 +22392,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "OK",
 		"cancel": "Cancel",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -22407,7 +22403,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Click to change fill color, shift-click to change stroke color",
@@ -22459,7 +22455,7 @@ svgEditor.readLang({
 		"bold": "Bold Text",
 		"italic": "Italic Text"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Change background color/opacity",
 		"connector_no_arrow": "No arrow",
@@ -22647,10 +22643,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "บันทึก",
 		"cancel": "ยกเลิก",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -22658,7 +22654,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "คลิกเพื่อเปลี่ยนใส่สีกะคลิกเปลี่ยนสีจังหวะ",
@@ -22710,7 +22706,7 @@ svgEditor.readLang({
 		"bold": "ข้อความตัวหนา",
 		"italic": "ข้อความตัวเอียง"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "สีพื้นหลังเปลี่ยน / ความทึบ",
 		"connector_no_arrow": "No arrow",
@@ -22899,10 +22895,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "I-save",
 		"cancel": "I-cancel",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -22910,7 +22906,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "I-click upang baguhin ang punan ang kulay, paglilipat-click upang baguhin ang paghampas ng kulay",
@@ -22962,7 +22958,7 @@ svgEditor.readLang({
 		"bold": "Bold Text",
 		"italic": "Italic Text"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Baguhin ang kulay ng background / kalabuan",
 		"connector_no_arrow": "No arrow",
@@ -23151,10 +23147,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Kaydetmek",
 		"cancel": "Iptal",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -23162,7 +23158,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Tıklatın renk, vardiya dolgu zamanlı rengini değiştirmek için tıklayın değiştirmek için",
@@ -23214,7 +23210,7 @@ svgEditor.readLang({
 		"bold": "Kalın Yazı",
 		"italic": "Italik yazı"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Arka plan rengini değiştirmek / opacity",
 		"connector_no_arrow": "No arrow",
@@ -23403,10 +23399,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Зберегти",
 		"cancel": "Скасування",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -23414,7 +23410,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Натисніть для зміни кольору заливки, Shift-Click змінити обвід",
@@ -23466,7 +23462,7 @@ svgEditor.readLang({
 		"bold": "Товстий текст",
 		"italic": "Похилий текст"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Зміна кольору тла / непрозорість",
 		"connector_no_arrow": "No arrow",
@@ -23655,10 +23651,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "Lưu",
 		"cancel": "Hủy",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -23666,7 +23662,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "Nhấn vào đây để thay đổi đầy màu sắc, thay đổi nhấp chuột để thay đổi màu sắc đột quỵ",
@@ -23718,7 +23714,7 @@ svgEditor.readLang({
 		"bold": "Bold Text",
 		"italic": "Italic Text"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "Thay đổi màu nền / opacity",
 		"connector_no_arrow": "No arrow",
@@ -23907,10 +23903,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "היט",
 		"cancel": "באָטל מאַכן",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -23918,7 +23914,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "גיט צו ענדערן אָנעסן קאָליר, יבעררוק-גיט צו טוישן מאַך קאָליר",
@@ -23970,7 +23966,7 @@ svgEditor.readLang({
 		"bold": "דרייסט טעקסט",
 		"italic": "יטאַליק טעקסט"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "ענדערן הינטערגרונט פאַרב / אָופּאַסאַטי",
 		"connector_no_arrow": "No arrow",
@@ -24159,10 +24155,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "保存",
 		"cancel": "取消",
-		"key_backspace": "退格", 
-		"key_del": "删除", 
-		"key_down": "下", 
-		"key_up": "上", 
+		"key_backspace": "退格",
+		"key_del": "删除",
+		"key_down": "下",
+		"key_up": "上",
 		"more_opts": "更多选项",
 		"url": "URL",
 		"width": "宽度",
@@ -24170,7 +24166,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "版权所有"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "显示/隐藏更式边线工具",
 		"palette_info": "点击更改填充颜色，按住Shift键单击更改线条颜色",
@@ -24222,7 +24218,7 @@ svgEditor.readLang({
 		"bold": "粗体",
 		"italic": "斜体"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "主菜单",
 		"bkgnd_color_opac": "更改背景颜色/不透明",
 		"connector_no_arrow": "无箭头",
@@ -24411,10 +24407,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "保存",
 		"cancel": "取消",
-		"key_backspace": "backspace", 
-		"key_del": "delete", 
-		"key_down": "down", 
-		"key_up": "up", 
+		"key_backspace": "backspace",
+		"key_del": "delete",
+		"key_down": "down",
+		"key_up": "up",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -24422,7 +24418,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "点击更改填充颜色，按住Shift键单击更改颜色中风",
@@ -24474,7 +24470,7 @@ svgEditor.readLang({
 		"bold": "粗体",
 		"italic": "斜体文本"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "更改背景颜色/不透明",
 		"connector_no_arrow": "No arrow",
@@ -24663,10 +24659,10 @@ svgEditor.readLang({
 	common: {
 		"ok": "保存",
 		"cancel": "取消",
-		"key_backspace": "空白", 
-		"key_del": "刪除", 
-		"key_down": "下", 
-		"key_up": "上", 
+		"key_backspace": "空白",
+		"key_del": "刪除",
+		"key_down": "下",
+		"key_up": "上",
 		"more_opts": "More Options",
 		"url": "URL",
 		"width": "Width",
@@ -24674,7 +24670,7 @@ svgEditor.readLang({
 	},
 	misc: {
 		"powered_by": "Powered by"
-	}, 
+	},
 	ui: {
 		"toggle_stroke_tools": "Show/hide more stroke tools",
 		"palette_info": "點擊更改填充顏色，按住Shift鍵單擊更改線條顏色",
@@ -24726,7 +24722,7 @@ svgEditor.readLang({
 		"bold": "粗體",
 		"italic": "斜體"
 	},
-	tools: { 
+	tools: {
 		"main_menu": "Main Menu",
 		"bkgnd_color_opac": "更改背景顏色/不透明",
 		"connector_no_arrow": "No arrow",
@@ -24928,19 +24924,19 @@ svgEditor.readLang({
 var svgEditor = (function($, editor) {'use strict';
 
 	var lang_param;
-	
+
 	function setStrings(type, obj, ids) {
 		// Root element to look for element from
 		var i, sel, val, $elem, elem, node, parent = $('#svg_editor').parent();
 		for (sel in obj) {
 			val = obj[sel];
 			if (!val) {console.log(sel);}
-			
+
 			if (ids) {sel = '#' + sel;}
 			$elem = parent.find(sel);
 			if ($elem.length) {
 				elem = parent.find(sel)[0];
-				
+
 				switch ( type ) {
 					case 'content':
 						for (i = 0; i < elem.childNodes.length; i++) {
@@ -24951,13 +24947,13 @@ var svgEditor = (function($, editor) {'use strict';
 							}
 						}
 						break;
-					
+
 					case 'title':
 						elem.title = val;
 						break;
 				}
-				
-				
+
+
 			} else {
 				console.log('Missing: ' + sel);
 			}
@@ -24971,7 +24967,7 @@ var svgEditor = (function($, editor) {'use strict';
 				langData = $.merge(langData, m.data);
 			}
 		});
-		
+
 		// Old locale file, do nothing for now.
 		if (!langData.tools) {return;}
 
@@ -24982,7 +24978,7 @@ var svgEditor = (function($, editor) {'use strict';
 			layers = langData.layers,
 			common = langData.common,
 			ui = langData.ui;
-		
+
 		setStrings('content', {
 			// copyrightLabel: misc.powered_by, // Currently commented out in svg-editor.html
 			curve_segments: properties.curve_segments,
@@ -24991,7 +24987,7 @@ var svgEditor = (function($, editor) {'use strict';
 			fit_to_canvas: tools.fit_to_canvas,
 			fit_to_layer_content: tools.fit_to_layer_content,
 			fit_to_sel: tools.fit_to_sel,
-			
+
 			icon_large: config.icon_large,
 			icon_medium: config.icon_medium,
 			icon_small: config.icon_small,
@@ -24999,19 +24995,19 @@ var svgEditor = (function($, editor) {'use strict';
 			image_opt_embed: config.image_opt_embed,
 			image_opt_ref: config.image_opt_ref,
 			includedImages: config.included_images,
-			
+
 			largest_object: tools.largest_object,
-			
+
 			layersLabel: layers.layers,
 			page: tools.page,
 			relativeToLabel: tools.relativeTo,
 			selLayerLabel: layers.move_elems_to,
 			selectedPredefined: config.select_predefined,
-			
+
 			selected_objects: tools.selected_objects,
 			smallest_object: tools.smallest_object,
 			straight_segments: properties.straight_segments,
-			
+
 			svginfo_bg_url: config.editor_img_url + ":",
 			svginfo_bg_note: config.editor_bg_note,
 			svginfo_change_background: config.background,
@@ -25023,13 +25019,13 @@ var svgEditor = (function($, editor) {'use strict';
 			svginfo_lang: config.language,
 			svginfo_title: config.doc_title,
 			svginfo_width: common.width,
-			
+
 			tool_docprops_cancel: common.cancel,
 			tool_docprops_save: common.ok,
 
 			tool_source_cancel: common.cancel,
 			tool_source_save: common.ok,
-			
+
 			tool_prefs_cancel: common.cancel,
 			tool_prefs_save: common.ok,
 
@@ -25042,28 +25038,28 @@ var svgEditor = (function($, editor) {'use strict';
 			tool_imagelib: tools.imagelib,
 			tool_open: tools.open_doc,
 			tool_save: tools.save_doc,
-			
+
 			svginfo_units_rulers: config.units_and_rulers,
 			svginfo_rulers_onoff: config.show_rulers,
 			svginfo_unit: config.base_unit,
-			
+
 			svginfo_grid_settings: config.grid,
 			svginfo_snap_onoff: config.snapping_onoff,
 			svginfo_snap_step: config.snapping_stepsize,
 			svginfo_grid_color: config.grid_color
 		}, true);
-		
+
 		// Shape categories
 		var o, cats = {};
 		for (o in langData.shape_cats) {
 			cats['#shape_cats [data-cat="' + o + '"]'] = langData.shape_cats[o];
 		}
-		
+
 		// TODO: Find way to make this run after shapelib ext has loaded
 		setTimeout(function() {
 			setStrings('content', cats);
 		}, 2000);
-		
+
 		// Context menus
 		var opts = {};
 		$.each(['cut','copy','paste', 'paste_in_place', 'delete', 'group', 'ungroup', 'move_front', 'move_up', 'move_down', 'move_back'], function() {
@@ -25075,9 +25071,9 @@ var svgEditor = (function($, editor) {'use strict';
 		});
 
 		opts['#cmenu_layers a[href="#delete"]'] = layers.del;
-		
+
 		setStrings('content', opts);
-		
+
 		setStrings('title', {
 			align_relative_to: tools.align_relative_to,
 			circle_cx: properties.circle_cx,
@@ -25181,12 +25177,12 @@ var svgEditor = (function($, editor) {'use strict';
 			url_notice: tools.no_embed
 
 		}, true);
-		
+
 		editor.setLang(lang_param, langData);
 	};
 
 	editor.putLocale = function (given_param, good_langs) {
-	
+
 		if (given_param) {
 			lang_param = given_param;
 		}
@@ -25203,26 +25199,26 @@ var svgEditor = (function($, editor) {'use strict';
 					return;
 				}
 			}
-			
+
 			console.log('Lang: ' + lang_param);
-			
+
 			// Set to English if language is not in list of good langs
 			if ($.inArray(lang_param, good_langs) === -1 && lang_param !== 'test') {
 				lang_param = "en";
 			}
-	
-			// don't bother on first run if language is English		
+
+			// don't bother on first run if language is English
 			// The following line prevents setLang from running
 			//    extensions which depend on updated uiStrings,
 			//    so commenting it out.
 			// if (lang_param.indexOf("en") === 0) {return;}
 
 		}
-		
+
 		var conf = editor.curConfig;
-		
+
 		var url = conf.langPath + "lang." + lang_param + ".js";
-		
+
 		$.getScript(url, function(d) {
 			// Fails locally in Chrome 5+
 			if (!d) {
@@ -25231,9 +25227,9 @@ var svgEditor = (function($, editor) {'use strict';
 				document.querySelector('head').appendChild(s);
 			}
 		});
-		
+
 	};
-	
+
 	return editor;
 }(jQuery, svgEditor));
 --></body></html>

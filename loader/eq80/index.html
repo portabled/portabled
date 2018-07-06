@@ -90,8 +90,8 @@ function copy() {
         }
         function copyAll() {
             var root = path.resolve(process.cwd());
-            var sourcePath = path.join(root, 'index.html');
-            var srcDirPath = path.join(root, 'src');
+            var sourcePath = path.resolve(root, 'index.html');
+            var srcDirPath = path.resolve(root, 'src');
             if (!fs.existsSync(sourcePath) || fs.statSync(sourcePath).isDirectory()) {
                 console.log('[EQ80] Run without parameters and not from original directory (looking for ' + sourcePath + '): the default action of shell extraction and update cannot be performed.');
                 return;
@@ -99,12 +99,15 @@ function copy() {
             var targetShells = fs.readdirSync(root);
             // leave only .html files in the list
             for (var i = 0; i < targetShells.length; i++) {
-                if (/\.html\.updated\.html$/.test(targetShells[i]) || !/\.html$/.test(targetShells[i])) {
+                var targetShellPath = path.resolve(root, targetShells[i]);
+                if (/\.html\.updated\.html$/.test(targetShellPath)
+                    || !/\.html$/.test(targetShellPath)
+                    || targetShellPath === sourcePath) {
                     targetShells.splice(i, 1);
                     i--;
                 }
                 else {
-                    targetShells[i] = path.resolve(root, targetShells[i]);
+                    targetShells[i] = targetShellPath;
                 }
             }
             if (!targetShells.length) {
@@ -135,24 +138,66 @@ function copy() {
                     console.log('Only one shell file detected: ' + parsedShells[0].path);
                     return;
                 }
-                console.log(latestParsed.path + ' (' + (latestParsed.totals ? new Date(latestParsed.totals.timestamp) : 'no timestamp') + ') to be copied to ' + (parsedShells.length - 1) + ' shells');
+                var now = Date.now();
+                console.log(latestParsed.path + ' (' + (latestParsed.totals ? agoText(now - latestParsed.totals.timestamp) : 'no timestamp') + ') to be copied to ' + (parsedShells.length - 1) + ' shells');
                 for (var i = 0; i < parsedShells.length; i++) {
-                    if (parsedShells[i].path === latestParsed.path)
+                    var parsedShellEntry = parsedShells[i];
+                    if (parsedShellEntry.path === latestParsed.path)
                         continue;
-                    console.log('  ...' + parsedShells[i].path + '   ' + (parsedShells[i].totals && parsedShells[i].totals.timestamp ? new Date(parsedShells[i].totals.timestamp) : ''));
+                    process.stdout.write('  ...' + parsedShellEntry.path + '   ' + (parsedShellEntry.totals && parsedShellEntry.totals.timestamp ? agoText(now - parsedShellEntry.totals.timestamp) : ''));
                     var allFiles = [];
-                    for (var j = 0; j < parsedShells[i].files.length; j++) {
-                        var entry = parsedShells[i].files[j];
+                    for (var j = 0; j < parsedShellEntry.files.length; j++) {
+                        var entry = parsedShellEntry.files[j];
                         allFiles.push(entry);
                     }
                     var updatedHTML = updateParsedHTMLContent(latestParsed.content, latestParsed, allFiles, function (entry) {
                         return entry.content;
                     }, true /* deleteExistingFiles */);
-                    fs.writeFileSync(parsedShells[i].path + '.bak', fs.readFileSync(parsedShells[i].path) + '');
-                    fs.writeFileSync(parsedShells[i].path, updatedHTML);
+                    fs.writeFileSync(parsedShellEntry.path + '.bak', parsedShellEntry.content);
+                    fs.writeFileSync(parsedShellEntry.path, updatedHTML);
+                    var formatSizeApprox = function (size) {
+                        var totalStr = persistence.formatTotalsInner(0, size);
+                        // total 0, saved 28 Jun 2018 22:26:07.651 GMT+0100
+                        return /total\s*([^\,\s]+)/.exec(totalStr)[1];
+                    };
+                    var parsedShellLengthStr = formatSizeApprox(parsedShellEntry.content.length);
+                    var updatedLengthStr = formatSizeApprox(updatedHTML.length);
+                    if (parsedShellLengthStr !== updatedLengthStr) {
+                        var changeRatio = 100 * (updatedHTML.length - parsedShellEntry.content.length) / parsedShellEntry.content.length;
+                        var changeSign = changeRatio > 0 ? '+' : changeRatio < 0 ? '-' : '';
+                        changeRatio = Math.abs(changeRatio);
+                        console.log(' ' + parsedShellLengthStr + '->' + updatedLengthStr +
+                            (changeRatio > 2 ? ' (' + changeSign + changeRatio.toFixed() + '%  L A R G E   C H A N G E )' :
+                                changeRatio > 0.2 ? ' (' + changeSign + changeRatio.toFixed(1) + '%)' :
+                                    changeRatio > 0.02 ? ' (' + changeSign + changeRatio.toFixed(2) + '%)' :
+                                        ''));
+                    }
+                    else {
+                        var changeSize = parsedShellEntry.content.length - updatedHTML.length;
+                        if (changeSize > 0)
+                            console.log(' ' + parsedShellLengthStr + ': saved larger by +' + formatSizeApprox(changeSize));
+                        else if (changeSize < 0)
+                            console.log(' ' + parsedShellLengthStr + ': saved smaller by ' + formatSizeApprox(changeSize));
+                        else
+                            console.log(' ' + parsedShellLengthStr + ' (exact same size)');
+                    }
                     parsedShells[i] = null;
                 }
             }
+        }
+        function agoText(ago) {
+            if (ago <= 5000)
+                return 'just now';
+            else if (ago <= 2 * 60 * 1000)
+                return Math.round(ago / 1000) + ' seconds ago';
+            else if (ago < 2 * 60 * 60 * 1000)
+                return Math.round(ago / 60 / 1000) + ' minutes ago';
+            else if (ago < 48 * 60 * 60 * 1000)
+                return Math.round(ago / 60 / 60 / 1000) + ' hours ago';
+            else if (ago < 356 * 24 * 60 * 60 * 1000)
+                return Math.round(ago / 24 / 60 / 60 / 1000) + ' days ago';
+            else
+                return Math.round(ago / 365.2 / 24 / 60 / 60 / 1000) + ' years ago';
         }
         function parseShell(fileContent) {
             var versions = {};
@@ -295,7 +340,9 @@ function copy() {
         console.log((allFiles.length || 'none') + ' found.');
         return { file: file, allFiles: allFiles, isInputDir: isInputDir };
     }
-    function updateParsedHTMLContent(outputCompleteHTML, outputParsed, inputAllFiles, readInputContent, deleteExistingFiles) {
+    function updateParsedHTMLContent(outputCompleteHTML, outputParsed, inputAllFiles, readInputContent, deleteExistingFiles, _console) {
+        if (!_console)
+            _console = console;
         // map to find matchings
         var outputFileMap = {};
         for (var i = 0; i < outputParsed.files.length; i++) {
@@ -327,7 +374,7 @@ function copy() {
                 offset = outputFi.start;
                 writtenFiles++;
                 if (writtenFiles % 500 === 0) {
-                    console.log('  ' + writtenFiles + '. ' + matchingInputFile.path + ' (overwrite)');
+                    _console.log('  ' + writtenFiles + '. ' + matchingInputFile.path + ' (overwrite)');
                 }
             }
             else if (deleteExistingFiles) {
@@ -360,10 +407,11 @@ function copy() {
             resultBuf.unshift(insertChunk);
             writtenFiles++;
             if (writtenFiles % 500 === 0) {
-                console.log('  ' + writtenFiles + '. ' + newFile.path + ' (new)');
+                _console.log('  ' + writtenFiles + '. ' + newFile.path + ' (new)');
             }
         }
         var resultHTML = beforeInsertionPoint + resultBuf.join('');
+        build.checkBlownLines(resultHTML);
         return resultHTML;
     }
 }
@@ -374,8 +422,8 @@ function copy() {
 function loader(window, document) {
 
 	loader.build = {
-    timestamp: 1530221150442, // Thu Jun 28 2018 22:25:50 GMT+0100 (BST)
-    taken: 7842,
+    timestamp: 1530818348846, // Thu Jul 05 2018 20:19:08 GMT+0100 (BST)
+    taken: 7679,
     platform: "node v8.10.0 on darwin/x64"
 }
 
@@ -882,8 +930,8 @@ function window_onload() {
 function persistence(document, uniqueKey, optionalDrives) {
 
 	persistence.build = {
-    timestamp: 1528491644901, // Fri Jun 08 2018 22:00:44 GMT+0100 (BST)
-    taken: 4387,
+    timestamp: 1530818341031, // Thu Jul 05 2018 20:19:01 GMT+0100 (BST)
+    taken: 4529,
     platform: "node v8.10.0 on darwin/x64"
 }
 
@@ -2858,7 +2906,7 @@ var encodings;
         return str;
     }
     encodings.lzma = lzma;
-    /// む 2015 Nathan Rugg <nmrugg@gmail.com> | MIT
+    /// (c) 2015 Nathan Rugg <nmrugg@gmail.com> | MIT
     /// See LICENSE for more details.
     /* jshint noarg:true, boss:true, unused:strict, strict:true, undef:true, noarg: true, forin:true, evil:true, newcap:false, -W041, -W021, worker:true, browser:true, node:true */
     /* global setImmediate, setTimeout, window, onmessage */
@@ -2874,9 +2922,9 @@ var encodings;
     /** xe */
     /* SLASH
     var LZMA = (function () {
-        
+    
         "use strict";
-        
+    
     */
     var /** cs */ action_compress = 1, 
     /** ce */
@@ -6032,63 +6080,74 @@ function wrapEQ80(options) {
         '/*' + fileTotalHTML + '*/';
     checkBlownLines(result);
     return result;
-    function checkBlownLines(html) {
-        var i = null;
-        var lines = html.split('\n');
-        var strangeLines = [];
-        var strangeStretches = [];
-        for (var iLine = 0; iLine < lines.length; iLine++) {
-            var ln = lines[iLine];
-            if (ln.length > 200) {
-                var highCount = 0;
-                var firstBreak = -1;
-                for (var iChar = 0; iChar < ln.length; iChar++) {
-                    if (ln.charCodeAt(iChar) > 126) {
-                        if (firstBreak < 0)
-                            firstBreak = iChar;
-                        highCount++;
-                    }
-                }
-                if (highCount > ln.length * 0.3) {
-                    strangeLines[iLine] = iChar + ':' + ln.slice(Math.max(0, firstBreak - 10), firstBreak + 10);
-                    continue;
+}
+function checkBlownLines(html, _console) {
+    if (!_console)
+        _console = console;
+    var i = null;
+    var lines = html.split('\n');
+    var strangeLines = [];
+    var strangeStretches = [];
+    for (var iLine = 0; iLine < lines.length; iLine++) {
+        var ln = lines[iLine];
+        if (ln.length > 200) {
+            var highCount = 0;
+            var firstBreak = -1;
+            for (var iChar = 0; iChar < ln.length; iChar++) {
+                if (ln.charCodeAt(iChar) > 126) {
+                    if (firstBreak < 0)
+                        firstBreak = iChar;
+                    highCount++;
                 }
             }
-            if (strangeLines[iLine - 1]) {
-                var foundStretch = false;
-                for (var iStretchLine = iLine; iStretchLine >= 0; iStretchLine--) {
-                    if (!strangeLines[iStretchLine - 1]) {
-                        strangeStretches.push({ start: iStretchLine, length: iLine - iStretchLine, char: strangeLines[iStretchLine] });
-                        foundStretch = true;
-                        break;
-                    }
-                }
-                if (!foundStretch) {
-                    strangeStretches.push({ start: iLine, length: 1, char: strangeLines[iLine] });
-                }
+            if (highCount > ln.length * 0.3) {
+                strangeLines[iLine] = iChar + ':' + ln.slice(Math.max(0, firstBreak - 10), firstBreak + 10);
+                continue;
             }
         }
-        if (strangeStretches.length) {
-            console.log('Unusually long lines with many non-ASCII symbols' + (strangeStretches.length > 1 ? ' (' + strangeStretches.length + ' separate places)' : '') + ':');
-            for (var iStretch = 0; iStretch < strangeStretches.length; iStretch++) {
-                var stret = strangeStretches[iStretch];
-                var leadLength = Math.min(stret.start, 10);
-                for (var iLineBefore = 0; iLineBefore < leadLength; iLineBefore++) {
-                    var lnum = stret.start - leadLength + iLineBefore;
-                    console.log('[' + lnum + '] ' + lines[lnum]);
+        if (strangeLines[iLine - 1]) {
+            var foundStretch = false;
+            for (var iStretchLine = iLine; iStretchLine >= 0; iStretchLine--) {
+                if (!strangeLines[iStretchLine - 1]) {
+                    strangeStretches.push({ start: iStretchLine, length: iLine - iStretchLine, char: strangeLines[iStretchLine] });
+                    foundStretch = true;
+                    break;
                 }
-                for (var iLine = 0; iLine < stret.length; iLine++) {
-                    var lnum = stret.start + iLine;
-                    console.log('*' + lnum + '* ' + stret.char + ' ' + lines[lnum].slice(0, 50) + ' ... ' + lines[lnum].slice(-50));
-                }
-                for (var iLineAfter = 0; iLineAfter < 10; iLineAfter++) {
-                    var lnum = stret.start + stret.length + iLineAfter;
-                    if (lnum > lines.length)
-                        break;
-                    if (iLineAfter + 1 < strangeStretches.length && lnum >= strangeStretches[iLineAfter + 1].start - 3)
-                        break;
-                    console.log('[' + lnum + '] ' + lines[lnum]);
-                }
+            }
+            if (!foundStretch) {
+                strangeStretches.push({ start: iLine, length: 1, char: strangeLines[iLine] });
+            }
+        }
+    }
+    if (strangeStretches.length) {
+        _console.log('Unusually long lines with many non-ASCII symbols' + (strangeStretches.length > 1 ? ' (' + strangeStretches.length + ' separate places)' : '') + ':');
+        for (var iStretch = 0; iStretch < strangeStretches.length; iStretch++) {
+            if (iStretch)
+                _console.log('');
+            var stret = strangeStretches[iStretch];
+            var leadLength = Math.min(stret.start, 4);
+            var trailLength = 4;
+            for (var iLineBefore = 0; iLineBefore < leadLength; iLineBefore++) {
+                var lnum = stret.start - leadLength + iLineBefore;
+                if (lines[lnum].length > 80)
+                    _console.log('[' + lnum + '] ' + lines[lnum].slice(0, 50) + ' ... ' + lines[lnum].slice(-20) + '[EOL]');
+                else
+                    _console.log('[' + lnum + '] ' + lines[lnum] + '[EOL]');
+            }
+            for (var iLine = 0; iLine < stret.length; iLine++) {
+                var lnum = stret.start + iLine;
+                _console.log('*' + lnum + '* ' + stret.char + ' ' + lines[lnum].slice(0, 50) + ' ... ' + lines[lnum].slice(-50) + '[EOL]');
+            }
+            for (var iLineAfter = 0; iLineAfter < trailLength; iLineAfter++) {
+                var lnum = stret.start + stret.length + iLineAfter;
+                if (lnum > lines.length)
+                    break;
+                if (iLineAfter + 1 < strangeStretches.length && lnum >= strangeStretches[iLineAfter + 1].start - 3)
+                    break;
+                if (lines[lnum].length > 80)
+                    _console.log('[' + lnum + '] ' + lines[lnum].slice(0, 50) + ' ... ' + lines[lnum].slice(-50) + '[EOL]');
+                else
+                    _console.log('[' + lnum + '] ' + lines[lnum] + '[EOL]');
             }
         }
     }
@@ -6363,6 +6422,7 @@ function template_content() {
   exports.wrapScript = wrapScript;
   exports.substitute = substitute;
   exports.wrapEQ80 = wrapEQ80;
+  exports.checkBlownLines = checkBlownLines;
   exports.getFiles = getFiles;
 
   persistence();

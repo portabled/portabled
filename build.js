@@ -4,61 +4,56 @@ var path = require('path');
 var build = require('eq80/index.html');
 var buildStats = build.buildStats();
 
-var outputPath = path.resolve(__dirname, 'lib/isolation.html');
+var child_process = require('child_process');
 
-console.log('Building isolation agent...');
-var builtAgent = build.compileTS('--project', path.join(__dirname, 'agent/tsconfig.json'), '--pretty')['agent.js'];
-builtAgent = builtAgent.replace(/function agent\(/, 'function(');
-console.log('  '+builtAgent.length+' chars');
+runNode(path.resolve(__dirname, './persistence/build.js'), function () {
 
-console.log('Building noapi...');
-var builtNoapi = build.compileTS('--project', path.join(__dirname, 'noapi/tsconfig.json'), '--pretty')['noapi.js'];
-console.log('  '+builtNoapi.length+' chars');
+  console.log('\n');
+  runNode(path.resolve(__dirname, './loader/build.js'), function () {
 
+    var loaderBytes = fs.readFileSync(path.resolve(__dirname, './loader/eq80/index.html'));
+    var oldLoaderPath = path.resolve(__dirname, './node_modules/eq80/index.html');
+    try {
+      var oldLoaderBytes = fs.readFileSync(oldLoaderBytes);
+    }
+    catch (error) { }
 
-console.log('Building isolation host...');
-var builtHost = build.compileTS('--project', path.join(__dirname, 'host/tsconfig.json'), '--pretty')['host.js'];
-console.log('  '+builtHost.length+' chars');
+    console.log('\n\n\nCopying loader[' + loaderBytes.length + '] to node_modules' + (oldLoaderBytes ? '[' + oldLoaderBytes.length + ']' : '') + '...');
+    fs.writeFileSync(
+      oldLoaderPath,
+      loaderBytes);
 
-console.log('Embedding agent/noapi code into host...');
-var builtHost_withagent = builtHost.replace('"#workeragent#"', build.jsString(builtAgent)).replace('"#noapi#"', build.jsString(builtNoapi));
-console.log('  '+builtHost_withagent.length+' chars');
+    console.log('\n');
+    runNode(path.resolve(__dirname, './shell/build.js'), function () {
 
+      var newShellPath = path.resolve(__dirname, './mi.html');
+      var newShellBytes = fs.readFileSync(newShellPath);
+      var oldShellPath = path.resolve(__dirname, './index.html');
+      var oldShellBytes = fs.readFileSync(oldShellPath);
 
+      console.log('\n\n\nCopying shell[' + newShellBytes.length + '] ' + (oldShellBytes ? ' over[' + oldShellBytes.length + ']' : '') + '...');
+      fs.writeFileSync(
+        oldShellPath,
+        newShellBytes);
 
-console.log('Building tests...');
-var builtTests = build.compileTS('--project', path.join(__dirname, 'tests/tsconfig.json'), '--pretty')['tests.js'];
-console.log('  '+builtTests.length+' chars');
+      fs.unlinkSync(newShellPath);
 
-var buildStats = buildStats();
+      console.log('\n\n\nReplacing shell in all');
 
-
-console.log('Combining...');
-
-
-var template = build.buildTemplate;
-var wrapped = build.wrapScript({
-    lib: build.functionBody(isolation_lib_content,{
-      stats: buildStats,
-      host: builtHost_withagent
-    }),
-    lib_tests: 'isolation();\n'+builtTests,
-  	lib_exports: 'isolation();\n'+'module.exports = isolation;'
+      console.log('\n');
+      runNode([path.resolve(__dirname, './node_modules/eq80/index.html'), '*'], function () {
+        console.log('\n\n\nBUILD DONE.');
+      });
+    });
   });
 
-console.log('Build into '+outputPath+' ('+wrapped.length+' chars), taken '+((buildStats.taken)/1000)+' sec.');
-fs.writeFileSync(outputPath, wrapped);
+});
 
+function runNode(script, callback) {
+  console.log(process.argv0 + ' ' + (typeof script === 'string' ? script : script.join(' ')));
+  var proc = child_process.spawn(process.argv0, typeof script === 'string' ? [script] : script, { stdio: 'inherit' });
 
-
-function isolation_lib_content() {
-
-function isolation() {
-
-	isolation.build = "#stats#";
-
-"#host#"
-
-}
-
+  proc.on('exit', function (exitCode) {
+    if (!exitCode) callback();
+  });
 }

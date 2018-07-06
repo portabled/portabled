@@ -15,7 +15,10 @@ function parseFileInner(content: string): { path: string; read(): string; } {
 
 }
 
-function parseHTML(html: string): { files: { path: string; content: string; start: number; end: number; }[]; totals?: { size: number; timestamp: number; start: number; end: number; }; } {
+function parseHTML(html: string): {
+  files: { path: string; content: string; start: number; end: number; }[];
+  totals?: { size: number; timestamp: number; start: number; end: number; };
+} {
 
   var files: { path: string; content: string; start: number; end: number; }[] = [];
   var totals: { timestamp: number; totalSize: number} = null;
