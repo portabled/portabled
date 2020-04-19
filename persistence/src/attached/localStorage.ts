@@ -6,19 +6,19 @@ namespace attached.localStorage {
 
   export var name = 'localStorage';
 
-  export function detect(uniqueKey: string, callback: (error: string, detached: persistence.Drive.Detached) => void): void {
+  export function detect(uniqueKey: string, callback: persistence.Drive.ErrorOrDetachedCallback): void {
     try {
       detectCore(uniqueKey, callback);
     }
     catch (error) {
-      callback(error.message, null);
+      callback(error.message);
     }
   }
 
-  function detectCore(uniqueKey: string, callback: (error:string, detached: persistence.Drive.Detached) => void): void {
+  function detectCore(uniqueKey: string, callback: persistence.Drive.ErrorOrDetachedCallback): void {
     var localStorageInstance = _getLocalStorage();
     if (!localStorageInstance) {
-      callback('Variable localStorage is not available.', null);
+      callback('Variable localStorage is not available.');
       return;
     }
 
@@ -33,7 +33,7 @@ namespace attached.localStorage {
     constructor(private _localStorage: Storage, private _prefix: string) {
     }
 
-    get (key: string): string {
+    get (key: string): string | null {
       var k = this._expandKey(key);
       var r = this._localStorage.getItem(k);
       return r;
@@ -63,8 +63,8 @@ namespace attached.localStorage {
       var result: string[] = [];
       var len = this._localStorage.length;
       for (var i = 0; i < len; i++) {
-        var str = this._localStorage.key(i);
-        if (str.length > this._prefix.length && str.slice(0, this._prefix.length) === this._prefix)
+        const str = this._localStorage.key(i);
+        if (str && str.length > this._prefix.length && str.slice(0, this._prefix.length) === this._prefix)
           result.push(str.slice(this._prefix.length));
       }
       return result;
@@ -103,16 +103,16 @@ namespace attached.localStorage {
     }
 
     applyTo(mainDrive: persistence.Drive.Detached.DOMUpdater, callback: persistence.Drive.Detached.CallbackWithShadow): void {
-      var keys = this._access.keys();
-      for (var i = 0; i < keys.length; i++) {
-        var k = keys[i];
+      const keys = this._access.keys();
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
         if (k.charCodeAt(0)===47 /* slash */) {
-          var value = this._access.get(k);
-          if (value.charCodeAt(0)===91 /* open square bracket [ */) {
-            var cl = value.indexOf(']');
+          const value = this._access.get(k);
+          if (value && value.charCodeAt(0)===91 /* open square bracket [ */) {
+            const cl = value.indexOf(']');
             if (cl>0 && cl < 10) {
-              var encoding = value.slice(1,cl);
-              var encFn = encodings[encoding];
+              const encoding = value.slice(1,cl);
+              const encFn = (encodings as { [encoding: string]: encodings.Encoding })[encoding];
               if (typeof encFn==='function') {
                 mainDrive.write(k, value.slice(cl+1), encoding);
                 break;
@@ -144,7 +144,7 @@ namespace attached.localStorage {
 
   class LocalStorageShadow implements persistence.Drive.Shadow {
 
-    constructor(private _access: LocalStorageAccess, public timestamp: number) {
+    constructor(private _access: LocalStorageAccess, public timestamp?: number) {
     }
 
     write(file: string, content: string, encoding: string) {

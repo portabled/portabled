@@ -73,8 +73,13 @@ declare namespace persistence {
 
       name: string;
 
-      detect(uniqueKey: string, callback: (error: string, detached: Detached) => void): void;
+      detect(uniqueKey: string, callback: ErrorOrDetachedCallback): void;
 
+    }
+
+    type ErrorOrDetachedCallback = {
+      (error: string): void;
+      (error: null, detached: persistence.Drive.Detached): void;
     }
 
     interface Detached {

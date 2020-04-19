@@ -4,28 +4,28 @@ namespace attached.webSQL {
     return typeof openDatabase !== 'function' ? null : openDatabase;
   }
 
-  export var name = 'webSQL';
+  export const name = 'webSQL';
 
-  export function detect(uniqueKey: string, callback: (error: string, detached: persistence.Drive.Detached) => void): void {
+  export function detect(uniqueKey: string, callback: persistence.Drive.ErrorOrDetachedCallback): void {
     try {
       detectCore(uniqueKey, callback);
     }
     catch (error) {
-      callback(error.message, null);
+      callback(error.message);
     }
   }
 
-  function detectCore(uniqueKey: string, callback: (error: string, detached: persistence.Drive.Detached) => void): void {
+  function detectCore(uniqueKey: string, callback: persistence.Drive.ErrorOrDetachedCallback): void {
 
-    var openDatabaseInstance = getOpenDatabase();
+    const openDatabaseInstance = getOpenDatabase();
     if (!openDatabaseInstance) {
-      callback('Variable openDatabase is not available.', null);
+      callback('Variable openDatabase is not available.');
       return;
     }
 
-    var dbName = uniqueKey || 'portabled';
+    const dbName = uniqueKey || 'portabled';
 
-    var db = openDatabase(
+    const db = openDatabase(
       dbName, // name
       1, // version
       'Portabled virtual filesystem data', // displayName
@@ -43,9 +43,10 @@ namespace attached.webSQL {
           'SELECT value from "*metadata" WHERE name=\'editedUTC\'',
           [],
           (transaction, result) => {
-            var editedValue: number = null;
+            let editedValue: number | undefined;
             if (result.rows && result.rows.length === 1) {
-              var editedValueStr = result.rows.item(0).value;
+              const row = result.rows.item(0);
+              const editedValueStr = row && row.value;
               if (typeof editedValueStr === 'string') {
                 try {
                   editedValue = parseInt(editedValueStr);
@@ -71,26 +72,46 @@ namespace attached.webSQL {
       },
       sqlError=> {
         if (finished) return;
-        else finished = true;
 
         repeatingFailures_unexpected++;
         if (repeatingFailures_unexpected>5) {
-          callback('Loading from metadata table failed, generating multiple failures '+sqlError.message, null);
+          finished = true;
+          callback('Loading from metadata table failed, generating multiple failures ' + sqlError.message);
+          return;
         }
 
-        this._createMetadataTable(
-          sqlError_creation => {
+        db.transaction(
+          transaction =>
+            createMetadataTable(
+              transaction,
+              sqlError_creation => {
+                if (finished) return;
+                else finished = true;
+
+                if (sqlError_creation)
+                  callback('Loading from metadata table failed: ' + sqlError.message + ' and creation metadata table failed: ' + sqlError_creation.message);
+                else
+                  // original metadata access failed, but create table succeeded
+                  callback(null, new WebSQLDetached(db, 0, false));
+              }),
+          sqlError => {
             if (finished) return;
             else finished = true;
 
-            if (sqlError)
-              callback('Loading from metadata table failed: '+sqlError.message+' and creation metadata table failed: '+sqlError_creation.message, null);
-            else
-              // original metadata access failed, but create table succeeded
-              callback(null, new WebSQLDetached(db, 0, false));
+            callback('Creating metadata table failed: ' + sqlError.message);
           });
       });
 
+  }
+
+  function createMetadataTable(transaction: SQLTransaction, callback: (error: SQLError | null) => void) {
+    transaction.executeSql(
+      'CREATE TABLE "*metadata" (name PRIMARY KEY, value)',
+      [],
+      (transaction, result) =>
+        callback(null),
+      (transaction, sqlError) =>
+        callback(sqlError));
   }
 
   class WebSQLDetached implements persistence.Drive.Detached {
@@ -107,7 +128,7 @@ namespace attached.webSQL {
           transaction,
           tables => {
 
-            var ftab = getFilenamesFromTables(tables);
+            const ftab = getFilenamesFromTables(tables);
 
             this._applyToWithFiles(transaction, ftab, mainDrive, callback);
           },
@@ -151,22 +172,22 @@ namespace attached.webSQL {
 
       var reportedFileCount = 0;
 
-      var completeOne = () => {
+      const completeOne = () => {
         reportedFileCount++;
         if (reportedFileCount === ftab.length) {
           callback(new WebSQLShadow(this._db, this.timestamp, this._metadataTableIsValid));
         }
       };
 
-      var applyFile = (file: string, table: string) => {
+      const applyFile = (file: string, table: string) => {
         transaction.executeSql(
           'SELECT * FROM "' + table + '"',
           [],
           (transaction, result) => {
             if (result.rows.length) {
-              var row = result.rows.item(0);
+              const row = result.rows.item(0);
               if (row.value === null)
-                mainDrive.write(file, null, null);
+                mainDrive.write(file, null);
               else if (typeof row.value === 'string')
                 mainDrive.write(file, fromSqlText(row.value), fromSqlText(row.encoding));
             }
@@ -177,7 +198,7 @@ namespace attached.webSQL {
           });
       };
 
-      for (var i = 0; i < ftab.length; i++) {
+      for (let i = 0; i < ftab.length; i++) {
         applyFile(ftab[i].file, ftab[i].table);
       }
 
@@ -191,14 +212,14 @@ namespace attached.webSQL {
 
       var droppedCount = 0;
 
-      var completeOne = () => {
+      const completeOne = () => {
         droppedCount++;
         if (droppedCount === tables.length) {
           callback(new WebSQLShadow(this._db, 0, false));
         }
       };
 
-      for (var i = 0; i < tables.length; i++) {
+      for (let i = 0; i < tables.length; i++) {
         transaction.executeSql(
           'DROP TABLE "' + tables[i] + '"',
           [],
@@ -243,7 +264,7 @@ namespace attached.webSQL {
     }
 
     private _updateCore(file: string, content: string, encoding: string) {
-      var updateSQL = this._cachedUpdateStatementsByFile[file];
+      let updateSQL = this._cachedUpdateStatementsByFile[file];
       if (!updateSQL) {
         var tableName = mangleDatabaseObjectName(file);
         updateSQL = this._createUpdateStatement(file, tableName);
@@ -323,7 +344,7 @@ namespace attached.webSQL {
     }
 
     private _deleteAllFromTable(file: string) {
-      var tableName = mangleDatabaseObjectName(file);
+      const tableName = mangleDatabaseObjectName(file);
       this._db.transaction(
         transaction => {
           transaction.executeSql(
@@ -340,7 +361,7 @@ namespace attached.webSQL {
     }
 
     private _dropFileTable(file: string) {
-      var tableName = mangleDatabaseObjectName(file);
+      const tableName = mangleDatabaseObjectName(file);
       this._db.transaction(
         transaction => {
           transaction.executeSql(
@@ -365,7 +386,7 @@ namespace attached.webSQL {
     }
 
     private _updateMetdata_noMetadataCase(transaction: SQLTransaction) {
-      this._createMetadataTable(
+      createMetadataTable(
         transaction,
         sqlerr => {
           if (sqlerr) {
@@ -385,16 +406,6 @@ namespace attached.webSQL {
         });
     }
 
-    private _createMetadataTable(transaction: SQLTransaction, callback: (error: SQLError) => void) {
-      transaction.executeSql(
-        'CREATE TABLE "*metadata" (name PRIMARY KEY, value)',
-        [],
-        (transaction, result) =>
-          callback(null),
-        (transaction, sqlError) =>
-        	callback(sqlError));
-    }
-
     private _createUpdateStatement(file: string, tableName: string): string {
       return this._cachedUpdateStatementsByFile[file] =
         'INSERT OR REPLACE INTO "' + tableName + '" VALUES (?,?,?)';
@@ -410,7 +421,7 @@ namespace attached.webSQL {
       return '=' + btoa(name);
   }
 
-  function unmangleDatabaseObjectName(name: string): string {
+  function unmangleDatabaseObjectName(name: string): string | null {
     if (!name || name.charAt(0) === '*') return null;
 
     if (name.charAt(0) !== '=') return name;
@@ -431,10 +442,10 @@ namespace attached.webSQL {
         'SELECT tbl_name  from sqlite_master WHERE type=\'table\'',
         [],
         (transaction, result) => {
-          var tables: string[] = [];
-          for (var i = 0; i < result.rows.length; i++) {
-            var row = result.rows.item(i);
-            var table = row.tbl_name;
+          const tables: string[] = [];
+          for (let i = 0; i < result.rows.length; i++) {
+            const row = result.rows.item(i);
+            const table = row.tbl_name;
             if (!table || (table[0] !== '*' && table.charAt(0) !== '=' && table.charAt(0) !== '/')) continue;
             tables.push(row.tbl_name);
           }
@@ -444,9 +455,9 @@ namespace attached.webSQL {
     }
 
   function getFilenamesFromTables(tables: string[]) {
-    var filenames: { table: string; file: string; }[] = [];
-    for (var i = 0; i < tables.length; i++) {
-      var file = unmangleDatabaseObjectName(tables[i]);
+    const filenames: { table: string; file: string; }[] = [];
+    for (let i = 0; i < tables.length; i++) {
+      const file = unmangleDatabaseObjectName(tables[i]);
       if (file)
         filenames.push({ table: tables[i], file: file });
     }
@@ -465,9 +476,9 @@ namespace attached.webSQL {
     return sqlText.replace(/\u00FFf/g, '\u00FF').replace(/\u00FF0/g, '\u0000');
   }
 
-  function reportSQLError(message: string, sqlError: SQLError);
-  function reportSQLError(sqlError: SQLError);
-  function reportSQLError(message, sqlError?) {
+  function reportSQLError(message: string, sqlError: SQLError): void;
+  function reportSQLError(sqlError: SQLError): void;
+  function reportSQLError(message: any, sqlError?: any): void {
     if (typeof console !== 'undefined' && typeof console.error === 'function') {
       if (sqlError)
         console.error(message, sqlError);

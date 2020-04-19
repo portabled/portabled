@@ -306,7 +306,7 @@ class BootState {
     }
 
     var nextDrive = this._optionalDrives[this._currentOptionalDriveIndex];
-    nextDrive.detect(this._uniqueKey, (error, detached) => {
+    nextDrive.detect(this._uniqueKey, ((error: string | null, detached: persistence.Drive.Detached) => {
       if (detached) {
         this.storageName = nextDrive.name;
         this._shadowDetected(detached);
@@ -316,7 +316,7 @@ class BootState {
         this._currentOptionalDriveIndex++;
         this._loadNextOptionalDrive();
       }
-    });
+    }) as persistence.Drive.ErrorOrDetachedCallback);
   }
 
   private _shadowDetected(detached: persistence.Drive.Detached) {

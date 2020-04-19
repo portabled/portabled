@@ -8,12 +8,7 @@ namespace attached.indexedDB {
 
   export var name = 'indexedDB';
 
-  export declare type ErrorOrDetachedCallback = {
-    (error: string): void;
-    (error: null, detached: persistence.Drive.Detached): void;
-  }
-
-  export function detect(uniqueKey: string, callback: ErrorOrDetachedCallback): void {
+  export function detect(uniqueKey: string, callback: persistence.Drive.ErrorOrDetachedCallback): void {
     try {
 
       // Firefox fires global window.onerror
@@ -56,7 +51,7 @@ namespace attached.indexedDB {
     }
   }
 
-  function detectCore(uniqueKey: string, callback: ErrorOrDetachedCallback): void {
+  function detectCore(uniqueKey: string, callback: persistence.Drive.ErrorOrDetachedCallback): void {
 
     var indexedDBInstance = _getIndexedDB();
     if (!indexedDBInstance) {
