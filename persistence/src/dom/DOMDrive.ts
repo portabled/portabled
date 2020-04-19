@@ -1,7 +1,7 @@
 class DOMDrive implements persistence.Drive {
 
   private _byPath: { [path: string]: DOMFile; } = {};
-  private _anchorNode: Node = null;
+  private _anchorNode: Node | null = null;
   private _totalSize = 0;
 
   public timestamp: number;
@@ -44,7 +44,7 @@ class DOMDrive implements persistence.Drive {
     return result;
   }
 
-  read(file: string): string {
+  read(file: string): string | null {
     var file = normalizePath(file);
     var f = this._byPath[file];
     if (!f)
@@ -53,7 +53,7 @@ class DOMDrive implements persistence.Drive {
       return f.read();
   }
 
-  storedSize(file: string): number {
+  storedSize(file: string): number | null {
     var file = normalizePath(file);
     var f = this._byPath[file];
     if (!f)
@@ -74,7 +74,8 @@ class DOMDrive implements persistence.Drive {
       if (f) {
         totalDelta -= f.contentLength;
         var parentElem = f.node.parentElement || f.node.parentNode;
-        parentElem.removeChild(f.node);
+        if (parentElem)
+          parentElem.removeChild(f.node);
         delete this._byPath[file];
       }
     }
@@ -91,7 +92,7 @@ class DOMDrive implements persistence.Drive {
 
         this._anchorNeeded();
 
-        this._document.body.insertBefore(f.node, this._anchorNode);
+        this._document.body.insertBefore(f.node, this._anchorNode as Node | undefined);
         this._anchorNode = f.node; // next time insert before this node
         this._byPath[file] = f;
         totalDelta += f.contentLength;
@@ -108,9 +109,8 @@ class DOMDrive implements persistence.Drive {
   }
 
   continueLoad(entry: DOMFile | DOMTotals) {
-
     if (!entry) {
-      this.continueLoad = null;
+      this.continueLoad = null as any;
       this._totals.totalSize = this._totalSize;
       this._totals.updateNode();
       return;
@@ -174,9 +174,9 @@ namespace DOMDrive {
   }
 
   export interface HTMLBodyElementSubset {
-    appendChild(node: Node);
-    insertBefore(newChild: Node, refNode?: Node);
-    getElementsByTagName(tag: string): NodeList;
+    appendChild(node: Node): void;
+    insertBefore(newChild: Node, refNode?: Node): void;
+    getElementsByTagName(tag: string): { [index: number]: Node; length: number; };
     firstChild: Node;
     children: { [index: number]: Node; length: number; };
   }

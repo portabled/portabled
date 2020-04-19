@@ -136,7 +136,7 @@ function _encodeNumberArrayToBase64(content: number[]): string {
   for (var i = 0; i < content.length; i++) {
     str += String.fromCharCode(content[i]);
   }
-  var b64 = '*'+encodings.base64.btoa(str);
+  var b64 = '*'+encodings.base64.btoa!(str);
   return b64;
 }
 

@@ -1,11 +1,11 @@
 class DOMFile {
 
-  private _encodedPath: string = null;
+  private _encodedPath: string | null = null;
 
   constructor(
     public node: Comment,
     public path: string,
-    private _encoding: (text: string) => any,
+    private _encoding: ((text: string) => any) | null | undefined,
     private _contentOffset: number,
     public contentLength: number) {
   }
@@ -16,7 +16,7 @@ class DOMFile {
       contentOffset: number;
       contentLength: number;
       node: Comment;
-    }): DOMFile {
+    }): DOMFile | null {
 
     //    /file/path/continue
     //    "/file/path/continue"
@@ -49,7 +49,7 @@ class DOMFile {
       }
     }
 
-    var encoding = encodings[encodingName || 'LF'];
+    var encoding = (encodings as { [encoding: string]: encodings.Encoding })[encodingName || 'LF'];
     // invalid encoding considered a bogus comment, skipped
     if (encoding)
       return new DOMFile(cmheader.node, filePath, encoding, cmheader.contentOffset, cmheader.contentLength);
@@ -63,9 +63,9 @@ class DOMFile {
     // proper HTML5 has substringData to read only a chunk
     // (that saves on string memory allocations
     // comparing to fetching the whole text including the file name)
-    var contentText = typeof this.node.substringData === 'function' ?
-        this.node.substringData(this._contentOffset, 1000000000) :
-    this.node.nodeValue.slice(this._contentOffset);
+    var contentText = typeof this.node!.substringData === 'function' ?
+      this.node!.substringData(this._contentOffset, 1000000000) :
+      this.node!.nodeValue!.slice(this._contentOffset);
 
     // XML end-comment is escaped when stored in DOM,
     // unescape it back
@@ -82,7 +82,7 @@ class DOMFile {
     return decodedText;
   }
 
-  write(content: any, encoding: string): string | boolean {
+  write(content: any, encoding?: string): string | boolean {
 
     content =
       content===null || typeof content === 'undefined' ? content :
@@ -108,7 +108,7 @@ class DOMFile {
     if (html===this.node.nodeValue) return false;
     this.node.nodeValue = html;
 
-    this._encoding = encodings[encoded.encoding || 'LF'];
+    this._encoding = (encodings as { [encoding: string]: encodings.Encoding })[encoded.encoding || 'LF'];
     this._contentOffset = leadText.length;
 
     this.contentLength = content.length;

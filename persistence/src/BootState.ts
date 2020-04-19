@@ -1,6 +1,6 @@
 class BootState {
 
-  domTimestamp: number = null;
+  domTimestamp: number | null = null;
   domTotalSize: number = null;
   domLoadedSize: number = null;
   loadedFileCount: number = null;

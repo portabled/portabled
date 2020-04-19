@@ -19,7 +19,7 @@ class DOMTotals {
       contentOffset: number;
       contentLength: number;
       node: Comment;
-    }): DOMTotals {
+    }): DOMTotals | null {
 
     // TODO: preserve unknowns when parsing
 

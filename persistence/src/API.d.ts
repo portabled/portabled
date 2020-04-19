@@ -11,8 +11,8 @@ declare namespace persistence {
     platform: string;
   };
 
-  var encodings;
-  var bestEncode;
+  namespace encodings { }
+  var bestEncode: (content: any, escapePath?: boolean) => { content: string; encoding: string; } ;
 
   interface BootState {
 
@@ -28,8 +28,8 @@ declare namespace persistence {
     newStorageFiles: string[];
 
 		read(path: string): any;
-    continueLoading();
-    finishParsing(completion: (drive: Drive.Detached.DOMDrive) => void);
+    continueLoading(): void;
+    finishParsing(completion: (drive: Drive.Detached.DOMDrive) => void): void;
   }
 
   function formatTotalsInner(timestamp: number, totalSize: number): string;
@@ -49,11 +49,11 @@ declare namespace persistence {
 
     files(): string[];
 
-    read(file: string): string;
+    read(file: string): string | null;
 
-    write(file: string, content: string);
+    write(file: string, content: string): void;
 
-    storedSize?(file: string): number;
+    storedSize?(file: string): number | null;
 
   }
 
