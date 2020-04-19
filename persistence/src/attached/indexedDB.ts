@@ -8,7 +8,12 @@ namespace attached.indexedDB {
 
   export var name = 'indexedDB';
 
-  export function detect(uniqueKey: string, callback: (error: string, detached: persistence.Drive.Detached) => void): void {
+  export declare type ErrorOrDetachedCallback = {
+    (error: string): void;
+    (error: null, detached: persistence.Drive.Detached): void;
+  }
+
+  export function detect(uniqueKey: string, callback: ErrorOrDetachedCallback): void {
     try {
 
       // Firefox fires global window.onerror
@@ -21,8 +26,8 @@ namespace attached.indexedDB {
       if (needsFirefoxPrivateModeOnerrorWorkaround) {
         try {
 
-          detectCore(uniqueKey, function(error, detached) {
-            callback(error, detached);
+          detectCore(uniqueKey, (error: string | null, detached?: persistence.Drive.Detached) => {
+            callback(error as any, detached as any);
 
           	// the global window.onerror will fire AFTER request.onerror,
             // so here we temporarily install a dummy handler for it
@@ -37,7 +42,7 @@ namespace attached.indexedDB {
 
         }
         catch (err) {
-          callback(err.message, null);
+          callback(err.message);
         }
       }
       else {
@@ -47,15 +52,15 @@ namespace attached.indexedDB {
 
     }
     catch (error) {
-      callback(error.message, null);
+      callback(error.message);
     }
   }
 
-  function detectCore(uniqueKey: string, callback: (error: string, detached: persistence.Drive.Detached) => void): void {
+  function detectCore(uniqueKey: string, callback: ErrorOrDetachedCallback): void {
 
     var indexedDBInstance = _getIndexedDB();
     if (!indexedDBInstance) {
-      callback('Variable indexedDB is not available.', null);
+      callback('Variable indexedDB is not available.');
       return;
     }
 
@@ -63,7 +68,7 @@ namespace attached.indexedDB {
 
     var openRequest = indexedDBInstance.open(dbName, 1);
 
-    openRequest.onerror = (errorEvent) => callback('Opening database error: '+getErrorMessage(errorEvent), null);
+    openRequest.onerror = (errorEvent) => callback('Opening database error: '+getErrorMessage(errorEvent));
 
     openRequest.onupgradeneeded = createDBAndTables;
 
@@ -75,30 +80,30 @@ namespace attached.indexedDB {
         // files mentioned here, but not really used to detect
         // broken multi-store transaction implementation in Safari
 
-        transaction.onerror = (errorEvent) => callback('Transaction error: '+getErrorMessage(errorEvent), null);
+        transaction.onerror = (errorEvent) => callback('Transaction error: '+getErrorMessage(errorEvent));
 
         var metadataStore = transaction.objectStore('metadata');
         var filesStore = transaction.objectStore('files');
         var editedUTCRequest = metadataStore.get('editedUTC');
       }
       catch (getStoreError) {
-        callback('Cannot open database: '+getStoreError.message, null);
+        callback('Cannot open database: '+getStoreError.message);
         return;
       }
 
       if (!editedUTCRequest) {
-        callback('Request for editedUTC was not created.', null);
+        callback('Request for editedUTC was not created.');
         return;
       }
 
       editedUTCRequest.onerror = (errorEvent) => {
-        var detached = new IndexedDBDetached(db, transaction, null);
+        var detached = new IndexedDBDetached(db, transaction);
         callback(null, detached);
       };
 
       editedUTCRequest.onsuccess = (event) => {
         var result: MetadataData = editedUTCRequest.result;
-        var detached = new IndexedDBDetached(db, transaction, result && typeof result.value === 'number' ? result.value : null);
+        var detached = new IndexedDBDetached(db, transaction, result && typeof result.value === 'number' ? result.value : void 0);
         callback(null, detached);
       };
     }
@@ -111,7 +116,7 @@ namespace attached.indexedDB {
       }
   }
 
-  function getErrorMessage(event): string {
+  function getErrorMessage(event: any): string {
     if (event.message) return event.message;
     else if (event.target) return event.target.errorCode;
     return event+'';
@@ -122,14 +127,14 @@ namespace attached.indexedDB {
 
     constructor(
       private _db: IDBDatabase,
-      private _transaction: IDBTransaction,
-      public timestamp: number) {
+      private _transaction?: IDBTransaction,
+      public timestamp?: number) {
 
       // ensure the same transaction is used for applyTo/purge if possible
       // -- but not if it's completed
       if (this._transaction) {
         this._transaction.oncomplete = () => {
-          this._transaction = null;
+          this._transaction = void 0;
         };
       }
     }
@@ -139,7 +144,7 @@ namespace attached.indexedDB {
       var metadataStore = transaction.objectStore('metadata');
       var filesStore = transaction.objectStore('files');
 
-      var onerror = (errorEvent) => {
+      var onerror = (errorEvent: any) => {
         if (typeof console!=='undefined' && console && typeof console.error==='function')
           console.error('Could not count files store: ', errorEvent);
         callback(new IndexedDBShadow(this._db, this.timestamp));
@@ -181,7 +186,7 @@ namespace attached.indexedDB {
           cursorRequest.onsuccess = (event) => {
 
             try {
-              var cursor: IDBCursor = cursorRequest.result;
+              var cursor: IDBCursor | null = cursorRequest.result;
 
               if (!cursor) {
                 callback(new IndexedDBShadow(this._db, this.timestamp));
@@ -239,7 +244,7 @@ namespace attached.indexedDB {
 
     purge(callback: persistence.Drive.Detached.CallbackWithShadow): void {
       if (this._transaction) {
-        this._transaction = null;
+        this._transaction = void 0;
         setTimeout(() => { // avoid being in the original transaction
           this._purgeCore(callback);
         }, 1);
@@ -266,8 +271,10 @@ namespace attached.indexedDB {
       var stores: IDBObjectStore[] = [];
 
       var attemptPopulateStores = () => {
-        for (var i = 0; i < storeNames.length; i++) {
-          stores[i] = transaction.objectStore(storeNames[i]);
+        if (transaction) {
+          for (var i = 0; i < storeNames.length; i++) {
+            stores[i] = transaction.objectStore(storeNames[i]);
+          }
         }
       };
 
@@ -288,36 +295,39 @@ namespace attached.indexedDB {
 
   }
 
+  type WriteSnapshot = { [file: string]: { content: string | null, encoding: string | undefined } };
 
   class IndexedDBShadow implements persistence.Drive.Shadow {
 
     private _lastWrite: number = 0;
-    private _conflatedWrites = null;
+    private _conflatedWrites: WriteSnapshot | null = null;
 
-    constructor(private _db: IDBDatabase, public timestamp: number) {
+    constructor(private _db: IDBDatabase, public timestamp?: number) {
     }
 
-    write(file: string, content: string, encoding: string) {
+    write(file: string, content: string | null, encoding: string | undefined) {
       var now = Date.now ? Date.now() : +new Date();
       if (this._conflatedWrites || now-this._lastWrite<10) {
         if (!this._conflatedWrites) {
           this._conflatedWrites = {};
           setTimeout(() => {
             var writes = this._conflatedWrites;
-            this._conflatedWrites = null;
-            this._writeCore(writes);
+            if (writes) {
+              this._conflatedWrites = null;
+              this._writeCore(writes);
+            }
           }, 0);
         }
         this._conflatedWrites[file] = { content, encoding };
       }
       else {
-        var entry = {};
+        var entry: WriteSnapshot = {};
         entry[file] = {content,encoding};
         this._writeCore(entry);
       }
     }
 
-    private _writeCore(writes: any) {
+    private _writeCore(writes: WriteSnapshot) {
       this._lastWrite = Date.now ? Date.now() : +new Date();
       var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
       var filesStore = transaction.objectStore('files');
@@ -356,9 +366,9 @@ namespace attached.indexedDB {
 
   interface FileData {
     path: string;
-    content: string;
-    encoding: string;
-    state: string;
+    content: string | null;
+    encoding: string | undefined;
+    state: string | null;
   }
 
   interface MetadataData {

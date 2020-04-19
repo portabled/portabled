@@ -1,0 +1,17 @@
+{
+  "name": "new-tpck",
+  "version": "0.90.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^13.13.0",
+    "typescript": "^3.8.3"
+  }
+}

@@ -61,10 +61,9 @@ declare namespace persistence {
 
     interface Shadow {
 
-      timestamp: number;
+      timestamp?: number;
 
-      write(file: string, content: null): void;
-      write(file: string, content: string, encoding: string): void;
+      write(file: string, content: string | null, encoding?: string): void;
 
       forget(file: string): void;
 
@@ -80,7 +79,7 @@ declare namespace persistence {
 
     interface Detached {
 
-      timestamp: number;
+      timestamp?: number;
       totalSize?: number;
 
       applyTo(mainDrive: Detached.DOMUpdater, callback: Detached.CallbackWithShadow): void;
@@ -98,9 +97,9 @@ declare namespace persistence {
 
       interface DOMUpdater {
 
-        timestamp: number;
+        timestamp?: number;
 
-        write(file: string, content: string, encoding: string): void;
+        write(file: string, content: string | null, encoding?: string): void;
 
       }
 

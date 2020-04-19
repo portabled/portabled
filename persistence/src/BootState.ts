@@ -5,7 +5,7 @@ class BootState {
   domLoadedSize: number | null = null;
   loadedFileCount: number | null = null;
   storageName: string | null = null;
-  storageTimestamp: number | null = null;
+  storageTimestamp: number | undefined = void 0;
   storageLoadFailures: { [storage: string]: string; } = {};
 
   newDOMFiles: string[] = [];
