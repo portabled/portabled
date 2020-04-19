@@ -63,6 +63,7 @@ declare namespace persistence {
 
       timestamp: number;
 
+      write(file: string, content: null): void;
       write(file: string, content: string, encoding: string): void;
 
       forget(file: string): void;
@@ -104,7 +105,7 @@ declare namespace persistence {
       }
 
       interface DOMDrive extends Drive {
-        write(file: string, content: string, encoding?: string): void;
+        write(file: string, content: string | null, encoding?: string): void;
       }
 
     }

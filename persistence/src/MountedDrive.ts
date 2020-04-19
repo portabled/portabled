@@ -3,9 +3,9 @@ class MountedDrive implements persistence.Drive {
   updateTime = true;
   timestamp: number = 0;
 
-  private _cachedFiles: string[] = null;
+  private _cachedFiles: string[] | null = null;
 
-  constructor (private _dom: persistence.Drive.Detached.DOMDrive, private _shadow: persistence.Drive.Shadow) {
+  constructor (private _dom: persistence.Drive.Detached.DOMDrive, private _shadow: persistence.Drive.Shadow | null) {
     this.timestamp = this._dom.timestamp;
   }
 
@@ -16,12 +16,15 @@ class MountedDrive implements persistence.Drive {
     return this._cachedFiles.slice(0);
   }
 
-  read(file: string): string {
+  read(file: string): string | null {
     return this._dom.read(file);
   }
 
-  storedSize(file: string): number {
-    return this._dom.storedSize(file);
+  storedSize(file: string): number | null {
+    if (typeof this._dom.storedSize === 'function')
+      return this._dom.storedSize(file);
+    else
+      return null;
   }
 
   write(file: string, content: string) {
@@ -32,13 +35,19 @@ class MountedDrive implements persistence.Drive {
 
     this._dom.timestamp = this.timestamp;
 
-    var encoded = content ? bestEncode(content) : null;
+    const encoded = typeof content === 'undefined' || content === null ? null : bestEncode(content);
 
-    this._dom.write(file, encoded ? encoded.content : null, encoded ? encoded.encoding : null);
+    if (encoded)
+      this._dom.write(file, encoded.content, encoded.encoding);
+    else
+      this._dom.write(file, null);
 
     if (this._shadow) {
       this._shadow.timestamp = this.timestamp;
-      this._shadow.write(file, encoded ? encoded.content : null, encoded ? encoded.encoding : null);
+      if (encoded)
+        this._shadow.write(file, encoded.content, encoded.encoding);
+      else
+        this._shadow.write(file, null);
     }
   }
 }

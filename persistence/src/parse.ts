@@ -1,17 +1,17 @@
-function parseTotalsInner(content: string): { timestamp: number; totalSize: number; } {
+function parseTotalsInner(content: string): { timestamp: number; totalSize: number; } | undefined {
 
-  var tot = DOMTotals.tryParse(<any>{ header: content });
+  const tot = DOMTotals.tryParse(<any>{ header: content });
 
   if (tot) return { timestamp: tot.timestamp, totalSize: tot.totalSize };
 
 }
 
-function parseFileInner(content: string): { path: string; read(): string; } {
+function parseFileInner(content: string): { path: string; read(): string; } | undefined {
 
-  var cm = new CommentHeader(<any>{nodeValue: content});
-  var fi = DOMFile.tryParse(cm);
+  const cm = new CommentHeader(<any>{nodeValue: content});
+  const fi = DOMFile.tryParse(cm);
 
-  if (fi) return { path: fi.path, read: () => fi.read() };
+  if (fi) return { path: fi.path, read: () => fi!.read() };
 
 }
 
@@ -21,9 +21,9 @@ function parseHTML(html: string): {
 } {
 
   var files: { path: string; content: string; start: number; end: number; }[] = [];
-  var totals: { timestamp: number; totalSize: number} = null;
-  var totalsCommentStart: number;
-  var totalsCommentEnd: number;
+  var totals: { timestamp: number; totalSize: number} | undefined;
+  var totalsCommentStart: number | undefined;
+  var totalsCommentEnd: number | undefined;
 
   var scriptOrCommentStart = /(\<script[\s\>])|(\<!\-\-)/gi;
   var scriptEnd = /\<\/script\s*\>/gi;
@@ -71,6 +71,6 @@ function parseHTML(html: string): {
     if (fi) files.push({path: fi.path, content: fi.read(), start: commentStartOffset, end: commentEndOffset});
   }
 
-  if (totals) return { files, totals: { size:totals.totalSize, timestamp: totals.timestamp, start: totalsCommentStart, end: totalsCommentEnd } };
+  if (totals) return { files, totals: { size:totals.totalSize, timestamp: totals.timestamp, start: totalsCommentStart!, end: totalsCommentEnd! } };
   else return { files };
 }

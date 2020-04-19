@@ -1,32 +1,32 @@
 class BootState {
 
   domTimestamp: number | null = null;
-  domTotalSize: number = null;
-  domLoadedSize: number = null;
-  loadedFileCount: number = null;
-  storageName: string = null;
-  storageTimestamp: number = null;
+  domTotalSize: number | null = null;
+  domLoadedSize: number | null = null;
+  loadedFileCount: number | null = null;
+  storageName: string | null = null;
+  storageTimestamp: number | null = null;
   storageLoadFailures: { [storage: string]: string; } = {};
 
   newDOMFiles: string[] = [];
   newStorageFiles: string[] = [];
 
-	ondomnode: (node: any, recognizedKind: 'file' | 'totals', recognizedEntity: any) => void = null;
+	ondomnode: ((node: any, recognizedKind?: 'file' | 'totals', recognizedEntity?: any) => void) | null = null;
 
   private _byPath: { [path: string]: DOMFile; } = {};
 
-  private _totals: DOMTotals = null;
+  private _totals: DOMTotals | null = null;
 
-  private _completion: (drive: persistence.Drive) => void = null;
+  private _completion: ((drive: persistence.Drive) => void) | null = null;
 
   private _anticipationSize = 0;
-  private _lastNode: Node = null;
+  private _lastNode: Node | null = null;
 
   private _currentOptionalDriveIndex = 0;
   private _shadowFinished = false;
-  private _detachedDrive: persistence.Drive.Detached = null; // sometimes it lingers here until DOM timestamp is ready
-  private _shadow: persistence.Drive.Shadow = null;
-  private _toUpdateDOM: { [path: string]: any; } = null;
+  private _detachedDrive: persistence.Drive.Detached | null = null; // sometimes it lingers here until DOM timestamp is ready
+  private _shadow: persistence.Drive.Shadow | null = null;
+  private _toUpdateDOM: { [path: string]: any; } | null = null;
   private _toForgetShadow: string[] = [];
   private _domFinished = false;
   private _reportedFiles: any = {};
@@ -108,7 +108,7 @@ class BootState {
     }
 
     if (typeof this.ondomnode==='function') {
-      this.ondomnode(node, null, null);
+      this.ondomnode(node);
     }
 
   }
@@ -120,7 +120,7 @@ class BootState {
     else {
       this._totals = totals;
       this.domTimestamp = totals.timestamp;
-      this.domTotalSize = Math.max(totals.totalSize, this.domTotalSize|0);
+      this.domTotalSize = Math.max(totals.totalSize, this.domTotalSize!|0);
 
       var detached = this._detachedDrive;
       if (detached) {
@@ -143,9 +143,9 @@ class BootState {
     this._byPath[file.path] = file;
     this._newDOMFileCache[file.path] = true;
 
-    this.loadedFileCount++;
-    this.domLoadedSize += file.contentLength;
-    this.domTotalSize = Math.max(this.domTotalSize, this.domLoadedSize);
+    this.loadedFileCount!++;
+    this.domLoadedSize! += file.contentLength;
+    this.domTotalSize = Math.max(this.domTotalSize! | 0, this.domLoadedSize! | 0);
   }
 
   private _removeNode(node: Node) {
@@ -155,7 +155,7 @@ class BootState {
 
   private _continueParsingDOM(toCompletion: boolean){
 
-    this.domLoadedSize -= this._anticipationSize;
+    this.domLoadedSize! -= this._anticipationSize;
     this._anticipationSize = 0;
 
     while (true) {
@@ -173,8 +173,8 @@ class BootState {
           var speculativeFile = DOMFile.tryParse(cmheader);
           if (speculativeFile) {
             this._anticipationSize = speculativeFile.contentLength;
-            this.domLoadedSize = this.domLoadedSize + this._anticipationSize;
-            this.domTotalSize = Math.max(this.domTotalSize, this.domLoadedSize); // total should not become less that loaded
+            this.domLoadedSize! += this._anticipationSize;
+            this.domTotalSize = Math.max(this.domTotalSize! | 0, this.domLoadedSize! | 0); // total should not become less that loaded
           }
         }
         return;
@@ -185,7 +185,7 @@ class BootState {
       }
       else {
         if (typeof this.ondomnode==='function') {
-          this.ondomnode(this._lastNode, null, null);
+          this.ondomnode(this._lastNode);
         }
       }
 
@@ -210,7 +210,7 @@ class BootState {
       // (because files with corresponding paths don't exist in DOM)
 
       for (var path in this._toUpdateDOM) {
-        let entry: { content, encoding };
+        let entry: { content: string, encoding: string } | undefined;
         if (!path || path.charCodeAt(0)!==47) continue; // expect leading slash
         var content = this._toUpdateDOM[path];
         if (content && content.content && content.encoding) {
@@ -268,8 +268,8 @@ class BootState {
 
   private _finishUpdateTotals() {
     if (this._totals) {
-      if (this.storageTimestamp > this.domTimestamp) {
-        this._totals.timestamp = this.storageTimestamp;
+      if (this.storageTimestamp! > this.domTimestamp!) {
+        this._totals.timestamp = this.storageTimestamp!;
         this._totals.updateNode();
       }
     }
@@ -329,7 +329,7 @@ class BootState {
 
   private _compareTimestampsAndProceed(detached: persistence.Drive.Detached) {
     var domRecent: boolean;
-    if (detached.timestamp && detached.timestamp > this.domTimestamp) domRecent = false;
+    if (detached.timestamp && detached.timestamp > this.domTimestamp!) domRecent = false;
     else if (!detached.timestamp && !this.domTimestamp) domRecent = false;
     else domRecent = true;
 
@@ -342,7 +342,7 @@ class BootState {
     else {
       this._toUpdateDOM = {};
       detached.applyTo({
-        timestamp: this.domTimestamp,
+        timestamp: this.domTimestamp! | 0,
         write: (path: string, content: any, encoding: string) => {
           this._applyShadowToDOM(path, content, encoding);
         }
@@ -385,13 +385,16 @@ class BootState {
       this._newStorageFileCache[path] = true;
     }
     else {
+      if (!this._toUpdateDOM)
+        this._toUpdateDOM = {};
+
       this._toUpdateDOM[path] = encoding ? { content, encoding } : content;
       this._newStorageFileCache[path] = true;
     }
   }
 
   private _findAnchor() {
-    var anchor: Node = null;
+    var anchor: Node | null = null;
     for (var k in this._byPath) if (k && k.charCodeAt(0)===47) {
       anchor = this._byPath[k].node;
     }
@@ -417,6 +420,17 @@ class BootState {
     }
   }
 
+  private _createSynteticTotals() {
+    const comment = this._document.createComment('');
+    const totalsParent =
+      this._document.head
+      || (this._document.getElementsByTagName('head') && this._document.getElementsByTagName('head')[0])
+      || this._document.body;
+    totalsParent.appendChild(comment);
+    this._totals = new DOMTotals(this.domTimestamp! | 0, this.domTotalSize! | 0, comment);
+    this._totals.updateNode();
+  }
+
   private _allCompleted() {
     this._finishUpdateTotals();
 
@@ -426,8 +440,11 @@ class BootState {
       domFiles.push(this._byPath[path]);
     }
 
-    var domDrive = new DOMDrive(this._totals, domFiles, this._document);
+    if (!this._totals)
+      this._createSynteticTotals();
+
+    var domDrive = new DOMDrive(this._totals!, domFiles, this._document);
     var mountDrive = new MountedDrive(domDrive, this._shadow);
-    this._completion(mountDrive);
+    this._completion!(mountDrive);
   }
 }

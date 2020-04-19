@@ -13,12 +13,12 @@ interface Database {
   transaction(
     callback: (transaction: SQLTransaction) => void,
     errorCallback?: (error: SQLError) => void,
-    successCallback?: () => void);
+    successCallback?: () => void): void;
 
   readTransaction(
     callback: (transaction: SQLTransaction) => void,
     errorCallback?: (error: SQLError) => void,
-    successCallback?: () => void);
+    successCallback?: () => void): void;
 
   version: string;
 
@@ -27,7 +27,7 @@ interface Database {
     newVersion: string,
     callback: (transaction: SQLTransaction) => void,
     errorCallback?: (error: SQLError) => void,
-    successCallback?: () => void);
+    successCallback?: () => void): void;
 }
 
 interface SQLTransaction {

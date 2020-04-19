@@ -92,7 +92,7 @@ class DOMDrive implements persistence.Drive {
 
         this._anchorNeeded();
 
-        this._document.body.insertBefore(f.node, this._anchorNode as Node | undefined);
+        this._document.body.insertBefore(f.node, this._anchorNode as Node || null);
         this._anchorNode = f.node; // next time insert before this node
         this._byPath[file] = f;
         totalDelta += f.contentLength;
@@ -175,9 +175,9 @@ namespace DOMDrive {
 
   export interface HTMLBodyElementSubset {
     appendChild(node: Node): void;
-    insertBefore(newChild: Node, refNode?: Node): void;
+    insertBefore(newChild: Node, refNode: Node | null): void;
     getElementsByTagName(tag: string): { [index: number]: Node; length: number; };
-    firstChild: Node;
+    firstChild: Node | null;
     children: { [index: number]: Node; length: number; };
   }
 }

@@ -2,7 +2,7 @@
     "compilerOptions": {
         "out": "persistence.js",
         "sourceMap": false,
-        "strict": false,
+        "strict": true,
         "alwaysStrict": false
     }
 }
