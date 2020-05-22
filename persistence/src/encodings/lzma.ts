@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 namespace encodings {
 
   // https://github.com/LZMA-JS/LZMA-JS [MIT licensed]

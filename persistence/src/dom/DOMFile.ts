@@ -74,7 +74,7 @@ class DOMFile {
     replace(/\<\*(\**)\!/g, '<$1!');
 
     // decode
-    var decodedText = this._encoding(restoredText);
+    var decodedText = this._encoding!(restoredText);
 
     // update just in case it's been off
     this.contentLength = decodedText.length;
