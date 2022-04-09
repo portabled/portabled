@@ -2066,9 +2066,6 @@ var portabled = (function() {
            * @param {persistence.Drive.Detached.CallbackWithShadow} callback
            */
           function applyTo(mainDrive, callback) {
-            var transaction = this._transaction || this._db.transaction(['files', 'metadata']); // try to reuse the original opening _transaction
-            var metadataStore = transaction.objectStore('metadata');
-            var filesStore = transaction.objectStore('files');
 
             var onerror = function (errorEvent) {
               if (typeof console!=='undefined' && console && typeof console.error==='function')
@@ -2077,6 +2074,10 @@ var portabled = (function() {
             };
 
             try {
+              var transaction = this._transaction || this._db.transaction(['files', 'metadata']); // try to reuse the original opening _transaction
+              var metadataStore = transaction.objectStore('metadata');
+              var filesStore = transaction.objectStore('files');
+
               var countRequest = filesStore.count();
             }
             catch (error) {
@@ -2233,118 +2234,117 @@ var portabled = (function() {
           IndexedDBDetached.prototype._requestStores = _requestStores;
 
           return IndexedDBDetached;
+        })();
 
-          /** @typedef {{ [file: string]: { content: string | null, encoding: string | undefined } }} WriteSnapshot */
+        /** @typedef {{ [file: string]: { content: string | null, encoding: string | undefined } }} WriteSnapshot */
 
-          var IndexedDBShadow = (function () {
-
-            /**
-             * @class
-             * @param {IDBDatabase} db
-             * @param {number=} timestamp
-             */
-            function IndexedDBShadow(db, timestamp) {
-              this._db = db;
-              this.timestamp = timestamp;
-              this._lastWrite = 0;
-              /** @type {WriteSnapshot} */
-              this._conflatedWrites = null;
-            }
-
-            /**
-             * @this {IndexedDBShadow}
-             * @param {string} file
-             * @param {string | null} content
-             * @param {string | undefined} encoding
-             */
-            function write(file, content, encoding) {
-              var now = Date.now ? Date.now() : +new Date();
-              if (this._conflatedWrites || now-this._lastWrite<10) {
-                if (!this._conflatedWrites) {
-                  this._conflatedWrites = {};
-                  var _this = this;
-                  setTimeout(function () {
-                    var writes = _this._conflatedWrites;
-                    if (writes) {
-                      _this._conflatedWrites = null;
-                      _this._writeCore(writes);
-                    }
-                  }, 0);
-                }
-                this._conflatedWrites[file] = { content, encoding };
-              }
-              else {
-                var entry = {};
-                entry[file] = {content,encoding};
-                this._writeCore(entry);
-              }
-            }
-            IndexedDBShadow.prototype.write = write;
-
-            /**
-             * @this {IndexedDBShadow}
-             * @param {WriteSnapshot} writes
-             */
-            function _writeCore(writes) {
-              this._lastWrite = Date.now ? Date.now() : +new Date();
-              var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
-              var filesStore = transaction.objectStore('files');
-              var metadataStore = transaction.objectStore('metadata');
-
-              for (var file in writes) if (writes.hasOwnProperty(file)) {
-
-                var entry = writes[file];
-
-                // no file deletion here: we need to keep account of deletions too!
-                var fileData = {
-                  path: file,
-                  content: entry.content,
-                  encoding: entry.encoding,
-                  state: null
-                };
-
-                var putFile = filesStore.put(fileData);
-              }
-
-              var md = {
-                property: 'editedUTC',
-                value: Date.now()
-              };
-
-              metadataStore.put(md);
-            }
-            IndexedDBShadow.prototype._writeCore = _writeCore;
-
-            /**
-             * @this {IndexedDBShadow}
-             * @param {string} file
-             */
-            function forget(file) {
-              var transaction = this._db.transaction(['files'], 'readwrite');
-              var filesStore = transaction.objectStore('files');
-              filesStore['delete'](file);
-            }
-            IndexedDBShadow.prototype.forget = forget;
-
-            return IndexedDBShadow;
-
-          })();
+        var IndexedDBShadow = (function () {
 
           /**
-           * @typedef {{
-           *  path: string;
-           *  content: string | null;
-           *  encoding: string | undefined;
-           *  state: string | null;
-           * }} FileData
-           *
-           * @typedef {{
-           *  property: string;
-           *  value: any;
-           * }} MetadataData
+           * @class
+           * @param {IDBDatabase} db
+           * @param {number=} timestamp
            */
+          function IndexedDBShadow(db, timestamp) {
+            this._db = db;
+            this.timestamp = timestamp;
+            this._lastWrite = 0;
+            /** @type {WriteSnapshot} */
+            this._conflatedWrites = null;
+          }
+
+          /**
+           * @this {IndexedDBShadow}
+           * @param {string} file
+           * @param {string | null} content
+           * @param {string | undefined} encoding
+           */
+          function write(file, content, encoding) {
+            var now = Date.now ? Date.now() : +new Date();
+            if (this._conflatedWrites || now-this._lastWrite<10) {
+              if (!this._conflatedWrites) {
+                this._conflatedWrites = {};
+                var _this = this;
+                setTimeout(function () {
+                  var writes = _this._conflatedWrites;
+                  if (writes) {
+                    _this._conflatedWrites = null;
+                    _this._writeCore(writes);
+                  }
+                }, 0);
+              }
+              this._conflatedWrites[file] = { content, encoding };
+            }
+            else {
+              var entry = {};
+              entry[file] = {content,encoding};
+              this._writeCore(entry);
+            }
+          }
+          IndexedDBShadow.prototype.write = write;
+
+          /**
+           * @this {IndexedDBShadow}
+           * @param {WriteSnapshot} writes
+           */
+          function _writeCore(writes) {
+            this._lastWrite = Date.now ? Date.now() : +new Date();
+            var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
+            var filesStore = transaction.objectStore('files');
+            var metadataStore = transaction.objectStore('metadata');
+
+            for (var file in writes) if (writes.hasOwnProperty(file)) {
+
+              var entry = writes[file];
+
+              // no file deletion here: we need to keep account of deletions too!
+              var fileData = {
+                path: file,
+                content: entry.content,
+                encoding: entry.encoding,
+                state: null
+              };
+
+              var putFile = filesStore.put(fileData);
+            }
+
+            var md = {
+              property: 'editedUTC',
+              value: Date.now()
+            };
+
+            metadataStore.put(md);
+          }
+          IndexedDBShadow.prototype._writeCore = _writeCore;
+
+          /**
+           * @this {IndexedDBShadow}
+           * @param {string} file
+           */
+          function forget(file) {
+            var transaction = this._db.transaction(['files'], 'readwrite');
+            var filesStore = transaction.objectStore('files');
+            filesStore['delete'](file);
+          }
+          IndexedDBShadow.prototype.forget = forget;
+
+          return IndexedDBShadow;
 
         })();
+
+        /**
+         * @typedef {{
+         *  path: string;
+         *  content: string | null;
+         *  encoding: string | undefined;
+         *  state: string | null;
+         * }} FileData
+         *
+         * @typedef {{
+         *  property: string;
+         *  value: any;
+         * }} MetadataData
+         */
 
         return detectIndexedDB;
 
