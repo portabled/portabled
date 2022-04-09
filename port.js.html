@@ -3132,7 +3132,7 @@ var portabled = (function() {
     return persistence;
   })();
 
-  function on(obj, eventName, handler) {
+  function on(obj, eventName, callback) {
     if (obj.addEventListener) {
       try {
         obj.addEventListener(eventName, callback, false);
@@ -3147,8 +3147,9 @@ var portabled = (function() {
       }
       catch (e) { }
     }
-
-    obj['on' + eventName] = function(e) { return callback(e || window.event); };
+    else {
+      obj['on' + eventName] = function(e) { return callback(e || window.event); };
+    }
   } // on
 
   function off(obj, eventName, callback) {
@@ -3174,7 +3175,11 @@ var portabled = (function() {
     return result;
   }
 
+  var loadEverCalled = false;
+
   function load() {
+    loadEverCalled = true;
+
     var prs = persistence(document, derivePathKey(location));
     
     // can use for finer-grain progress?
@@ -3214,6 +3219,8 @@ var portabled = (function() {
     on(window, 'load', onWindowLoaded);
 
     parseMore();
+
+    return loaderState;
 
     function loader_files() {
       if (combinedDrive) return combinedDrive.files();
@@ -3294,18 +3301,60 @@ var portabled = (function() {
     function onParsingFinished(combinedDrive) {
       updateLoaderState(false /* skipProgress*/);
       loaderState.drive.timestamp = combinedDrive.timestamp;
-      if (typeof loader.oncomplete === 'function') {
-        loader.oncomplete(combinedDrive);
+      if (typeof loaderState.oncomplete === 'function') {
+        loaderState.oncomplete(combinedDrive);
       }
     }
   }
-
 
   var portabled = {
     persistence: persistence,
     // on: on, off: off,
     load: load
   };
+
+  if (document.readyState === 'interative' || document.readyState === 'complete') {
+    onWindowLoadedCheck();
+  } else {
+    on(window, 'load', onWindowLoadedCheck);
+  }
+
+  function onWindowLoadedCheck() {
+    if (loadEverCalled) return;
+    setTimeout(windowLoadedAndSettledAuto, 400);
+  }
+
+  function windowLoadedAndSettledAuto() {
+    if (loadEverCalled) return;
+
+    var loaderState = load();
+    loaderState.onprogress = windowProgressAuto;
+    loaderState.oncomplete = windowLoadedAuto;
+
+    function windowProgressAuto() {
+      console.log('Loading ', loaderState.loadedSize , ' of ', loaderState.totalSize, '...');
+    }
+
+    function windowLoadedAuto(drive) {
+      var title = document.createElement('h1');
+      if ('textContent' in title) title.textContent = 'port.js';
+      else title.innerText = 'port.js';
+      title.style.textAlign = 'center';
+      title.style.color = 'silver';
+      title.style.paddingTop = '10%';
+
+      var subtitle = document.createElement('div');
+      if ('textContent' in subtitle) subtitle.textContent = 'Loaded.';
+      else subtitle.innerText = 'Loaded.';
+      subtitle.style.textAlign = 'center';
+      subtitle.style.color = 'gray';
+
+      document.body.appendChild(title);
+      document.body.appendChild(subtitle);
+
+      console.log(loaderState);
+    }
+  }
 
   return portabled;
 
