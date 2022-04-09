@@ -718,10 +718,6 @@ var portabled = (function() {
     })();
 
     var DOMDrive = (function() {
-
-
-      // class DOMDrive implements persistence.Drive {
-
       /**
        * @param {DOMTotals} totals
        * @param {DOMFile[]} files
@@ -2489,7 +2485,7 @@ var portabled = (function() {
         /** @type {string[]} */
         this.newStorageFiles = [];
 
-        /** @type {((node: any, recognizedKind?: 'file' | 'totals', recognizedEntity?: any) => void) | null} */
+        /** @type {((node: Node, recognizedKind?: 'file' | 'totals', recognizedEntity?: portabled.persistence.DOMFile | portabled.persistence.DOMTotals) => void) | null} */
         this.ondomnode = null;
 
         /** @type {{ [path: string]: DOMFile; }} */
@@ -2535,6 +2531,31 @@ var portabled = (function() {
         else return null;
       }
       BootState.prototype.read = read;
+
+      /**
+       * @this {BootState}
+       * @returns {string[]}
+       */
+      function files() {
+        var set = {};
+        var list = [];
+        for (var k in this._byPath) if (!(k in set)) {
+          var f = this._byPath[k];
+          if (f && f.read) {
+            set[k] = true;
+            list.push(k);
+          }
+        }
+        for (var k in this._toUpdateDOM) if (!(k in set)) {
+          var f = this._toUpdateDOM[k];
+          if (f && f.read) {
+            set[k] = true;
+            list.push(k);
+          }
+        }
+        return list;
+      }
+      BootState.prototype.files = files;
 
       /**
        * @this {BootState}
@@ -3111,731 +3132,180 @@ var portabled = (function() {
     return persistence;
   })();
 
-  var loaderEverInvoked = false;
-
-  var loader = (function () {
-
-    /** @type {HTMLIFrameElement} */
-    var fitFrameList = [];
-
-    // callbacks would be touched in global 'on' function
-    var domNodeCallbacks = [];
-    var progressCallbacks = [];
-    var loadedCallbacks = [];
-    var resizeCallbacks = [];
-    var resizeReportCallbacks = [];
-
-
-    /**
-     * Creates a full-sized frame occupying whole of the page.
-     * @returns {HTMLIFrameElement}
-     */
-    function createFrame() {
-      var iframe = document.createElement('iframe');
-      iframe.application='yes'; // MHTA trusted
-      iframe.__knownFrame = true;
-      iframe.style.cssText = 'position:absolute; left:0; top:0; width:100%; height:100%; border:none;display:none;padding:0px;margin:0px;';
-      iframe.src = 'about:blank';
-      iframe.frameBorder = '0';
-      document.body.appendChild(iframe);
-
-      var ifrwin = iframe.contentWindow;
-      if (!ifrwin) {
-        // IE567 - try to make it behave
-        try { iframe.contentWindow = ifrwin = iframe.window; }
-        catch (err) { }
-      }
-
-      var ifrdoc = ifrwin.document;
-
-      if (ifrdoc.open) ifrdoc.open();
-      ifrdoc.write(
-        '<'+'!doctype html><' + 'html><' + 'head><' + 'style>' +
-        'html{margin:0;padding:0;border:none;height:100%;border:none;overflow:hidden;}' +
-        'body{margin:0;padding:0;border:none;height:100%;border:none;overflow:hidden;}' +
-        '*,*:before,*:after{box-sizing:inherit;}' +
-        'html{box-sizing:border-box;color:silver;}' +
-        'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";}' +
-        '</' + 'style><' + 'body>'+
-        '<' + 'body></' + 'html>');
-      if (ifrdoc.close) ifrdoc.close();
-
-      fitFrameList.push(iframe);
-
-      return iframe;
-    } // createFrame
-
-    /**
-     */
-    function on(eventName, callback, _more) {
-
-      if (typeof eventName === 'string') {
-        if (typeof callback !== 'function') return;
-        switch (eventName) {
-
-          case 'progress':
-            progressCallbacks.push(callback);
-            break;
-
-          case 'domnode':
-            domNodeCallbacks.push(callback);
-            for (var i = 0; i < keepDomNodesUntilBootComplete.length; i++) {
-              var n = keepDomNodesUntilBootComplete[i];
-              callback(n.node, n.recognizedKind, n.recognizedEntity);
-            }
-            break;
-
-          case 'load':
-            if (loadedCallbacks) loadedCallbacks.push(callback);
-            else setTimeout(function() { callback(drive); }, 1);
-            break;
-
-          case 'resize':
-            resizeCallbacks.push(callback);
-            resizeReportCallbacks.push(callback);
-            if (resizeReportCallbacks.length===1) {
-              setTimeout(() => {
-                for (var i = 0; i < resizeReportCallbacks.length; i++) {
-                  var cb = resizeReportCallbacks[i];
-                  cb(sz);
-                }
-                resizeReportCallbacks = [];
-              }, 1);
-            }
-            break;
-        }
-
+  function on(obj, eventName, handler) {
+    if (obj.addEventListener) {
+      try {
+        obj.addEventListener(eventName, callback, false);
         return;
       }
-
-      var obj = eventName;
-      eventName = callback;
-      callback = _more;
-
-      if (obj.addEventListener) {
-        try {
-          obj.addEventListener(eventName, callback, false);
-          return;
-        }
-        catch (e) { }
+      catch (e) { }
+    }
+    else if (obj.attachEvent) {
+      try {
+        obj.attachEvent('on' + eventName, callback);
+        return;
       }
-      else if (obj.attachEvent) {
-        try {
-          obj.attachEvent('on' + eventName, callback);
-          return;
-        }
-        catch (e) { }
+      catch (e) { }
+    }
+
+    obj['on' + eventName] = function(e) { return callback(e || window.event); };
+  } // on
+
+  function off(obj, eventName, callback) {
+    if (obj.removeEventListener) {
+      obj.removeEventListener(eventName, callback, false);
+    }
+    else if (obj.detachEvent) {
+      obj.detachEvent('on' + eventName, callback);
+    }
+    else {
+      if (obj['on' + eventName])
+        obj['on' + eventName] = null;
+    }
+  } // off
+
+
+  /**
+   * @param {Location} location
+   */
+  function derivePathKey(location) {
+    var combine = location.host + location.pathname;
+    var result = persistence.deriveUniqueKey(combine);
+    return result;
+  }
+
+  function load() {
+    var prs = persistence(document, derivePathKey(location));
+    
+    // can use for finer-grain progress?
+    // prs.ondomnode = handleDomNode;
+
+    /** @type {{
+     *  progressBase100: number;
+     *  timestamp: number;
+     *  totalSize: number;
+     *  loadedSize: number;
+     *  loadedFileCount: number;
+     *  onprogress: () => void;
+     *  oncomplete: (drive: portabled.persistence.Drive) => void;
+     *  drive: portabled.persistence.Drive;
+     * }} */
+    var loaderState = {
+      progressBase100: 0,
+      totalSize: 0,
+      loadedSize: 0,
+      loadedFileCount: 0,
+      onprogress: void 0,
+      oncomplete: void 0,
+      drive: {
+        timestamp: 0,
+        files: loader_files,
+        read: loader_read,
+        write: loader_write,
+        storedSize: loader_storedSize
+      }
+    };
+
+    /** @type {portabled.persistence.Drive} */
+    var combinedDrive;
+    var complete = false;
+    var queueMoreParse;
+
+    on(window, 'load', onWindowLoaded);
+
+    parseMore();
+
+    function loader_files() {
+      if (combinedDrive) return combinedDrive.files();
+      else return prs.files();
+    }
+
+    function loader_read(file) {
+      if (combinedDrive) return combinedDrive.read(file);
+      else return prs.read(file);
+    }
+
+    function loader_write(file, content) {
+      if (!combinedDrive)
+        throw new Error('Cannot write until drive is loaded?');
+
+      combinedDrive.write(file, content);
+      loaderState.drive.timestamp = combinedDrive.timestamp;
+    }
+
+    function loader_storedSize(file) {
+      if (combinedDrive) return combinedDrive.storedSize(file);
+      var content = prs.read(file);
+      return content || typeof content === 'string' ? content.length : void 0;
+    }
+
+    function parseMore() {
+      clearTimeout(queueMoreParse);
+
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        onWindowLoaded();
+      } else {
+        prs.continueLoading();
+
+        updateLoaderState();
+
+        queueMoreParse = setTimeout(parseMore, 400);
+      }
+    }
+
+    function updateLoaderState(skipProgress) {
+      var changed = false;
+      var newTimestamp = prs.domTimestamp > 0 ?
+        (prs.storageTimestamp > 0 ? Math.max(prs.domTimestamp, prs.storageTimestamp) : prs.domTimestamp) :
+        (prs.storageTimestamp > 0 ? prs.storageTimestamp : void 0);
+      if (newTimestamp !== loaderState.drive.timestamp) {
+        changed = true;
+        loaderState.drive.timestamp = newTimestamp;
       }
 
-      obj['on' + eventName] = function(e) { return callback(e || window.event); };
-    } // on
-
-
-    // TODO: figure out when obj argument is skipped
-    function off(obj, eventName, callback) {
-      if (obj.removeEventListener) {
-        obj.removeEventListener(eventName, callback, false);
+      if (prs.loadedFileCount !== loaderState.loadedFileCount) {
+        changed = true;
+        loaderState.loadedFileCount = prs.loadedFileCount;
       }
-      else if (obj.detachEvent) {
-        obj.detachEvent('on' + eventName, callback);
+
+      if (prs.domLoadedSize > 0 && prs.domLoadedSize != loaderState.domLoadedSize) {
+        changed = true;
+        loaderState.loadedSize = prs.domLoadedSize;
       }
-      else {
-        if (obj['on' + eventName])
-          obj['on' + eventName] = null;
-      }
-    } // off
 
-    /**
-     * Sometimes proxies on free wifi, or corporate proxies inject spying scripts or iframes.
-     * They can interfere and best removed.
-     */
-    function removeSpyElements() {
-
-      removeElements('iframe');
-      removeElements('style');
-      removeElements('script');
-
-      /**
-       * @param {string} tagName
-       */
-      function removeElements(tagName) {
-        var list = document.getElementsByTagName(tagName);
-        for (var i = 0; i < list.length; i++) {
-          var elem = (list[i] || list.item(i));
-
-          if (elem.__knownFrame) continue;
-
-          if (elem && elem.parentElement &&
-              elem.getAttribute && elem.getAttribute('data-legit')!=='mi') {
-            if ((shell && elem===shell) || (boot && elem===boot)) continue;
-            try{ elem.parentElement.removeChild(elem); i--; } catch (error) { }
-          }
+      if (changed && !skipProgress) {
+        if (typeof loaderState.onprogress === 'function') {
+          loaderState.onprogress();
         }
       }
     }
 
-    /**
-     * @param {Element | Function} obj
-     * @returns {string}
-     */
-    function getText(obj) {
+    function onWindowLoaded() {
+      clearTimeout(queueMoreParse);
+      if (complete) return;
+      complete = true;
 
-      if (typeof obj === 'function') {
-        var result = /\/\*(\*(?!\/)|[^*])*\*\//m.exec(obj + '')[0];
-        if (result) result = result.slice(2, result.length - 2);
-        return result;
-      }
-      else if (/^SCRIPT$/i.test(obj.tagName)) {
-        if ('text' in obj)
-          return obj.text;
-        else
-          return obj.innerHTML;
-      }
-      else if (/^STYLE$/i.test(obj.tagName)) {
-        if ('text' in obj)
-          return obj.text;
-        else if (obj.styleSheet)
-          return obj.styleSheet.cssText;
-        else
-          return obj.innerHTML;
-      }
-      else if ('textContent' in obj) {
-        return obj.textContent;
-      }
-      else if (/^INPUT$/i.test(obj.tagName)) {
-        return obj.value;
-      }
-      else {
-        /** @type {string} */
-        var result = obj.innerText;
-        if (result) {
-          // IE fixes
-          result = result.replace(/\<BR\s*\>/gi, '\n').replace(/\r\n/g, '\n');
-        }
-        return result || '';
-      }
+      prs.continueLoading();
+      setTimeout(function () {
+        prs.finishParsing(onParsingFinished);
+      }, 50);
     }
 
-    /**
-     * @param {Element} obj
-     * @param {string} text
-     */
-    function setText(obj, text) {
-
-      if (/^SCRIPT$/i.test(obj.tagName)) {
-        if ('text' in obj)
-          obj.text = text;
-        else
-          obj.innerHTML = text;
+    function onParsingFinished(combinedDrive) {
+      updateLoaderState(false /* skipProgress*/);
+      loaderState.drive.timestamp = combinedDrive.timestamp;
+      if (typeof loader.oncomplete === 'function') {
+        loader.oncomplete(combinedDrive);
       }
-      else if (/^STYLE$/i.test(obj.tagName)) {
-        if ('text' in obj) {
-          obj.text = text;
-        }
-        else if ('styleSheet' in obj) {
-          if (!obj.styleSheet && !obj.type) obj.type = 'text/css';
-          obj.styleSheet.cssText = text;
-        }
-        else if ('textContent' in obj) {
-          obj.textContent = text;
-        }
-        else {
-          obj.innerHTML = text;
-        }
-      }
-      else if ('textContent' in obj) {
-        if ('type' in obj && !obj.type) obj.type = 'text/css';
-        obj.textContent = text;
-      }
-      else if (/^INPUT$/i.test(obj.tagName)) {
-        obj.value = text;
-      }
-      else {
-        obj.innerText = text;
-      }
-    }
-
-    /**
-     * @param {Element | string} tag
-     * @param {Partial<CSSStyleDeclaration>=} style
-     * @param {Element=} parent
-     * @returns {HTMLElement}
-     */
-    function elem(tag, style, parent) {
-      /** @type {HTMLElement} */
-      var e = tag.tagName ? tag : window.document.createElement(tag);
-
-      if (!parent && style && style.tagName) {
-        parent = style;
-        style = null;
-      }
-
-      if (style) {
-        if (typeof style === 'string') {
-          setText(e, style);
-        }
-        else {
-          for (var k in style) if (style.hasOwnProperty(k)) {
-            if (k === 'text') {
-              setText(
-                e, style[k]);
-            }
-            else if (k === 'className') {
-              e.className = style[k];
-            }
-            else if (k === 'background' && e.style) {
-              e.style.background = style[k];
-            }
-            else if (!(e.style && k in e.style) && k in e) {
-              e[k] = style[k];
-            }
-            else {
-
-              if (style[k] && typeof style[k] === 'object' && typeof style[k].length === 'number') {
-                // array: iterate and apply values
-                var applyValues = style[k];
-                for (var i = 0; i < applyValues.length; i++) {
-                  try { e.style[k] = applyValues[i]; }
-                  catch (errApplyValues) { }
-                }
-              }
-              else {
-                // not array
-                try {
-                  e.style[k] = style[k];
-                }
-                catch (err) {
-                  try {
-                    if (typeof console !== 'undefined' && typeof console.error === 'function')
-                      console.error(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
-                  }
-                  catch (whatevs) {
-                    alert(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-
-      if (parent) {
-        try {
-          parent.appendChild(e);
-        }
-        catch (error) {
-          throw new Error(error.message + ' adding ' + e.tagName + ' to ' + parent.tagName);
-        }
-      }
-
-      return e;
-    }
-
-    /**
-     * @param {Window=} window
-     * @param {Document=} document
-     */
-    function loader(window, document) {
-      if (!document) document = _getDocument();
-      if (!window) window = _getWindow();
-
-      loaderEverInvoked = true;
-
-      /** @type {{ node: Node; recognizedKind: string; recognizedEntity: any; }[]} */
-      var keepDomNodesUntilBootComplete = [];
-      /**
-       * @param {Node} node
-       * @param {string} recognizedKind
-       * @param {any} recognizedEntity
-       */
-      function handle_dom_node(node, recognizedKind, recognizedEntity) {
-        keepDomNodesUntilBootComplete.push({node,recognizedKind, recognizedEntity});
-        for (var i = 0; i < domNodeCallbacks.length; i++) {
-          var callback = domNodeCallbacks[i];
-          callback(node, recognizedKind, recognizedEntity);
-        }
-      }
-
-      function onkeeploading() {
-        if (document.readyState === 'complete') {
-          window_onload();
-          return;
-        }
-
-        if (document.title==='/:') document.title = '/:.';
-        if (!timings.domStarted
-            && (bootDrive.domLoadedSize || bootDrive.domTotalSize))
-          timings.domStarted = +new Date();
-
-        removeSpyElements();
-
-        var goodTimeUpdateSize = false;
-        var now = Date.now?Date.now():+new Date();
-        if (!onkeeploading._lastUpdateSize) {
-          goodTimeUpdateSize = true;
-        }
-        else {
-          if (now-onkeeploading._lastUpdateSize>500)
-            goodTimeUpdateSize = true;
-        }
-
-        if (goodTimeUpdateSize) {
-          onkeeploading._lastUpdateSize = now;
-          sz.update();
-        }
-
-        var prevLoadedSize = bootDrive.domLoadedSize;
-        var prevTotalSize = bootDrive.domTotalSize;
-
-        bootDrive.continueLoading();
-        updateBootStateProps();
-
-        if (bootDrive.newDOMFiles.length || bootDrive.newStorageFiles.length
-            || prevLoadedSize !== bootDrive.domLoadedSize || prevTotalSize !== bootDrive.domTotalSize) {
-          if (document.title==='/:' || document.title==='/:.') document.title = '//';
-
-          for (var i = 0; i < progressCallbacks.length; i++) {
-            var callback = progressCallbacks[i];
-            callback(bootDrive);
-          }
-        }
-      }
-
-      function updateBootStateProps() {
-        for (var k in bootDrive) if (k && bootDrive.hasOwnProperty(k) && typeof bootDrive[k]!=='function' && k.charAt(0)!=='_') {
-          bootState[k] = bootDrive[k];
-        }
-
-        if (!bootState.read)
-          bootState.read = function(path) { return bootDrive.read(path); };
-      }
-
-      function window_onload() {
-
-        function onfinishloading(loadedDrive) {
-          drive = loadedDrive;
-          if (typeof loader!=='undefined' && loader) loader.drive = loadedDrive;
-
-          updateBootStateProps();
-          bootState.read = function(file) { return drive.read(file); };
-          keepDomNodesUntilBootComplete = [];
-          domNodeCallbacks = [];
-          loader.fadeToUI = fadeToUI;
-
-          timings.driveLoaded = +new Date();
-          if (loadedCallbacks && loadedCallbacks.length) {
-            if (document.title==='/:' || document.title==='/:.' || document.title==='//') document.title = '//.';
-            for (var i = 0; i < loadedCallbacks.length; i++) {
-              var callback = loadedCallbacks[i];
-              callback(drive);
-            }
-          }
-          else {
-            if (document.title==='/:' || document.title==='/:.' || document.title==='//') document.title = '//,';
-            fadeToUI();
-          }
-        }
-
-        clearInterval(keepLoading);
-
-        removeSpyElements();
-
-        timings.documentLoaded = +new Date();
-
-        sz.update();
-
-        bootDrive.finishParsing(onfinishloading);
-
-      }
-
-      function fitresize() {
-
-        var needResize = false;
-        var forceResize = false;
-        var newSize = {
-          windowWidth: 0,
-          windowHeight: 0,
-          scrollX: 0,
-          scrollY: 0
-        };
-
-        on(window, 'scroll', global_resize_detect);
-        on(window, 'resize', global_resize_detect);
-
-        if (window.document) {
-          var body = window.document.body;
-          var docElem;
-          if (docElem = window.document.documentElement || (body? body.parentElement || body.parentNode:null)) {
-            on(docElem, 'resize', global_resize_detect)
-            on(docElem, 'scroll', global_resize_detect)
-          }
-          if (body) {
-            on(body, 'resize', global_resize_detect)
-            on(body, 'scroll', global_resize_detect)
-          }
-        }
-
-        var state = {
-          update: update,
-          fitframe: fitframe,
-          windowWidth: 0,
-          windowHeight: 0,
-          scrollX: 0,
-          scrollY: 0,
-          onresize: null
-        };
-        getMetrics(state);
-
-        return state;
-
-        function update() {
-          check_resize_now();
-        }
-
-        /**
-         * @param {HTMLIFrameElement} frame
-         */
-        function fitframe(frame) {
-          var frwindow = frame.contentWindow || frame.window;
-          var frdoc = frwindow.document;
-          var frbody = frdoc ? frdoc.body: null;
-          var docs = [frdoc, frbody, frwindow];
-          var events = ['touchstart', 'touchmove', 'touchend', 'pointerdown', 'pointerup','pointerout','keydown','keyup'];
-          for (var i = 0; i < docs.length; i++) {
-            if (!docs[i]) continue;
-            for (var j = 0; j < events.length; j++) {
-              on(docs[i], events[j], global_resize_detect);
-            }
-          }
-          fitFrameList.push(frame);
-          forceResize = true;
-          global_resize_detect();
-        }
-
-        function global_resize_detect() {
-          if (needResize) return;
-          needResize = true;
-
-          if (typeof requestAnimationFrame === 'function') {
-            requestAnimationFrame(check_resize_now);
-          }
-          else {
-            setTimeout(check_resize_now, 5);
-          }
-        }
-
-        function getMetrics(metrics) {
-          metrics.windowWidth = window.innerWidth || (document.body ? (document.body.parentElement ? document.body.parentElement.clientWidth : 0) || document.body.clientWidth : null);
-          metrics.windowHeight = window.innerHeight || (document.body ? (document.body.parentElement ? document.body.parentElement.clientHeight : 0) || document.body.clientHeight : null);
-          metrics.scrollX = window.scrollX || window.pageXOffset || (document.body ? document.body.scrollLeft || (document.body.parentElement ? document.body.parentElement.scrollLeft : 0) || 0 : null);
-          metrics.scrollY = window.scrollY || window.pageYOffset || (document.body ? document.body.scrollTop || (document.body.parentElement ? document.body.parentElement.scrollTop : 0) || 0 : null);
-        }
-
-        function check_resize_now() {
-          getMetrics(newSize);
-          if (!forceResize
-              && newSize.windowWidth === state.windowWidth
-              && newSize.windowHeight === state.windowHeight
-              && newSize.scrollX === state.scrollX
-              && newSize.scrollY === state.scrollY) {
-            needResize = false;
-            return;
-          }
-
-          forceResize = false;
-
-          apply_new_size_now();
-          needResize = false;
-        }
-
-        function apply_new_size_now() {
-
-          state.windowWidth = newSize.windowWidth;
-          state.windowHeight = newSize.windowHeight;
-          state.scrollX = newSize.scrollX;
-          state.scrollY = newSize.scrollY;
-
-          var wpx = state.windowWidth + 'px';
-          var hpx = state.windowHeight + 'px';
-          var xpx = state.scrollX + 'px';
-          var ypx = state.scrollY + 'px';
-
-          for (var i = 0; i < fitFrameList.length; i++) {
-            var fr = fitFrameList[i];
-            if (!fr.parentElement && !fr.parentNode) continue;
-
-            fr.style.left = xpx;
-            fr.style.top = ypx;
-            fr.style.width = wpx;
-            fr.style.height = hpx;
-          }
-
-          if (resizeCallbacks.length) {
-            if (resizeReportCallbacks.length) resizeReportCallbacks = [];
-            var sz = {
-              windowWidth: state.windowWidth,
-              windowHeight: state.windowHeight,
-              scrollX: state.scrollX,
-              scrollY: state.scrollY
-            };
-
-            for (var i = 0; i < resizeCallbacks.length; i++) {
-              var cb = resizeCallbacks[i];
-              cb(sz);
-            }
-          }
-        }
-
-      } // fitresize
-      
-      function fadeToUI() {
-        sz.update();
-        shell.style.opacity = '0';
-        shell.style.filter = 'alpha(opacity=0)'; // TODO: feature-detect and do either one or another
-        shell.style.display = 'block';
-
-        if (loader.delayed_shell_html) {
-          loader.delayed_shell_html();
-        }
-
-        var start = +new Date();
-        var fadeintTime = Math.min(500, (start-timings.domStarted)/2);
-        if (!(fadeintTime >=0)) {
-          fadeintTime = 250;
-        }
-
-        var animateFadeIn = setInterval(animateStep, 20);
-
-        function animateStep() {
-          var passed = (+new Date()) - start;
-          var opacity = Math.min(passed, fadeintTime) / fadeintTime;
-
-          boot.style.opacity = (1 - opacity).toString();
-          boot.style.filter = 'alpha(opacity=' + (((1-opacity) * 100) | 0) + ')'; // TODO: feature-detect and do either one or another
-
-          shell.style.opacity = opacity;
-          shell.style.filter = 'alpha(opacity=' + ((opacity * 100) | 0) + ')'; // TODO: feature-detect and do either one or another
-
-          if (passed >= fadeintTime) {
-            shell.style.opacity = 1;
-            shell.style.filter = 'alpha(opacity=100)';
-            boot.style.opacity = 0;
-            boot.style.filter = 'alpha(opacity=0)';
-
-            if (animateFadeIn) {
-              sz.update();
-              clearInterval(animateFadeIn);
-              animateFadeIn = 0;
-              setTimeout(function() { // slight delay for better opacity smoothness
-                sz.update();
-                if (boot.parentElement)
-                  boot.parentElement.removeChild(boot);
-                shell.style.opacity = null;
-                shell.style.filter = null;
-
-                if (document.title==='//.')
-                  document.title = '//:';
-
-              }, 1);
-            }
-          }
-        }
-      } // fadeToUI
-
-
-
-      document.title = '.';
-
-      removeSpyElements();
-
-      document.title = ':';
-
-      // creates both frames invisible
-      /** @type {HTMLIFrameElement} */
-      var boot = createFrame();
-      loader.boot = boot;
-      boot.style.zIndex = 100;
-      /** @type {HTMLIFrameElement} */
-      var shell = createFrame();
-      loader.shell = shell;
-      shell.style.zIndex = 10;
-
-      document.title = '/';
-
-      var sz = fitresize();
-      sz.fitframe(boot);
-      sz.fitframe(shell);
-
-      document.title = '/.';
-
-      var uniqueKey = persistence.deriveUniqueKey(location);
-      var bootDrive = persistence(document, uniqueKey);
-      bootDrive.ondomnode = handle_dom_node;
-      var bootState = bootDrive;
-
-      document.title = '/:';
-
-      on(window, 'load', window_onload);
-
-      var keepLoading = setInterval(onkeeploading, 30);
-    }
-
-    loader.createFrame = createFrame;
-    loader.on = on;
-    loader.off = off;
-    loader.elem = elem;
-
-    return loader;
-  })();
-
-  var portabled = {
-    persistence: persistence,
-    loader: loader
-  };
-
-  if (typeof window !== 'undefined' && window && typeof window.alert === 'function'
-      && document !== 'undefined' && document && typeof document.createElement === 'function') {
-    // genuine browser environment, expect loader to be invoked
-
-    var windowLoadedCheckLoaderInvoked = (function () {
-
-      function windowLoadedCheckLoaderInvoked() {
-        if (loaderEverInvoked) return;
-
-        // give it one last chance
-        setTimeout(function() {
-          if (loaderEverInvoked) return;
-
-          // if global variable called 'test' is defined, quit
-          if (typeof test !== 'undefined' && test)
-            return;
-
-          loader.on('progress', bootProgress);
-          loader.on('load', shellLoaded);
-          loader();
-        }, 300);
-      }
-
-      function bootProgress(bootDrive) {
-        console.log('Progress ', bootDrive.files());
-      }
-
-      function shellLoaded() {
-        console.log('Loaded.');
-        loader.shell.contentDocument.body.style.textAlign = 'center';
-        var h2 = loader.elem('h1', {text:'port.js', paddingTop: '10%'}, loader.shell.contentDocument.body);
-        var loaded = loader.elem('div', 'Loaded.', loader.shell.contentDocument.body);
-        loader.fadeToUI();
-      }
-
-      return windowLoadedCheckLoaderInvoked;
-    })();
-
-    if (document.readyState !== 'complete') {
-      loader.on(window, 'load', windowLoadedCheckLoaderInvoked);
     }
   }
 
+
+  var portabled = {
+    persistence: persistence,
+    // on: on, off: off,
+    load: load
+  };
 
   return portabled;
 
