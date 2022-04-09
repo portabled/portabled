@@ -3686,6 +3686,9 @@ var portabled = (function() {
 
         var start = +new Date();
         var fadeintTime = Math.min(500, (start-timings.domStarted)/2);
+        if (!(fadeintTime >=0)) {
+          fadeintTime = 250;
+        }
 
         var animateFadeIn = setInterval(animateStep, 20);
 
