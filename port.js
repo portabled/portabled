@@ -3765,6 +3765,10 @@ var portabled = (function() {
       setTimeout(function() {
         if (loaderEverInvoked) return;
 
+        // if global variable called 'test' is defined, quit
+        if (typeof test !== 'undefined' && test)
+          return;
+
         loader();
       }, 300);
     });
