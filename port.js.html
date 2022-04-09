@@ -413,6 +413,7 @@ var portabled = (function() {
        */
       function DOMFile(node, path, encoding, contentOffset, contentLength) {
         this.node = node;
+        this.path = path;
         this._encoding = encoding;
         this._contentOffset = contentOffset;
         this.contentLength = contentLength;
@@ -730,6 +731,14 @@ var portabled = (function() {
         this._totals = totals;
         this._document = document;
 
+        this.timestamp = this._totals.timestamp;
+
+        /** @type {{ [path: string]: DOMFile; }} */
+        this._byPath = {};
+        /** @type {Node | null} */
+        this._anchorNode = null;
+        this._totalSize = 0;
+
         for (var i = 0; i < files.length; i++) {
           this._byPath[files[i].path] = files[i];
           this._totalSize += files[i].contentLength;
@@ -742,14 +751,6 @@ var portabled = (function() {
           parent.insertBefore(comment, parent.children ? parent.children[0] : null);
           this._totals = new DOMTotals(0, this._totalSize, comment);
         }
-
-        this.timestamp = this._totals.timestamp;
-
-        /** @type {{ [path: string]: DOMFile; }} */
-        this._byPath = {};
-        /** @type {Node | null} */
-        this._anchorNode = null;
-        this._totalSize = 0;
       }
 
       /**
