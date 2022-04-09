@@ -63,14 +63,14 @@ var portabled = (function() {
    * @typedef {{
    *  write(file: string, content: string | null, encoding?: string): void;
    * } & persistence.Drive} persistence.Drive.Detached.DOMDrive
-   * 
+   *
    * @typedef {{
    *  body: HTMLBodyElementSubset;
    *  head: Node;
    *  createComment(data: string): Comment;
    *  getElementsByTagName(tag: string): { [index: number]: Node; length: number };
    * }} persistence.Drive.Detached.DOMDrive.DocumentSubset
-   * 
+   *
    * @typedef {{
    *  appendChild(node: Node): void;
    *  insertBefore(newChild: Node, refNode: Node | null): void;
@@ -78,9 +78,19 @@ var portabled = (function() {
    *  firstChild: Node | null;
    *  children: { [index: number]: Node; length: number; };
    * }} persistence.Drive.Detached.DOMDrive.HTMLBodyElementSubset
-   * 
+   *
    * @typedef {(text: string) => string} persistence.encodings.Encoding
    */
+
+   var timings = {
+    domStarted: void 0,
+    scriptStart: void 0,
+    driveLoaded: void 0,
+    documentLoaded: void 0
+  };
+
+  function _getWindow() { return typeof window === 'undefined' ? void 0 : window; }
+  function _getDocument() { return typeof document === 'undefined' ? void 0 : document; }
 
   var persistence = (function() {
 
@@ -335,7 +345,7 @@ var portabled = (function() {
 
       if (typeof node.substringData === 'function'
           && typeof node.length === 'number') {
-  
+
         if (node.length >= CommentHeader.chunkSize) {
           // TODO: cut chunks off the start and look for newlines
           /** @type {string[]} */
@@ -347,10 +357,10 @@ var portabled = (function() {
               headerChunks.push(nextChunk);
               continue;
             }
-  
+
             this.header = headerChunks.join('') + nextChunk.slice(0, posEOL);
             this.contentOffset = this.header.length + 1; // if header is separated by a single CR or LF
-  
+
             if (posEOL === nextChunk.length - 1) { // we may have LF part of CRLF in the next chunk!
               if (nextChunk.charAt(nextChunk.length - 1) === '\r'
                 && node.substringData((headerChunks.length + 1) * CommentHeader.chunkSize, 1) === '\n')
@@ -359,18 +369,18 @@ var portabled = (function() {
             else if (nextChunk.slice(posEOL, posEOL + 2) === '\r\n') {
               this.contentOffset++;
             }
-  
+
             this.contentLength = node.length - this.contentOffset;
             return;
           }
-  
+
           this.header = headerChunks.join('');
           this.contentOffset = this.header.length;
           this.contentLength = node.length - this.contentOffset;
           return;
         }
       }
-  
+
       var wholeCommentText = node.nodeValue || '';
       var posEOL = wholeCommentText.search(/\r|\n/);
       if (posEOL < 0) {
@@ -379,11 +389,11 @@ var portabled = (function() {
         this.contentLength = wholeCommentText.length - this.contentOffset;
         return;
       }
-  
+
       this.contentOffset = wholeCommentText.slice(posEOL, posEOL + 2) === '\r\n' ?
         posEOL + 2 : // ends with CRLF
         posEOL + 1; // ends with singular CR or LF
-  
+
       this.header = wholeCommentText.slice(0, posEOL);
       this.contentLength = wholeCommentText.length - this.contentOffset;
     }
@@ -418,18 +428,18 @@ var portabled = (function() {
        * @returns {DOMFile | undefined}
        */
       function tryParse(cmheader) {
-      
+
         //    /file/path/continue
         //    "/file/path/continue"
         //    /file/path/continue   [encoding]
-    
+
         var parseFmt = /^\s*((\/|\"\/)(\s|\S)*[^\]])\s*(\[((\s|\S)*)\])?\s*$/;
         var parsed = parseFmt.exec(cmheader.header);
         if (!parsed) return null; // does not match the format
-    
+
         var filePath = parsed[1];
         var encodingName = parsed[5];
-    
+
         if (filePath.charAt(0) === '"') {
           if (filePath.charAt(filePath.length - 1) !== '"') return null; // unpaired leading quote
           try {
@@ -449,7 +459,7 @@ var portabled = (function() {
             filePath = filePath.slice(0, filePath.search(/\S(\s*)$/) + 1);
           }
         }
-    
+
         var encoding = encodings[encodingName || 'LF'];
         // invalid encoding considered a bogus comment, skipped
         if (encoding)
@@ -467,23 +477,23 @@ var portabled = (function() {
         var contentText = typeof this.node.substringData === 'function' ?
           this.node.substringData(this._contentOffset, 1000000000) :
           this.node.nodeValue.slice(this._contentOffset);
-    
+
         // XML end-comment is escaped when stored in DOM,
         // unescape it back
         var restoredText = contentText.
         replace(/\-\-\*(\**)\>/g, '--$1>').
         replace(/\<\*(\**)\!/g, '<$1!');
-    
+
         // decode
         var decodedText = this._encoding(restoredText);
-    
+
         // update just in case it's been off
         this.contentLength = decodedText.length;
-    
+
         return decodedText;
       }
       DOMFile.prototype.read = read;
-      
+
       /**
        * @this {DOMFile}
        * @param {any} content
@@ -491,16 +501,16 @@ var portabled = (function() {
        * @returns {string | boolean}
        */
       function write(content, encoding) {
-    
+
         content =
           content===null || typeof content === 'undefined' ? content :
           String(content);
-    
+
         var encoded = encoding ? { content, encoding } : bestEncode(content);
         var protectedText = encoded.content.
         replace(/\-\-(\**)\>/g, '--*$1>').
         replace(/\<(\**)\!/g, '<*$1!');
-    
+
         if (!this._encodedPath) {
           // most cases path is path,
           // but if anything is weird, it's going to be quoted
@@ -508,17 +518,17 @@ var portabled = (function() {
           var encp = bestEncode(this.path, true /*escapePath*/);
           this._encodedPath = encp.content;
         }
-    
+
         var leadText = ' ' + this._encodedPath + (encoded.encoding === 'LF' ? '' : ' [' + encoded.encoding + ']') + '\n';
         var html = leadText + protectedText;
         if (!this.node) return html; // can be used without backing 'node' for formatting purpose
-    
+
         if (html===this.node.nodeValue) return false;
         this.node.nodeValue = html;
-    
+
         this._encoding = encodings[encoded.encoding || 'LF'];
         this._contentOffset = leadText.length;
-    
+
         this.contentLength = content.length;
         return true;
       }
@@ -713,25 +723,25 @@ var portabled = (function() {
       /**
        * @param {DOMTotals} totals
        * @param {DOMFile[]} files
-       * @param {persistence.Drive.Detached.DOMDrive.DocumentSubset} document 
+       * @param {persistence.Drive.Detached.DOMDrive.DocumentSubset} document
        */
       function DOMDrive(totals, files, document) {
         this._totals = totals;
         this._document = document;
-    
+
         for (var i = 0; i < files.length; i++) {
           this._byPath[files[i].path] = files[i];
           this._totalSize += files[i].contentLength;
           if (!this._anchorNode) this._anchorNode = files[i].node;
         }
-    
+
         if (!this._totals) {
           var comment = this._document.createComment('');
           var parent = this._document.head || this._document.getElementsByTagName('head')[0] || this._document.body;
           parent.insertBefore(comment, parent.children ? parent.children[0] : null);
           this._totals = new DOMTotals(0, this._totalSize, comment);
         }
-    
+
         this.timestamp = this._totals.timestamp;
 
         /** @type {{ [path: string]: DOMFile; }} */
@@ -756,12 +766,12 @@ var portabled = (function() {
             result.push(k);
           }
         }
-    
+
         result.sort();
         return result;
       }
       DOMDrive.prototype.files = files;
-    
+
       /**
        * @this {DOMDrive}
        * @param {string} file
@@ -773,7 +783,7 @@ var portabled = (function() {
         if (f) return f.read();
       }
       DOMDrive.prototype.read = read;
-    
+
       /**
        * @this {DOMDrive}
        * @param {string} file
@@ -785,7 +795,7 @@ var portabled = (function() {
         if (f) return f.contentLength;
       }
       DOMDrive.prototype.storedSize;
-    
+
       /**
        * @this {DOMDrive}
        * @param {string} file
@@ -793,12 +803,12 @@ var portabled = (function() {
        * @param {string=} encoding
        */
       function write(file, content, encoding) {
-    
+
         var totalDelta = 0;
-    
+
         var file = normalizePath(file);
         var f = this._byPath[file];
-    
+
         if (content === null) {
           // removal
           if (f) {
@@ -819,22 +829,22 @@ var portabled = (function() {
             var comment = document.createComment('');
             var f = new DOMFile(comment, file, null, 0, 0);
             f.write(content, encoding);
-    
+
             this._anchorNeeded();
-    
+
             this._document.body.insertBefore(f.node, this._anchorNode || null);
             this._anchorNode = f.node; // next time insert before this node
             this._byPath[file] = f;
             totalDelta += f.contentLength;
           }
         }
-    
+
         this._totals.timestamp = this.timestamp;
         this._totals.totalSize += totalDelta;
         this._totals.updateNode();
       }
       DOMDrive.prototype.write = write;
-    
+
       /**
        * @this {DOMDrive}
        */
@@ -842,7 +852,7 @@ var portabled = (function() {
         return { total: this._totals ? this._totals.totalSize : this._totalSize, loaded: this._totalSize };
       }
       DOMDrive.prototype.loadProgress = loadProgress;
-    
+
       /**
        * @this {DOMDrive}
        * @param {DOMFile | DOMTotals} entry
@@ -854,7 +864,7 @@ var portabled = (function() {
           this._totals.updateNode();
           return;
         }
-    
+
         if ((entry).path) {
           var file = /** @type {DOMFile}*/(entry);
           // in case of duplicates, prefer earlier, remove latter
@@ -864,7 +874,7 @@ var portabled = (function() {
             if (p) p.removeChild(file.node);
             return;
           }
-    
+
           this._byPath[file.path] = file;
           if (!this._anchorNode) this._anchorNode = file.node;
           this._totalSize += file.contentLength;
@@ -880,12 +890,12 @@ var portabled = (function() {
         }
       }
       DOMDrive.prototype.continueLoad = continueLoad;
-    
+
       function _anchorNeeded() {
         // try to insert at the start, so new files will be loaded first
         var anchor = this._anchorNode;
         if (anchor && anchor.parentElement === this._document.body) return;
-    
+
         // this happens when filesystem is empty, or nodes got removed
         // - we try not to bubble above scripts, so boot UI is rendered fast even on slow connections
         var scripts = this._document.body.getElementsByTagName('script');
@@ -896,7 +906,7 @@ var portabled = (function() {
             next = anchor.parentNode.nextSibling;
           anchor = next;
         }
-    
+
         if (anchor) this._anchorNode = anchor;
       }
       DOMDrive.prototype._anchorNeeded = _anchorNeeded;
@@ -906,7 +916,7 @@ var portabled = (function() {
 
 
     var MountedDrive = (function() {
-    
+
       /**
        * @class
        * @param {persistence.Drive.Detached.DOMDrive} dom
@@ -919,7 +929,7 @@ var portabled = (function() {
         this.updateTime = true;
         this._cachedFiles = null;
       }
-    
+
       /**
        * @this {MountedDrive}
        * @returns {string[]}
@@ -927,11 +937,11 @@ var portabled = (function() {
       function files() {
         if (!this._cachedFiles)
           this._cachedFiles = this._dom.files();
-    
+
         return this._cachedFiles.slice(0);
       }
       MountedDrive.prototype.files = files;
-    
+
       /**
        * @this {MountedDrive}
        * @param {string} file
@@ -941,7 +951,7 @@ var portabled = (function() {
         return this._dom.read(file);
       }
       MountedDrive.prototype.read = read;
-    
+
       /**
        * @this {MountedDrive}
        * @param {string} file
@@ -952,7 +962,7 @@ var portabled = (function() {
           return this._dom.storedSize(file);
       }
       MountedDrive.prototype.storedSize = storedSize;
-    
+
       /**
        * @this {MountedDrive}
        * @param {string} file
@@ -961,18 +971,18 @@ var portabled = (function() {
       function write(file, content) {
         if (this.updateTime)
           this.timestamp = +new Date();
-    
+
         this._cachedFiles = null;
-    
+
         this._dom.timestamp = this.timestamp;
-    
+
         var encoded = typeof content === 'undefined' || content === null ? null : bestEncode(content);
-    
+
         if (encoded)
           this._dom.write(file, encoded.content, encoded.encoding);
         else
           this._dom.write(file, null);
-    
+
         if (this._shadow) {
           this._shadow.timestamp = this.timestamp;
           if (encoded)
@@ -982,7 +992,7 @@ var portabled = (function() {
         }
       }
       MountedDrive.prototype.write = write;
-      
+
       return MountedDrive;
     })();
 
@@ -1019,12 +1029,12 @@ var portabled = (function() {
        */
       function json(text) {
         var result = typeof JSON ==='undefined' ? eval('(' + text + ')') : JSON.parse(text);
-    
+
         if (result && typeof result !== 'string' && result.type) {
           var ctor = window[result.type];
           result = new ctor(result);
         }
-    
+
         return result;
       }
 
@@ -1063,7 +1073,7 @@ var portabled = (function() {
       var _atob = typeof atob === 'function' ? /** @param {string} text */function(text) { return atob(text); } : null;
 
       if (!_btoa) {
-    
+
         var e = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
         _btoa = function (r) {
           for (var o, n, a = String(r), i = 0, c = e, d = ""; a.charAt(0 | i) || (c = "=", i % 1); d += c.charAt(63 & o >> 8 - i % 1 * 8)) {
@@ -1077,7 +1087,7 @@ var portabled = (function() {
           var o = String(r).replace(/=+$/, "");
           if (o.length % 4 == 1)
             throw new (typeof InvalidCharacterError === 'function' ? InvalidCharacterError : Error)("'atob' failed: The string to be decoded is not correctly encoded.");
-            
+
           for (var n, a, i = 0, c = 0, d = ""; a = o.charAt(c++); ~a && (n = i % 4 ? 64 * n + a : a, i++ % 4) ? d += String.fromCharCode(255 & n >> (-2 * i & 6)) : 0)
             a = e.indexOf(a);
           return d;
@@ -1095,7 +1105,7 @@ var portabled = (function() {
         eval: eval,
         base64: base64
       };
-    
+
 
     })();
 
@@ -1106,7 +1116,7 @@ var portabled = (function() {
 
         /**
          * @param {string} uniqueKey
-         * @param {persistence.Drive.ErrorOrDetachedCallback} callback 
+         * @param {persistence.Drive.ErrorOrDetachedCallback} callback
          */
         function detectLocalStorage(uniqueKey, callback) {
           try {
@@ -1115,7 +1125,7 @@ var portabled = (function() {
               callback('Variable localStorage is not available.');
               return;
             }
-        
+
             var access = new LocalStorageAccess(localStorageInstance, uniqueKey);
             var dt = new LocalStorageDetached(access);
             callback(null, dt);
@@ -1125,7 +1135,7 @@ var portabled = (function() {
         }
 
         var LocalStorageAccess = (function(){
-      
+
           /**
            * @class
            * @param {Storage} localStorage
@@ -1136,7 +1146,7 @@ var portabled = (function() {
             this._prefix = prefix;
             this._cache = {};
           }
-      
+
           /**
            * @this {LocalStorageAccess}
            * @param {string} key
@@ -1148,7 +1158,7 @@ var portabled = (function() {
             return r;
           }
           LocalStorageAccess.prototype.get = get;
-      
+
           /**
            * @this {LocalStorageAccess}
            * @param {string} key
@@ -1170,7 +1180,7 @@ var portabled = (function() {
             }
           }
           LocalStorageAccess.prototype.set = set;
-      
+
           /**
            * @this {LocalStorageAccess}
            * @param {string} key
@@ -1180,7 +1190,7 @@ var portabled = (function() {
             return this._localStorage.removeItem(k);
           }
           LocalStorageAccess.prototype.remove = remove;
-      
+
           /**
            * @this {LocalStorageAccess}
            * @returns {string[]}
@@ -1197,7 +1207,7 @@ var portabled = (function() {
             return result;
           }
           LocalStorageAccess.prototype.keys = keys;
-      
+
           /**
            * @this {LocalStorageAccess}
            * @param {string} key
@@ -1206,7 +1216,7 @@ var portabled = (function() {
           function _expandKey(key) {
             /** @type {string} */
             var k;
-      
+
             if (!key) {
               k = this._prefix;
             }
@@ -1215,7 +1225,7 @@ var portabled = (function() {
               if (!k)
                 this._cache[key] = k = this._prefix + key;
             }
-      
+
             return k;
           }
           LocalStorageAccess.prototype._expandKey = _expandKey;
@@ -1226,7 +1236,7 @@ var portabled = (function() {
         var LocalStorageDetached = (function () {
 
           timestamp: number = 0;
-      
+
           /**
            * @class
            * @param {LocalStorageAccess} access
@@ -1242,7 +1252,7 @@ var portabled = (function() {
               }
             }
           }
-      
+
           /**
            * @this {LocalStorageDetached}
            * @param {persistence.Drive.Detached.DOMUpdater} mainDrive
@@ -1268,12 +1278,12 @@ var portabled = (function() {
                 mainDrive.write(k, value, 'LF');
               }
             }
-      
+
             var shadow = new LocalStorageShadow(this._access, mainDrive.timestamp);
             callback(shadow);
           }
           LocalStorageDetached.prototype.applyTo = applyTo;
-      
+
           /**
            * @this {LocalStorageDetached}
            * @param {persistence.Drive.Detached.CallbackWithShadow} callback
@@ -1286,7 +1296,7 @@ var portabled = (function() {
                 var value = this._access.remove(k);
               }
             }
-      
+
             var shadow = new LocalStorageShadow(this._access, this.timestamp);
             callback(shadow);
           }
@@ -1306,7 +1316,7 @@ var portabled = (function() {
             this._access = access;
             this.timestamp = timestamp;
           }
-      
+
           /**
            * @this {LocalStorageShadow}
            * @param {string} file
@@ -1318,7 +1328,7 @@ var portabled = (function() {
             this._access.set('*timestamp', this.timestamp);
           }
           LocalStorageShadow.prototype.write = write;
-      
+
           /**
            * @this {LocalStorageShadow}
            * @param {string} file
@@ -1327,7 +1337,7 @@ var portabled = (function() {
             this._access.remove(file);
           }
           LocalStorageShadow.prototype.forget = forget;
-      
+
           return LocalStorageShadow;
         })();
 
@@ -1352,23 +1362,23 @@ var portabled = (function() {
               callback('Variable openDatabase is not available.');
               return;
             }
-        
+
             var dbName = uniqueKey || 'portabled';
-        
+
             var db = openDatabaseInstance(
               dbName, // name
               1, // version
               'Portabled virtual filesystem data', // displayName
               1024 * 1024); // size
             // upgradeCallback?
-        
-        
+
+
             var repeatingFailures_unexpected = 0; // protect against multiple transaction errors causing one another
             var finished = false; // protect against reporting results multiple times
-        
+
             db.readTransaction(
               function (transaction) {
-        
+
                 transaction.executeSql(
                   'SELECT value from "*metadata" WHERE name=\'editedUTC\'',
                   [],
@@ -1390,7 +1400,7 @@ var portabled = (function() {
                         editedValue = editedValueStr;
                       }
                     }
-        
+
                     finished = true;
                     callback(null, new WebSQLDetached(db, editedValue || 0, true));
                   },
@@ -1403,14 +1413,14 @@ var portabled = (function() {
               },
               function (sqlError) {
                 if (finished) return;
-        
+
                 repeatingFailures_unexpected++;
                 if (repeatingFailures_unexpected>5) {
                   finished = true;
                   callback('Loading from metadata table failed, generating multiple failures ' + sqlError.message);
                   return;
                 }
-        
+
                 db.transaction(
                   function (transaction) {
                     createMetadataTable(
@@ -1418,7 +1428,7 @@ var portabled = (function() {
                       function (sqlError_creation) {
                         if (finished) return;
                         else finished = true;
-        
+
                         if (sqlError_creation)
                           callback('Loading from metadata table failed: ' + sqlError.message + ' and creation metadata table failed: ' + sqlError_creation.message);
                         else
@@ -1429,11 +1439,11 @@ var portabled = (function() {
                   function (sqlError) {
                     if (finished) return;
                     else finished = true;
-        
+
                     callback('Creating metadata table failed: ' + sqlError.message);
                   });
               });
-        
+
           } catch (error) {
             callback(error ? error.message : error);
           }
@@ -1460,15 +1470,15 @@ var portabled = (function() {
           /**
            * @class
            * @param {Database} db
-           * @param {number} timestamp 
-           * @param {boolean} metadataTableIsValid 
+           * @param {number} timestamp
+           * @param {boolean} metadataTableIsValid
            */
           function WebSQLDetached(db, timestamp, metadataTableIsValid) {
             this._db = db;
             this.timestamp = timestamp;
             this._metadataTableIsValid = metadataTableIsValid;
           }
-      
+
           /**
            * @this {WebSQLDetached}
            * @param {persistence.Drive.Detached.DOMUpdater} mainDrive
@@ -1494,7 +1504,7 @@ var portabled = (function() {
               });
           }
           WebSQLDetached.prototype.applyTo = applyTo;
-      
+
           /**
            * @this {WebSQLDetached}
            * @param {persistence.Drive.Detached.CallbackWithShadow} callback
@@ -1518,7 +1528,7 @@ var portabled = (function() {
               });
           }
           WebSQLDetached.prototype.purge = purge;
-      
+
           /**
            * @this {WebSQLDetached}
            * @param {SQLTransaction} transaction
@@ -1527,22 +1537,22 @@ var portabled = (function() {
            * @param {persistence.Drive.Detached.CallbackWithShadow} callback
            */
           function _applyToWithFiles(transaction, ftab, mainDrive, callback) {
-      
+
             if (!ftab.length) {
               callback(new WebSQLShadow(this._db, this.timestamp, this._metadataTableIsValid));
               return;
             }
-      
+
             var reportedFileCount = 0;
-      
+
             var completeOne = function () {
               reportedFileCount++;
               if (reportedFileCount === ftab.length) {
                 callback(new WebSQLShadow(this._db, this.timestamp, this._metadataTableIsValid));
               }
             };
-      
-            var applyFile = 
+
+            var applyFile =
               /**
                * @param {string} file
                * @param {string} table
@@ -1565,14 +1575,14 @@ var portabled = (function() {
                     completeOne();
                   });
               };
-      
+
             for (var i = 0; i < ftab.length; i++) {
               applyFile(ftab[i].file, ftab[i].table);
             }
-      
+
           }
           WebSQLDetached.prototype._applyToWithFiles = _applyToWithFiles;
-      
+
           /**
            * @this {WebSQLDetached}
            * @param {SQLTransaction} transaction
@@ -1584,16 +1594,16 @@ var portabled = (function() {
               callback(new WebSQLShadow(this._db, 0, false));
               return;
             }
-      
+
             var droppedCount = 0;
-      
+
             var completeOne = function () {
               droppedCount++;
               if (droppedCount === tables.length) {
                 callback(new WebSQLShadow(this._db, 0, false));
               }
             };
-      
+
             for (var i = 0; i < tables.length; i++) {
               transaction.executeSql(
                 'DROP TABLE "' + tables[i] + '"',
@@ -1615,12 +1625,12 @@ var portabled = (function() {
         var noop = function() {};
 
         var WebSQLShadow = (function (){
-      
+
           /**
            * @class
            * @param {Database} db
-           * @param {number} timestamp 
-           * @param {boolean} metadataTableIsValid 
+           * @param {number} timestamp
+           * @param {boolean} metadataTableIsValid
            */
           function WebSQLShadow(db, timestamp, metadataTableIsValid) {
             this._db = db;
@@ -1631,15 +1641,15 @@ var portabled = (function() {
 
             // closures
             var _this = this;
-            this.updateMetadata = 
+            this.updateMetadata =
               /** @param {SQLTransaction} transaction */
               function (transaction) { _this._updateMetadata(transaction); };
 
             this.updateMetdata_noMetadataCase =
               /** @param {SQLTransaction} transaction */
-              function (transaction) { _this._updateMetdata_noMetadataCase(transaction); };  
+              function (transaction) { _this._updateMetdata_noMetadataCase(transaction); };
           }
-      
+
           /**
            * @this {WebSQLShadow}
            * @param {string} file
@@ -1655,7 +1665,7 @@ var portabled = (function() {
             }
           }
           WebSQLShadow.prototype.write = write;
-      
+
           /**
            * @this {WebSQLShadow}
            * @param {string} file
@@ -1664,7 +1674,7 @@ var portabled = (function() {
             this._dropFileTable(file);
           }
           WebSQLShadow.prototype.forget = forget;
-          
+
           /**
            * @this {WebSQLShadow}
            * @param {string} file
@@ -1677,7 +1687,7 @@ var portabled = (function() {
               var tableName = mangleDatabaseObjectName(file);
               updateSQL = this._createUpdateStatement(file, tableName);
             }
-      
+
             var repeatingTransactionErrorCount_unexpected = 0;
             this._db.transaction(
               function (transaction) {
@@ -1695,7 +1705,7 @@ var portabled = (function() {
                   reportSQLError('Transaction failures ('+repeatingTransactionErrorCount_unexpected+') updating file "' + file + '".', sqlError);
                   return;
                 }
-      
+
                 // failure might have been due to table absence?
                 // -- redo with a new transaction
                 this._db.transaction(
@@ -1730,7 +1740,7 @@ var portabled = (function() {
               });
           }
           WebSQLShadow.prototype._updateCore = _updateCore;
-      
+
           /**
            * @this {WebSQLShadow}
            * @param {SQLTransaction} transaction
@@ -1743,7 +1753,7 @@ var portabled = (function() {
           function _createTableAndUpdate(transaction, file, tableName, updateSQL, content, encoding) {
             if (!tableName)
               tableName = mangleDatabaseObjectName(file);
-      
+
             transaction.executeSql(
               'CREATE TABLE "' + tableName + '" (name PRIMARY KEY, value, encoding)',
               [],
@@ -1761,7 +1771,7 @@ var portabled = (function() {
               });
           }
           WebSQLShadow.prototype._createTableAndUpdate = _createTableAndUpdate;
-      
+
           /**
            * @this {WebSQLShadow}
            * @param {string} file
@@ -1783,7 +1793,7 @@ var portabled = (function() {
               });
           }
           WebSQLShadow.prototype._deleteAllFromTable = _deleteAllFromTable;
-      
+
           /**
            * @this {WebSQLShadow}
            * @param {string} file
@@ -1805,7 +1815,7 @@ var portabled = (function() {
               });
           }
           WebSQLShadow.prototype._dropFileTable = _dropFileTable;
-      
+
           /**
            * @this {WebSQLShadow}
            * @param {SQLTransaction} transaction
@@ -1819,7 +1829,7 @@ var portabled = (function() {
           }
           WebSQLShadow.prototype._updateMetadata = _updateMetadata;
 
-      
+
           /**
            * @this {WebSQLShadow}
            * @param {SQLTransaction} transaction
@@ -1832,7 +1842,7 @@ var portabled = (function() {
                   reportSQLError('Failed create metadata table.', sqlerr);
                   return;
                 }
-      
+
                 transaction.executeSql(
                   'INSERT OR REPLACE INTO "*metadata" VALUES (?,?)',
                   ['editedUTC', this.timestamp],
@@ -1845,7 +1855,7 @@ var portabled = (function() {
               });
           }
           WebSQLShadow.prototype._updateMetdata_noMetadataCase = _updateMetdata_noMetadataCase;
-      
+
           /**
            * @this {WebSQLShadow}
            * @param {string} file
@@ -1872,16 +1882,16 @@ var portabled = (function() {
           else
             return '=' + btoa(name);
         }
-      
+
         /**
          * @param {string} name
          * @returns {string | null}
          */
         function unmangleDatabaseObjectName(name) {
           if (!name || name.charAt(0) === '*') return null;
-      
+
           if (name.charAt(0) !== '=') return name;
-      
+
           try {
             return atob(name.slice(1));
           }
@@ -1903,26 +1913,26 @@ var portabled = (function() {
          */
         function detectIndexedDB(uniqueKey, callback) {
           try {
-      
+
             // Firefox fires global window.onerror
             // when indexedDB.open is called in private mode
             // (even though it still reports failure in request.onerror and DOES NOT throw anything)
             var needsFirefoxPrivateModeOnerrorWorkaround =
                 typeof document !== 'undefined' && document && document.documentElement && document.documentElement.style
                 && 'MozAppearance' in document.documentElement.style;
-      
+
             if (needsFirefoxPrivateModeOnerrorWorkaround) {
               try {
-      
+
                 detectCore(
                   uniqueKey,
                   /**
                    * @param {string | null} error
-                   * @param {persistence.Drive.Detached=} detached 
+                   * @param {persistence.Drive.Detached=} detached
                    */
                   function (error, detached) {
                     callback(error, detached);
-        
+
                     // the global window.onerror will fire AFTER request.onerror,
                     // so here we temporarily install a dummy handler for it
                     var tmp_onerror = onerror;
@@ -1931,9 +1941,9 @@ var portabled = (function() {
                       // restore on the next 'beat'
                       onerror = tmp_onerror;
                     }, 1);
-        
+
                   });
-      
+
               }
               catch (err) {
                 callback(err.message);
@@ -1942,7 +1952,7 @@ var portabled = (function() {
             else {
                 detectCore(uniqueKey, callback);
             }
-      
+
           }
           catch (error) {
             callback(error.message);
@@ -1960,28 +1970,28 @@ var portabled = (function() {
             callback('Variable indexedDB is not available.');
             return;
           }
-      
+
           var dbName = uniqueKey || 'portabled';
-      
+
           var openRequest = indexedDBInstance.open(dbName, 1);
-      
+
           openRequest.onerror = function (errorEvent) { callback('Opening database error: '+getErrorMessage(errorEvent)); };
-      
+
           openRequest.onupgradeneeded = createDBAndTables;
-      
+
           openRequest.onsuccess = function (event) {
             /** @type {IDBDatabase} */
             var db = openRequest.result;
-      
+
             try {
               var transaction = db.transaction(['files', 'metadata']);
               // files mentioned here, but not really used to detect
               // broken multi-store transaction implementation in Safari
-      
+
               transaction.onerror = function (errorEvent) {
                 callback('Transaction error: '+getErrorMessage(errorEvent));
               };
-      
+
               var metadataStore = transaction.objectStore('metadata');
               var filesStore = transaction.objectStore('files');
               var editedUTCRequest = metadataStore.get('editedUTC');
@@ -1990,17 +2000,17 @@ var portabled = (function() {
               callback('Cannot open database: '+getStoreError.message);
               return;
             }
-      
+
             if (!editedUTCRequest) {
               callback('Request for editedUTC was not created.');
               return;
             }
-      
+
             editedUTCRequest.onerror = function (errorEvent) {
               var detached = new IndexedDBDetached(db, transaction);
               callback(null, detached);
             };
-      
+
             editedUTCRequest.onsuccess = function (event) {
               /** @type {MetadataData} */
               var result = editedUTCRequest.result;
@@ -2015,7 +2025,7 @@ var portabled = (function() {
             var filesStore = db.createObjectStore('files', { keyPath: 'path' });
             var metadataStore = db.createObjectStore('metadata', { keyPath: 'property' })
           }
-  
+
           /**
            * @param {any} event
            * @returns {string}
@@ -2048,7 +2058,7 @@ var portabled = (function() {
               };
             }
           }
-      
+
           /**
            * @this {IndexedDBDetached}
            * @param {persistence.Drive.Detached.DOMUpdater} mainDrive
@@ -2058,13 +2068,13 @@ var portabled = (function() {
             var transaction = this._transaction || this._db.transaction(['files', 'metadata']); // try to reuse the original opening _transaction
             var metadataStore = transaction.objectStore('metadata');
             var filesStore = transaction.objectStore('files');
-      
+
             var onerror = function (errorEvent) {
               if (typeof console!=='undefined' && console && typeof console.error==='function')
                 console.error('Could not count files store: ', errorEvent);
               callback(new IndexedDBShadow(this._db, this.timestamp));
             };
-      
+
             try {
               var countRequest = filesStore.count();
             }
@@ -2080,43 +2090,43 @@ var portabled = (function() {
                 return;
               }
             }
-      
+
             countRequest.onerror = onerror;
-      
+
             countRequest.onsuccess = function (event) {
-      
+
               try {
                 var storeCount = countRequest.result;
-      
+
                 var cursorRequest = filesStore.openCursor();
                 cursorRequest.onerror = function (errorEvent) {
                   if (typeof console!=='undefined' && console && typeof console.error==='function')
                     console.error('Could not open cursor: ', errorEvent);
                   callback(new IndexedDBShadow(this._db, this.timestamp));
                 };
-      
+
                 var processedCount = 0;
-      
+
                 cursorRequest.onsuccess = function (event) {
                   try {
                     var cursor = cursorRequest.result;
-      
+
                     if (!cursor) {
                       callback(new IndexedDBShadow(this._db, this.timestamp));
                       return;
                     }
-      
+
                     if (callback.progress)
                       callback.progress(processedCount, storeCount);
                     processedCount++;
-      
+
                     /** @type {FileData} */
                     var result = cursor.value;
                     if (result && result.path) {
                       mainDrive.timestamp = this.timestamp;
                       mainDrive.write(result.path, result.content, result.encoding);
                     }
-      
+
                     cursor['continue']();
                   }
                   catch (cursorContinueSuccessHandlingError) {
@@ -2127,16 +2137,16 @@ var portabled = (function() {
                     catch (ignoreDiagError) {
                       message += ': ';
                     }
-      
+
                     if (typeof console!=='undefined' && console && typeof console.error==='function')
                       console.error(message, cursorContinueSuccessHandlingError);
                     callback(new IndexedDBShadow(this._db, this.timestamp));
                   }
-      
+
                 }; // cursorRequest.onsuccess
               }
               catch (cursorCountSuccessHandlingError) {
-      
+
                 var message = 'Failing to process cursor count';
                 try {
                   message += ' ('+countRequest.result+'): ';
@@ -2144,7 +2154,7 @@ var portabled = (function() {
                 catch (ignoreDiagError) {
                   message += ': ';
                 }
-      
+
                 if (typeof console!=='undefined' && console && typeof console.error==='function')
                   console.error(message, cursorCountSuccessHandlingError);
                 callback(new IndexedDBShadow(this._db, this.timestamp));
@@ -2152,7 +2162,7 @@ var portabled = (function() {
             }; // countRequest.onsuccess
           }
           IndexedDBDetached.prototype.applyTo = applyTo;
-      
+
           /**
            * @this {IndexedDBDetached}
            * @param {persistence.Drive.Detached.CallbackWithShadow} callback
@@ -2169,24 +2179,24 @@ var portabled = (function() {
             }
           }
           IndexedDBDetached.prototype.purge = purge;
-      
+
           /**
            * @this {IndexedDBDetached}
            * @param {persistence.Drive.Detached.CallbackWithShadow} callback
            */
           function _purgeCore(callback) {
             var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
-      
+
             var filesStore = transaction.objectStore('files');
             filesStore.clear();
-      
+
             var metadataStore = transaction.objectStore('metadata');
             metadataStore.clear();
-      
+
             callback(new IndexedDBShadow(this._db, -1));
           }
           IndexedDBDetached.prototype._purgeCore = _purgeCore;
-      
+
           /**
            * @this {IndexedDBDetached}
            * @param {string[]} storeNames
@@ -2196,7 +2206,7 @@ var portabled = (function() {
           function _requestStores(storeNames, readwrite, callback) {
             /** @type {IDBObjectStore[]} */
             var stores = [];
-      
+
             var attemptPopulateStores = function () {
               if (transaction) {
                 for (var i = 0; i < storeNames.length; i++) {
@@ -2204,7 +2214,7 @@ var portabled = (function() {
                 }
               }
             };
-      
+
             try {
               var transaction = this._transaction;
               if (!transaction) {
@@ -2239,7 +2249,7 @@ var portabled = (function() {
               /** @type {WriteSnapshot} */
               this._conflatedWrites = null;
             }
-        
+
             /**
              * @this {IndexedDBShadow}
              * @param {string} file
@@ -2269,7 +2279,7 @@ var portabled = (function() {
               }
             }
             IndexedDBShadow.prototype.write = write;
-        
+
             /**
              * @this {IndexedDBShadow}
              * @param {WriteSnapshot} writes
@@ -2279,11 +2289,11 @@ var portabled = (function() {
               var transaction = this._db.transaction(['files', 'metadata'], 'readwrite');
               var filesStore = transaction.objectStore('files');
               var metadataStore = transaction.objectStore('metadata');
-        
+
               for (var file in writes) if (writes.hasOwnProperty(file)) {
-        
+
                 var entry = writes[file];
-        
+
                 // no file deletion here: we need to keep account of deletions too!
                 var fileData = {
                   path: file,
@@ -2291,19 +2301,19 @@ var portabled = (function() {
                   encoding: entry.encoding,
                   state: null
                 };
-        
+
                 var putFile = filesStore.put(fileData);
               }
-        
+
               var md = {
                 property: 'editedUTC',
                 value: Date.now()
               };
-        
+
               metadataStore.put(md);
             }
             IndexedDBShadow.prototype._writeCore = _writeCore;
-        
+
             /**
              * @this {IndexedDBShadow}
              * @param {string} file
@@ -2316,7 +2326,7 @@ var portabled = (function() {
             IndexedDBShadow.prototype.forget = forget;
 
             return IndexedDBShadow;
-        
+
           })();
 
           /**
@@ -2326,13 +2336,13 @@ var portabled = (function() {
            *  encoding: string | undefined;
            *  state: string | null;
            * }} FileData
-           * 
+           *
            * @typedef {{
            *  property: string;
            *  value: any;
            * }} MetadataData
            */
-              
+
         })();
 
         return detectIndexedDB;
@@ -2354,26 +2364,26 @@ var portabled = (function() {
       const tot = DOMTotals.tryParse({ header: content });
       if (tot) return { timestamp: tot.timestamp, totalSize: tot.totalSize };
     }
-    
+
     /**
      * @param {string} content
      */
     function parseFileInner(content) {
-    
+
       const cm = new CommentHeader({nodeValue: content});
       const fi = DOMFile.tryParse(cm);
-    
-      if (fi) return { 
+
+      if (fi) return {
         path: fi.path,
         read: function () {
           return fi.read();
        }
       };
-    
+
     }
-    
+
     /**
-     * 
+     *
      * @param {string} html
      * @returns {{
      *  files: { path: string; content: string; start: number; end: number; }[];
@@ -2381,7 +2391,7 @@ var portabled = (function() {
      * }}
      */
     function parseHTML(html) {
-    
+
       /** @type {{ path: string; content: string; start: number; end: number; }[]} */
       var files = [];
       /** @type {{ timestamp: number; totalSize: number} | undefined} */
@@ -2390,18 +2400,18 @@ var portabled = (function() {
       var totalsCommentStart;
       /** @type {number | undefined} */
       var totalsCommentEnd;
-    
+
       var scriptOrCommentStart = /(\<script[\s\>])|(\<!\-\-)/gi;
       var scriptEnd = /\<\/script\s*\>/gi;
       var commentEnd = /\-\-\>/g;
-    
+
       var pos = 0;
       while (true) {
         scriptOrCommentStart.lastIndex = pos;
         var next = scriptOrCommentStart.exec(html);
         if (!next) break;
         pos = next.index + next[0].length;
-    
+
         if (next[1]) { // script
           scriptEnd.lastIndex = pos;
           next = scriptEnd.exec(html);
@@ -2409,21 +2419,21 @@ var portabled = (function() {
           pos = next.index + next[0].length;
           continue; // skipped script
         }
-    
+
         var commentStartOffset = next.index;
         var start = pos;
-    
+
         commentEnd.lastIndex = pos;
         next = commentEnd.exec(html);
         if (!next) break; // no end of comment
-    
+
         var end = next.index;
         var commentEndOffset = next.index+next[0].length;
-    
+
         var inner = html.slice(start,end);
-    
+
         pos = next.index + next[0].length;
-    
+
         if (!totals) {
           totals = parseTotalsInner(inner);
           if (totals) {
@@ -2432,17 +2442,17 @@ var portabled = (function() {
             continue;
           }
         }
-    
+
         var fi = parseFileInner(inner);
         if (fi) files.push({path: fi.path, content: fi.read(), start: commentStartOffset, end: commentEndOffset});
       }
-    
+
       if (totals) return { files, totals: { size:totals.totalSize, timestamp: totals.timestamp, start: totalsCommentStart, end: totalsCommentEnd } };
       else return { files };
     }
 
     var BootState = (function() {
-    
+
       /**
        * @class
        * @param {Document} document
@@ -2468,28 +2478,28 @@ var portabled = (function() {
         /** @type {number | undefined} */
         this.storageTimestamp = void 0;
         this.storageLoadFailures = {};
-      
+
         /** @type {string[]} */
         this.newDOMFiles = [];
         /** @type {string[]} */
         this.newStorageFiles = [];
-      
+
         /** @type {((node: any, recognizedKind?: 'file' | 'totals', recognizedEntity?: any) => void) | null} */
         this.ondomnode = null;
-      
+
         /** @type {{ [path: string]: DOMFile; }} */
         this._byPath = {};
-      
+
         /** @type {DOMTotals | null} */
         this._totals = null;
-      
+
         /** @type {((drive: persistence.Drive) => void) | null} */
         this._completion = null;
-      
+
         this._anticipationSize = 0;
         /** @type {Node | null} */
         this._lastNode = null;
-      
+
         this._currentOptionalDriveIndex = 0;
         this._shadowFinished = false;
         /** @type {persistence.Drive.Detached | null} */
@@ -2501,13 +2511,13 @@ var portabled = (function() {
         this._toForgetShadow = [];
         this._domFinished = false;
         this._reportedFiles = {};
-      
+
         this._newDOMFileCache = {};
         this._newStorageFileCache = {};
-  
+
         this._loadNextOptionalDrive();
       }
-    
+
       /**
        * @this {BootState}
        * @param {string} path
@@ -2520,21 +2530,21 @@ var portabled = (function() {
         else return null;
       }
       BootState.prototype.read = read;
-    
+
       /**
        * @this {BootState}
        */
       function continueLoading() {
         if (!this._domFinished)
           this._continueParsingDOM(false /* toCompletion */);
-    
+
         this.newDOMFiles = [];
         for (var k in this._newDOMFileCache) {
           if (k && k.charCodeAt(0)==47)
             this.newDOMFiles.push(k);
         }
         this._newDOMFileCache = {};
-    
+
         this.newStorageFiles = [];
         for (var k in this._newStorageFileCache) {
           if (k && k.charCodeAt(0)==47)
@@ -2543,10 +2553,10 @@ var portabled = (function() {
         this._newStorageFileCache = {};
       }
       BootState.prototype.continueLoading = continueLoading;
-    
+
       /**
        * @this {BootState}
-       * @param {(drive: persistence.Drive) => void} completion 
+       * @param {(drive: persistence.Drive) => void} completion
        */
       function finishParsing(completion) {
         if (this._domFinished) {
@@ -2559,19 +2569,19 @@ var portabled = (function() {
               console.error(error);
           }
         }
-    
+
         this._completion = completion;
         this._continueParsingDOM(true /* toCompletion */);
       }
       BootState.prototype.finishParsing = finishParsing;
-    
+
       /**
        * @this {BootState}
        * @param {Node} node
        */
       function _processNode(node) {
         var cmheader = new CommentHeader(node);
-    
+
         var file = DOMFile.tryParse(cmheader);
         if (file) {
           this._processFileNode(file);
@@ -2580,7 +2590,7 @@ var portabled = (function() {
           }
           return;
         }
-    
+
         var totals = DOMTotals.tryParse(cmheader);
         if (totals) {
           this._processTotalsNode(totals);
@@ -2589,13 +2599,13 @@ var portabled = (function() {
           }
           return;
         }
-    
+
         if (typeof this.ondomnode==='function') {
           this.ondomnode(node);
         }
       }
       BootState.prototype._processNode = _processNode;
-    
+
       /**
        * @this {BootState}
        * @param {DOMTotals} totals
@@ -2608,7 +2618,7 @@ var portabled = (function() {
           this._totals = totals;
           this.domTimestamp = totals.timestamp;
           this.domTotalSize = Math.max(totals.totalSize, this.domTotalSize|0);
-    
+
           var detached = this._detachedDrive;
           if (detached) {
             this._detachedDrive = null;
@@ -2617,7 +2627,7 @@ var portabled = (function() {
         }
       }
       BootState.prototype._processTotalsNode = _processTotalsNode;
-    
+
       /**
        * @this {BootState}
        * @param {DOMFile} file
@@ -2628,19 +2638,19 @@ var portabled = (function() {
           this._removeNode(file.node);
           return;
         }
-    
+
         // no updating nodes until whole DOM loaded
         // (looks like some browsers get confused by updating DOM during loading)
-    
+
         this._byPath[file.path] = file;
         this._newDOMFileCache[file.path] = true;
-    
+
         this.loadedFileCount++;
         this.domLoadedSize += file.contentLength;
         this.domTotalSize = Math.max(this.domTotalSize | 0, this.domLoadedSize | 0);
       }
       BootState.prototype._processFileNode = _processFileNode;
-    
+
       /**
        * @this {BootState}
        * @param {Node} node
@@ -2650,24 +2660,24 @@ var portabled = (function() {
         if (parent) parent.removeChild(node);
       }
       BootState.prototype._removeNode = _removeNode;
-    
+
       /**
        * @this {BootState}
        * @param {boolean} toCompletion
        */
       function _continueParsingDOM(toCompletion){
-    
+
         this.domLoadedSize -= this._anticipationSize;
         this._anticipationSize = 0;
-    
+
         while (true) {
-    
+
           // keep very last node unprocessed until whole document loaded
           // -- that means each iteration we find the next node, but process this._lastNode
           var nextNode = this._getNextNode();
-    
+
           if (!nextNode && !toCompletion) {
-    
+
             // no more nodes found, but more expected: no processing at this point
             // -- but try to estimate what part of the last known node is loaded (for better progress precision)
             if (this._lastNode && this._lastNode.nodeType===8) {
@@ -2681,7 +2691,7 @@ var portabled = (function() {
             }
             return;
           }
-    
+
           if (this._lastNode && this._lastNode.nodeType===8) {
             this._processNode(this._lastNode);
           }
@@ -2690,31 +2700,31 @@ var portabled = (function() {
               this.ondomnode(this._lastNode);
             }
           }
-    
+
           if (!nextNode) {
             // finish
             this._lastNode = null;
             this._processDOMFinished();
             return;
           }
-    
+
           this._lastNode = nextNode;
         }
       }
       BootState.prototype._continueParsingDOM = _continueParsingDOM;
-    
+
       /**
        * @this {BootState}
        */
       function _processDOMFinished() {
-    
+
         this._domFinished = true;
-    
+
         if (this._toUpdateDOM) {
-    
+
           // these are updates from attached storage that have not been written out
           // (because files with corresponding paths don't exist in DOM)
-    
+
           for (var path in this._toUpdateDOM) {
             /** @type {{ content: string, encoding: string } | undefined} */
             var entry;
@@ -2723,7 +2733,7 @@ var portabled = (function() {
             if (content && content.content && content.encoding) {
               entry = content; // content could be string or { content, encoding }
             }
-    
+
             if (content===null) {
               var f = this._byPath[path];
               if (f) {
@@ -2740,7 +2750,7 @@ var portabled = (function() {
               if (f) {
                 if (!entry)
                   entry = bestEncode(content); // it could already be { content, encoding }
-    
+
                 var modified = f.write(entry.content, entry.encoding);
                 if (!modified) {
                   if (this._shadow) this._shadow.forget(path);
@@ -2760,12 +2770,12 @@ var portabled = (function() {
             }
           }
         }
-    
+
         if (this._shadowFinished) {
           this._allCompleted();
           return;
         }
-    
+
         var detached = this._detachedDrive;
         if (detached) {
           this._detachedDrive = null;
@@ -2773,7 +2783,7 @@ var portabled = (function() {
         }
       }
       BootState.prototype._processDOMFinished = _processDOMFinished;
-    
+
       /**
        * @this {BootState}
        */
@@ -2786,7 +2796,7 @@ var portabled = (function() {
         }
       }
       BootState.prototype._finishUpdateTotals = _finishUpdateTotals;
-    
+
       /**
        * @this {BootState}
        */
@@ -2802,7 +2812,7 @@ var portabled = (function() {
             return body.firstChild;
           return null;
         }
-    
+
         var nextNode = this._lastNode.nextSibling;
         if (!nextNode) {
           var body = this._document.body || null;
@@ -2813,17 +2823,17 @@ var portabled = (function() {
         return nextNode;
       }
       BootState.prototype._getNextNode = _getNextNode;
-    
+
       /**
        * @this {BootState}
        */
       function _loadNextOptionalDrive() {
         if (this._currentOptionalDriveIndex >= this._optionalDrives.length) {
-    
+
           this._finishOptionalDetection();
           return;
         }
-    
+
         var nextDrive = this._optionalDrives[this._currentOptionalDriveIndex];
         var _this = this;
         nextDrive(
@@ -2845,7 +2855,7 @@ var portabled = (function() {
           });
       }
       BootState.prototype._loadNextOptionalDrive = _loadNextOptionalDrive;
-    
+
       /**
        * @this {BootState}
        * @param {persistence.Drive.Detached} detached
@@ -2858,7 +2868,7 @@ var portabled = (function() {
           this._detachedDrive = detached;
       }
       BootState.prototype._shadowDetected = _shadowDetected;
-    
+
       /**
        * @this {BootState}
        * @param {persistence.Drive.Detached} detached
@@ -2869,7 +2879,7 @@ var portabled = (function() {
         if (detached.timestamp && detached.timestamp > this.domTimestamp) domRecent = false;
         else if (!detached.timestamp && !this.domTimestamp) domRecent = false;
         else domRecent = true;
-    
+
         if (domRecent) {
           detached.purge(shadow => {
             this._shadow = shadow;
@@ -2897,7 +2907,7 @@ var portabled = (function() {
         }
       }
       BootState.prototype._compareTimestampsAndProceed = _compareTimestampsAndProceed;
-    
+
       /**
        * @this {BootState}
        * @param {string} path
@@ -2906,7 +2916,7 @@ var portabled = (function() {
        */
       function _applyShadowToDOM(path, content, encoding) {
         if (this._domFinished) {
-    
+
           var file = this._byPath[path];
           if (file) {
             if (content===null) {
@@ -2938,13 +2948,13 @@ var portabled = (function() {
         else {
           if (!this._toUpdateDOM)
             this._toUpdateDOM = {};
-    
+
           this._toUpdateDOM[path] = encoding ? { content, encoding } : content;
           this._newStorageFileCache[path] = true;
         }
       }
       BootState.prototype._applyShadowToDOM = _applyShadowToDOM;
-    
+
       /**
        * @this {BootState}
        */
@@ -2961,26 +2971,26 @@ var portabled = (function() {
         return anchor;
       }
       BootState.prototype._findAnchor = _findAnchor;
-    
+
       /**
        * @this {BootState}
        */
       function _finishOptionalDetection() {
-    
+
         if (this._shadow) {
           for (var i = 0; i < this._toForgetShadow.length; i++) {
             this._shadow.forget(this._toForgetShadow[i]);
           }
         }
-    
+
         this._shadowFinished = true;
-    
+
         if (this._domFinished){
           this._allCompleted();
         }
       }
       BootState.prototype._finishOptionalDetection = _finishOptionalDetection;
-    
+
       /**
        * @this {BootState}
        */
@@ -2995,23 +3005,23 @@ var portabled = (function() {
         this._totals.updateNode();
       }
       BootState.prototype._createSynteticTotals = _createSynteticTotals;
-    
+
       /**
        * @this {BootState}
        */
       function _allCompleted() {
         this._finishUpdateTotals();
-    
+
         /** @type {DOMFile[]} */
         var domFiles = [];
         for (var path in this._byPath) {
           if (!path || path.charCodeAt(0)!==47) continue; // expect leading slash
           domFiles.push(this._byPath[path]);
         }
-    
+
         if (!this._totals)
           this._createSynteticTotals();
-    
+
         var domDrive = new DOMDrive(this._totals, domFiles, this._document);
         var mountDrive = new MountedDrive(domDrive, this._shadow);
         this._completion(mountDrive);
@@ -3028,15 +3038,15 @@ var portabled = (function() {
     function deriveUniqueKey(locationSeed) {
 
       var key = (locationSeed + '').split('?')[0].split('#')[0].toLowerCase();
-    
+
       var posIndexTrail = key.search(/\/index\.html$/);
       if (posIndexTrail > 0) key = key.slice(0, posIndexTrail);
-    
+
       if (key.charAt(0) === '/')
         key = key.slice(1);
       if (key.slice(-1) === '/')
         key = key.slice(0, key.length - 1);
-    
+
       // extract readable part
       var colonSplit = key.split(':');
       var readableKey = colonSplit[colonSplit.length-1].replace(/[^a-zA-Z0-9\/]/g, '').replace(/\/\//g, '/').replace(/^\//, '').replace(/\/$/, '').replace(/\.html$/, '');
@@ -3046,9 +3056,9 @@ var portabled = (function() {
       readableKey = readableKey.replace('/', '_');
       if (!readableKey)
         readableKey = 'po';
-    
+
       return readableKey+'_'+smallHash(key) + 'H' + smallHash(key.slice(1) + 'a');
-    
+
       function smallHash(key) {
         for (var h = 0, i = 0; i < key.length; i++) {
           h = Math.pow(31, h + 31 / key.charCodeAt(i));
@@ -3057,13 +3067,11 @@ var portabled = (function() {
         return (h * 2000000000) | 0;
       }
     }
-    
-    function _getDocument() { return typeof document === 'undefined' ? void 0 : document; }
 
     /**
      * @param {Document=} document
      * @param {string=} uniqueKey
-     * @param {persistence.Drive.Optional[]=} optionalDrives 
+     * @param {persistence.Drive.Optional[]=} optionalDrives
      */
     function persistence(document, uniqueKey, optionalDrives) {
       if (typeof document === 'undefined') {
@@ -3103,6 +3111,20 @@ var portabled = (function() {
     /** @type {HTMLIFrameElement} */
     var fitFrameList = [];
 
+    /** @type {HTMLIFrameElement} */
+    var boot;
+    /** @type {HTMLIFrameElement} */
+    var shell;
+
+    var domNodeCallbacks = [];
+    var progressCallbacks = [];
+    var loadedCallbacks = [];
+    var resizeCallbacks = [];
+    var resizeReportCallbacks = [];
+
+    bootDrive = persistence(document, uniqueKey);
+    bootDrive.ondomnode = handle_dom_node;
+
     /**
      * Creates a full-sized frame occupying whole of the page.
      * @returns {HTMLIFrameElement}
@@ -3115,16 +3137,16 @@ var portabled = (function() {
       iframe.src = 'about:blank';
       iframe.frameBorder = '0';
       document.body.appendChild(iframe);
-    
+
       var ifrwin = iframe.contentWindow;
       if (!ifrwin) {
         // IE567 - try to make it behave
         try { iframe.contentWindow = ifrwin = iframe.window; }
         catch (err) { }
       }
-    
+
       var ifrdoc = ifrwin.document;
-    
+
       if (ifrdoc.open) ifrdoc.open();
       ifrdoc.write(
         '<'+'!doctype html><' + 'html><' + 'head><' + 'style>' +
@@ -3135,11 +3157,91 @@ var portabled = (function() {
         '</' + 'style><' + 'body>'+
         '<' + 'body></' + 'html>');
       if (ifrdoc.close) ifrdoc.close();
-    
+
       fitFrameList.push(iframe);
-    
+
       return iframe;
     } // createFrame
+
+    /**
+     */
+    function on(eventName, callback, _more) {
+
+      if (typeof eventName === 'string') {
+        if (typeof callback !== 'function') return;
+        switch (eventName) {
+
+          case 'progress':
+            progressCallbacks.push(callback);
+            break;
+
+          case 'domnode':
+            domNodeCallbacks.push(callback);
+            for (var i = 0; i < keepDomNodesUntilBootComplete.length; i++) {
+              var n = keepDomNodesUntilBootComplete[i];
+              callback(n.node, n.recognizedKind, n.recognizedEntity);
+            }
+            break;
+
+          case 'load':
+            if (loadedCallbacks) loadedCallbacks.push(callback);
+            else setTimeout(function() { callback(drive); }, 1);
+            break;
+
+          case 'resize':
+            resizeCallbacks.push(callback);
+            resizeReportCallbacks.push(callback);
+            if (resizeReportCallbacks.length===1) {
+              setTimeout(() => {
+                for (var i = 0; i < resizeReportCallbacks.length; i++) {
+                  var cb = resizeReportCallbacks[i];
+                  cb(sz);
+                }
+                resizeReportCallbacks = [];
+              }, 1);
+            }
+            break;
+        }
+
+        return;
+      }
+
+      var obj = eventName;
+      eventName = callback;
+      callback = _more;
+
+      if (obj.addEventListener) {
+        try {
+          obj.addEventListener(eventName, callback, false);
+          return;
+        }
+        catch (e) { }
+      }
+      else if (obj.attachEvent) {
+        try {
+          obj.attachEvent('on' + eventName, callback);
+          return;
+        }
+        catch (e) { }
+      }
+
+      obj['on' + eventName] = function(e) { return callback(e || window.event); };
+    } // on
+
+
+    // TODO: figure out when obj argument is skipped
+    function off(obj, eventName, callback) {
+      if (obj.removeEventListener) {
+        obj.removeEventListener(eventName, callback, false);
+      }
+      else if (obj.detachEvent) {
+        obj.detachEvent('on' + eventName, callback);
+      }
+      else {
+        if (obj['on' + eventName])
+          obj['on' + eventName] = null;
+      }
+    } // off
 
     function fitresize() {
 
@@ -3151,10 +3253,10 @@ var portabled = (function() {
         scrollX: 0,
         scrollY: 0
       };
-    
+
       on(window, 'scroll', global_resize_detect);
       on(window, 'resize', global_resize_detect);
-    
+
       if (window.document) {
         var body = window.document.body;
         var docElem;
@@ -3167,7 +3269,7 @@ var portabled = (function() {
           on(body, 'scroll', global_resize_detect)
         }
       }
-    
+
       var state = {
         update: update,
         fitframe: fitframe,
@@ -3178,13 +3280,16 @@ var portabled = (function() {
         onresize: null
       };
       getMetrics(state);
-    
+
       return state;
-    
+
       function update() {
         check_resize_now();
       }
-    
+
+      /**
+       * @param {HTMLIFrameElement} frame
+       */
       function fitframe(frame) {
         var frwindow = frame.contentWindow || frame.window;
         var frdoc = frwindow.document;
@@ -3201,11 +3306,11 @@ var portabled = (function() {
         forceResize = true;
         global_resize_detect();
       }
-    
+
       function global_resize_detect() {
         if (needResize) return;
         needResize = true;
-    
+
         if (typeof requestAnimationFrame === 'function') {
           requestAnimationFrame(check_resize_now);
         }
@@ -3213,14 +3318,14 @@ var portabled = (function() {
           setTimeout(check_resize_now, 5);
         }
       }
-    
+
       function getMetrics(metrics) {
         metrics.windowWidth = window.innerWidth || (document.body ? (document.body.parentElement ? document.body.parentElement.clientWidth : 0) || document.body.clientWidth : null);
         metrics.windowHeight = window.innerHeight || (document.body ? (document.body.parentElement ? document.body.parentElement.clientHeight : 0) || document.body.clientHeight : null);
         metrics.scrollX = window.scrollX || window.pageXOffset || (document.body ? document.body.scrollLeft || (document.body.parentElement ? document.body.parentElement.scrollLeft : 0) || 0 : null);
         metrics.scrollY = window.scrollY || window.pageYOffset || (document.body ? document.body.scrollTop || (document.body.parentElement ? document.body.parentElement.scrollTop : 0) || 0 : null);
       }
-    
+
       function check_resize_now() {
         getMetrics(newSize);
         if (!forceResize
@@ -3231,35 +3336,35 @@ var portabled = (function() {
           needResize = false;
           return;
         }
-    
+
         forceResize = false;
-    
+
         apply_new_size_now();
         needResize = false;
       }
-    
+
       function apply_new_size_now() {
-    
+
         state.windowWidth = newSize.windowWidth;
         state.windowHeight = newSize.windowHeight;
         state.scrollX = newSize.scrollX;
         state.scrollY = newSize.scrollY;
-    
+
         var wpx = state.windowWidth + 'px';
         var hpx = state.windowHeight + 'px';
         var xpx = state.scrollX + 'px';
         var ypx = state.scrollY + 'px';
-    
+
         for (var i = 0; i < fitFrameList.length; i++) {
           var fr = fitFrameList[i];
           if (!fr.parentElement && !fr.parentNode) continue;
-    
+
           fr.style.left = xpx;
           fr.style.top = ypx;
           fr.style.width = wpx;
           fr.style.height = hpx;
         }
-    
+
         if (resizeCallbacks.length) {
           if (resizeReportCallbacks.length) resizeReportCallbacks = [];
           var sz = {
@@ -3268,23 +3373,375 @@ var portabled = (function() {
             scrollX: state.scrollX,
             scrollY: state.scrollY
           };
-    
+
           for (var i = 0; i < resizeCallbacks.length; i++) {
             var cb = resizeCallbacks[i];
             cb(sz);
           }
         }
       }
-    
-    } // fitresize
-    
 
-    var loader = {
-      createFrame: createFrame
-    };
+    } // fitresize
+
+    /**
+     * Sometimes proxies on free wifi, or corporate proxies inject spying scripts or iframes.
+     * They can interfere and best removed.
+     */
+    function removeSpyElements() {
+
+      removeElements('iframe');
+      removeElements('style');
+      removeElements('script');
+
+      /**
+       * @param {string} tagName
+       */
+      function removeElements(tagName) {
+        var list = document.getElementsByTagName(tagName);
+        for (var i = 0; i < list.length; i++) {
+          var elem = (list[i] || list.item(i));
+
+          if (elem.__knownFrame) continue;
+
+          if (elem && elem.parentElement &&
+              elem.getAttribute && elem.getAttribute('data-legit')!=='mi') {
+            if ((shell && elem===shell) || (boot && elem===boot)) continue;
+            try{ elem.parentElement.removeChild(elem); i--; } catch (error) { }
+          }
+        }
+      }
+    }
+
+    /**
+     * @param {Element | Function} obj
+     * @returns {string}
+     */
+    function getText(obj) {
+
+      if (typeof obj === 'function') {
+        var result = /\/\*(\*(?!\/)|[^*])*\*\//m.exec(obj + '')[0];
+        if (result) result = result.slice(2, result.length - 2);
+        return result;
+      }
+      else if (/^SCRIPT$/i.test(obj.tagName)) {
+        if ('text' in obj)
+          return obj.text;
+        else
+          return obj.innerHTML;
+      }
+      else if (/^STYLE$/i.test(obj.tagName)) {
+        if ('text' in obj)
+          return obj.text;
+        else if (obj.styleSheet)
+          return obj.styleSheet.cssText;
+        else
+          return obj.innerHTML;
+      }
+      else if ('textContent' in obj) {
+        return obj.textContent;
+      }
+      else if (/^INPUT$/i.test(obj.tagName)) {
+        return obj.value;
+      }
+      else {
+        /** @type {string} */
+        var result = obj.innerText;
+        if (result) {
+          // IE fixes
+          result = result.replace(/\<BR\s*\>/gi, '\n').replace(/\r\n/g, '\n');
+        }
+        return result || '';
+      }
+    }
+
+    /**
+     * @param {Element} obj
+     * @param {string} text
+     */
+    function setText(obj, text) {
+
+      if (/^SCRIPT$/i.test(obj.tagName)) {
+        if ('text' in obj)
+          obj.text = text;
+        else
+          obj.innerHTML = text;
+      }
+      else if (/^STYLE$/i.test(obj.tagName)) {
+        if ('text' in obj) {
+          obj.text = text;
+        }
+        else if ('styleSheet' in obj) {
+          if (!obj.styleSheet && !obj.type) obj.type = 'text/css';
+          obj.styleSheet.cssText = text;
+        }
+        else if ('textContent' in obj) {
+          obj.textContent = text;
+        }
+        else {
+          obj.innerHTML = text;
+        }
+      }
+      else if ('textContent' in obj) {
+        if ('type' in obj && !obj.type) obj.type = 'text/css';
+        obj.textContent = text;
+      }
+      else if (/^INPUT$/i.test(obj.tagName)) {
+        obj.value = text;
+      }
+      else {
+        obj.innerText = text;
+      }
+    }
+
+    /**
+     * @param {Element | string} tag
+     * @param {Partial<CSSStyleDeclaration>=} style
+     * @param {Element=} parent
+     * @returns {HTMLElement}
+     */
+    function elem(tag, style, parent) {
+      /** @type {HTMLElement} */
+      var e = tag.tagName ? tag : window.document.createElement(tag);
+
+      if (!parent && style && style.tagName) {
+        parent = style;
+        style = null;
+      }
+
+      if (style) {
+        if (typeof style === 'string') {
+          setText(e, style);
+        }
+        else {
+          for (var k in style) if (style.hasOwnProperty(k)) {
+            if (k === 'text') {
+              setText(
+                e, style[k]);
+            }
+            else if (k === 'className') {
+              e.className = style[k];
+            }
+            else if (k === 'background' && e.style) {
+              e.style.background = style[k];
+            }
+            else if (!(e.style && k in e.style) && k in e) {
+              e[k] = style[k];
+            }
+            else {
+
+              if (style[k] && typeof style[k] === 'object' && typeof style[k].length === 'number') {
+                // array: iterate and apply values
+                var applyValues = style[k];
+                for (var i = 0; i < applyValues.length; i++) {
+                  try { e.style[k] = applyValues[i]; }
+                  catch (errApplyValues) { }
+                }
+              }
+              else {
+                // not array
+                try {
+                  e.style[k] = style[k];
+                }
+                catch (err) {
+                  try {
+                    if (typeof console !== 'undefined' && typeof console.error === 'function')
+                      console.error(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
+                  }
+                  catch (whatevs) {
+                    alert(e.tagName + '.style.' + k + '=' + style[k] + ': ' + err.message);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (parent) {
+        try {
+          parent.appendChild(e);
+        }
+        catch (error) {
+          throw new Error(error.message + ' adding ' + e.tagName + ' to ' + parent.tagName);
+        }
+      }
+
+      return e;
+    }
+
+    function fadeToUI() {
+      sz.update();
+      shell.style.opacity = '0';
+      shell.style.filter = 'alpha(opacity=0)'; // TODO: feature-detect and do either one or another
+      shell.style.display = 'block';
+
+      if (loader.delayed_shell_html) {
+        loader.delayed_shell_html();
+      }
+
+      var start = +new Date();
+      var fadeintTime = Math.min(500, (start-timings.domStarted)/2);
+
+      var animateFadeIn = setInterval(animateStep, 20);
+
+      function animateStep() {
+        var passed = (+new Date()) - start;
+        var opacity = Math.min(passed, fadeintTime) / fadeintTime;
+
+        boot.style.opacity = (1 - opacity).toString();
+        boot.style.filter = 'alpha(opacity=' + (((1-opacity) * 100) | 0) + ')'; // TODO: feature-detect and do either one or another
+
+        shell.style.opacity = opacity;
+        shell.style.filter = 'alpha(opacity=' + ((opacity * 100) | 0) + ')'; // TODO: feature-detect and do either one or another
+
+        if (passed >= fadeintTime) {
+          shell.style.opacity = 1;
+          shell.style.filter = 'alpha(opacity=100)';
+          boot.style.opacity = 0;
+          boot.style.filter = 'alpha(opacity=0)';
+
+          if (animateFadeIn) {
+            sz.update();
+            clearInterval(animateFadeIn);
+            animateFadeIn = 0;
+            setTimeout(function() { // slight delay for better opacity smoothness
+              sz.update();
+              if (boot.parentElement)
+                boot.parentElement.removeChild(boot);
+              shell.style.opacity = null;
+              shell.style.filter = null;
+
+              if (document.title==='//.')
+                document.title = '//:';
+
+            }, 1);
+          }
+        }
+      }
+    } // fadeToUI
+
+    /**
+     * @param {Window=} window
+     * @param {Document=} document
+     */
+    function loader(window, document) {
+      if (!document) document = _getDocument();
+      if (!window) window = _getWindow();
+
+      /** @type {{ node: Node; recognizedKind: string; recognizedEntity: any; }[]} */
+      var keepDomNodesUntilBootComplete = [];
+      /**
+       * @param {Node} node
+       * @param {string} recognizedKind
+       * @param {any} recognizedEntity
+       */
+      function handle_dom_node(node, recognizedKind, recognizedEntity) {
+        keepDomNodesUntilBootComplete.push({node,recognizedKind, recognizedEntity});
+        for (var i = 0; i < domNodeCallbacks.length; i++) {
+          var callback = domNodeCallbacks[i];
+          callback(node, recognizedKind, recognizedEntity);
+        }
+      }
+
+      function onkeeploading() {
+        if (document.title==='/:') document.title = '/:.';
+        if (!timings.domStarted
+            && (bootDrive.domLoadedSize || bootDrive.domTotalSize))
+          timings.domStarted = +new Date();
+
+        removeSpyElements();
+
+        var goodTimeUpdateSize = false;
+        var now = Date.now?Date.now():+new Date();
+        if (!onkeeploading._lastUpdateSize) {
+          goodTimeUpdateSize = true;
+        }
+        else {
+          if (now-onkeeploading._lastUpdateSize>500)
+            goodTimeUpdateSize = true;
+        }
+
+        if (goodTimeUpdateSize) {
+          onkeeploading._lastUpdateSize = now;
+          sz.update();
+        }
+
+        var prevLoadedSize = bootDrive.domLoadedSize;
+        var prevTotalSize = bootDrive.domTotalSize;
+
+        bootDrive.continueLoading();
+        updateBootStateProps();
+
+        if (bootDrive.newDOMFiles.length || bootDrive.newStorageFiles.length
+            || prevLoadedSize !== bootDrive.domLoadedSize || prevTotalSize !== bootDrive.domTotalSize) {
+          if (document.title==='/:' || document.title==='/:.') document.title = '//';
+
+          for (var i = 0; i < progressCallbacks.length; i++) {
+            var callback = progressCallbacks[i];
+            callback(bootDrive);
+          }
+        }
+      }
+
+      function updateBootStateProps() {
+        for (var k in bootDrive) if (k && bootDrive.hasOwnProperty(k) && typeof bootDrive[k]!=='function' && k.charAt(0)!=='_') {
+          bootState[k] = bootDrive[k];
+        }
+
+        if (!bootState.read)
+          bootState.read = function(path) { return bootDrive.read(path); };
+      }
+
+      function window_onload() {
+
+        function onfinishloading(loadedDrive) {
+          drive = loadedDrive;
+          if (typeof loader!=='undefined' && loader) loader.drive = loadedDrive;
+
+          updateBootStateProps();
+          bootState.read = function(file) { return drive.read(file); };
+          keepDomNodesUntilBootComplete = [];
+          domNodeCallbacks = [];
+
+          timings.driveLoaded = +new Date();
+          if (loadedCallbacks && loadedCallbacks.length) {
+            if (document.title==='/:' || document.title==='/:.' || document.title==='//') document.title = '//.';
+            for (var i = 0; i < loadedCallbacks.length; i++) {
+              var callback = loadedCallbacks[i];
+              callback(drive);
+            }
+          }
+          else {
+            if (document.title==='/:' || document.title==='/:.' || document.title==='//') document.title = '//,';
+            fadeToUI();
+          }
+        }
+
+        clearInterval(keepLoading);
+
+        removeSpyElements();
+
+        timings.documentLoaded = +new Date();
+
+        sz.update();
+
+        bootDrive.finishParsing(onfinishloading);
+
+      }
+
+      document.title = '/:';
+
+      on(window, 'load', window_onload);
+
+      keepLoading = setInterval(onkeeploading, 30);
+    }
+
+    loader.createFrame = createFrame;
+    loader.on = on;
+    loader.off = off;
+    loader.elem = elem;
 
     return loader;
-    
   });
 
   var portabled = {
