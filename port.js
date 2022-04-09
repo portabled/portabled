@@ -966,7 +966,7 @@ var portabled = (function() {
     
         this._dom.timestamp = this.timestamp;
     
-        const encoded = typeof content === 'undefined' || content === null ? null : bestEncode(content);
+        var encoded = typeof content === 'undefined' || content === null ? null : bestEncode(content);
     
         if (encoded)
           this._dom.write(file, encoded.content, encoded.encoding);
@@ -1190,7 +1190,7 @@ var portabled = (function() {
             var result = [];
             var len = this._localStorage.length;
             for (var i = 0; i < len; i++) {
-              const str = this._localStorage.key(i);
+              var str = this._localStorage.key(i);
               if (str && str.length > this._prefix.length && str.slice(0, this._prefix.length) === this._prefix)
                 result.push(str.slice(this._prefix.length));
             }
@@ -1249,16 +1249,16 @@ var portabled = (function() {
            * @param {persistence.Drive.Detached.CallbackWithShadow} callback
            */
           function applyTo(mainDrive, callback) {
-            const keys = this._access.keys();
-            for (let i = 0; i < keys.length; i++) {
-              const k = keys[i];
+            var keys = this._access.keys();
+            for (var i = 0; i < keys.length; i++) {
+              var k = keys[i];
               if (k.charCodeAt(0)===47 /* slash */) {
-                const value = this._access.get(k);
+                var value = this._access.get(k);
                 if (value && value.charCodeAt(0)===91 /* open square bracket [ */) {
-                  const cl = value.indexOf(']');
+                  var cl = value.indexOf(']');
                   if (cl>0 && cl < 10) {
-                    const encoding = value.slice(1,cl);
-                    const encFn = encodings[encoding];
+                    var encoding = value.slice(1,cl);
+                    var encFn = encodings[encoding];
                     if (typeof encFn==='function') {
                       mainDrive.write(k, value.slice(cl+1), encoding);
                       break;
@@ -1347,15 +1347,15 @@ var portabled = (function() {
         function detectWebSQL(uniqueKey, callback) {
           try {
 
-            const openDatabaseInstance = getOpenDatabase();
+            var openDatabaseInstance = getOpenDatabase();
             if (!openDatabaseInstance) {
               callback('Variable openDatabase is not available.');
               return;
             }
         
-            const dbName = uniqueKey || 'portabled';
+            var dbName = uniqueKey || 'portabled';
         
-            const db = openDatabaseInstance(
+            var db = openDatabaseInstance(
               dbName, // name
               1, // version
               'Portabled virtual filesystem data', // displayName
@@ -1480,7 +1480,7 @@ var portabled = (function() {
                 listAllTables(
                   transaction,
                   function (tables) {
-                    const ftab = getFilenamesFromTables(tables);
+                    var ftab = getFilenamesFromTables(tables);
                     this._applyToWithFiles(transaction, ftab, mainDrive, callback);
                   },
                   function (sqlError) {
@@ -1553,7 +1553,7 @@ var portabled = (function() {
                   [],
                   function (transaction, result) {
                     if (result.rows.length) {
-                      const row = result.rows.item(0);
+                      var row = result.rows.item(0);
                       if (row.value === null)
                         mainDrive.write(file, null);
                       else if (typeof row.value === 'string')
@@ -1566,7 +1566,7 @@ var portabled = (function() {
                   });
               };
       
-            for (let i = 0; i < ftab.length; i++) {
+            for (var i = 0; i < ftab.length; i++) {
               applyFile(ftab[i].file, ftab[i].table);
             }
       
@@ -1587,14 +1587,14 @@ var portabled = (function() {
       
             var droppedCount = 0;
       
-            const completeOne = function () {
+            var completeOne = function () {
               droppedCount++;
               if (droppedCount === tables.length) {
                 callback(new WebSQLShadow(this._db, 0, false));
               }
             };
       
-            for (let i = 0; i < tables.length; i++) {
+            for (var i = 0; i < tables.length; i++) {
               transaction.executeSql(
                 'DROP TABLE "' + tables[i] + '"',
                 [],
@@ -1672,7 +1672,7 @@ var portabled = (function() {
            * @param {string} encoding
            */
           function _updateCore(file, content, encoding) {
-            let updateSQL = this._cachedUpdateStatementsByFile[file];
+            var updateSQL = this._cachedUpdateStatementsByFile[file];
             if (!updateSQL) {
               var tableName = mangleDatabaseObjectName(file);
               updateSQL = this._createUpdateStatement(file, tableName);
@@ -1767,7 +1767,7 @@ var portabled = (function() {
            * @param {string} file
            */
           function _deleteAllFromTable(file) {
-            const tableName = mangleDatabaseObjectName(file);
+            var tableName = mangleDatabaseObjectName(file);
             this._db.transaction(
               function (transaction) {
                 transaction.executeSql(
@@ -1789,7 +1789,7 @@ var portabled = (function() {
            * @param {string} file
            */
           function _dropFileTable(file) {
-            const tableName = mangleDatabaseObjectName(file);
+            var tableName = mangleDatabaseObjectName(file);
             this._db.transaction(
               function (transaction) {
                 transaction.executeSql(
@@ -2717,7 +2717,7 @@ var portabled = (function() {
     
           for (var path in this._toUpdateDOM) {
             /** @type {{ content: string, encoding: string } | undefined} */
-            let entry;
+            var entry;
             if (!path || path.charCodeAt(0)!==47) continue; // expect leading slash
             var content = this._toUpdateDOM[path];
             if (content && content.content && content.encoding) {
@@ -3056,7 +3056,6 @@ var portabled = (function() {
         }
         return (h * 2000000000) | 0;
       }
-    
     }
     
     function _getDocument() { return typeof document === 'undefined' ? void 0 : document; }
@@ -3098,6 +3097,195 @@ var portabled = (function() {
 
     return persistence;
   })();
+
+  var loader = (function () {
+
+    /** @type {HTMLIFrameElement} */
+    var fitFrameList = [];
+
+    /**
+     * Creates a full-sized frame occupying whole of the page.
+     * @returns {HTMLIFrameElement}
+     */
+    function createFrame() {
+      var iframe = document.createElement('iframe');
+      iframe.application='yes'; // MHTA trusted
+      iframe.__knownFrame = true;
+      iframe.style.cssText = 'position:absolute; left:0; top:0; width:100%; height:100%; border:none;display:none;padding:0px;margin:0px;';
+      iframe.src = 'about:blank';
+      iframe.frameBorder = '0';
+      document.body.appendChild(iframe);
+    
+      var ifrwin = iframe.contentWindow;
+      if (!ifrwin) {
+        // IE567 - try to make it behave
+        try { iframe.contentWindow = ifrwin = iframe.window; }
+        catch (err) { }
+      }
+    
+      var ifrdoc = ifrwin.document;
+    
+      if (ifrdoc.open) ifrdoc.open();
+      ifrdoc.write(
+        '<'+'!doctype html><' + 'html><' + 'head><' + 'style>' +
+        'html{margin:0;padding:0;border:none;height:100%;border:none;overflow:hidden;}' +
+        'body{margin:0;padding:0;border:none;height:100%;border:none;overflow:hidden;}' +
+        '*,*:before,*:after{box-sizing:inherit;}' +
+        'html{box-sizing:border-box;}' +
+        '</' + 'style><' + 'body>'+
+        '<' + 'body></' + 'html>');
+      if (ifrdoc.close) ifrdoc.close();
+    
+      fitFrameList.push(iframe);
+    
+      return iframe;
+    } // createFrame
+
+    function fitresize() {
+
+      var needResize = false;
+      var forceResize = false;
+      var newSize = {
+        windowWidth: 0,
+        windowHeight: 0,
+        scrollX: 0,
+        scrollY: 0
+      };
+    
+      on(window, 'scroll', global_resize_detect);
+      on(window, 'resize', global_resize_detect);
+    
+      if (window.document) {
+        var body = window.document.body;
+        var docElem;
+        if (docElem = window.document.documentElement || (body? body.parentElement || body.parentNode:null)) {
+          on(docElem, 'resize', global_resize_detect)
+          on(docElem, 'scroll', global_resize_detect)
+        }
+        if (body) {
+          on(body, 'resize', global_resize_detect)
+          on(body, 'scroll', global_resize_detect)
+        }
+      }
+    
+      var state = {
+        update: update,
+        fitframe: fitframe,
+        windowWidth: 0,
+        windowHeight: 0,
+        scrollX: 0,
+        scrollY: 0,
+        onresize: null
+      };
+      getMetrics(state);
+    
+      return state;
+    
+      function update() {
+        check_resize_now();
+      }
+    
+      function fitframe(frame) {
+        var frwindow = frame.contentWindow || frame.window;
+        var frdoc = frwindow.document;
+        var frbody = frdoc ? frdoc.body: null;
+        var docs = [frdoc, frbody, frwindow];
+        var events = ['touchstart', 'touchmove', 'touchend', 'pointerdown', 'pointerup','pointerout','keydown','keyup'];
+        for (var i = 0; i < docs.length; i++) {
+          if (!docs[i]) continue;
+          for (var j = 0; j < events.length; j++) {
+            on(docs[i], events[j], global_resize_detect);
+          }
+        }
+        fitFrameList.push(frame);
+        forceResize = true;
+        global_resize_detect();
+      }
+    
+      function global_resize_detect() {
+        if (needResize) return;
+        needResize = true;
+    
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(check_resize_now);
+        }
+        else {
+          setTimeout(check_resize_now, 5);
+        }
+      }
+    
+      function getMetrics(metrics) {
+        metrics.windowWidth = window.innerWidth || (document.body ? (document.body.parentElement ? document.body.parentElement.clientWidth : 0) || document.body.clientWidth : null);
+        metrics.windowHeight = window.innerHeight || (document.body ? (document.body.parentElement ? document.body.parentElement.clientHeight : 0) || document.body.clientHeight : null);
+        metrics.scrollX = window.scrollX || window.pageXOffset || (document.body ? document.body.scrollLeft || (document.body.parentElement ? document.body.parentElement.scrollLeft : 0) || 0 : null);
+        metrics.scrollY = window.scrollY || window.pageYOffset || (document.body ? document.body.scrollTop || (document.body.parentElement ? document.body.parentElement.scrollTop : 0) || 0 : null);
+      }
+    
+      function check_resize_now() {
+        getMetrics(newSize);
+        if (!forceResize
+            && newSize.windowWidth === state.windowWidth
+            && newSize.windowHeight === state.windowHeight
+            && newSize.scrollX === state.scrollX
+            && newSize.scrollY === state.scrollY) {
+          needResize = false;
+          return;
+        }
+    
+        forceResize = false;
+    
+        apply_new_size_now();
+        needResize = false;
+      }
+    
+      function apply_new_size_now() {
+    
+        state.windowWidth = newSize.windowWidth;
+        state.windowHeight = newSize.windowHeight;
+        state.scrollX = newSize.scrollX;
+        state.scrollY = newSize.scrollY;
+    
+        var wpx = state.windowWidth + 'px';
+        var hpx = state.windowHeight + 'px';
+        var xpx = state.scrollX + 'px';
+        var ypx = state.scrollY + 'px';
+    
+        for (var i = 0; i < fitFrameList.length; i++) {
+          var fr = fitFrameList[i];
+          if (!fr.parentElement && !fr.parentNode) continue;
+    
+          fr.style.left = xpx;
+          fr.style.top = ypx;
+          fr.style.width = wpx;
+          fr.style.height = hpx;
+        }
+    
+        if (resizeCallbacks.length) {
+          if (resizeReportCallbacks.length) resizeReportCallbacks = [];
+          var sz = {
+            windowWidth: state.windowWidth,
+            windowHeight: state.windowHeight,
+            scrollX: state.scrollX,
+            scrollY: state.scrollY
+          };
+    
+          for (var i = 0; i < resizeCallbacks.length; i++) {
+            var cb = resizeCallbacks[i];
+            cb(sz);
+          }
+        }
+      }
+    
+    } // fitresize
+    
+
+    var loader = {
+      createFrame: createFrame
+    };
+
+    return loader;
+    
+  });
 
   var portabled = {
     persistence: persistence
