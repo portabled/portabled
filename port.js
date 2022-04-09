@@ -3020,8 +3020,46 @@ var portabled = (function() {
 
       return BootState;
     })();
+
+    /**
+     * @param {any} locationSeed
+     * @returns {string}
+     */
+    function deriveUniqueKey(locationSeed) {
+
+      var key = (locationSeed + '').split('?')[0].split('#')[0].toLowerCase();
     
-    function getDocument() { return typeof document === 'undefined' ? void 0 : document; }
+      var posIndexTrail = key.search(/\/index\.html$/);
+      if (posIndexTrail > 0) key = key.slice(0, posIndexTrail);
+    
+      if (key.charAt(0) === '/')
+        key = key.slice(1);
+      if (key.slice(-1) === '/')
+        key = key.slice(0, key.length - 1);
+    
+      // extract readable part
+      var colonSplit = key.split(':');
+      var readableKey = colonSplit[colonSplit.length-1].replace(/[^a-zA-Z0-9\/]/g, '').replace(/\/\//g, '/').replace(/^\//, '').replace(/\/$/, '').replace(/\.html$/, '');
+      var readableSlashPos = readableKey.indexOf('/');
+      if (readableSlashPos>0 && readableSlashPos < readableKey.length/2)
+        readableKey = readableKey.slice(readableSlashPos+1);
+      readableKey = readableKey.replace('/', '_');
+      if (!readableKey)
+        readableKey = 'po';
+    
+      return readableKey+'_'+smallHash(key) + 'H' + smallHash(key.slice(1) + 'a');
+    
+      function smallHash(key) {
+        for (var h = 0, i = 0; i < key.length; i++) {
+          h = Math.pow(31, h + 31 / key.charCodeAt(i));
+          h -= h | 0;
+        }
+        return (h * 2000000000) | 0;
+      }
+    
+    }
+    
+    function _getDocument() { return typeof document === 'undefined' ? void 0 : document; }
 
     /**
      * @param {Document=} document
@@ -3030,12 +3068,17 @@ var portabled = (function() {
      */
     function persistence(document, uniqueKey, optionalDrives) {
       if (typeof document === 'undefined') {
-        document = getDocument();
+        document = _getDocument();
         if (!document) {
           if (typeof console !== 'undefined' && console && typeof console.warn === 'function')
             console.warn('Persistence relies on browser DOM.');
             return;
         }
+      }
+
+      if (typeof uniqueKey !== 'number' && !uniqueKey) {
+        if (typeof location !== 'undefined' && location) uniqueKey = deriveUniqueKey(location + '');
+        else uniqueKey = 'poratbled-20220409-1130';
       }
 
       return new BootState(document, uniqueKey, optionalDrives);
@@ -3051,6 +3094,7 @@ var portabled = (function() {
     persistence.attached = attached;
     persistence.encodings = encodings;
     persistence.bestEncode = bestEncode;
+    persistence.deriveUniqueKey = deriveUniqueKey;
 
     return persistence;
   })();
