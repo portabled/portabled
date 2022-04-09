@@ -2067,14 +2067,16 @@ var portabled = (function() {
            */
           function applyTo(mainDrive, callback) {
 
+            var _this = this;
+
             var onerror = function (errorEvent) {
               if (typeof console!=='undefined' && console && typeof console.error==='function')
                 console.error('Could not count files store: ', errorEvent);
-              callback(new IndexedDBShadow(this._db, this.timestamp));
+              callback(new IndexedDBShadow(_this._db, _this.timestamp));
             };
 
             try {
-              var transaction = this._transaction || this._db.transaction(['files', 'metadata']); // try to reuse the original opening _transaction
+              var transaction = _this._transaction || _this._db.transaction(['files', 'metadata']); // try to reuse the original opening _transaction
               var metadataStore = transaction.objectStore('metadata');
               var filesStore = transaction.objectStore('files');
 
@@ -2082,7 +2084,7 @@ var portabled = (function() {
             }
             catch (error) {
               try {
-                transaction = this._db.transaction(['files', 'metadata']); // try to reuse the original opening _transaction
+                transaction = _this._db.transaction(['files', 'metadata']); // try to reuse the original opening _transaction
                 metadataStore = transaction.objectStore('metadata');
                 filesStore = transaction.objectStore('files');
                 countRequest = filesStore.count();
@@ -2104,7 +2106,7 @@ var portabled = (function() {
                 cursorRequest.onerror = function (errorEvent) {
                   if (typeof console!=='undefined' && console && typeof console.error==='function')
                     console.error('Could not open cursor: ', errorEvent);
-                  callback(new IndexedDBShadow(this._db, this.timestamp));
+                  callback(new IndexedDBShadow(_this._db, _this.timestamp));
                 };
 
                 var processedCount = 0;
@@ -2114,7 +2116,7 @@ var portabled = (function() {
                     var cursor = cursorRequest.result;
 
                     if (!cursor) {
-                      callback(new IndexedDBShadow(this._db, this.timestamp));
+                      callback(new IndexedDBShadow(_this._db, _this.timestamp));
                       return;
                     }
 
@@ -2125,7 +2127,7 @@ var portabled = (function() {
                     /** @type {FileData} */
                     var result = cursor.value;
                     if (result && result.path) {
-                      mainDrive.timestamp = this.timestamp;
+                      mainDrive.timestamp = _this.timestamp;
                       mainDrive.write(result.path, result.content, result.encoding);
                     }
 
@@ -2142,7 +2144,7 @@ var portabled = (function() {
 
                     if (typeof console!=='undefined' && console && typeof console.error==='function')
                       console.error(message, cursorContinueSuccessHandlingError);
-                    callback(new IndexedDBShadow(this._db, this.timestamp));
+                    callback(new IndexedDBShadow(_this._db, _this.timestamp));
                   }
 
                 }; // cursorRequest.onsuccess
@@ -2172,8 +2174,9 @@ var portabled = (function() {
           function purge(callback) {
             if (this._transaction) {
               this._transaction = void 0;
+              var _this = this;
               setTimeout(function () { // avoid being in the original transaction
-                this._purgeCore(callback);
+                _this._purgeCore(callback);
               }, 1);
             }
             else {
