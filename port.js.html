@@ -3114,6 +3114,14 @@ var portabled = (function() {
     /** @type {HTMLIFrameElement} */
     var fitFrameList = [];
 
+    // callbacks would be touched in global 'on' function
+    var domNodeCallbacks = [];
+    var progressCallbacks = [];
+    var loadedCallbacks = [];
+    var resizeCallbacks = [];
+    var resizeReportCallbacks = [];
+
+
     /**
      * Creates a full-sized frame occupying whole of the page.
      * @returns {HTMLIFrameElement}
@@ -3142,7 +3150,8 @@ var portabled = (function() {
         'html{margin:0;padding:0;border:none;height:100%;border:none;overflow:hidden;}' +
         'body{margin:0;padding:0;border:none;height:100%;border:none;overflow:hidden;}' +
         '*,*:before,*:after{box-sizing:inherit;}' +
-        'html{box-sizing:border-box;}' +
+        'html{box-sizing:border-box;color:silver;}' +
+        'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";}' +
         '</' + 'style><' + 'body>'+
         '<' + 'body></' + 'html>');
       if (ifrdoc.close) ifrdoc.close();
@@ -3507,6 +3516,7 @@ var portabled = (function() {
           bootState.read = function(file) { return drive.read(file); };
           keepDomNodesUntilBootComplete = [];
           domNodeCallbacks = [];
+          loader.fadeToUI = fadeToUI;
 
           timings.driveLoaded = +new Date();
           if (loadedCallbacks && loadedCallbacks.length) {
@@ -3739,9 +3749,11 @@ var portabled = (function() {
       // creates both frames invisible
       /** @type {HTMLIFrameElement} */
       var boot = createFrame();
+      loader.boot = boot;
       boot.style.zIndex = 100;
       /** @type {HTMLIFrameElement} */
       var shell = createFrame();
+      loader.shell = shell;
       shell.style.zIndex = 10;
 
       document.title = '/';
@@ -3751,13 +3763,6 @@ var portabled = (function() {
       sz.fitframe(shell);
 
       document.title = '/.';
-
-      var domNodeCallbacks = [];
-      var progressCallbacks = [];
-      var loadedCallbacks = [];
-      var resizeCallbacks = [];
-      var resizeReportCallbacks = [];
-
 
       var uniqueKey = persistence.deriveUniqueKey(location);
       var bootDrive = persistence(document, uniqueKey);
@@ -3789,19 +3794,38 @@ var portabled = (function() {
     // genuine browser environment, expect loader to be invoked
 
     var windowLoadedCheckLoaderInvoked = (function () {
-      if (loaderEverInvoked) return;
 
-      // give it one last chance
-      setTimeout(function() {
+      function windowLoadedCheckLoaderInvoked() {
         if (loaderEverInvoked) return;
 
-        // if global variable called 'test' is defined, quit
-        if (typeof test !== 'undefined' && test)
-          return;
+        // give it one last chance
+        setTimeout(function() {
+          if (loaderEverInvoked) return;
 
-        loader();
-      }, 300);
-    });
+          // if global variable called 'test' is defined, quit
+          if (typeof test !== 'undefined' && test)
+            return;
+
+          loader.on('progress', bootProgress);
+          loader.on('load', shellLoaded);
+          loader();
+        }, 300);
+      }
+
+      function bootProgress(bootDrive) {
+        console.log('Progress ', bootDrive.files());
+      }
+
+      function shellLoaded() {
+        console.log('Loaded.');
+        loader.shell.contentDocument.body.style.textAlign = 'center';
+        var h2 = loader.elem('h1', {text:'port.js', paddingTop: '10%'}, loader.shell.contentDocument.body);
+        var loaded = loader.elem('div', 'Loaded.', loader.shell.contentDocument.body);
+        loader.fadeToUI();
+      }
+
+      return windowLoadedCheckLoaderInvoked;
+    })();
 
     if (document.readyState !== 'complete') {
       loader.on(window, 'load', windowLoadedCheckLoaderInvoked);
