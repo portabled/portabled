@@ -3107,6 +3107,8 @@ var portabled = (function() {
     return persistence;
   })();
 
+  var loaderEverInvoked = false;
+
   var loader = (function () {
 
     /** @type {HTMLIFrameElement} */
@@ -3629,6 +3631,8 @@ var portabled = (function() {
       if (!document) document = _getDocument();
       if (!window) window = _getWindow();
 
+      loaderEverInvoked = true;
+
       /** @type {{ node: Node; recognizedKind: string; recognizedEntity: any; }[]} */
       var keepDomNodesUntilBootComplete = [];
       /**
@@ -3746,8 +3750,30 @@ var portabled = (function() {
   });
 
   var portabled = {
-    persistence: persistence
+    persistence: persistence,
+    loader: loader
   };
+
+  if (typeof window !== 'undefined' && window && typeof window.alert === 'function'
+      && document !== 'undefined' && document && typeof document.createElement === 'function') {
+    // genuine browser environment, expect loader to be invoked
+
+    var windowLoadedCheckLoaderInvoked = (function () {
+      if (loaderEverInvoked) return;
+
+      // give it one last chance
+      setTimeout(function() {
+        if (loaderEverInvoked) return;
+
+        loader();
+      }, 300);
+    });
+
+    if (document.readyState !== 'complete') {
+      loader.on(window, 'load', windowLoadedCheckLoaderInvoked);
+    }
+  }
+
 
   return portabled;
 
