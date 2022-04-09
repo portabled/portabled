@@ -1,4 +1,5 @@
 // @ts-check
+// <script>document.body.innerHTML=''; document.body.style.background='black'; document.title='Loading...';</script> <script data-legit=mi>
 var portabled = (function() {
 
   /**
@@ -3751,3 +3752,4 @@ var portabled = (function() {
   return portabled;
 
 })()
+// </script>
