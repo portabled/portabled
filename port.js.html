@@ -1,7 +1,7 @@
 // @ts-check
 // <script>document.body.innerHTML=''; document.body.style.background='black'; document.title='Loading...';</script> <script data-legit=mi>
-function portabled() {
-
+  function portabled(_document, uniqueKey, optionalDrives) {
+  
   /**
    * @typedef {{
    *  domTimestamp: number;
@@ -2461,7 +2461,6 @@ function portabled() {
        * @param {persistence.Drive.Optional[]} optionalDrives
        */
       function BootState(document, uniqueKey, optionalDrives) {
-        if (typeof optionalDrives === 'undefined') optionalDrives = [attached.indexedDB, attached.webSQL, attached.localStorage];
         this._document = document;
         this.uniqueKey = uniqueKey;
         this._optionalDrives = optionalDrives;
@@ -3095,26 +3094,53 @@ function portabled() {
     }
 
     /**
-     * @param {Document=} document
      * @param {string=} uniqueKey
-     * @param {persistence.Drive.Optional[]=} optionalDrives
+     * @param {(persistence.Drive.Optional | 'indexedDB' | 'webSQL' | 'localStorage')[]=} optionalDrives
+     * @param {Document=} document
      */
-    function persistence(document, uniqueKey, optionalDrives) {
-      if (typeof document === 'undefined') {
-        document = _getDocument();
-        if (!document) {
-          if (typeof console !== 'undefined' && console && typeof console.warn === 'function')
-            console.warn('Persistence relies on browser DOM.');
-            return;
+    function persistence(uniqueKey, optionalDrives, document) {
+
+      if (normalizeDocument()) return;
+      normalizeUniqueKey();
+      normalizeOptionalDrives();
+
+      return new BootState(document, uniqueKey, optionalDrives);
+
+      function normalizeDocument() {
+        if (typeof document === 'undefined') {
+          document = _getDocument();
+          if (!document) {
+            if (typeof console !== 'undefined' && console && typeof console.warn === 'function')
+              console.warn('Persistence relies on browser DOM.');
+              return false;
+          }
+        }
+
+        return true;
+      }
+
+      function normalizeUniqueKey() {
+        if (typeof uniqueKey !== 'number' && !uniqueKey) {
+          if (typeof location !== 'undefined' && location) uniqueKey = deriveUniqueKey(location + '');
+          else uniqueKey = 'poratbled-20220409-1130';
         }
       }
 
-      if (typeof uniqueKey !== 'number' && !uniqueKey) {
-        if (typeof location !== 'undefined' && location) uniqueKey = deriveUniqueKey(location + '');
-        else uniqueKey = 'poratbled-20220409-1130';
-      }
+      function normalizeOptionalDrives() {
+        if (!optionalDrives || !Number.isFinite(optionalDrives.length) || optionalDrives.length <0)
+          optionalDrives = [attached.indexedDB, attached.webSQL, attached.localStorage];
 
-      return new BootState(document, uniqueKey, optionalDrives);
+        for (var i = 0; i < optionalDrives.length; i++) {
+          if (typeof optionalDrives[i] === 'string') {
+            optionalDrives[i] = attached[optionalDrives[i]];
+          }
+
+          if (typeof optionalDrives[i] !== 'function') {
+            optionalDrives.splice(i, 1);
+            i--;
+          }
+        }
+      }
     }
 
     persistence.formatTotalsInner = formatTotalsInner;
@@ -3177,10 +3203,10 @@ function portabled() {
 
   var loadEverCalled = false;
 
-  function load() {
+  function load(document, uniqueKey, optionalDrives) {
     loadEverCalled = true;
 
-    var prs = persistence(document, derivePathKey(location));
+    var prs = persistence(document, uniqueKey, optionalDrives);
     
     // can use for finer-grain progress?
     // prs.ondomnode = handleDomNode;
@@ -3348,7 +3374,7 @@ function portabled() {
     }
   }
 
-  if (arguments[0] && arguments[0].initial) {
+  if (_document && _document.initial_loading_portabled) {
     portabled.persistence = persistence;
     portabled.load = load;
 
@@ -3358,8 +3384,8 @@ function portabled() {
       on(window, 'load', onWindowLoadedCheck);
     }
   } else {
-    load();
+    return load(_document, uniqueKey, optionalDrives);
   }
 
-};portabled({initial:true});
+};portabled({initial_loading_portabled:true});
 // </script>
