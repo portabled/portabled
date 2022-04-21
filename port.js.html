@@ -1,6 +1,6 @@
 // @ts-check
 // <script>document.body.innerHTML=''; document.body.style.background='black'; document.title='Loading...';</script> <script data-legit=mi>
-var portabled = (function() {
+function portabled() {
 
   /**
    * @typedef {{
@@ -3307,17 +3307,7 @@ var portabled = (function() {
     }
   }
 
-  var portabled = {
-    persistence: persistence,
-    // on: on, off: off,
-    load: load
-  };
 
-  if (document.readyState === 'interative' || document.readyState === 'complete') {
-    onWindowLoadedCheck();
-  } else {
-    on(window, 'load', onWindowLoadedCheck);
-  }
 
   function onWindowLoadedCheck() {
     if (loadEverCalled) return;
@@ -3332,6 +3322,7 @@ var portabled = (function() {
     loaderState.oncomplete = windowLoadedAuto;
 
     function windowProgressAuto() {
+      document.title = 'Loading ' + loaderState.loadedSize + ' of ' + loaderState.totalSize + '...';
       console.log('Loading ', loaderState.loadedSize , ' of ', loaderState.totalSize, '...');
     }
 
@@ -3348,6 +3339,7 @@ var portabled = (function() {
       else subtitle.innerText = 'Loaded.';
       subtitle.style.textAlign = 'center';
       subtitle.style.color = 'gray';
+      document.title = 'Loaded.';
 
       document.body.appendChild(title);
       document.body.appendChild(subtitle);
@@ -3356,7 +3348,18 @@ var portabled = (function() {
     }
   }
 
-  return portabled;
+  if (arguments[0] && arguments[0].initial) {
+    portabled.persistence = persistence;
+    portabled.load = load;
 
-})()
+    if (document.readyState === 'interactive' || document.readyState === 'complete') {
+      onWindowLoadedCheck();
+    } else {
+      on(window, 'load', onWindowLoadedCheck);
+    }
+  } else {
+    load();
+  }
+
+};portabled({initial:true});
 // </script>
